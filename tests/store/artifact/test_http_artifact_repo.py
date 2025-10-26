@@ -396,6 +396,41 @@ def test_delete_artifacts(http_artifact_repo, remote_file_path):
         )
 
 
+def test_workspace_segment_rewritten_from_trailing_path():
+    artifact_uri = (
+        "http://test.com/api/2.0/mlflow-artifacts/artifacts/workspaces/team-a/5/run-id/artifacts"
+    )
+    repo = HttpArtifactRepository(artifact_uri)
+    scoped_uri, workspace = repo._get_workspace_scoped_artifact_uri()
+    assert workspace == "team-a"
+    assert (
+        scoped_uri == "http://test.com/api/2.0/mlflow-artifacts/workspaces/"
+        "team-a/artifacts/5/run-id/artifacts"
+    )
+
+
+def test_workspace_segment_inserted_from_active_workspace(monkeypatch):
+    monkeypatch.setenv("MLFLOW_WORKSPACE", "team-b")
+    artifact_uri = "http://test.com/api/2.0/mlflow-artifacts/artifacts/5/run-id/artifacts"
+    repo = HttpArtifactRepository(artifact_uri)
+    scoped_uri, workspace = repo._get_workspace_scoped_artifact_uri()
+    assert workspace == "team-b"
+    assert (
+        scoped_uri == "http://test.com/api/2.0/mlflow-artifacts/workspaces/"
+        "team-b/artifacts/5/run-id/artifacts"
+    )
+
+
+def test_workspace_segment_unchanged_when_already_scoped():
+    artifact_uri = (
+        "http://test.com/api/2.0/mlflow-artifacts/workspaces/team-c/artifacts/5/run-id/artifacts"
+    )
+    repo = HttpArtifactRepository(artifact_uri)
+    scoped_uri, workspace = repo._get_workspace_scoped_artifact_uri()
+    assert workspace == "team-c"
+    assert scoped_uri == artifact_uri
+
+
 def test_create_multipart_upload(http_artifact_repo, monkeypatch):
     monkeypatch.setenv("MLFLOW_ENABLE_PROXY_MULTIPART_UPLOAD", "true")
     with mock.patch(

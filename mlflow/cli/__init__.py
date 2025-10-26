@@ -379,6 +379,17 @@ def _validate_static_prefix(ctx, param, value):
     "If not specified, `backend-store-uri` is used.",
 )
 @click.option(
+    "--workspace-store-uri",
+    envvar=MLFLOW_WORKSPACE_URI.name,
+    metavar="URI",
+    default=None,
+    help=(
+        "URI for storing workspace metadata. Acceptable URIs mirror the tracking backend, e.g. "
+        "'sqlite:///path/to/file.db', 'postgresql://user:pass@host/db', or 'http://tracking'. "
+        "If not specified, the tracking URI is used."
+    ),
+)
+@click.option(
     "--default-artifact-root",
     envvar="MLFLOW_DEFAULT_ARTIFACT_ROOT",
     metavar="URI",
@@ -485,6 +496,7 @@ def server(
     ctx,
     backend_store_uri,
     registry_store_uri,
+    workspace_store_uri,
     default_artifact_root,
     serve_artifacts,
     artifacts_only,
@@ -503,7 +515,6 @@ def server(
     app_name,
     dev,
     uvicorn_opts,
-    workspace_store_uri,
     enable_workspaces,
 ):
     """
@@ -584,6 +595,18 @@ def server(
         if x_frame_options:
             os.environ["MLFLOW_SERVER_X_FRAME_OPTIONS"] = x_frame_options
 
+    # Make the CLI flag authoritative so it always overrides inherited env vars.
+    MLFLOW_ENABLE_WORKSPACES.set(enable_workspaces)
+    if enable_workspaces:
+        if workspace_store_uri:
+            MLFLOW_WORKSPACE_URI.set(workspace_store_uri)
+    elif workspace_store_uri:
+        _logger.warning(
+            "--workspace-store-uri was provided but workspaces are not enabled. "
+            "Enable workspaces with --enable-workspaces to activate workspace support."
+        )
+
+    # Ensure that both backend_store_uri and default_artifact_uri are set correctly.
     if not backend_store_uri:
         backend_store_uri = _get_default_tracking_uri()
         click.echo(f"Backend store URI not provided. Using {backend_store_uri}")
@@ -595,10 +618,15 @@ def server(
     default_artifact_root = resolve_default_artifact_root(
         serve_artifacts, default_artifact_root, backend_store_uri
     )
-    artifacts_only_config_validation(artifacts_only, backend_store_uri)
+    artifacts_only_config_validation(artifacts_only, backend_store_uri, enable_workspaces)
 
     try:
-        initialize_backend_stores(backend_store_uri, registry_store_uri, default_artifact_root)
+        initialize_backend_stores(
+            backend_store_uri,
+            registry_store_uri,
+            default_artifact_root,
+            workspace_store_uri=workspace_store_uri,
+        )
     except Exception as e:
         _logger.error("Error initializing backend store")
         _logger.exception(e)

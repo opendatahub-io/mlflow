@@ -21,6 +21,7 @@ from mlflow.entities import (
     Assessment,
     DatasetInput,
     Expectation,
+    Experiment,
     ExperimentTag,
     Feedback,
     FileInfo,
@@ -61,6 +62,8 @@ from mlflow.protos.databricks_pb2 import (
     BAD_REQUEST,
     FEATURE_DISABLED,
     INVALID_PARAMETER_VALUE,
+    INVALID_STATE,
+    RESOURCE_ALREADY_EXISTS,
     RESOURCE_DOES_NOT_EXIST,
 )
 from mlflow.protos.mlflow_artifacts_pb2 import (
@@ -186,7 +189,13 @@ from mlflow.protos.webhooks_pb2 import (
     WebhookService,
 )
 from mlflow.server.validation import _validate_content_type
-from mlflow.server.workspace_helpers import _get_workspace_store
+from mlflow.server.workspace_helpers import (
+    STATIC_PREFIX_ENV_VAR,
+    _get_workspace_store,
+    _strip_workspace_kwarg,
+    workspace_before_request_handler,
+    workspace_teardown_request_handler,
+)
 from mlflow.store.artifact.artifact_repo import MultipartUploadMixin
 from mlflow.store.artifact.artifact_repository_registry import get_artifact_repository
 from mlflow.store.db.db_types import DATABASE_ENGINES
@@ -204,6 +213,7 @@ from mlflow.tracking._model_registry import utils as registry_utils
 from mlflow.tracking._model_registry.registry import ModelRegistryStoreRegistry
 from mlflow.tracking._tracking_service import utils
 from mlflow.tracking._tracking_service.registry import TrackingStoreRegistry
+from mlflow.tracking._workspace import context as workspace_context
 from mlflow.tracking.registry import UnsupportedModelRegistryStoreURIException
 from mlflow.utils.databricks_utils import get_databricks_host_creds
 from mlflow.utils.file_utils import local_file_uri_to_path
@@ -240,9 +250,16 @@ _tracking_store = None
 _model_registry_store = None
 _job_store = None
 _artifact_repo = None
-STATIC_PREFIX_ENV_VAR = "_MLFLOW_STATIC_PREFIX"
 MAX_RUNS_GET_METRIC_HISTORY_BULK = 100
 MAX_RESULTS_PER_RUN = 2500
+
+__all__ = [
+    "TrackingStoreRegistryWrapper",
+    "ModelRegistryStoreRegistryWrapper",
+    "get_endpoints",
+    "workspace_before_request_handler",
+    "workspace_teardown_request_handler",
+]
 
 
 class TrackingStoreRegistryWrapper(TrackingStoreRegistry):
@@ -520,12 +537,51 @@ def initialize_backend_stores(
     backend_store_uri: str | None = None,
     registry_store_uri: str | None = None,
     default_artifact_root: str | None = None,
+    workspace_store_uri: str | None = None,
 ) -> None:
-    _get_tracking_store(backend_store_uri, default_artifact_root)
+    if MLFLOW_ENABLE_WORKSPACES.get() and not default_artifact_root:
+        raise MlflowException.invalid_parameter_value(
+            "--enable-workspaces requires --default-artifact-root or the "
+            "MLFLOW_ARTIFACT_ROOT environment variable to be set."
+        )
+
+    tracking_store = _get_tracking_store(backend_store_uri, default_artifact_root)
+    registry_store = None
     try:
-        _get_model_registry_store(registry_store_uri)
+        registry_store = _get_model_registry_store(registry_store_uri)
     except UnsupportedModelRegistryStoreURIException:
         pass
+
+    if not MLFLOW_ENABLE_WORKSPACES.get():
+        return
+
+    if not tracking_store.supports_workspaces():
+        raise MlflowException.invalid_parameter_value(
+            "--enable-workspaces requires a tracking backend that supports workspaces"
+        )
+    if registry_store and not registry_store.supports_workspaces():
+        raise MlflowException.invalid_parameter_value(
+            "--enable-workspaces requires a model registry backend that supports workspaces"
+        )
+    try:
+        from mlflow.server import auth as auth_module
+
+        auth_store = getattr(auth_module, "store", None)
+    except ImportError:
+        # Auth module requires Flask-WTF; gracefully handle case
+        auth_store = None
+
+    if auth_store is not None:
+        supports = getattr(auth_store, "supports_workspaces", None)
+        if supports is None or not supports():
+            raise MlflowException.invalid_parameter_value(
+                "--enable-workspaces requires an authentication backend that supports "
+                "workspace permissions"
+            )
+    _get_workspace_store(
+        workspace_uri=workspace_store_uri,
+        tracking_uri=backend_store_uri,
+    )
 
 
 def _assert_string(x):
@@ -805,6 +861,77 @@ def _workspace_not_supported(message: str) -> MlflowException:
     return MlflowException(message, FEATURE_DISABLED)
 
 
+def _ensure_default_workspace_experiment(workspace_name: str) -> None:
+    tracking_store = _get_tracking_store()
+    if tracking_store is None:
+        return
+
+    with workspace_context.WorkspaceContext(workspace_name):
+        experiment = tracking_store.get_experiment_by_name(Experiment.DEFAULT_EXPERIMENT_NAME)
+        if experiment is not None:
+            return
+        try:
+            tracking_store.create_experiment(Experiment.DEFAULT_EXPERIMENT_NAME)
+        except MlflowException as exc:
+            if exc.error_code != RESOURCE_ALREADY_EXISTS:
+                raise
+
+
+def _workspace_contains_resources(workspace_name: str) -> bool:
+    """
+    Return True if the workspace contains experiments, runs, or registry artifacts.
+
+    The default experiment is treated as a real resource when it has runs, so operators cannot
+    delete a workspace while legacy resources still exist under the implicit default.
+    """
+    tracking_store = _get_tracking_store()
+    if tracking_store is not None:
+        with workspace_context.WorkspaceContext(workspace_name):
+            non_default = tracking_store.search_experiments(
+                view_type=ViewType.ALL,
+                filter_string=f'name != "{Experiment.DEFAULT_EXPERIMENT_NAME}"',
+                max_results=1,
+            )
+            non_default = (
+                non_default.to_list() if hasattr(non_default, "to_list") else list(non_default)
+            )
+            if non_default:
+                return True
+
+            default_experiment = tracking_store.get_experiment_by_name(
+                Experiment.DEFAULT_EXPERIMENT_NAME
+            )
+            if default_experiment is not None:
+                runs_page = tracking_store.search_runs(
+                    [default_experiment.experiment_id],
+                    filter_string="",
+                    run_view_type=ViewType.ALL,
+                    max_results=1,
+                )
+                if len(runs_page) > 0:
+                    # The implicit default experiment still holds runs; consider the workspace
+                    # non-empty even if users never created named experiments.
+                    return True
+
+    try:
+        registry_store = _get_model_registry_store()
+    except (MlflowException, UnsupportedModelRegistryStoreURIException):
+        registry_store = None
+    if registry_store is not None:
+        with workspace_context.WorkspaceContext(workspace_name):
+            try:
+                models = registry_store.search_registered_models(
+                    filter_string=None, max_results=1, page_token=None
+                )
+                models = models.to_list() if hasattr(models, "to_list") else models
+            except NotImplementedError:
+                models = []
+        if len(models) > 0:
+            return True
+
+    return False
+
+
 @catch_mlflow_exception
 @_disable_if_workspaces_disabled
 def _list_workspaces_handler():
@@ -829,6 +956,7 @@ def _create_workspace_handler():
     except NotImplementedError:
         raise _workspace_not_supported("Workspace creation is not supported by this provider")
 
+    _ensure_default_workspace_experiment(workspace.name)
     response = jsonify(workspace.to_dict())
     response.status_code = 201
     return response
@@ -870,6 +998,11 @@ def _update_workspace_handler(workspace_name: str):
 @_disable_if_workspaces_disabled
 def _delete_workspace_handler(workspace_name: str):
     store = _get_workspace_store()
+    if _workspace_contains_resources(workspace_name):
+        raise MlflowException(
+            f"Cannot delete workspace '{workspace_name}' because it contains resources",
+            INVALID_STATE,
+        )
     try:
         store.delete_workspace(workspace_name)
     except NotImplementedError:
@@ -2800,6 +2933,22 @@ def _test_webhook(webhook_id: str):
 # MLflow Artifacts APIs
 
 
+def _workspace_scoped_repo_path(artifact_path: str | None) -> str | None:
+    """
+    Prefix artifact paths with the active workspace so proxied artifact operations remain isolated.
+    """
+    workspace = workspace_context.get_current_workspace()
+    if not workspace:
+        return artifact_path
+
+    normalized = artifact_path.lstrip("/") if artifact_path else ""
+    if normalized.startswith("workspaces/"):
+        return normalized or posixpath.join("workspaces", workspace)
+
+    base = posixpath.join("workspaces", workspace)
+    return posixpath.join(base, normalized) if normalized else base
+
+
 @catch_mlflow_exception
 @_disable_unless_serve_artifacts
 def _download_artifact(artifact_path):
@@ -2808,9 +2957,10 @@ def _download_artifact(artifact_path):
     from `artifact_path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
     tmp_dir = tempfile.TemporaryDirectory()
     artifact_repo = _get_artifact_repo_mlflow_artifacts()
-    dst = artifact_repo.download_artifacts(artifact_path, tmp_dir.name)
+    dst = artifact_repo.download_artifacts(repo_path, tmp_dir.name)
 
     # Ref: https://stackoverflow.com/a/24613980/6943581
     file_handle = open(dst, "rb")  # noqa: SIM115
@@ -2833,7 +2983,8 @@ def _upload_artifact(artifact_path):
     to `artifact_path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
-    head, tail = posixpath.split(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
+    head, tail = posixpath.split(repo_path)
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = os.path.join(tmp_dir, tail)
         with open(tmp_path, "wb") as f:
@@ -2859,9 +3010,10 @@ def _list_artifacts_mlflow_artifacts():
     """
     request_message = _get_request_message(ListArtifactsMlflowArtifacts())
     path = validate_path_is_safe(request_message.path) if request_message.HasField("path") else None
+    repo_path = _workspace_scoped_repo_path(path)
     artifact_repo = _get_artifact_repo_mlflow_artifacts()
     files = []
-    for file_info in artifact_repo.list_artifacts(path):
+    for file_info in artifact_repo.list_artifacts(repo_path):
         basename = posixpath.basename(file_info.path)
         new_file_info = FileInfo(basename, file_info.is_dir, file_info.file_size)
         files.append(new_file_info.to_proto())
@@ -2880,9 +3032,10 @@ def _delete_artifact_mlflow_artifacts(artifact_path):
     `path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
     _get_request_message(DeleteArtifact())
     artifact_repo = _get_artifact_repo_mlflow_artifacts()
-    artifact_repo.delete_artifacts(artifact_path)
+    artifact_repo.delete_artifacts(repo_path)
     response_message = DeleteArtifact.Response()
     response = Response(mimetype="application/json")
     response.set_data(message_to_json(response_message))
@@ -2932,6 +3085,7 @@ def _create_multipart_upload_artifact(artifact_path):
     to `artifact_path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
 
     request_message = _get_request_message(
         CreateMultipartUpload(),
@@ -2949,7 +3103,7 @@ def _create_multipart_upload_artifact(artifact_path):
     create_response = artifact_repo.create_multipart_upload(
         path,
         num_parts,
-        artifact_path,
+        repo_path,
     )
     response_message = create_response.to_proto()
     response = Response(mimetype="application/json")
@@ -2965,6 +3119,7 @@ def _complete_multipart_upload_artifact(artifact_path):
     to `artifact_path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
 
     request_message = _get_request_message(
         CompleteMultipartUpload(),
@@ -2985,7 +3140,7 @@ def _complete_multipart_upload_artifact(artifact_path):
         path,
         upload_id,
         parts,
-        artifact_path,
+        repo_path,
     )
     return _wrap_response(CompleteMultipartUpload.Response())
 
@@ -2998,6 +3153,7 @@ def _abort_multipart_upload_artifact(artifact_path):
     to `artifact_path` (a relative path from the root artifact directory).
     """
     artifact_path = validate_path_is_safe(artifact_path)
+    repo_path = _workspace_scoped_repo_path(artifact_path)
 
     request_message = _get_request_message(
         AbortMultipartUpload(),
@@ -3015,7 +3171,7 @@ def _abort_multipart_upload_artifact(artifact_path):
     artifact_repo.abort_multipart_upload(
         path,
         upload_id,
-        artifact_path,
+        repo_path,
     )
     return _wrap_response(AbortMultipartUpload.Response())
 
@@ -3884,14 +4040,26 @@ def _add_static_prefix(route: str) -> str:
     return route
 
 
-def _get_paths(base_path, version=2):
+def _get_paths(base_path, version=2, include_workspace_variants=True):
     """
     A service endpoints base path is typically something like /mlflow/experiment.
     We should register paths like /api/2.0/mlflow/experiment and
     /ajax-api/2.0/mlflow/experiment in the Flask router.
     """
     base_path = _convert_path_parameter_to_flask_format(base_path)
-    return [_get_rest_path(base_path, version), _get_ajax_path(base_path, version)]
+    paths = [_get_rest_path(base_path, version), _get_ajax_path(base_path, version)]
+
+    if include_workspace_variants:
+        workspace_path = _add_workspace_prefix(base_path)
+        if workspace_path:
+            paths.extend(
+                [
+                    _get_rest_path(workspace_path, version),
+                    _get_ajax_path(workspace_path, version),
+                ]
+            )
+
+    return paths
 
 
 def _convert_path_parameter_to_flask_format(path):
@@ -3912,6 +4080,93 @@ def _convert_path_parameter_to_flask_format(path):
     return re.sub(r"{assessment\.trace_id}", r"<trace_id>", path)
 
 
+def _add_workspace_prefix(base_path: str) -> str | None:
+    """Return a workspace-prefixed variant of ``base_path`` if applicable."""
+
+    prefix = "/mlflow/"
+    if base_path.startswith(prefix):
+        # Avoid double-prefixing workspace administration endpoints
+        if base_path.startswith("/mlflow/workspaces"):
+            return None
+
+        suffix = base_path[len(prefix) :]
+        if not suffix:
+            return None
+
+        return f"/mlflow/workspaces/<workspace_name>/{suffix.lstrip('/')}"
+
+    artifacts_prefix = "/mlflow-artifacts"
+    if base_path.startswith(artifacts_prefix):
+        suffix = base_path[len(artifacts_prefix) :].lstrip("/")
+        return (
+            f"/mlflow-artifacts/workspaces/<workspace_name>/{suffix}"
+            if suffix
+            else ("/mlflow-artifacts/workspaces/<workspace_name>")
+        )
+
+    return None
+
+
+def _insert_workspace_segment(path: str) -> str:
+    """
+    Insert the workspace segment into a route path, mirroring the logic in
+    ``_workspace_aware_route``.
+    """
+
+    workspace_segment = "/workspaces/<workspace_name>"
+
+    if not path.startswith("/"):
+        path = f"/{path}"
+
+    artifacts_segment = "/mlflow-artifacts"
+    if artifacts_segment in path and workspace_segment not in path:
+        return path.replace(
+            artifacts_segment,
+            f"{artifacts_segment}{workspace_segment}",
+            1,
+        )
+
+    mlflow_with_slash = "/mlflow/"
+    if mlflow_with_slash in path:
+        return path.replace(mlflow_with_slash, f"/mlflow{workspace_segment}/", 1)
+
+    if path.endswith("/mlflow"):
+        return f"{path}{workspace_segment}"
+
+    if path == "/mlflow":
+        return f"{path}{workspace_segment}"
+
+    return f"{workspace_segment}{path}"
+
+
+def get_workspace_prefixed_path(path: str) -> str:
+    """
+    Return the workspace-prefixed variant of a fully qualified route path (e.g.
+    `/ajax-api/2.0/mlflow/get-artifact`). When a static prefix is configured, the returned
+    path preserves the prefix.
+    """
+
+    if "<workspace_name>" in path:
+        return path
+
+    prefix = os.environ.get(STATIC_PREFIX_ENV_VAR)
+    prefix = prefix.rstrip("/") if prefix else ""
+
+    has_prefix = bool(prefix and path.startswith(prefix))
+
+    if has_prefix:
+        suffix = path[len(prefix) :]
+    else:
+        suffix = path
+        if not suffix.startswith("/"):
+            suffix = f"/{suffix}"
+
+    workspace_suffix = _insert_workspace_segment(suffix)
+    if has_prefix:
+        return f"{prefix}{workspace_suffix}"
+    return workspace_suffix
+
+
 def get_handler(request_class):
     """
     Args:
@@ -3920,30 +4175,66 @@ def get_handler(request_class):
     return HANDLERS.get(request_class, _not_implemented)
 
 
-def get_service_endpoints(service, get_handler):
+def get_service_endpoints(service, get_handler, include_workspace_variants=True):
     ret = []
     for service_method in service.DESCRIPTOR.methods:
         endpoints = service_method.GetOptions().Extensions[databricks_pb2.rpc].endpoints
         for endpoint in endpoints:
-            for http_path in _get_paths(endpoint.path, version=endpoint.since.major):
+            for http_path in _get_paths(
+                endpoint.path,
+                version=endpoint.since.major,
+                include_workspace_variants=include_workspace_variants,
+            ):
                 handler = get_handler(service().GetRequestClass(service_method))
+                if "<workspace_name>" in http_path:
+                    handler = _strip_workspace_kwarg(handler)
                 ret.append((http_path, handler, [endpoint.method]))
     return ret
 
 
-def get_endpoints(get_handler=get_handler):
+def get_endpoints(
+    get_handler=get_handler,
+    include_workspace_endpoints=True,
+    include_workspace_variants=True,
+):
     """
     Returns:
         List of tuples (path, handler, methods)
     """
-    return (
-        get_service_endpoints(MlflowService, get_handler)
-        + get_service_endpoints(ModelRegistryService, get_handler)
-        + get_service_endpoints(MlflowArtifactsService, get_handler)
-        + get_service_endpoints(WebhookService, get_handler)
+    endpoints = (
+        get_service_endpoints(
+            MlflowService, get_handler, include_workspace_variants=include_workspace_variants
+        )
+        + get_service_endpoints(
+            ModelRegistryService,
+            get_handler,
+            include_workspace_variants=include_workspace_variants,
+        )
+        + get_service_endpoints(
+            MlflowArtifactsService,
+            get_handler,
+            include_workspace_variants=include_workspace_variants,
+        )
+        + get_service_endpoints(
+            WebhookService, get_handler, include_workspace_variants=include_workspace_variants
+        )
         + [(_add_static_prefix("/graphql"), _graphql, ["GET", "POST"])]
         + _workspace_endpoints()
     )
+
+    if include_workspace_variants:
+        endpoints.append(
+            (
+                _add_static_prefix("/workspaces/<workspace_name>/graphql"),
+                _strip_workspace_kwarg(_graphql),
+                ["GET", "POST"],
+            )
+        )
+
+    if include_workspace_endpoints:
+        endpoints += _workspace_endpoints()
+
+    return endpoints
 
 
 # Evaluation Dataset APIs

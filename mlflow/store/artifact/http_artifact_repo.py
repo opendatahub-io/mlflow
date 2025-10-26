@@ -1,6 +1,7 @@
 import logging
 import os
 import posixpath
+from urllib.parse import quote, urlparse, urlunparse
 
 import requests
 from requests import HTTPError
@@ -26,7 +27,11 @@ from mlflow.store.artifact.cloud_artifact_repo import _complete_futures, _comput
 from mlflow.utils.credentials import get_default_host_creds
 from mlflow.utils.file_utils import read_chunk, relative_path_to_artifact_path
 from mlflow.utils.mime_type_utils import _guess_mime_type
-from mlflow.utils.rest_utils import augmented_raise_for_status, http_request
+from mlflow.utils.rest_utils import (
+    _resolve_active_workspace,
+    augmented_raise_for_status,
+    http_request,
+)
 from mlflow.utils.uri import validate_path_is_safe
 
 _logger = logging.getLogger(__name__)
@@ -37,7 +42,64 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
 
     @property
     def _host_creds(self):
-        return get_default_host_creds(self.artifact_uri)
+        artifact_uri, _ = self._get_workspace_scoped_artifact_uri()
+        return get_default_host_creds(artifact_uri)
+
+    def _get_workspace_scoped_artifact_uri(self):
+        artifact_uri = self.artifact_uri
+        parsed = urlparse(artifact_uri)
+        path = parsed.path or ""
+        workspace_segment = "/mlflow-artifacts/workspaces/"
+
+        if workspace_segment in path:
+            remainder = path.split(workspace_segment, 1)[1]
+            workspace_component = remainder.split("/", 1)[0]
+            return artifact_uri, workspace_component
+
+        tail_segment = "/mlflow-artifacts/artifacts/workspaces/"
+        tail_idx = path.find(tail_segment)
+        if tail_idx != -1:
+            remainder = path[tail_idx + len(tail_segment) :]
+            workspace_component, rest = (
+                remainder.split("/", 1) if "/" in remainder else (remainder, "")
+            )
+            workspace_component = workspace_component or None
+            if workspace_component:
+                prefix = path[:tail_idx]
+                rest_suffix = f"/{rest}" if rest else ""
+                new_path = (
+                    f"{prefix}/mlflow-artifacts/workspaces/"
+                    f"{workspace_component}/artifacts{rest_suffix}"
+                )
+                return urlunparse(parsed._replace(path=new_path)), workspace_component
+
+        workspace = _resolve_active_workspace()
+        if workspace and parsed.scheme in {"http", "https"} and "/mlflow-artifacts" in path:
+            workspace_component = quote(workspace, safe="")
+            new_path = path.replace(
+                "/mlflow-artifacts",
+                f"/mlflow-artifacts/workspaces/{workspace_component}",
+                1,
+            )
+            return urlunparse(parsed._replace(path=new_path)), workspace_component
+
+        return artifact_uri, None
+
+    @staticmethod
+    def _get_artifacts_endpoint_prefix(workspace_component):
+        if workspace_component:
+            return f"/mlflow-artifacts/workspaces/{workspace_component}/artifacts"
+        return "/mlflow-artifacts/artifacts"
+
+    @staticmethod
+    def _with_workspace_prefix(base_endpoint, workspace_component):
+        if workspace_component:
+            return base_endpoint.replace(
+                "/mlflow-artifacts",
+                f"/mlflow-artifacts/workspaces/{workspace_component}",
+                1,
+            )
+        return base_endpoint
 
     def log_artifact(self, local_file, artifact_path=None):
         verify_artifact_path(artifact_path)
@@ -80,8 +142,9 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
                 self.log_artifact(os.path.join(root, f), artifact_dir)
 
     def list_artifacts(self, path=None):
-        endpoint = "/mlflow-artifacts/artifacts"
-        url, tail = self.artifact_uri.split(endpoint, maxsplit=1)
+        artifact_uri, workspace_component = self._get_workspace_scoped_artifact_uri()
+        endpoint = self._get_artifacts_endpoint_prefix(workspace_component)
+        url, tail = artifact_uri.split(endpoint, maxsplit=1)
         root = tail.lstrip("/")
         params = {"path": posixpath.join(root, path) if path else root}
         host_creds = get_default_host_creds(url)
@@ -114,12 +177,15 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
         augmented_raise_for_status(resp)
 
     def _construct_mpu_uri_and_path(self, base_endpoint, artifact_path):
-        uri, path = self.artifact_uri.split("/mlflow-artifacts/artifacts", maxsplit=1)
+        artifact_uri, workspace_component = self._get_workspace_scoped_artifact_uri()
+        artifacts_endpoint = self._get_artifacts_endpoint_prefix(workspace_component)
+        uri, path = artifact_uri.split(artifacts_endpoint, maxsplit=1)
         path = path.strip("/")
+        scoped_base_endpoint = self._with_workspace_prefix(base_endpoint, workspace_component)
         endpoint = (
-            posixpath.join(base_endpoint, path, artifact_path)
+            posixpath.join(scoped_base_endpoint, path, artifact_path)
             if artifact_path
-            else posixpath.join(base_endpoint, path)
+            else posixpath.join(scoped_base_endpoint, path)
         )
         return uri, endpoint
 
