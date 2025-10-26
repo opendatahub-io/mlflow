@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.schema import CreateTable, MetaData
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.schema import CreateTable, MetaData, UniqueConstraint
+
+_MYSQL_REFLECTED_UNIQUE_CONSTRAINTS = {"uq_experiments_workspace_name"}
 
 import mlflow
 from mlflow.environment_variables import MLFLOW_TRACKING_URI
@@ -25,6 +27,37 @@ def dump_schema(db_uri):
     engine = create_engine(db_uri)
     created_tables_metadata = MetaData()
     created_tables_metadata.reflect(bind=engine)
+    if engine.dialect.name == "mysql":
+        # MySQL exposes unique constraints as unique indexes. SQLAlchemy treats those as
+        # indexes during reflection, so the reflected metadata lacks the original
+        # `UniqueConstraint`. When we later stringify the tables, the constraint disappears
+        # even though the database enforces it. Reattach the known constraint(s) here so
+        # the dumped schema mirrors the real DDL emitted by `SHOW CREATE TABLE`.
+        inspector = inspect(engine)
+        for table in created_tables_metadata.sorted_tables:
+            existing_unique_columns = {
+                tuple(constraint.columns.keys())
+                for constraint in table.constraints
+                if isinstance(constraint, UniqueConstraint)
+            }
+            for unique in inspector.get_unique_constraints(table.name):
+                duplicates_index = unique.get("duplicates_index")
+                columns = tuple(unique.get("column_names") or ())
+                name = unique.get("name")
+                if (
+                    not duplicates_index
+                    or not columns
+                    or name not in _MYSQL_REFLECTED_UNIQUE_CONSTRAINTS
+                ):
+                    continue
+                if columns in existing_unique_columns:
+                    continue
+                constraint = UniqueConstraint(
+                    *[table.c[column] for column in columns if column in table.c],
+                    name=name,
+                )
+                table.append_constraint(constraint)
+                existing_unique_columns.add(columns)
     # Write out table schema as described in
     # https://docs.sqlalchemy.org/en/13/faq/metadata_schema.html#how-can-i-get-the-create-table-drop-table-output-as-a-string
     lines = []

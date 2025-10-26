@@ -7672,6 +7672,30 @@ def test_log_logged_model_params(store: SqlAlchemyStore):
     assert loaded_model.params == {"param1": "apple"}
 
 
+def test_log_logged_model_params_on_deleted_model(store: SqlAlchemyStore):
+    exp_id = store.create_experiment(f"exp-{uuid.uuid4()}")
+    model = store.create_logged_model(experiment_id=exp_id)
+    store.delete_logged_model(model.model_id)
+
+    store.log_logged_model_params(
+        model_id=model.model_id, params=[LoggedModelParameter("param1", "apple")]
+    )
+
+    with store.ManagedSessionMaker() as session:
+        params_dict = {
+            param.param_key: param.param_value
+            for param in session.query(SqlLoggedModelParam)
+            .filter(SqlLoggedModelParam.model_id == model.model_id)
+            .all()
+        }
+
+    assert params_dict == {"param1": "apple"}
+
+    # Ensure write does not resurrect the model
+    with pytest.raises(MlflowException, match="not found"):
+        store.get_logged_model(model.model_id)
+
+
 @pytest.mark.parametrize(
     "name",
     [
@@ -7762,6 +7786,24 @@ def test_set_logged_model_tags(store: SqlAlchemyStore):
         "tag3": "val3",
         "tag4": "val4",
     }
+
+
+def test_set_logged_model_tags_on_deleted_model(store: SqlAlchemyStore):
+    exp_id = store.create_experiment(f"exp-{uuid.uuid4()}")
+    model = store.create_logged_model(experiment_id=exp_id)
+    store.delete_logged_model(model.model_id)
+
+    store.set_logged_model_tags(model.model_id, [LoggedModelTag("tag1", "apple")])
+
+    with store.ManagedSessionMaker() as session:
+        tags_dict = {
+            tag.tag_key: tag.tag_value
+            for tag in session.query(SqlLoggedModelTag)
+            .filter(SqlLoggedModelTag.model_id == model.model_id)
+            .all()
+        }
+
+    assert tags_dict == {"tag1": "apple"}
 
 
 def test_delete_logged_model_tag(store: SqlAlchemyStore):
@@ -10403,7 +10445,7 @@ def test_dataset_experiment_associations(store):
         with pytest.raises(MlflowException, match="not found"):
             store.add_dataset_to_experiments(dataset_id="d-nonexistent", experiment_ids=[exp1])
 
-        with pytest.raises(MlflowException, match="not found"):
+        with pytest.raises(MlflowException, match=r"No Experiment with id="):
             store.add_dataset_to_experiments(
                 dataset_id=dataset.dataset_id, experiment_ids=["999999"]
             )

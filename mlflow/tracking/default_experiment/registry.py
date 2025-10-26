@@ -1,7 +1,12 @@
 import logging
 import warnings
 
+from mlflow.entities import Experiment
+from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES
+from mlflow.exceptions import MlflowException
+from mlflow.protos.databricks_pb2 import RESOURCE_ALREADY_EXISTS, ErrorCode
 from mlflow.tracking import get_tracking_uri
+from mlflow.tracking.client import MlflowClient
 from mlflow.tracking.default_experiment import DEFAULT_EXPERIMENT_ID
 from mlflow.tracking.default_experiment.databricks_notebook_experiment_provider import (
     DatabricksNotebookExperimentProvider,
@@ -71,4 +76,29 @@ def get_experiment_id() -> str | None:
         except Exception as e:
             _logger.warning("Encountered unexpected error while getting experiment_id: %s", e)
 
-    return DEFAULT_EXPERIMENT_ID if not is_databricks_uri(get_tracking_uri()) else None
+    tracking_uri = get_tracking_uri()
+    is_db_uri = is_databricks_uri(tracking_uri)
+
+    if MLFLOW_ENABLE_WORKSPACES.get() and not is_db_uri:
+        client = MlflowClient()
+        experiment = client.get_experiment_by_name(Experiment.DEFAULT_EXPERIMENT_NAME)
+
+        if experiment is None:
+            try:
+                experiment_id = client.create_experiment(Experiment.DEFAULT_EXPERIMENT_NAME)
+                experiment = client.get_experiment(experiment_id)
+            except MlflowException as exc:
+                if exc.error_code != ErrorCode.Name(RESOURCE_ALREADY_EXISTS):
+                    raise
+                experiment = client.get_experiment_by_name(Experiment.DEFAULT_EXPERIMENT_NAME)
+
+        if experiment is not None:
+            return experiment.experiment_id
+
+        raise MlflowException.invalid_state(
+            "Default experiment could not be resolved for the active workspace. "
+            "Call mlflow.set_workspace() and ensure the workspace contains or permits creation of "
+            f"an experiment named '{Experiment.DEFAULT_EXPERIMENT_NAME}'."
+        )
+
+    return DEFAULT_EXPERIMENT_ID if not is_db_uri else None

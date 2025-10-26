@@ -2,6 +2,7 @@ from mlflow.entities._mlflow_object import _MlflowObject
 from mlflow.entities.experiment_tag import ExperimentTag
 from mlflow.protos.service_pb2 import Experiment as ProtoExperiment
 from mlflow.protos.service_pb2 import ExperimentTag as ProtoExperimentTag
+from mlflow.utils.workspace_utils import DEFAULT_WORKSPACE_NAME
 
 
 class Experiment(_MlflowObject):
@@ -20,6 +21,7 @@ class Experiment(_MlflowObject):
         tags=None,
         creation_time=None,
         last_update_time=None,
+        workspace: str | None = None,
     ):
         super().__init__()
         self._experiment_id = experiment_id
@@ -29,6 +31,7 @@ class Experiment(_MlflowObject):
         self._tags = {tag.key: tag.value for tag in (tags or [])}
         self._creation_time = creation_time
         self._last_update_time = last_update_time
+        self._workspace = workspace or DEFAULT_WORKSPACE_NAME
 
     @property
     def experiment_id(self):
@@ -60,6 +63,10 @@ class Experiment(_MlflowObject):
 
     def _add_tag(self, tag):
         self._tags[tag.key] = tag.value
+
+    @property
+    def workspace(self) -> str:
+        return self._workspace
 
     @property
     def creation_time(self):

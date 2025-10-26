@@ -1,14 +1,23 @@
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     Column,
     ForeignKey,
+    Index,
     Integer,
+    PrimaryKeyConstraint,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
-from mlflow.server.auth.entities import ExperimentPermission, RegisteredModelPermission, User
+from mlflow.server.auth.entities import (
+    ExperimentPermission,
+    RegisteredModelPermission,
+    User,
+    WorkspacePermission,
+)
 
 Base = declarative_base()
 
@@ -54,14 +63,44 @@ class SqlExperimentPermission(Base):
 class SqlRegisteredModelPermission(Base):
     __tablename__ = "registered_model_permissions"
     id = Column(Integer(), primary_key=True)
+    workspace = Column(String(63), nullable=False)
     name = Column(String(255), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     permission = Column(String(255))
-    __table_args__ = (UniqueConstraint("name", "user_id", name="unique_name_user"),)
+    __table_args__ = (
+        UniqueConstraint("workspace", "name", "user_id", name="unique_workspace_name_user"),
+    )
 
     def to_mlflow_entity(self):
         return RegisteredModelPermission(
+            workspace=self.workspace,
             name=self.name,
             user_id=self.user_id,
+            permission=self.permission,
+        )
+
+
+class SqlWorkspacePermission(Base):
+    __tablename__ = "workspace_permissions"
+
+    workspace_name = Column(String(63), nullable=False)
+    username = Column(String(255), nullable=False)
+    resource_type = Column(String(64), nullable=False)
+    permission = Column(String(32), nullable=False)
+    created_at = Column(TIMESTAMP(), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "workspace_name", "username", "resource_type", name="workspace_permissions_pk"
+        ),
+        Index("idx_workspace_permissions_username", "username"),
+        Index("idx_workspace_permissions_workspace", "workspace_name"),
+    )
+
+    def to_mlflow_entity(self):
+        return WorkspacePermission(
+            workspace_name=self.workspace_name,
+            username=self.username,
+            resource_type=self.resource_type,
             permission=self.permission,
         )

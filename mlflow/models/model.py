@@ -1156,9 +1156,11 @@ class Model:
             if model_id is not None:
                 model = client.get_logged_model(model_id)
             else:
+                run_obj = client.get_run(run_id) if run_id else None
+                run_params = run_obj.data.params if run_obj and run_obj.data else {}
                 params = {
+                    **run_params,
                     **(params or {}),
-                    **(client.get_run(run_id).data.params if run_id else {}),
                 }
                 if flavor_name is None:
                     flavor_name = flavor.__name__ if hasattr(flavor, "__name__") else "custom"
@@ -1171,6 +1173,7 @@ class Model:
                     tags={key: str(value) for key, value in tags.items()}
                     if tags is not None
                     else None,
+                    experiment_id=run_obj.info.experiment_id if run_obj else None,
                     flavor=flavor_name,
                 )
                 _last_logged_model_id.set(model.model_id)
