@@ -1,6 +1,7 @@
 import logging
 import os
 import posixpath
+from urllib.parse import urlparse
 
 import requests
 from requests import HTTPError
@@ -37,7 +38,25 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
 
     @property
     def _host_creds(self):
-        return get_default_host_creds(self.artifact_uri)
+        artifact_uri, _ = self._get_workspace_scoped_artifact_uri()
+        return get_default_host_creds(artifact_uri)
+
+    def _get_workspace_scoped_artifact_uri(self):
+        artifact_uri = self.artifact_uri
+        parsed = urlparse(artifact_uri)
+        path = parsed.path or ""
+        workspace_segment = "/mlflow-artifacts/artifacts/workspaces/"
+
+        workspace_component = None
+        if workspace_segment in path:
+            remainder = path.split(workspace_segment, 1)[1]
+            workspace_component = remainder.split("/", 1)[0] or None
+
+        return artifact_uri, workspace_component
+
+    @staticmethod
+    def _get_artifacts_endpoint_prefix(_workspace_component):
+        return "/mlflow-artifacts/artifacts"
 
     def log_artifact(self, local_file, artifact_path=None):
         verify_artifact_path(artifact_path)
@@ -80,8 +99,9 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
                 self.log_artifact(os.path.join(root, f), artifact_dir)
 
     def list_artifacts(self, path=None):
-        endpoint = "/mlflow-artifacts/artifacts"
-        url, tail = self.artifact_uri.split(endpoint, maxsplit=1)
+        artifact_uri, workspace_component = self._get_workspace_scoped_artifact_uri()
+        endpoint = self._get_artifacts_endpoint_prefix(workspace_component)
+        url, tail = artifact_uri.split(endpoint, maxsplit=1)
         root = tail.lstrip("/")
         params = {"path": posixpath.join(root, path) if path else root}
         host_creds = get_default_host_creds(url)
@@ -114,7 +134,9 @@ class HttpArtifactRepository(ArtifactRepository, MultipartUploadMixin):
         augmented_raise_for_status(resp)
 
     def _construct_mpu_uri_and_path(self, base_endpoint, artifact_path):
-        uri, path = self.artifact_uri.split("/mlflow-artifacts/artifacts", maxsplit=1)
+        artifact_uri, _ = self._get_workspace_scoped_artifact_uri()
+        artifacts_endpoint = self._get_artifacts_endpoint_prefix(None)
+        uri, path = artifact_uri.split(artifacts_endpoint, maxsplit=1)
         path = path.strip("/")
         endpoint = (
             posixpath.join(base_endpoint, path, artifact_path)

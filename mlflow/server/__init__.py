@@ -34,6 +34,8 @@ from mlflow.server.handlers import (
     get_model_version_artifact_handler,
     get_trace_artifact_handler,
     upload_artifact_handler,
+    workspace_before_request_handler,
+    workspace_teardown_request_handler,
 )
 from mlflow.utils.os import is_windows
 from mlflow.utils.plugins import get_entry_points
@@ -70,8 +72,12 @@ if is_running_as_server:
 
     security.init_security_middleware(app)
 
+app.before_request(workspace_before_request_handler)
+app.teardown_request(workspace_teardown_request_handler)
+
 for http_path, handler, methods in handlers.get_endpoints():
     app.add_url_rule(http_path, handler.__name__, handler, methods=methods)
+
 
 if os.getenv(PROMETHEUS_EXPORTER_ENV_VAR):
     from mlflow.server.prometheus_exporter import activate_prometheus_exporter
@@ -130,11 +136,13 @@ def serve_create_promptlab_run():
     return create_promptlab_run_handler()
 
 
+# Serve the "gateway-proxy" route.
 @app.route(_add_static_prefix("/ajax-api/2.0/mlflow/gateway-proxy"), methods=["POST", "GET"])
 def serve_gateway_proxy():
     return gateway_proxy_handler()
 
 
+# Serve the "upload-artifact" route.
 @app.route(_add_static_prefix("/ajax-api/2.0/mlflow/upload-artifact"), methods=["POST"])
 def serve_upload_artifact():
     return upload_artifact_handler()
@@ -148,6 +156,7 @@ def serve_get_trace_artifact():
     return get_trace_artifact_handler()
 
 
+# Serve the "logged-model artifact" route.
 @app.route(
     _add_static_prefix("/ajax-api/2.0/mlflow/logged-models/<model_id>/artifacts/files"),
     methods=["GET"],
