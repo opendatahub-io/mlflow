@@ -10,7 +10,9 @@ The actual span ingestion logic would need to properly convert incoming OTel for
 to MLflow spans, which requires more complex conversion logic.
 """
 
+import logging
 from collections import defaultdict
+from contextlib import contextmanager
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response, status
@@ -19,11 +21,22 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTrace
 from pydantic import BaseModel, Field
 
 from mlflow.entities.span import Span
+from mlflow.exceptions import MlflowException
+from mlflow.protos import databricks_pb2
 from mlflow.server.handlers import _get_tracking_store
-from mlflow.tracing.utils.otlp import MLFLOW_EXPERIMENT_ID_HEADER, OTLP_TRACES_PATH
+from mlflow.server.workspace_helpers import _get_workspace_store, _workspaces_enabled_flag
+from mlflow.store.workspace.utils import get_default_workspace_optional
+from mlflow.tracing.utils.otlp import (
+    MLFLOW_EXPERIMENT_ID_HEADER,
+    OTLP_TRACES_PATH,
+    OTLP_TRACES_WORKSPACE_PATH,
+)
+from mlflow.tracking._workspace import context as workspace_context
+
+_logger = logging.getLogger(__name__)
 
 # Create FastAPI router for OTel endpoints
-otel_router = APIRouter(prefix=OTLP_TRACES_PATH, tags=["OpenTelemetry"])
+otel_router = APIRouter(tags=["OpenTelemetry"])
 
 
 class OTelExportTraceServiceResponse(BaseModel):
@@ -39,7 +52,7 @@ class OTelExportTraceServiceResponse(BaseModel):
     )
 
 
-@otel_router.post("", response_model=OTelExportTraceServiceResponse, status_code=200)
+@otel_router.post(OTLP_TRACES_PATH, response_model=OTelExportTraceServiceResponse, status_code=200)
 async def export_traces(
     request: Request,
     response: Response,
@@ -64,6 +77,37 @@ async def export_traces(
     Raises:
         HTTPException: If the request is invalid or span logging fails
     """
+
+    with _workspace_request_context(request, None):
+        return await _ingest_traces(request, response, x_mlflow_experiment_id, content_type)
+
+
+@otel_router.post(
+    OTLP_TRACES_WORKSPACE_PATH,
+    response_model=OTelExportTraceServiceResponse,
+    status_code=200,
+)
+async def export_traces_for_workspace(
+    workspace_name: str,
+    request: Request,
+    response: Response,
+    x_mlflow_experiment_id: str = Header(..., alias=MLFLOW_EXPERIMENT_ID_HEADER),
+    content_type: str = Header(None),
+) -> OTelExportTraceServiceResponse:
+    """
+    Workspace-prefixed OTLP ingestion endpoint.
+    """
+
+    with _workspace_request_context(request, workspace_name):
+        return await _ingest_traces(request, response, x_mlflow_experiment_id, content_type)
+
+
+async def _ingest_traces(
+    request: Request,
+    response: Response,
+    x_mlflow_experiment_id: str,
+    content_type: str | None,
+) -> OTelExportTraceServiceResponse:
     # Validate Content-Type header
     if content_type != "application/x-protobuf":
         raise HTTPException(
@@ -142,3 +186,29 @@ async def export_traces(
             )
 
     return OTelExportTraceServiceResponse()
+
+
+@contextmanager
+def _workspace_request_context(request: Request, workspace_name: str | None):
+    if not _workspaces_enabled_flag():
+        yield None
+        return
+
+    store = _get_workspace_store()
+    try:
+        if workspace_name:
+            workspace = store.get_workspace(workspace_name, request)
+        else:
+            workspace, _ = get_default_workspace_optional(store, request, logger=_logger)
+            if workspace is None:
+                raise MlflowException(
+                    "Active workspace is required. Prefix the request path with "
+                    "'/workspaces/<workspace>' or configure a default workspace.",
+                    error_code=databricks_pb2.INVALID_PARAMETER_VALUE,
+                )
+
+        with workspace_context.WorkspaceContext(workspace.name):
+            yield workspace
+    except MlflowException as e:
+        # Convert MlflowException to HTTPException for proper HTTP response
+        raise HTTPException(status_code=e.get_http_status_code(), detail=e.message)
