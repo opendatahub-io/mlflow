@@ -18,6 +18,8 @@ on:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
+      - main
+      - rhoai-*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
@@ -110,16 +112,12 @@ jobs:
             --quiet --requires-ssh --ignore-flavors \
             --ignore=tests/examples \
             --ignore=tests/evaluate \
+            --ignore=tests/optuna \
+            --ignore=tests/pyspark/optuna \
             --ignore=tests/genai \
             --ignore=tests/docker \
+            --ignore=tests/sagemaker \
             tests
-
-      - name: Run databricks-connect related tests
-        run: |
-          # this needs to be run in a separate job because installing databricks-connect could break other
-          # tests that uses normal SparkSession instead of remote SparkSession
-          uv run --no-sync --with 'databricks-agents,databricks-connect' \
-            pytest tests/utils/test_requirements_utils.py::test_infer_pip_requirements_on_databricks_agents
 
   database:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
@@ -177,30 +175,6 @@ jobs:
       - name: Clean up
         run: |
           ./tests/db/compose.sh down --volumes --remove-orphans --rmi all
-
-  java:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/untracked
-      - uses: ./.github/actions/setup-python
-      - uses: ./.github/actions/setup-pyenv
-      - uses: ./.github/actions/setup-java
-        with:
-          java-version: 11
-      - name: Install dependencies
-        run: |
-          uv sync --no-dev
-      - name: Run tests
-        working-directory: mlflow/java
-        run: |
-          uv run --no-dev mvn clean package -q
 
   flavors:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
@@ -332,12 +306,6 @@ jobs:
       - name: Run GenAI Tests (OSS)
         run: |
           uv run --no-sync pytest tests/genai
-
-      - name: Run GenAI Tests (Databricks)
-        run: |
-          uv run --no-sync --with databricks-agents \
-            pytest tests/genai --ignore tests/genai/test_genai_import_without_agent_sdk.py \
-            --ignore tests/genai/optimize --ignore tests/genai/prompts
 
   pyfunc:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')

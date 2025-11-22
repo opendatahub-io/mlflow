@@ -1,0 +1,15 @@
+# Packages NOT available on the AIPCC Python package index that are
+# needed in the Konflux (RHOAI) container build. These are prefetched
+# hermetically by Cachi2 during the Konflux pipeline.
+#
+# All transitive dependencies of these packages are already satisfied by
+# the AIPCC Python package index (requirements/konflux-aipcc-requirements.txt), so only these two
+# packages themselves need to be listed here.
+#
+# To regenerate the lock file (requirements/konflux-pypi-requirements.txt), run:
+#
+#   python requirements/compile.py
+
+mlflow-kubernetes-plugins==1.1.1
+psycopg2
+prometheus-flask-exporter

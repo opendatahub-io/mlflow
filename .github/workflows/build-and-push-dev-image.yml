@@ -1,0 +1,124 @@
+name: Build and Push MLflow Dev Image
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  push:
+    branches:
+      - master
+      - main
+      - branch-[0-9]+.[0-9]+
+      - rhoai-*
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: "Branch name to use for image tag"
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  QUAY_ORG: opendatahub
+  IMAGE_REPO: mlflow
+  DOCKERFILE_PATH: docker/Dockerfile.full.dev
+
+jobs:
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # Skip PR builds from forks (no access to secrets)
+    if: >
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Determine image tag
+        id: determine_tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_BRANCH: ${{ inputs.branch_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          if [[ "$REPO" == red-hat-data-services/* ]]; then
+            PREFIX="rhoai-dev"
+          else
+            PREFIX="odh-dev"
+          fi
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && -n "$INPUT_BRANCH" ]]; then
+            BRANCH_NAME="$INPUT_BRANCH"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            BRANCH_NAME="$PR_HEAD_REF"
+            TAG_NAME="${PREFIX}-pr-${PR_NUMBER}"
+          else
+            BRANCH_NAME="$REF_NAME"
+          fi
+
+          if [[ -z "$TAG_NAME" ]]; then
+            TAG_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
+            TAG_NAME="${PREFIX}-${TAG_NAME}"
+          fi
+
+          FULL_IMAGE="quay.io/${QUAY_ORG}/${IMAGE_REPO}:${TAG_NAME}"
+
+          {
+            echo "branch_name=${BRANCH_NAME:-$REF_NAME}"
+            echo "tag_name=${TAG_NAME}"
+            echo "full_image=${FULL_IMAGE}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Building image for branch: ${BRANCH_NAME:-$REF_NAME}"
+          echo "Docker tag will be: $TAG_NAME"
+          echo "Full image name: ${FULL_IMAGE}"
+
+      - name: Build and push image
+        uses: ./.github/actions/build-image
+        env:
+          TARGET_IMAGE_TAG: ${{ steps.determine_tag.outputs.tag_name }}
+          SOURCE_BRANCH: ${{ steps.determine_tag.outputs.branch_name }}
+        with:
+          OVERWRITE: true
+          IMAGE_REPO: ${{ env.IMAGE_REPO }}
+          DOCKERFILE: ${{ env.DOCKERFILE_PATH }}
+          GH_REPO: ${{ github.repository }}
+          QUAY_ORG: ${{ env.QUAY_ORG }}
+          QUAY_ID: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Summary
+        env:
+          BRANCH_NAME: ${{ steps.determine_tag.outputs.branch_name }}
+          TAG_NAME: ${{ steps.determine_tag.outputs.tag_name }}
+          FULL_IMAGE: ${{ steps.determine_tag.outputs.full_image }}
+        shell: bash
+        run: |
+          {
+            echo "### MLflow Dev Image Build Summary"
+            echo ""
+            echo "**Branch:** $BRANCH_NAME"
+            echo "**Image Tag:** $TAG_NAME"
+            echo "**Full Image:** \`$FULL_IMAGE\`"
+            echo ""
+            echo "**Status:** Built and pushed successfully"
+          } >> "$GITHUB_STEP_SUMMARY"

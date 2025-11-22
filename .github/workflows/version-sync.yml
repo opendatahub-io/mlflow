@@ -1,0 +1,66 @@
+name: version-sync
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+      - rhoai-*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-python
+
+      - name: Extract version from mlflow/version.py
+        id: version
+        run: |
+          version=$(grep -oP 'VERSION = "\K[^"]+' mlflow/version.py)
+          if [ -z "$version" ]; then
+            echo "ERROR: Failed to extract version from mlflow/version.py"
+            echo "Expected a line matching: VERSION = \"<version>\""
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Detected version: $version"
+
+      - name: Install taplo
+        run: uv run python bin/install.py taplo
+
+      - name: Run bump_version.py and check for drift
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          uv run python dev/bump_version.py "$VERSION"
+
+          if ! git diff --quiet; then
+            echo "ERROR: Version files are out of sync with mlflow/version.py"
+            echo ""
+            echo "The following files have drifted:"
+            git diff --name-only
+            echo ""
+            echo "Diff:"
+            git diff
+            echo ""
+            echo "To fix, run:"
+            echo "  uv run python dev/bump_version.py $VERSION"
+            exit 1
+          fi
+
+          echo "All version files are in sync"

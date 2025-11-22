@@ -1,0 +1,10 @@
+# Build-time dependencies installed from the AIPCC Python package index
+# before compiling mlflow wheels or installing runtime packages.
+#
+# To regenerate the lock file (requirements/konflux-build-aipcc-requirements.txt), run:
+#
+#   python requirements/compile.py
+
+build
+setuptools
+wheel

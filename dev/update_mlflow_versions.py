@@ -42,7 +42,7 @@ def get_current_py_version() -> str:
     match = re.search(r'VERSION = "(.+)"', text)
     if match is None:
         raise ValueError("Could not find VERSION in mlflow/version.py")
-    return match.group(1)
+    return Version(match.group(1)).base_version
 
 
 def get_java_py_version_pattern(version: str) -> str:
@@ -55,9 +55,16 @@ def get_java_new_py_version(new_py_version: str) -> str:
 
 
 def replace_dev_or_rc_suffix_with(version: str, repl: str) -> str:
+    """Map Python package versions to the variants used in Java and R files."""
     parsed = Version(version)
     base_version = parsed.base_version
-    return base_version + repl if parsed.is_prerelease else version
+    if parsed.is_prerelease:
+        return base_version + repl
+    if parsed.local:
+        # Java and R version metadata do not support PEP 440 local labels, so
+        # downstream builds such as 3.10.1+rhaiv.1 use the base version there.
+        return base_version
+    return version
 
 
 def replace_occurrences(files: list[Path], pattern: str | re.Pattern[str], repl: str) -> None:
@@ -74,8 +81,8 @@ def replace_occurrences(files: list[Path], pattern: str | re.Pattern[str], repl:
 def replace_python(old_version: str, new_py_version: str, paths: list[Path]) -> None:
     replace_occurrences(
         files=paths,
-        pattern=re.escape(old_version),
-        repl=new_py_version,
+        pattern=re.compile(r'^VERSION = ".+"$', re.MULTILINE),
+        repl=f'VERSION = "{new_py_version}"',
     )
 
 
@@ -101,8 +108,8 @@ def replace_pyproject_toml(new_py_version: str, paths: list[Path]) -> None:
 def replace_ts(old_version: str, new_py_version: str, paths: list[Path]) -> None:
     replace_occurrences(
         files=paths,
-        pattern=re.escape(old_version),
-        repl=new_py_version,
+        pattern=re.compile(r"^export const Version = '.+';$", re.MULTILINE),
+        repl=f"export const Version = '{new_py_version}';",
     )
 
 
@@ -122,17 +129,17 @@ def replace_java(old_version: str, new_py_version: str, paths: list[Path]) -> No
 # version of a dependency. to work around, we make sure to
 # match only the correct keys
 def replace_java_pom_xml(old_version: str, new_py_version: str, paths: list[Path]) -> None:
-    old_py_version_pattern = get_java_py_version_pattern(old_version)
     dev_suffix_replaced = get_java_new_py_version(new_py_version)
 
     mlflow_version_tag_pattern = r"<mlflow.version>"
     mlflow_spark_pattern = r"<artifactId>mlflow-spark_2\.1[23]</artifactId>\s+<version>"
     mlflow_parent_pattern = r"<artifactId>mlflow-parent</artifactId>\s+<version>"
 
-    # combine the three tags together to form the regex
+    version_pattern = r"[\d]+\.[\d]+\.[\d]+(-SNAPSHOT)?"
+
     mlflow_replace_pattern = (
         rf"({mlflow_version_tag_pattern}|{mlflow_spark_pattern}|{mlflow_parent_pattern})"
-        + f"{old_py_version_pattern}"
+        + version_pattern
         + r"(</mlflow.version>|</version>)"
     )
 
@@ -149,11 +156,9 @@ def replace_java_pom_xml(old_version: str, new_py_version: str, paths: list[Path
 
 
 def replace_r(old_py_version: str, new_py_version: str, paths: list[Path]) -> None:
-    current_py_version_without_suffix = replace_dev_or_rc_suffix_with(old_py_version, "")
-
     replace_occurrences(
         files=paths,
-        pattern=f"Version: {re.escape(current_py_version_without_suffix)}",
+        pattern=re.compile(r"^Version: .+$", re.MULTILINE),
         repl=f"Version: {replace_dev_or_rc_suffix_with(new_py_version, '')}",
     )
 

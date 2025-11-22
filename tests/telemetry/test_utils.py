@@ -116,7 +116,15 @@ def test_fetch_ui_telemetry_config_fetch_success(bypass_env_check):
         "ui_rollout_percentage": 100,
     }
 
-    with patch("requests.get") as mock_get:
+    # RHOAI: mock _get_config_url because our local version label (+rhaiv.1)
+    # makes it return None, bypassing requests.get entirely.
+    with (
+        patch(
+            "mlflow.telemetry.utils._get_config_url",
+            return_value="https://example.com/config.json",
+        ),
+        patch("requests.get") as mock_get,
+    ):
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_config

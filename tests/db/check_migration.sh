@@ -4,7 +4,7 @@ set -ex
 cd tests/db
 
 # Install the lastest version of mlflow from PyPI
-uv pip install --system mlflow
+pip install mlflow==3.10.1
 python check_migration.py pre-migration
 # Install mlflow from the repository
 uv pip install --system -e ../..
