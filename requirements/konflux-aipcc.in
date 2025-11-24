@@ -1,0 +1,31 @@
+# Extra dependencies for the Konflux (RHOAI) container build that are
+# not declared in pyproject.toml.
+#
+# To regenerate the lock file (requirements/konflux-aipcc.txt), run:
+#
+#   uv pip compile pyproject.toml requirements/konflux-aipcc.in \
+#     --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple \
+#     --python-platform linux --python-version 3.12 \
+#     --prerelease=allow --generate-hashes \
+#     --no-emit-package mlflow \
+#     -o requirements/konflux-aipcc.txt
+#
+# pyproject.toml is used as input because it contains all mlflow dependencies
+# inline (unlike pyproject.release.toml which references mlflow-skinny and
+# mlflow-tracing as separate packages that may not yet be on the AIPCC index).
+# mlflow is excluded from the output (--no-emit-package) because it is built
+# from source in the Dockerfile using pyproject.release.toml.
+#
+# Note: mlflow-kubernetes-workspace-provider is installed separately from the
+# repo (not from the package index). Its dependencies (mlflow, kubernetes,
+# graphql-core) are satisfied by the packages listed here.
+#
+# Packages not on the AIPCC Python package index (psycopg2, prometheus-flask-exporter)
+# are installed separately in the Dockerfile via Cachi2 prefetch.
+
+boto3
+prometheus-client
+
+# Cross-arch constraints: pin packages to versions available on all target
+# architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
+pyarrow<23.0.1

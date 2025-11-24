@@ -1,0 +1,13 @@
+# Build-time dependencies installed from the AIPCC Python package index
+# before compiling mlflow wheels or installing runtime packages.
+#
+# To regenerate the lock file (requirements/konflux-build-aipcc.txt), run:
+#
+#   uv pip compile requirements/konflux-build-aipcc.in \
+#     --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple \
+#     --python-platform linux --python-version 3.12 \
+#     --prerelease=allow --generate-hashes \
+#     -o requirements/konflux-build-aipcc.txt
+
+build
+setuptools
