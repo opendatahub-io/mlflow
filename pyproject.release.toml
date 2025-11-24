@@ -37,6 +37,7 @@ dependencies = [
   "graphene<4",
   "gunicorn<26; platform_system != 'Windows'",
   "huey<3,>=2.5.4",
+  "kubernetes<35",
   "matplotlib<4",
   "numpy<3",
   "pandas<3",
