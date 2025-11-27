@@ -20,6 +20,7 @@ from mlflow.environment_variables import (
     MLFLOW_HTTP_REQUEST_MAX_RETRIES,
     MLFLOW_HTTP_REQUEST_TIMEOUT,
     MLFLOW_HTTP_RESPECT_RETRY_AFTER_HEADER,
+    MLFLOW_WORKSPACE,
 )
 from mlflow.exceptions import (
     CUSTOMER_UNAUTHORIZED,
@@ -40,6 +41,7 @@ from mlflow.utils.request_utils import (
     cloud_storage_http_request,  # noqa: F401
 )
 from mlflow.utils.string_utils import strip_suffix
+from mlflow.utils.workspace_utils import WORKSPACE_HEADER_NAME
 
 _logger = logging.getLogger(__name__)
 
@@ -55,6 +57,39 @@ _ARMERIA_OK = "200 OK"
 _DATABRICKS_SDK_RETRY_AFTER_SECS_DEPRECATION_WARNING = (
     "The 'retry_after_secs' parameter of DatabricksError is deprecated"
 )
+
+
+def _resolve_active_workspace() -> str | None:
+    from mlflow.tracking._workspace.context import get_current_workspace
+
+    workspace = get_current_workspace()
+    if workspace is None:
+        workspace = MLFLOW_WORKSPACE.get()
+
+    if workspace is None:
+        return None
+
+    if isinstance(workspace, str):
+        workspace = workspace.strip()
+        if not workspace:
+            return None
+
+    return workspace
+
+
+def _should_include_workspace_header(endpoint: str) -> bool:
+    """
+    Determine whether to attach the workspace header for a given endpoint.
+
+    Workspace administration endpoints encode the workspace in the path and must not receive
+    the workspace header.
+    """
+
+    if not endpoint:
+        return True
+
+    normalized = endpoint if endpoint.startswith("/") else f"/{endpoint}"
+    return "/mlflow/workspaces" not in normalized
 
 
 def http_request(
@@ -118,6 +153,10 @@ def http_request(
     headers = dict(**resolve_request_headers())
     if extra_headers:
         headers = dict(**headers, **extra_headers)
+
+    workspace = _resolve_active_workspace()
+    if workspace and _should_include_workspace_header(endpoint):
+        headers.setdefault(WORKSPACE_HEADER_NAME, workspace)
 
     if traffic_id := _MLFLOW_DATABRICKS_TRAFFIC_ID.get():
         headers["x-databricks-traffic-id"] = traffic_id
@@ -301,7 +340,11 @@ def http_request_safe(host_creds, endpoint, method, **kwargs):
     return verify_rest_response(response, endpoint)
 
 
-def verify_rest_response(response, endpoint):
+def verify_rest_response(
+    response,
+    endpoint,
+    expected_status: int = 200,
+):
     """Verify the return code and format, raise exception if the request was not successful."""
     # Handle Armeria-specific response case where response text is "200 OK"
     # v1/traces endpoint might return empty response
@@ -309,19 +352,23 @@ def verify_rest_response(response, endpoint):
         response._content = b"{}"  # Update response content to be an empty JSON dictionary
         return response
 
-    # Handle non-200 status codes
-    if response.status_code != 200:
+    # Handle non-expected status codes
+    if response.status_code != expected_status:
         if _can_parse_as_json_object(response.text):
             raise RestException(json.loads(response.text))
         else:
             base_msg = (
                 f"API request to endpoint {endpoint} "
-                f"failed with error code {response.status_code} != 200"
+                f"failed with error code {response.status_code} "
+                f"!= {expected_status}"
             )
             raise MlflowException(
                 f"{base_msg}. Response body: '{response.text}'",
                 error_code=get_error_code(response.status_code),
             )
+
+    if response.status_code == 204:
+        return response
 
     # Skip validation for endpoints (e.g. DBFS file-download API) which may return a non-JSON
     # response
@@ -573,10 +620,12 @@ def call_endpoint(
     response_proto,
     extra_headers=None,
     retry_timeout_seconds=None,
+    expected_status: int = 200,
 ):
     # Convert json string to json dictionary, to pass to requests
     if json_body is not None:
         json_body = json.loads(json_body)
+
     call_kwargs = {
         "host_creds": host_creds,
         "endpoint": endpoint,
@@ -593,7 +642,14 @@ def call_endpoint(
         call_kwargs["json"] = json_body
         response = http_request(**call_kwargs)
 
-    response = verify_rest_response(response, endpoint)
+    response = verify_rest_response(
+        response,
+        endpoint,
+        expected_status=expected_status,
+    )
+    if response.status_code == 204:
+        return response_proto
+
     response_to_parse = response.text
     try:
         js_dict = json.loads(response_to_parse)
@@ -613,7 +669,12 @@ def call_endpoints(host_creds, endpoints, json_body, response_proto, extra_heade
     for i, (endpoint, method) in enumerate(endpoints):
         try:
             return call_endpoint(
-                host_creds, endpoint, method, json_body, response_proto, extra_headers
+                host_creds,
+                endpoint,
+                method,
+                json_body,
+                response_proto,
+                extra_headers,
             )
         except RestException as e:
             if e.error_code != ErrorCode.Name(ENDPOINT_NOT_FOUND) or i == len(endpoints) - 1:
