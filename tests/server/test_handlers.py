@@ -15,6 +15,7 @@ from mlflow.entities.model_registry import (
 )
 from mlflow.entities.model_registry.prompt_version import IS_PROMPT_TAG_KEY, PROMPT_TEXT_TAG_KEY
 from mlflow.entities.trace_location import TraceLocation as EntityTraceLocation
+from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES
 from mlflow.exceptions import MlflowException, MlflowNotImplementedException
 from mlflow.protos.databricks_pb2 import (
     INTERNAL_ERROR,
@@ -123,6 +124,7 @@ from mlflow.server.handlers import (
     _update_registered_model,
     _upsert_dataset_records_handler,
     _validate_source_run,
+    _workspace_scoped_repo_path,
     catch_mlflow_exception,
     get_endpoints,
     get_trace_artifact_handler,
@@ -143,6 +145,8 @@ from mlflow.tracing.utils import build_otel_context
 from mlflow.utils.mlflow_tags import MLFLOW_ARTIFACT_LOCATION
 from mlflow.utils.proto_json_utils import message_to_json
 from mlflow.utils.validation import MAX_BATCH_LOG_REQUEST_SIZE
+from mlflow.utils.workspace_context import WorkspaceContext
+from mlflow.utils.workspace_utils import DEFAULT_WORKSPACE_NAME
 
 
 @pytest.fixture
@@ -2309,3 +2313,16 @@ def test_get_trace_artifact_handler_fallback_to_artifact_repo(mock_tracking_stor
     assert response is not None
     assert response.status_code == 200
     assert response.headers["Content-Disposition"] == "attachment; filename=traces.json"
+
+
+def test_workspace_scoped_repo_path_allows_legacy_default_artifacts(monkeypatch):
+    monkeypatch.setenv(MLFLOW_ENABLE_WORKSPACES.name, "true")
+    with WorkspaceContext(DEFAULT_WORKSPACE_NAME):
+        assert _workspace_scoped_repo_path("1/legacy/artifact") == "1/legacy/artifact"
+
+
+def test_workspace_scoped_repo_path_still_scopes_non_default(monkeypatch):
+    monkeypatch.setenv(MLFLOW_ENABLE_WORKSPACES.name, "true")
+    with WorkspaceContext("team-blue"):
+        scoped = _workspace_scoped_repo_path("2/new/artifact")
+    assert scoped.startswith("workspaces/team-blue/2/new/artifact")
