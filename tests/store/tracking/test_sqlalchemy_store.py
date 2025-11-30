@@ -10429,7 +10429,7 @@ def test_dataset_experiment_associations(store):
         with pytest.raises(MlflowException, match="not found"):
             store.add_dataset_to_experiments(dataset_id="d-nonexistent", experiment_ids=[exp1])
 
-        with pytest.raises(MlflowException, match="not found"):
+        with pytest.raises(MlflowException, match=r"No Experiment with id="):
             store.add_dataset_to_experiments(
                 dataset_id=dataset.dataset_id, experiment_ids=["999999"]
             )
