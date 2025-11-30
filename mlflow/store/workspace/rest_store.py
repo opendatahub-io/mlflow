@@ -104,7 +104,7 @@ class RestWorkspaceStore(AbstractStore):
         )
 
     def get_default_workspace(self) -> Workspace:
-        raise MlflowException.invalid_parameter_value(
+        raise NotImplementedError(
             "REST workspace provider does not expose a default workspace; "
             "please specify a workspace explicitly or omit a workspace to leverage the server's "
             "configured default."

@@ -150,11 +150,10 @@ def test_delete_workspace_returns_on_success(store, host_creds):
 
 def test_get_default_workspace_not_supported(store):
     with pytest.raises(
-        MlflowException,
+        NotImplementedError,
         match="REST workspace provider does not expose a default workspace",
-    ) as exc:
+    ):
         store.get_default_workspace()
-    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
 
 
 def test_rest_store_validates_workspace_names_before_http(monkeypatch, store):
