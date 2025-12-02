@@ -10,6 +10,7 @@ from mlflow.entities._mlflow_object import _MlflowObject
 from mlflow.entities.dataset_record import DatasetRecord
 from mlflow.entities.dataset_record_source import DatasetRecordSourceType
 from mlflow.exceptions import MlflowException
+from mlflow.protos.databricks_pb2 import RESOURCE_DOES_NOT_EXIST, ErrorCode
 from mlflow.protos.datasets_pb2 import Dataset as ProtoDataset
 from mlflow.telemetry.events import MergeRecordsEvent
 from mlflow.telemetry.track import record_usage_event
@@ -322,7 +323,15 @@ class EvaluationDataset(_MlflowObject, Dataset, PyFuncConvertibleDatasetMixin):
         """
         import pandas as pd
 
-        records = self.records
+        try:
+            records = self.records
+        except MlflowException as e:
+            error_code = getattr(e, "error_code", None)
+            if error_code == ErrorCode.Name(RESOURCE_DOES_NOT_EXIST):
+                self._records = []
+                records = []
+            else:
+                raise
 
         if not records:
             return pd.DataFrame(
