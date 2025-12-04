@@ -17,6 +17,7 @@ from flask import Flask
 from starlette.middleware.wsgi import WSGIResponder, build_environ
 from starlette.types import Receive, Scope, Send
 
+from mlflow.environment_variables import MLFLOW_ENABLE_ASSISTANT
 from mlflow.exceptions import MlflowException
 from mlflow.gateway.constants import MLFLOW_GATEWAY_DURATION_HEADER, MLFLOW_GATEWAY_OVERHEAD_HEADER
 from mlflow.gateway.providers.utils import provider_call_duration_ms
@@ -181,7 +182,8 @@ def create_fastapi_app(flask_app: Flask = flask_app):
 
     # Include Assistant API router for AI-powered trace analysis
     # This provides /ajax-api/3.0/mlflow/assistant/* endpoints (localhost only)
-    fastapi_app.include_router(assistant_router)
+    if MLFLOW_ENABLE_ASSISTANT.get():
+        fastapi_app.include_router(assistant_router)
 
     # Mount the entire Flask application at the root path
     # This ensures compatibility with existing APIs

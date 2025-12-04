@@ -31,7 +31,7 @@ export const MlflowSidebarLink = ({
   const location = useLocation();
 
   return (
-    <li key={componentId}>
+    <li key={componentId} css={{ listStyleType: 'none' }}>
       <Tooltip
         componentId={`${componentId}.tooltip`}
         open={!collapsed ? false : undefined}

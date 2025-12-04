@@ -15,10 +15,12 @@ import { PromptPageErrorHandler } from './components/PromptPageErrorHandler';
 import { useDebounce } from 'use-debounce';
 import { shouldEnableWorkspaces } from '../../../common/utils/FeatureUtils';
 import { extractWorkspaceFromSearchParams } from '../../../workspaces/utils/WorkspaceUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 
 const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
   const { theme } = useDesignSystemTheme();
   const [searchParams] = useSearchParams();
+  const isEmbedded = useIsIntegrated();
   const workspacesEnabled = shouldEnableWorkspaces();
   const workspaceFromUrl = extractWorkspaceFromSearchParams(searchParams);
 
@@ -60,7 +62,7 @@ const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
 
   return (
     <Wrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1 }}>
-      {!experimentId && (
+      {!experimentId && !isEmbedded && (
         <>
           <Spacer shrinks={false} />
           <Header
@@ -91,6 +93,11 @@ const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
               searchFilter={searchFilter}
               onSearchFilterChange={setSearchFilter}
               componentId={`${componentId}.search`}
+              actions={
+                isEmbedded && !experimentId && createButton ? (
+                  <div css={{ marginLeft: 'auto', display: 'flex', gap: theme.spacing.sm }}>{createButton}</div>
+                ) : undefined
+              }
             />
           </div>
           {experimentId && createButton}

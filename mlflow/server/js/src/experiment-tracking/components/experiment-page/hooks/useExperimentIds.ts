@@ -45,7 +45,7 @@ export const useExperimentIds = (): UseExperimentIdsResult => {
       } catch {
         // Apparently URL is malformed
         Utils.logErrorAndNotifyUser(`Could not parse experiment query parameter ${compareExperimentIdsQueryParam}`);
-        return '';
+        return [];
       }
     }
 

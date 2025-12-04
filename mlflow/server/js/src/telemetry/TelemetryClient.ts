@@ -264,5 +264,15 @@ class TelemetryClient {
   }
 }
 
-// Singleton instance
-export const telemetryClient: TelemetryClient = new TelemetryClient();
+// No-op telemetry client - telemetry disabled
+export const telemetryClient = {
+  logEvent: async (_event: any) => {},
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- mirror TelemetryClient API
+  logEventWithMetadata_I_CONFIRM_THERE_IS_NO_PII: async (
+    _componentId: string,
+    _eventType: string,
+    _metadata: AllowedTelemetryMetadata,
+  ) => {},
+  shutdown: () => {},
+  start: () => {},
+};

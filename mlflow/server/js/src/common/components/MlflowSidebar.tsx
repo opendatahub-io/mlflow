@@ -28,9 +28,20 @@ import { GatewayLabel, GatewayNewTag } from './GatewayNewTag';
 import { FormattedMessage } from 'react-intl';
 import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
 import { useWorkflowType, WorkflowType } from '../contexts/WorkflowTypeContext';
-import { shouldEnableWorkflowBasedNavigation, shouldEnableWorkspaces } from '../utils/FeatureUtils';
+import {
+  getExperimentPageSideNavSectionLabel,
+  type ExperimentPageSideNavSectionKey,
+  useExperimentPageSideNavConfig,
+} from '../../experiment-tracking/pages/experiment-page-tabs/side-nav/constants';
+import { ExperimentPageTabName } from '../../experiment-tracking/constants';
+import {
+  shouldEnableAIGateway,
+  shouldEnableWorkflowBasedNavigation,
+  shouldEnableWorkspaces,
+} from '../utils/FeatureUtils';
 import { AssistantSparkleIcon } from '../../assistant/AssistantIconButton';
 import { useAssistant } from '../../assistant/AssistantContext';
+import { isAssistantEnabled } from '../../assistant/assistantFlags';
 import { extractWorkspaceFromSearchParams } from '../../workspaces/utils/WorkspaceUtils';
 import { SETTINGS_RETURN_TO_PARAM, SETTINGS_SECTION_GENERAL } from '../../settings/settingsSectionConstants';
 import { MlflowSidebarLink } from './MlflowSidebarLink';
@@ -205,7 +216,7 @@ export function MlflowSidebar({
             },
           ]
         : []),
-      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType)
+      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType) && shouldEnableAIGateway()
         ? [
             {
               key: 'gateway',
@@ -346,7 +357,7 @@ export function MlflowSidebar({
             ))}
         </ul>
         <div>
-          {isLocalServer && (
+          {isLocalServer && isAssistantEnabled() && (
             <Tooltip
               componentId="mlflow.sidebar.assistant_tooltip"
               content={<FormattedMessage defaultMessage="Assistant" description="Tooltip for assistant button" />}

@@ -15,6 +15,7 @@ import {
   UNSAFE_NavigationContext,
   Outlet as OutletDirect,
   Link as LinkDirect,
+  NavLink as NavLinkDirect,
   useNavigate as useNavigateDirect,
   useLocation as useLocationDirect,
   useParams as useParamsDirect,
@@ -31,10 +32,6 @@ import {
   type PathMatch,
 } from 'react-router-dom';
 
-/**
- * Import React Router V5 parts
- */
-import { HashRouter as HashRouterV5, Link as LinkV5, NavLink as NavLinkV5 } from 'react-router-dom';
 import type { ComponentProps } from 'react';
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -139,6 +136,25 @@ const prefixRouteWithWorkspaceForTo = (to: To): To => {
   return to;
 };
 
+/**
+ * In federated mode the BrowserRouter is scoped to experiment tracking.
+ * Paths that point outside this scope (model registry, UC explorer, etc.)
+ * cannot be resolved within the federated router. Detect them so Link/NavLink
+ * can render plain text instead of a broken anchor.
+ */
+const FEDERATED_UNSUPPORTED_ROUTE_PREFIXES = ['/models', '/explore/', '/jobs'];
+
+const isExternalExperimentRoute = (to: To): boolean => {
+  if (process.env['DEPLOYMENT_MODE'] !== 'federated') {
+    return false;
+  }
+  const path = typeof to === 'string' ? to : to?.pathname;
+  if (!path) {
+    return false;
+  }
+  return FEDERATED_UNSUPPORTED_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
+};
+
 const Link = React.forwardRef<
   HTMLAnchorElement,
   ComponentProps<typeof LinkDirect> & { disableWorkspacePrefix?: boolean; componentId: string }
@@ -152,15 +168,43 @@ const Link = React.forwardRef<
     analyticsEvents: events,
   });
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    eventContext?.onClick(e);
-    onClick?.(e);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      eventContext?.onClick(e);
+      onClick?.(e);
+    },
+    [eventContext, onClick],
+  );
+
+  if (isExternalExperimentRoute(to)) {
+    const { target, rel, ...textProps } = rest as Record<string, any>;
+    return <span {...textProps} />;
+  }
 
   return <LinkDirect ref={ref} to={finalTo} onClick={handleClick} {...rest} />;
 });
 
+const NavLink = React.forwardRef<
+  HTMLAnchorElement,
+  ComponentProps<typeof NavLinkDirect> & { disableWorkspacePrefix?: boolean }
+>(function NavLink(props, ref) {
+  const { to, disableWorkspacePrefix, ...rest } = props;
+  if (isExternalExperimentRoute(to)) {
+    const { target, rel, ...textProps } = rest as Record<string, any>;
+    return <span {...textProps} />;
+  }
+  const finalTo = disableWorkspacePrefix ? to : prefixRouteWithWorkspaceForTo(to);
+  return <NavLinkDirect ref={ref} to={finalTo} {...rest} />;
+});
+
 export const createMLflowRoutePath = (routePath: string) => {
+  // In federated mode the BrowserRouter basename already ends with
+  // "/experiments", so absolute paths like "/experiments/:id" would
+  // produce a doubled segment. Strip the prefix so links resolve
+  // correctly against the basename.
+  if (process.env['DEPLOYMENT_MODE'] === 'federated' && routePath.startsWith('/experiments')) {
+    return routePath.slice('/experiments'.length) || '/';
+  }
   return routePath;
 };
 
@@ -169,6 +213,7 @@ export {
   BrowserRouter,
   MemoryRouter,
   Link,
+  NavLink,
   useNavigate,
   useLocation,
   useParams,

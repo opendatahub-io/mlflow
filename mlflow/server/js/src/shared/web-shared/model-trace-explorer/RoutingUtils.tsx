@@ -26,7 +26,7 @@ import { Typography } from '@databricks/design-system';
 /**
  * Workspace utilities — minimal self-contained copies for web-shared.
  * These mirror the functions in mlflow/server/js/src/workspaces/utils/WorkspaceUtils.ts
- * and mlflow/server/js/src/common/utils/ServerFeaturesContext.tsx but cannot be imported
+ * and mlflow/server/js/src/experiment-tracking/hooks/useServerInfo.tsx but cannot be imported
  * directly due to the web-shared package boundary.
  */
 
@@ -253,6 +253,13 @@ const Link = React.forwardRef<
 });
 
 export const createMLflowRoutePath = (routePath: string) => {
+  // In federated mode the BrowserRouter basename already ends with
+  // "/experiments", so absolute paths like "/experiments/:id" would
+  // produce a doubled segment. Strip the prefix so links resolve
+  // correctly against the basename.
+  if (process.env['DEPLOYMENT_MODE'] === 'federated' && routePath.startsWith('/experiments')) {
+    return routePath.slice('/experiments'.length) || '/';
+  }
   return routePath;
 };
 

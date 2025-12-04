@@ -4,6 +4,7 @@ import { featureDefinitions } from './feature-definitions';
 import { LaunchDemoCard } from './LaunchDemoCard';
 import { FeatureCard } from './FeatureCard';
 import { useLocalStorage } from '@databricks/web-shared/hooks';
+import { shouldEnableAIGateway } from '../../../common/utils/FeatureUtils';
 
 const COLLAPSED_KEY = 'mlflow.home.getting-started.collapsed';
 const COLLAPSED_KEY_VERSION = 1;
@@ -45,6 +46,7 @@ export const FeaturesSection = () => {
         <div css={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: theme.spacing.md }}>
           <LaunchDemoCard />
           <div
+            className="mlflow-home-feature-cards"
             css={{
               display: 'flex',
               gap: theme.spacing.sm,
@@ -60,9 +62,11 @@ export const FeaturesSection = () => {
               },
             }}
           >
-            {featureDefinitions.map((feature) => (
-              <FeatureCard key={feature.id} feature={feature} componentId={feature.componentId} />
-            ))}
+            {featureDefinitions
+              .filter((feature) => feature.id !== 'ai-gateway' || shouldEnableAIGateway())
+              .map((feature) => (
+                <FeatureCard key={feature.id} feature={feature} componentId={feature.componentId} />
+              ))}
           </div>
         </div>
       )}

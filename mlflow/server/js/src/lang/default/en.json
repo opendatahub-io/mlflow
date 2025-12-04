@@ -827,6 +827,10 @@
     "defaultMessage": "Please complete all required fields",
     "description": "Tooltip shown when submit button is disabled due to incomplete form"
   },
+  "2zICpQ": {
+    "defaultMessage": "View all features",
+    "description": "Home page news section view more link"
+  },
   "2zy+D5": {
     "defaultMessage": "Add new tag",
     "description": "Experiment tracking > experiment page > runs > add new tag button"
@@ -4662,10 +4666,6 @@
   "ReQ01f": {
     "defaultMessage": "Do retrieved documents contain all necessary information?",
     "description": "Hint for RetrievalSufficiency template"
-  },
-  "RgVN+O": {
-    "defaultMessage": "View all",
-    "description": "Home page news section view more link"
   },
   "RhQhT4": {
     "defaultMessage": "Model",

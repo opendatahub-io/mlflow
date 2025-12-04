@@ -17,6 +17,7 @@ import { ExperimentPageTabName } from '@mlflow/mlflow/src/experiment-tracking/co
 import { useExperimentKind, isGenAIExperimentKind } from '../../utils/ExperimentKindUtils';
 import { useCallback, useMemo, type ReactNode } from 'react';
 import { shouldEnableImprovedEvalRunsComparison } from '../../../common/utils/FeatureUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 const RunViewHeaderIcon = () => {
   const { theme } = useDesignSystemTheme();
   return (
@@ -77,6 +78,7 @@ export const RunViewHeader = ({
 }: RunViewHeaderProps) => {
   const { theme } = useDesignSystemTheme();
   const experimentKind = useExperimentKind(experiment.tags);
+  const isEmbedded = useIsIntegrated();
 
   const shouldRouteToEvaluations = useMemo(() => {
     const isGenAIExperiment = experimentKind ? isGenAIExperimentKind(experimentKind) : false;
@@ -114,8 +116,8 @@ export const RunViewHeader = ({
     );
   }
 
-  const defaultBreadcrumbs = [getExperimentPageLink()];
-  if (experiment.experimentId) {
+  const defaultBreadcrumbs = isEmbedded ? [] : [getExperimentPageLink()];
+  if (!isEmbedded && experiment.experimentId) {
     defaultBreadcrumbs.push(
       <Link
         componentId="mlflow.run_page.header.experiment_tab_link"

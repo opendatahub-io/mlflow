@@ -8,9 +8,11 @@ import {
   ExperimentKindDropdownLabels,
   getSelectableExperimentKinds,
   isEditableExperimentKind,
+  isGenAIExperimentKind,
   normalizeInferredExperimentKind,
 } from '../../../../utils/ExperimentKindUtils';
 import { ExperimentViewInferredKindPopover } from './ExperimentViewInferredKindPopover';
+import { useIsIntegrated } from '../../../../../common/utils/embedUtils';
 
 const getVisibleLabel = (kind: ExperimentKind, readOnly: boolean) => {
   if (kind === ExperimentKind.NO_INFERRED_TYPE || kind === ExperimentKind.EMPTY) {
@@ -39,6 +41,7 @@ export const ExperimentViewHeaderKindSelector = ({
   isUpdating?: boolean;
   readOnly?: boolean;
 }) => {
+  const isEmbedded = useIsIntegrated();
   const dropdownItems = useMemo(
     () =>
       entries(ExperimentKindDropdownLabels).filter(([key]) =>
@@ -107,12 +110,14 @@ export const ExperimentViewHeaderKindSelector = ({
         </DropdownMenu.Label>
         {dropdownItems.map(([key, label]) => {
           const isSelected = key === currentValue;
+          const isDisabled = isEmbedded && isGenAIExperimentKind(key as ExperimentKind);
           return (
             <DropdownMenu.CheckboxItem
               key={key}
               componentId="codegen_no_dynamic_mlflow_web_js_src_experiment_tracking_components_experiment_page_components_header_experimentviewheaderkindselector_113"
               onClick={() => onChange?.(key as ExperimentKind)}
               checked={isSelected}
+              disabled={isDisabled}
             >
               <DropdownMenu.ItemIndicator />
               <FormattedMessage {...label} />

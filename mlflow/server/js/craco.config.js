@@ -111,6 +111,23 @@ function enableOptionalTypescript(config) {
   return config;
 }
 
+/*
+We must suppress the start value has mixed support warning because PatternFly CSS uses modern CSS
+logical properties, which is flagged by the autoprefixer.
+*/
+function suppressAutoprefixerWarnings(config) {
+  // Suppress autoprefixer warnings by configuring webpack to ignore them
+  if (!config.ignoreWarnings) {
+    config.ignoreWarnings = [];
+  }
+
+  config.ignoreWarnings.push({
+    message: /autoprefixer.*start value has mixed support/,
+  });
+
+  return config;
+}
+
 function i18nOverrides(config) {
   // https://github.com/webpack/webpack/issues/11467#issuecomment-691873586
   config.module.rules.push({
@@ -299,6 +316,7 @@ module.exports = function () {
         webpackConfig = i18nOverrides(webpackConfig);
         webpackConfig = configureIframeCSSPublicPaths(webpackConfig, env);
         webpackConfig = enableOptionalTypescript(webpackConfig);
+        webpackConfig = suppressAutoprefixerWarnings(webpackConfig);
         webpackConfig.resolve = {
           ...webpackConfig.resolve,
           plugins: [new TsconfigPathsPlugin(), ...webpackConfig.resolve.plugins],
@@ -413,8 +431,12 @@ module.exports = function () {
       },
       plugins: [
         new webpack.EnvironmentPlugin({
+          MLFLOW_ENABLE_ASSISTANT: process.env.MLFLOW_ENABLE_ASSISTANT ?? 'true',
+          MLFLOW_ENABLE_AI_GATEWAY: process.env.MLFLOW_ENABLE_AI_GATEWAY ?? 'true',
           MLFLOW_SHOW_GDPR_PURGING_MESSAGES: process.env.MLFLOW_SHOW_GDPR_PURGING_MESSAGES ? 'true' : 'false',
           MLFLOW_USE_ABSOLUTE_AJAX_URLS: process.env.MLFLOW_USE_ABSOLUTE_AJAX_URLS ? 'true' : 'false',
+          DEPLOYMENT_MODE: process.env.DEPLOYMENT_MODE ?? 'standalone',
+          MLFLOW_API_BASE_URL: process.env.MLFLOW_API_BASE_URL ?? '',
         }),
       ],
     },

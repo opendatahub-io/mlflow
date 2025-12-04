@@ -45,8 +45,7 @@ class AppErrorBoundary extends Component<React.PropsWithChildren<Props>, State> 
             <h1 className="mlflow-center">Something went wrong</h1>
             <h4 className="mlflow-center">
               If this error persists, please report an issue {/* Reported during ESLint upgrade */}
-              {/* eslint-disable-next-line react/jsx-no-target-blank */}
-              <a href={Utils.getSupportPageUrl()} target="_blank">
+              <a href={Utils.getSupportPageUrl()} target="_blank" rel="noopener noreferrer">
                 here
               </a>
               .

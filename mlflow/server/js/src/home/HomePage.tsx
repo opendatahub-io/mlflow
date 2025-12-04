@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Header, HomeIcon, TableSkeleton, TitleSkeleton, useDesignSystemTheme } from '@databricks/design-system';
+import { Header, TableSkeleton, TitleSkeleton, useDesignSystemTheme } from '@databricks/design-system';
 import { FormattedMessage } from 'react-intl';
 import { ScrollablePageWrapper } from '../common/components/ScrollablePageWrapper';
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
@@ -17,10 +17,7 @@ import {
   setActiveWorkspace,
   setLastUsedWorkspace,
 } from '../workspaces/utils/WorkspaceUtils';
-// Loaders and lazy imports for expensive components
 import LogTracesDrawerLoader from './components/LogTracesDrawerLoader';
-import { TelemetryInfoAlert } from '../telemetry/TelemetryInfoAlert';
-
 const ExperimentsHomeView = React.lazy(() => import('./components/ExperimentsHomeView'));
 
 type ExperimentQueryKey = ['home', 'recent-experiments'];
@@ -86,6 +83,11 @@ const HomePage = () => {
     );
   }
 
+  const handleExperimentTagsUpdated = () => {
+    invalidateExperiments();
+    refetch();
+  };
+
   return (
     <ScrollablePageWrapper
       css={{
@@ -96,24 +98,7 @@ const HomePage = () => {
         height: 'min-content',
       }}
     >
-      <Header
-        title={
-          <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-            <span
-              css={{
-                display: 'flex',
-                borderRadius: theme.borders.borderRadiusSm,
-                backgroundColor: theme.colors.backgroundSecondary,
-                padding: theme.spacing.sm,
-              }}
-            >
-              <HomeIcon />
-            </span>
-            <FormattedMessage defaultMessage="Welcome to MLflow" description="Home page hero title" />
-          </span>
-        }
-      />
-      <TelemetryInfoAlert />
+      <Header title={<FormattedMessage defaultMessage="Welcome to MLflow" description="Home page hero title" />} />
       <FeaturesSection />
       <React.Suspense fallback={<HomePageSectionSkeleton />}>
         <ExperimentsHomeView
@@ -122,7 +107,7 @@ const HomePage = () => {
           error={error}
           onCreateExperiment={handleOpenCreateModal}
           onRetry={refetch}
-          onTagsUpdated={refetch}
+          onTagsUpdated={handleExperimentTagsUpdated}
         />
       </React.Suspense>
 

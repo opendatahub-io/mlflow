@@ -117,7 +117,6 @@ const SettingsPage = () => {
     },
     [setIsTelemetryEnabled],
   );
-
   const handleThemeToggle = useCallback(
     (checked: boolean) => {
       setIsDarkTheme(checked);

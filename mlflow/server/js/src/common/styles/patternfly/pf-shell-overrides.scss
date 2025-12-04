@@ -1,0 +1,16 @@
+// Public PatternFly override entrypoint.
+//
+// Keep React import sites pointing at this file so standalone and federated
+// builds continue to load the same stylesheet entry.
+//
+// Important:
+// - Preserve the @use order below. Many overrides rely on source order.
+// - Keep `.pf-shell-root` scoping inside the partials themselves.
+// - Keep top-level federated/body portal rules separate from scoped partials.
+
+@use './pf-shell-overrides/scope-and-base-controls';
+@use './pf-shell-overrides/layout-navigation-and-tables';
+@use './pf-shell-overrides/modals-and-popovers';
+@use './pf-shell-overrides/dropdowns-selects-and-comboboxes';
+@use './pf-shell-overrides/trees-checkboxes-code-and-dark-mode';
+@use './pf-shell-overrides/federated-link-guards';

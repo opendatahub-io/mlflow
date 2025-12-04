@@ -254,3 +254,14 @@ export const shouldShowEvalRunsIssuesPanel = () => {
 export const shouldSupportRunningDatabricksProviderJudgesFromUI = () => {
   return false;
 };
+
+/**
+ * Determines if the AI Gateway feature is enabled.
+ * Controlled by the MLFLOW_ENABLE_AI_GATEWAY environment variable (default: true).
+ */
+export const shouldEnableAIGateway = () => {
+  const val = process.env['MLFLOW_ENABLE_AI_GATEWAY'];
+  if (val === undefined) return true;
+  const normalized = val.toLowerCase();
+  return normalized === 'true' || normalized === '1';
+};

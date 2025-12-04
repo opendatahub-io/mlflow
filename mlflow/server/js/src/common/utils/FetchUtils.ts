@@ -11,6 +11,7 @@ import { isNil, pickBy } from 'lodash';
 import { ErrorWrapper } from './ErrorWrapper';
 import { matchPredefinedError, matchPredefinedErrorFromResponse } from '@databricks/web-shared/errors';
 import { getActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
+import { prefixApiUrl } from './embedUtils';
 
 export const HTTPMethods = {
   GET: 'GET',
@@ -58,6 +59,10 @@ export const getDefaultHeaders = (cookieStr: any) => {
 };
 
 export const getAjaxUrl = (relativeUrl: any) => {
+  // In federated mode, prefix with the MLflow proxy base path.
+  const prefixed = prefixApiUrl(relativeUrl);
+  if (prefixed) return prefixed;
+
   if (process.env['MLFLOW_USE_ABSOLUTE_AJAX_URLS'] === 'true' && !relativeUrl.startsWith('/')) {
     return '/' + relativeUrl;
   }

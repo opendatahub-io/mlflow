@@ -1,5 +1,5 @@
 import cookie from 'cookie';
-// TODO: resolve the @mlflow/mlflow import upstream
+import { prefixApiUrl } from '../../../../common/utils/embedUtils';
 import { getWorkspacesEnabledSync } from '@mlflow/mlflow/src/experiment-tracking/hooks/useServerInfo';
 
 import { matchPredefinedError } from '../../errors/PredefinedErrors';
@@ -67,6 +67,10 @@ export const getDefaultHeaders = (cookieStr: string) => {
  * Minimal implementation for shared library.
  */
 export const getAjaxUrl = (relativeUrl: string) => {
+  // In federated mode, prefix with the MLflow proxy base path.
+  const prefixed = prefixApiUrl(relativeUrl);
+  if (prefixed) return prefixed;
+
   if (
     process.env['MLFLOW_USE_ABSOLUTE_AJAX_URLS'] === 'true' &&
     typeof relativeUrl === 'string' &&

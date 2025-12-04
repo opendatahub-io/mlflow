@@ -114,8 +114,8 @@ describe('PromptsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
-    await userEvent.type(screen.getByLabelText('Name:'), 'prompt7');
-    await userEvent.type(screen.getByLabelText('Prompt:'), 'lorem ipsum');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'prompt7');
+    await userEvent.type(screen.getByLabelText('Prompt:*'), 'lorem ipsum');
     await userEvent.type(screen.getByLabelText('Commit message (optional):'), 'commit message');
     await userEvent.click(screen.getByText('Create'));
 
@@ -157,7 +157,7 @@ describe('PromptsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
-    await userEvent.type(screen.getByLabelText('Name:'), 'prompt8');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'prompt8');
     await userEvent.click(screen.getByRole('radio', { name: 'Chat' }));
 
     const firstContent = document.querySelector('textarea[name="chatMessages.0.content"]') as HTMLTextAreaElement;
@@ -287,8 +287,8 @@ describe('PromptsPage', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      await userEvent.type(screen.getByLabelText('Name:'), 'exp-prompt');
-      await userEvent.type(screen.getByLabelText('Prompt:'), 'test content');
+      await userEvent.type(screen.getByLabelText('Name:*'), 'exp-prompt');
+      await userEvent.type(screen.getByLabelText('Prompt:*'), 'test content');
       await userEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
@@ -353,8 +353,8 @@ describe('PromptsPage', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      await userEvent.type(screen.getByLabelText('Name:'), 'global-prompt');
-      await userEvent.type(screen.getByLabelText('Prompt:'), 'test content');
+      await userEvent.type(screen.getByLabelText('Name:*'), 'global-prompt');
+      await userEvent.type(screen.getByLabelText('Prompt:*'), 'test content');
       await userEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {

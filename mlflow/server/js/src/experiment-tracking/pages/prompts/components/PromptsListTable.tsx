@@ -25,6 +25,9 @@ import { PromptsListTableVersionCell } from './PromptsListTableVersionCell';
 import type { PromptsTableMetadata } from '../utils';
 import { first, isEmpty } from 'lodash';
 
+const coreRowModel = getCoreRowModel<RegisteredPrompt>();
+const EMPTY_DATA: RegisteredPrompt[] = [];
+
 type PromptsTableColumnDef = ColumnDef<RegisteredPrompt>;
 
 const usePromptsTableColumns = () => {
@@ -103,9 +106,9 @@ export const PromptsListTable = ({
 
   // prettier-ignore
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/pages/prompts/components/PromptsListTable.tsx', {
-    data: prompts ?? [],
+    data: prompts ?? EMPTY_DATA,
     columns,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: coreRowModel,
     getRowId: (row, index) => row.name ?? index.toString(),
     meta: { onEditTags, experimentId } satisfies PromptsTableMetadata,
   });

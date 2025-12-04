@@ -1,5 +1,6 @@
 import { getActiveWorkspace } from './RoutingUtils';
 import { matchPredefinedError } from '../errors/PredefinedErrors';
+import { prefixApiUrl } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 // eslint-disable-next-line no-restricted-globals -- See go/spog-fetch
 const fetchFn = fetch;
@@ -50,6 +51,10 @@ export const fetchAPI = async (
 };
 
 export const getAjaxUrl = (relativeUrl: any) => {
+  // In federated mode, prefix with the MLflow proxy base path.
+  const prefixed = prefixApiUrl(relativeUrl);
+  if (prefixed) return prefixed;
+
   if (process.env['MLFLOW_USE_ABSOLUTE_AJAX_URLS'] === 'true' && !relativeUrl.startsWith('/')) {
     return '/' + relativeUrl;
   }
