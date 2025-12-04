@@ -40,3 +40,7 @@ MLFLOW_SERVING_RESPONSE_KEY = "predictions"
 # translations prior to sending a request payload to their chat endpoints.
 # to reduce the need to case-match, supported model prefixes are lowercase.
 MLFLOW_AI_GATEWAY_MOSAICML_CHAT_SUPPORTED_MODEL_PREFIXES = ["llama2"]
+
+GATEWAY_DISABLED_MESSAGE = (
+    "The AI Gateway feature is not yet available in this distribution of MLflow."
+)

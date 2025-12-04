@@ -5,12 +5,15 @@ import { ExperimentViewHeaderShareButton } from './ExperimentViewHeaderShareButt
 import type { ExperimentEntity } from '../../../../types';
 import { Link } from '@mlflow/mlflow/src/common/utils/RoutingUtils';
 import Routes from '@mlflow/mlflow/src/experiment-tracking/routes';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 /**
  * Header for experiment compare page. Displays title and breadcrumbs.
  */
 // eslint-disable-next-line react-component-name/react-component-name -- TODO(FEINF-4716)
 export const ExperimentViewHeaderCompare = React.memo(({ experiments }: { experiments: ExperimentEntity[] }) => {
+  const isEmbedded = useIsIntegrated();
+
   const pageTitle = useMemo(
     () => (
       <FormattedMessage
@@ -41,7 +44,7 @@ export const ExperimentViewHeaderCompare = React.memo(({ experiments }: { experi
   );
 
   return (
-    <PageHeader title={pageTitle} breadcrumbs={breadcrumbs}>
+    <PageHeader title={pageTitle} breadcrumbs={isEmbedded ? [] : breadcrumbs}>
       <ExperimentViewHeaderShareButton />
     </PageHeader>
   );

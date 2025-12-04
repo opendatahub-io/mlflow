@@ -30,6 +30,7 @@ import {
   shouldEnableExperimentPageSideTabs,
   shouldEnableWorkflowBasedNavigation,
 } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 import { ExperimentKind } from '../../../../constants';
 import { useGetExperimentPageActiveTabByRoute } from '../../hooks/useGetExperimentPageActiveTabByRoute';
@@ -73,7 +74,10 @@ export const ExperimentViewHeader = React.memo(
       const pathSegments = location.pathname.split('/').filter(Boolean);
       // Navigate to /experiments for tab pages (up to 3 segments: /experiments/ID/tab)
       // For deeper paths, remove last segment to navigate to parent
-      if (pathSegments.length <= 3 && pathSegments[0] === 'experiments') {
+      if (
+        (pathSegments.length <= 3 && pathSegments[0] === 'experiments') ||
+        (pathSegments.length <= 3 && /^\d+$/.test(pathSegments[0]))
+      ) {
         navigate(Routes.experimentsObservatoryRoute);
       } else {
         pathSegments.pop();
@@ -81,11 +85,10 @@ export const ExperimentViewHeader = React.memo(
       }
     }, [location.pathname, navigate]);
     const experimentIds = useMemo(() => (experiment ? [experiment?.experimentId] : []), [experiment]);
+    const isEmbedded = useIsIntegrated();
 
-    // In OSS, we don't need to show the docs link anymore as the link is in the sidebar
     const showDocsLink = false;
 
-    // Extract the last part of the experiment name
     const { tabName: activeTabByRoute } = useGetExperimentPageActiveTabByRoute();
     const { workflowType } = useWorkflowType();
     const tabDisplayName = activeTabByRoute ? getTabDisplayName(activeTabByRoute, workflowType) : undefined;
@@ -166,7 +169,7 @@ export const ExperimentViewHeader = React.memo(
           marginBottom: shouldEnableExperimentPageSideTabs() ? theme.spacing.xs : theme.spacing.sm,
         }}
       >
-        {showBreadcrumbs && (
+        {showBreadcrumbs && !isEmbedded && (
           <Breadcrumb includeTrailingCaret>
             {breadcrumbs.map((breadcrumb, index) => (
               <Breadcrumb.Item key={index}>{breadcrumb}</Breadcrumb.Item>
@@ -248,7 +251,7 @@ export const ExperimentViewHeader = React.memo(
               searchFacetsState={searchFacetsState}
               uiState={uiState}
             />
-            {shouldEnableExperimentPageSideTabs() && showDocsLink && (
+            {shouldEnableExperimentPageSideTabs() && showDocsLink && !isEmbedded && (
               <Typography.Link
                 componentId="mlflow.experiment-page.header.docs-link"
                 href={docLinkHref}

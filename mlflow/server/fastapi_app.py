@@ -13,6 +13,7 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import JSONResponse
 from flask import Flask
 
+from mlflow.environment_variables import MLFLOW_ENABLE_ASSISTANT
 from mlflow.exceptions import MlflowException
 from mlflow.server import app as flask_app
 from mlflow.server.assistant.api import assistant_router
@@ -94,7 +95,8 @@ def create_fastapi_app(flask_app: Flask = flask_app):
 
     # Include Assistant API router for AI-powered trace analysis
     # This provides /ajax-api/3.0/mlflow/assistant/* endpoints (localhost only)
-    fastapi_app.include_router(assistant_router)
+    if MLFLOW_ENABLE_ASSISTANT.get():
+        fastapi_app.include_router(assistant_router)
 
     # Mount the entire Flask application at the root path
     # This ensures compatibility with existing APIs

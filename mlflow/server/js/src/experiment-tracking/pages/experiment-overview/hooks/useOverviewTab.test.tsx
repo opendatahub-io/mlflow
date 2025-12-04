@@ -8,6 +8,9 @@ const mockUseParams = jest.fn();
 const mockUseLocation = jest.fn();
 
 jest.mock('@mlflow/mlflow/src/common/utils/RoutingUtils', () => ({
+  ...jest.requireActual<typeof import('@mlflow/mlflow/src/common/utils/RoutingUtils')>(
+    '@mlflow/mlflow/src/common/utils/RoutingUtils',
+  ),
   useNavigate: () => mockNavigate,
   useParams: () => mockUseParams(),
   useLocation: () => mockUseLocation(),

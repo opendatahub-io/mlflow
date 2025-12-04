@@ -1,5 +1,6 @@
-import { useCallback, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from '@mlflow/mlflow/src/common/utils/RoutingUtils';
+import { useCallback } from 'react';
+import { useNavigate, useParams, useLocation, generatePath } from '@mlflow/mlflow/src/common/utils/RoutingUtils';
+import { RoutePaths } from '../../../routes';
 
 export enum OverviewTab {
   Usage = 'usage',
@@ -25,7 +26,8 @@ export const useOverviewTab = () => {
 
   const setActiveTab = useCallback(
     (tab: OverviewTab) => {
-      navigate(`/experiments/${experimentId}/overview/${tab}${location.search}`, { replace: true });
+      const path = generatePath(RoutePaths.experimentPageTabOverview, { experimentId, overviewTab: tab });
+      navigate(`${path}${location.search}`, { replace: true });
     },
     [experimentId, navigate, location.search],
   );

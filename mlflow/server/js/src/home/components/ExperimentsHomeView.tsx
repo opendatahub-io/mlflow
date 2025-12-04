@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   BeakerIcon,
@@ -85,8 +85,46 @@ export const ExperimentsHomeView = ({
   }, [experiments]);
   const shouldShowEmptyState = !isLoading && !error && topExperiments.length === 0;
 
+  const cardWidthPx = 320;
+  const cardGapPx = theme.spacing.sm + theme.spacing.xs;
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    let rafId: number | null = null;
+
+    const computeColumns = () => {
+      const w = el.getBoundingClientRect().width;
+      const nextColumns = w ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx))) : 1;
+      setColumns((prev) => (prev === nextColumns ? prev : nextColumns));
+    };
+
+    computeColumns();
+
+    const ro = new ResizeObserver(() => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(computeColumns);
+    });
+
+    ro.observe(el);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      ro.disconnect();
+    };
+  }, [cardGapPx]);
+
+  const snappedWidth = columns === 1 ? '100%' : cardWidthPx * columns + cardGapPx * (columns - 1);
+
   return (
-    <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+    <section ref={containerRef} css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
       <div
         css={{
           display: 'flex',
@@ -109,6 +147,7 @@ export const ExperimentsHomeView = ({
           borderRadius: theme.general.borderRadiusBase,
           overflow: 'hidden',
           backgroundColor: theme.colors.backgroundPrimary,
+          width: snappedWidth,
         }}
       >
         {error ? (
@@ -144,7 +183,16 @@ export const ExperimentsHomeView = ({
           />
         )}
       </div>
-      <Spacer shrinks={false} />
+      <Spacer size="xs" />
+      <Link to={Routes.experimentsObservatoryRoute} style={{ alignSelf: 'flex-start' }}>
+        <span css={{ fontSize: theme.typography.fontSizeBase }}>
+          <FormattedMessage
+            defaultMessage="Go to <b>Experiments</b>"
+            description="Home page experiments view all link"
+            values={{ b: (chunks) => <strong>{chunks}</strong> }}
+          />
+        </span>
+      </Link>
     </section>
   );
 };

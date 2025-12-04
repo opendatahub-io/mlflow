@@ -75,7 +75,7 @@ describe('WorkspaceLandingPage', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByTestId('telemetry-alert')).toBeInTheDocument();
+      expect(screen.getByTestId('features-section')).toBeInTheDocument();
       expect(screen.getByTestId('log-traces-drawer')).toBeInTheDocument();
     });
   });

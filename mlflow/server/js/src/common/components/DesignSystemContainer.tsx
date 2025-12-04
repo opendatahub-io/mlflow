@@ -1,6 +1,10 @@
 import React, { useCallback, useRef } from 'react';
 import { DesignSystemProvider, DesignSystemThemeProvider } from '@databricks/design-system';
 import { ColorsPaletteDatalist } from './ColorsPaletteDatalist';
+import { Theme } from '@emotion/react';
+import { PATTERN_FLY_TOKEN_TRANSLATION } from '../styles/patternfly/patternflyTokenTranslation';
+import { ThemeProvider as EmotionThemeProvider } from '@emotion/react';
+import '../styles/patternfly/pf-shell-overrides.scss';
 
 const isInsideShadowDOM = (element: HTMLDivElement | null): boolean =>
   element instanceof window.Node && element.getRootNode() !== document;
@@ -50,8 +54,10 @@ export const DesignSystemContainer = (props: DesignSystemContainerProps) => {
     <ThemeProvider isDarkTheme={isDarkTheme}>
       <DesignSystemProvider getPopupContainer={getPopupContainer} {...props}>
         <MLflowImagePreviewContainer.Provider value={{ getImagePreviewPopupContainer }}>
-          {children}
-          <div ref={modalContainerElement} />
+          <EmotionThemeProvider theme={(baseTheme) => PATTERN_FLY_TOKEN_TRANSLATION(baseTheme)}>
+            <div className="pf-shell-container">{children}</div>
+            <div ref={modalContainerElement} />
+          </EmotionThemeProvider>
         </MLflowImagePreviewContainer.Provider>
       </DesignSystemProvider>
       <ColorsPaletteDatalist />

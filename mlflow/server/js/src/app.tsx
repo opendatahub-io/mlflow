@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { ModularArchContextProvider, DeploymentMode } from 'mod-arch-core';
+import type { ModularArchConfig } from 'mod-arch-core';
 import { ApolloProvider } from '@mlflow/mlflow/src/common/utils/graphQLHooks';
 import { RawIntlProvider } from 'react-intl';
 
@@ -21,6 +23,17 @@ import { useMLflowDarkTheme } from './common/hooks/useMLflowDarkTheme';
 import { DarkThemeProvider } from './common/contexts/DarkThemeContext';
 import { telemetryClient } from './telemetry';
 import { ServerInfoProvider } from './experiment-tracking/hooks/useServerInfo';
+
+// Note: In federated mode (Module Federation), app.tsx is NOT in the bundle --
+// the federated entry point (src/odh/extensions.ts) imports wrappers directly,
+// bypassing MLFlowRoot. So this CSS import only executes in standalone mode.
+import '@patternfly/patternfly/patternfly.css';
+
+const modularArchConfig: ModularArchConfig = {
+  deploymentMode: DeploymentMode.Standalone,
+  URL_PREFIX: '',
+  BFF_API_VERSION: 'v1',
+};
 
 export function MLFlowRoot() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -57,7 +70,9 @@ export function MLFlowRoot() {
               <DarkThemeProvider setIsDarkTheme={setIsDarkTheme}>
                 <QueryClientProvider client={queryClient}>
                   <ServerInfoProvider>
-                    <MlflowRouter />
+                    <ModularArchContextProvider config={modularArchConfig}>
+                      <MlflowRouter />
+                    </ModularArchContextProvider>
                   </ServerInfoProvider>
                 </QueryClientProvider>
               </DarkThemeProvider>
