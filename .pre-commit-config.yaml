@@ -15,7 +15,7 @@ repos:
     rev: "v2.7.1"
     hooks:
       - id: prettier
-        files: '^(?!docs/|mlflow/server/js/|libs/typescript/).+\.(js|ts|md|json|ya?ml)$'
+        files: '^(?!docs/|mlflow/server/js/|libs/typescript/|\.tekton/).+\.(js|ts|md|json|ya?ml)$'
         require_serial: true
 
   - repo: local
