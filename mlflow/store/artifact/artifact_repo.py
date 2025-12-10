@@ -10,6 +10,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from typing_extensions import Self
+
 from mlflow.entities.file_info import FileInfo
 from mlflow.entities.multipart_upload import (
     CreateMultipartUploadResponse,
