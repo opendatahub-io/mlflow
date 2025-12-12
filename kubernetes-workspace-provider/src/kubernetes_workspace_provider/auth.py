@@ -196,7 +196,6 @@ _WORKSPACE_PERMISSION_RESOURCE_PRIORITY = (
     RESOURCE_REGISTERED_MODELS,
     RESOURCE_JOBS,
 )
-_FASTAPI_AUTH_PREFIXES = (OTLP_TRACES_PATH, "/ajax-api/3.0")
 
 _WORKSPACE_REQUIRED_ERROR_MESSAGE = "Workspace context is required for this request."
 _WORKSPACE_MUTATION_DENIED_MESSAGE = (
@@ -645,16 +644,95 @@ def _get_static_prefix() -> str | None:
     return None
 
 
+_STATIC_PREFIX_APPLICABLE_PREFIXES: tuple[str, ...] = (
+    "/",
+    "/ajax-api",
+    "/get-artifact",
+    "/model-versions/get-artifact",
+    "/static-files",
+    "/graphql",
+)
+
+
+def _strip_prefix(path: str, prefix: str | None) -> str:
+    """Remove a leading deployment prefix when present."""
+    if not path or not prefix:
+        return path
+
+    normalized = prefix.strip().rstrip("/")
+    if not normalized:
+        return path
+
+    if not normalized.startswith("/"):
+        normalized = f"/{normalized}"
+    if normalized == "/":
+        return path
+
+    if path == normalized:
+        return "/"
+
+    if path.startswith(f"{normalized}/"):
+        stripped = path[len(normalized) :]
+        return stripped if stripped.startswith("/") else f"/{stripped}"
+
+    return path
+
+
 def _strip_static_prefix(path: str) -> str:
     prefix = _get_static_prefix()
     if not prefix:
         return path
 
-    prefix = prefix.rstrip("/")
-    if prefix and path.startswith(prefix):
-        stripped = path[len(prefix) :]
-        return stripped if stripped.startswith("/") else f"/{stripped}"
+    stripped = _strip_prefix(path, prefix)
+    if stripped == path:
+        # Prefix not present or empty/invalid; nothing to do.
+        return path
+
+    # Only strip the static prefix for known static-prefixed routes
+    if any(
+        stripped == candidate or stripped.startswith(f"{candidate}/")
+        for candidate in _STATIC_PREFIX_APPLICABLE_PREFIXES
+    ):
+        return stripped
+
     return path
+
+
+def _canonicalize_path(
+    raw_path: str,
+    path_info: str | None = None,
+    scope_path: str | None = None,
+    root_path: str | None = None,
+    script_name: str | None = None,
+) -> str:
+    """
+    Normalize a request path into the canonical form used for authorization lookups.
+
+    Behavior:
+    - Choose the most canonical source first: `path_info` (WSGI), then `scope_path`
+      (ASGI), otherwise `raw_path` from the URL.
+    - Ensure the path is absolute (leading slash).
+    - Strip deployment prefixes (ASGI `root_path`, WSGI `SCRIPT_NAME`) idempotently; if
+      they were already removed upstream, this is a no-op.
+    - Strip the MLflow static prefix (when configured) only for known static-prefixed
+      routes (e.g., `/ajax-api`, `/static-files`, `/graphql`, root). This produces
+      the canonical path we use for allowlist matching (e.g., `/ajax-api/...` even
+      when the incoming URL was `/mlflow/ajax-api/...`).
+
+    Returns:
+        Canonicalized, absolute path suitable for authorization rule matching.
+    """
+    path = path_info or scope_path or raw_path or ""
+    if not path:
+        return path
+
+    if not path.startswith("/"):
+        path = f"/{path}"
+
+    # Idempotent stripping of deployment prefixes; safe even if already removed upstream.
+    path = _strip_prefix(path, root_path)
+    path = _strip_prefix(path, script_name)
+    return _strip_static_prefix(path)
 
 
 @lru_cache(maxsize=None)
@@ -686,10 +764,6 @@ def _fastapi_path_to_template(path: str) -> str:
 def _templated_path_to_probe(path: str, placeholder: str = "probe") -> str:
     """Replace templated segments with a concrete placeholder for matching."""
     return _TEMPLATE_TOKEN_PATTERN.sub(placeholder, path)
-
-
-def _is_fastapi_protected_path(path: str) -> bool:
-    return path.startswith(_FASTAPI_AUTH_PREFIXES)
 
 
 def _parse_jwt_subject(token: str, claim: str) -> str | None:
@@ -1227,7 +1301,7 @@ def _compile_authorization_rules() -> None:
         if not path:
             continue
 
-        canonical_path = _strip_static_prefix(path)
+        canonical_path = _canonicalize_path(raw_path=path)
         if _is_unprotected_path(canonical_path):
             continue
 
@@ -1257,7 +1331,7 @@ def _compile_authorization_rules() -> None:
         if view_func is None:
             continue
 
-        canonical_path = _strip_static_prefix(rule.rule)
+        canonical_path = _canonicalize_path(raw_path=rule.rule)
         if _is_unprotected_path(canonical_path):
             continue
 
@@ -1300,8 +1374,8 @@ def _validate_fastapi_route_authorization(fastapi_app: FastAPI) -> None:
         if not isinstance(route, APIRoute):
             continue
         methods = getattr(route, "methods", set()) or set()
-        canonical_path = _strip_static_prefix(route.path or "")
-        if not _is_fastapi_protected_path(canonical_path):
+        canonical_path = _canonicalize_path(raw_path=route.path or "")
+        if not canonical_path.startswith(FASTAPI_NATIVE_PREFIXES):
             continue
         template_path = _fastapi_path_to_template(canonical_path)
         # Use a concrete probe path so _find_authorization_rule follows the same regex path
@@ -1324,7 +1398,7 @@ def _validate_fastapi_route_authorization(fastapi_app: FastAPI) -> None:
 
 
 def _find_authorization_rule(request_path: str, method: str) -> AuthorizationRule | None:
-    canonical_path = _strip_static_prefix(request_path or "")
+    canonical_path = _canonicalize_path(raw_path=request_path or "")
 
     rule = _AUTH_RULES.get((canonical_path, method))
     if rule is not None:
@@ -1369,12 +1443,14 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process each request through the authorization pipeline."""
-        path = str(request.url.path or "")
-        if not path.startswith(FASTAPI_NATIVE_PREFIXES):
+        canonical_path = _canonicalize_path(
+            raw_path=str(request.url.path or ""),
+            scope_path=request.scope.get("path"),
+            root_path=request.scope.get("root_path"),
+        )
+        if not canonical_path.startswith(FASTAPI_NATIVE_PREFIXES):
             # Skip if not a FastAPI route handled by this middleware.
             return await call_next(request)
-
-        canonical_path = _strip_static_prefix(path)
 
         # Skip authentication for unprotected paths
         if _is_unprotected_path(canonical_path):
@@ -1389,7 +1465,7 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
                 forwarded_access_token=request.headers.get("X-Forwarded-Access-Token"),
                 remote_user_header_value=request.headers.get(self.config_values.user_header),
                 remote_groups_header_value=request.headers.get(self.config_values.groups_header),
-                path=path,
+                path=canonical_path,
                 method=request.method,
                 authorizer=self.authorizer,
                 config_values=self.config_values,
@@ -1451,8 +1527,12 @@ def create_app(app: Flask = mlflow_app) -> Flask:
 
     @app.before_request
     def _k8s_auth_before_request():
-        path = request.path or ""
-        if _is_unprotected_path(_strip_static_prefix(path)):
+        canonical_path = _canonicalize_path(
+            raw_path=request.path or "",
+            path_info=request.environ.get("PATH_INFO"),
+            script_name=request.environ.get("SCRIPT_NAME"),
+        )
+        if _is_unprotected_path(canonical_path):
             return None
 
         try:
@@ -1461,7 +1541,7 @@ def create_app(app: Flask = mlflow_app) -> Flask:
                 forwarded_access_token=request.headers.get("X-Forwarded-Access-Token"),
                 remote_user_header_value=request.headers.get(config_values.user_header),
                 remote_groups_header_value=request.headers.get(config_values.groups_header),
-                path=path,
+                path=canonical_path,
                 method=request.method,
                 authorizer=authorizer,
                 config_values=config_values,
