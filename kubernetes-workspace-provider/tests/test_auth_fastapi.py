@@ -248,6 +248,94 @@ def test_otel_endpoint_with_valid_auth(fastapi_app_with_k8s_auth, mock_authorize
     assert (resource, verb, namespace) == ("experiments", "update", "team-a")
 
 
+def test_otel_endpoint_with_root_path_requires_auth(mock_authorizer, mock_config) -> None:
+    """When FastAPI runs under a root_path, K8s middleware must still enforce auth."""
+    app = FastAPI(root_path="/mlflow")
+    app.add_middleware(
+        KubernetesAuthMiddleware,
+        authorizer=mock_authorizer,
+        config_values=mock_config,
+    )
+
+    class _WorkspaceContextMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            workspace_header = request.headers.get(WORKSPACE_HEADER_NAME)
+            if not workspace_header:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": {"message": f"Missing {WORKSPACE_HEADER_NAME} header"}},
+                )
+            token = workspace_context.set_current_workspace(workspace_header)
+            try:
+                return await call_next(request)
+            finally:
+                workspace_context.reset_workspace(token)
+
+    # Ensure workspace context is set before Kubernetes auth middleware runs.
+    app.add_middleware(_WorkspaceContextMiddleware)
+
+    @app.post(OTLP_TRACES_PATH)
+    async def mock_otel_endpoint(_request: Request):
+        return {"status": "ok"}
+
+    client = TestClient(app)
+
+    response = client.post(
+        f"/mlflow{OTLP_TRACES_PATH}",
+        headers={
+            "X-MLflow-Experiment-Id": "exp123",
+            WORKSPACE_HEADER_NAME: "team-a",
+        },
+    )
+    assert response.status_code == 401
+    assert (
+        "Missing Authorization header or X-Forwarded-Access-Token header"
+        in response.json()["error"]["message"]
+    )
+
+
+def test_job_api_endpoints_with_root_path_require_auth(mock_authorizer, mock_config) -> None:
+    """Job API endpoints must remain protected when served under a root_path."""
+    app = FastAPI(root_path="/mlflow")
+    app.add_middleware(
+        KubernetesAuthMiddleware,
+        authorizer=mock_authorizer,
+        config_values=mock_config,
+    )
+
+    class _WorkspaceContextMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            workspace_header = request.headers.get(WORKSPACE_HEADER_NAME)
+            if not workspace_header:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": {"message": f"Missing {WORKSPACE_HEADER_NAME} header"}},
+                )
+            token = workspace_context.set_current_workspace(workspace_header)
+            try:
+                return await call_next(request)
+            finally:
+                workspace_context.reset_workspace(token)
+
+    app.add_middleware(_WorkspaceContextMiddleware)
+
+    @app.get("/ajax-api/3.0/jobs/123")
+    async def mock_job_endpoint(_request: Request):
+        return {"status": "job_endpoint"}
+
+    client = TestClient(app)
+
+    response = client.get(
+        "/mlflow/ajax-api/3.0/jobs/123",
+        headers={WORKSPACE_HEADER_NAME: "team-a"},
+    )
+    assert response.status_code == 401
+    assert (
+        "Missing Authorization header or X-Forwarded-Access-Token header"
+        in response.json()["error"]["message"]
+    )
+
+
 def test_otel_endpoint_accepts_forwarded_access_token(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:

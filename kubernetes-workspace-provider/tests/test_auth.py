@@ -23,6 +23,7 @@ from kubernetes_workspace_provider.auth import (
     REMOTE_USER_HEADER_ENV,
     RESOURCE_EXPERIMENTS,
     RESOURCE_WORKSPACES,
+    STATIC_PREFIX_ENV_VAR,
     AuthorizationMode,
     AuthorizationRule,
     KubernetesAuthConfig,
@@ -30,6 +31,7 @@ from kubernetes_workspace_provider.auth import (
     _AuthorizationCache,
     _authorize_request,
     _CacheEntry,
+    _canonicalize_path,
     _compile_authorization_rules,
     _find_authorization_rule,
     _is_unprotected_path,
@@ -161,6 +163,32 @@ def test_request_identity_subject_hash_missing_user_raises():
 )
 def test_parse_remote_groups_variations(header_value, separator, expected):
     assert _parse_remote_groups(header_value, separator) == expected
+
+
+def test_canonicalize_path_prefers_scope_and_path_info(monkeypatch):
+    path = _canonicalize_path(
+        raw_path="/mlflow/api/2.0/mlflow/runs/create",
+        scope_path="/api/2.0/mlflow/runs/create",
+        root_path="/mlflow",
+    )
+    assert path == "/api/2.0/mlflow/runs/create"
+
+    path = _canonicalize_path(
+        raw_path="/prefix/api/2.0/mlflow/runs/create",
+        path_info="/api/2.0/mlflow/runs/create",
+        script_name="/prefix",
+    )
+    assert path == "/api/2.0/mlflow/runs/create"
+
+
+def test_canonicalize_path_static_prefix_applies_to_static_routes_only(monkeypatch):
+    monkeypatch.setenv(STATIC_PREFIX_ENV_VAR, "/mlflow")
+
+    ajax_path = "/mlflow/ajax-api/2.0/mlflow/runs/create"
+    api_path = "/mlflow/api/2.0/mlflow/runs/create"
+
+    assert _canonicalize_path(raw_path=ajax_path) == "/ajax-api/2.0/mlflow/runs/create"
+    assert _canonicalize_path(raw_path=api_path) == api_path
 
 
 def test_request_identity_subject_hash_missing_token_in_ssar():
@@ -838,6 +866,34 @@ def test_misc_path_authorization_rules_cover_recent_endpoints():
 def test_server_features_endpoints_are_unprotected():
     assert _is_unprotected_path("/api/2.0/mlflow/server-features")
     assert _is_unprotected_path("/ajax-api/2.0/mlflow/server-features")
+
+
+def test_flask_script_name_prefix_is_stripped_before_rule_matching(monkeypatch):
+    """Ensure SCRIPT_NAME/root_path prefixes don't cause uncovered-endpoint failures."""
+    from kubernetes_workspace_provider.auth import create_app
+
+    app = Flask(__name__)
+
+    @app.route("/mlflow", methods=["GET"])
+    def prefixed_root():
+        return {"status": "ok"}
+
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._load_kubernetes_configuration",
+        lambda: None,
+    )
+    monkeypatch.setenv("MLFLOW_K8S_AUTH_CACHE_TTL_SECONDS", "300")
+
+    create_app(app)
+    client = app.test_client()
+
+    response = client.get(
+        "/mlflow",
+        environ_overrides={"SCRIPT_NAME": "/mlflow/"},
+    )
+
+    assert response.status_code == 200
+    assert response.json["status"] == "ok"
 
 
 def test_authorization_cache_does_not_drop_new_entries_during_cleanup():
