@@ -477,6 +477,7 @@ export const fetchAPI = async (url: string, options: FetchAPIOptions = {}) => {
   const { method, headers, body, ...restOptions } = options;
   
   const fetchFn = fetch;
+
   const fetchOptions: RequestInit = {
     ...restOptions,
     method: method || HTTPMethods.GET,
