@@ -16,7 +16,4 @@ export const patternflySpacing = {
   md: convertRemStringToPx(t_global_spacer_md.value),
   lg: convertRemStringToPx(t_global_spacer_lg.value),
   xl: convertRemStringToPx(t_global_spacer_xl.value),
-  '2xl': convertRemStringToPx(t_global_spacer_2xl.value),
-  '3xl': convertRemStringToPx(t_global_spacer_3xl.value),
-  '4xl': convertRemStringToPx(t_global_spacer_4xl.value),
 };
