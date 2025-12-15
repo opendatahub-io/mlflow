@@ -24,6 +24,7 @@ import {
   c_button_m_tertiary_hover_BorderColor,
   c_button_m_tertiary_m_clicked_BorderColor,
   t_global_border_color_default,
+  t_global_color_status_danger_hover,
 } from '@patternfly/react-tokens';
 import pfTokens from 'mod-arch-kubeflow/dist/style/pf-tokens-SSOT.json';
 
@@ -65,7 +66,7 @@ export const colorList: Record<string, string> = {
   actionTertiaryTextPress: pfTokens.components.button[c_button_m_tertiary_m_clicked_Color.name],
 
   actionDangerDefaultBackgroundDefault: t_global_background_color_floating_default.var,
-  actionDangerDefaultBackgroundHover: t_global_background_color_floating_default.var,
+  actionDangerDefaultBackgroundHover: t_global_color_status_danger_hover.var,
   actionDangerDefaultBackgroundPress: t_global_background_color_floating_default.var,
   actionDangerDefaultBorderDefault: t_global_border_color_status_danger_default.var,
   actionDangerDefaultBorderHover: t_global_border_color_status_danger_hover.var,
@@ -74,8 +75,8 @@ export const colorList: Record<string, string> = {
   actionDangerDefaultTextHover: t_global_text_color_regular.var,
   actionDangerDefaultTextPress: t_global_text_color_regular.var,
   actionDangerPrimaryBackgroundDefault: t_global_background_color_floating_default.var,
-  actionDangerPrimaryBackgroundHover: t_global_background_color_floating_default.var,
-  actionDangerPrimaryBackgroundPress: t_global_background_color_floating_default.var,
+  actionDangerPrimaryBackgroundHover: t_global_color_status_danger_hover.var,
+  actionDangerPrimaryBackgroundPress: t_global_color_status_danger_hover.var,
   actionDangerPrimaryText: t_global_background_color_primary_default.var,
 
   backgroundDanger: t_global_background_color_floating_default.var,
