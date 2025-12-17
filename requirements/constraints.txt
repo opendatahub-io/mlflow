@@ -1,3 +1,7 @@
+# pyspark 4.x is not yet compatible with the delta-spark versions used in tests
+# (NoSuchMethodError for org.apache.spark.internal.LogKey during delta writes)
+pyspark<4
+
 pytest==8.4.0
 # transformers 4.51.0 has this issue:
 # https://github.com/huggingface/transformers/issues/37326
