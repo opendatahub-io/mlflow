@@ -7,6 +7,8 @@ from pyspark.sql import SparkSession
 import mlflow
 from mlflow.exceptions import MlflowException
 
+from tests.data.delta_utils import get_delta_package
+
 
 def language_model(inputs: list[str]) -> list[str]:
     return inputs
@@ -39,7 +41,7 @@ def spark_session_with_delta():
     with tempfile.TemporaryDirectory() as tmpdir:
         with (
             SparkSession.builder.master("local[*]")
-            .config("spark.jars.packages", "io.delta:delta-spark_2.13:4.0.0")
+            .config("spark.jars.packages", get_delta_package())
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .config(
                 "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog"

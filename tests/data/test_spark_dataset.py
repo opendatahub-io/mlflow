@@ -15,6 +15,8 @@ from mlflow.exceptions import MlflowException
 from mlflow.types.schema import Schema
 from mlflow.types.utils import _infer_schema
 
+from tests.data.delta_utils import get_delta_package
+
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
@@ -26,7 +28,7 @@ def spark_session(tmp_path_factory: pytest.TempPathFactory):
     tmp_dir = tmp_path_factory.mktemp("spark_tmp")
     with (
         SparkSession.builder.master("local[*]")
-        .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.0.0")
+        .config("spark.jars.packages", get_delta_package())
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
             "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog"
@@ -311,20 +313,24 @@ def test_from_spark_table_name_with_version(spark_session, df):
         mlflow.data.from_spark(df_spark, table_name="my_spark_table", version=1)
 
 
-def test_from_spark_delta_table_name(spark_session, df):
+def test_from_spark_delta_table_name(spark_session, df, tmp_path):
     df_spark = spark_session.createDataFrame(df)
-    # write to delta table
-    df_spark.write.format("delta").mode("overwrite").saveAsTable("my_delta_table")
+    table_path = tmp_path / "my_delta_table"
+    spark_session.sql("DROP TABLE IF EXISTS my_delta_table")
+    df_spark.write.format("delta").mode("overwrite").save(str(table_path))
+    spark_session.sql(f"CREATE TABLE my_delta_table USING DELTA LOCATION '{table_path}'")
 
     mlflow_df = mlflow.data.from_spark(df_spark, table_name="my_delta_table")
 
     _check_spark_dataset(mlflow_df, df, df_spark, DeltaDatasetSource)
 
 
-def test_from_spark_delta_table_name_and_version(spark_session, df):
+def test_from_spark_delta_table_name_and_version(spark_session, df, tmp_path):
     df_spark = spark_session.createDataFrame(df)
-    # write to delta table
-    df_spark.write.format("delta").mode("overwrite").saveAsTable("my_delta_table")
+    table_path = tmp_path / "my_delta_table"
+    spark_session.sql("DROP TABLE IF EXISTS my_delta_table")
+    df_spark.write.format("delta").mode("overwrite").save(str(table_path))
+    spark_session.sql(f"CREATE TABLE my_delta_table USING DELTA LOCATION '{table_path}'")
 
     mlflow_df = mlflow.data.from_spark(df_spark, table_name="my_delta_table", version=0)
 
@@ -373,24 +379,29 @@ def test_load_delta_path_with_version(spark_session, tmp_path, df):
     _check_spark_dataset(mlflow_df, df, df_v1_spark, DeltaDatasetSource)
 
 
-def test_load_delta_table_name(spark_session, df):
+def test_load_delta_table_name(spark_session, df, tmp_path):
     df_spark = spark_session.createDataFrame(df)
-    # write to delta table
-    df_spark.write.format("delta").mode("overwrite").saveAsTable("my_delta_table")
+    table_path = tmp_path / "my_delta_table"
+    spark_session.sql("DROP TABLE IF EXISTS my_delta_table")
+    df_spark.write.format("delta").mode("overwrite").save(str(table_path))
+    spark_session.sql(f"CREATE TABLE my_delta_table USING DELTA LOCATION '{table_path}'")
 
     mlflow_df = mlflow.data.load_delta(table_name="my_delta_table")
 
     _check_spark_dataset(mlflow_df, df, df_spark, DeltaDatasetSource, "my_delta_table@v0")
 
 
-def test_load_delta_table_name_with_version(spark_session, df):
+def test_load_delta_table_name_with_version(spark_session, df, tmp_path):
     df_spark = spark_session.createDataFrame(df)
-    df_spark.write.format("delta").mode("overwrite").saveAsTable("my_delta_table_versioned")
+    table_path = tmp_path / "my_delta_table_versioned"
+    spark_session.sql("DROP TABLE IF EXISTS my_delta_table_versioned")
+    df_spark.write.format("delta").mode("overwrite").save(str(table_path))
+    spark_session.sql(f"CREATE TABLE my_delta_table_versioned USING DELTA LOCATION '{table_path}'")
 
     df2 = pd.DataFrame([[4, 5, 6], [4, 5, 6]], columns=["a", "b", "c"])
     assert not df2.equals(df)
     df2_spark = spark_session.createDataFrame(df2)
-    df2_spark.write.format("delta").mode("overwrite").saveAsTable("my_delta_table_versioned")
+    df2_spark.write.format("delta").mode("overwrite").save(str(table_path))
 
     mlflow_df = mlflow.data.load_delta(table_name="my_delta_table_versioned", version=1)
 

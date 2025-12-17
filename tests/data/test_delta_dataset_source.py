@@ -10,6 +10,8 @@ from mlflow.exceptions import MlflowException
 from mlflow.protos.databricks_managed_catalog_messages_pb2 import GetTable, GetTableResponse
 from mlflow.utils.proto_json_utils import message_to_json
 
+from tests.data.delta_utils import get_delta_package
+
 
 @pytest.fixture(scope="module")
 def spark_session():
@@ -17,7 +19,7 @@ def spark_session():
 
     with (
         SparkSession.builder.master("local[*]")
-        .config("spark.jars.packages", "io.delta:delta-spark_2.13:4.0.0")
+        .config("spark.jars.packages", get_delta_package())
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
             "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog"

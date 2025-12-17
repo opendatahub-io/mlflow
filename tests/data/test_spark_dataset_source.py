@@ -7,6 +7,8 @@ from mlflow.data.dataset_source_registry import get_dataset_source_from_json
 from mlflow.data.spark_dataset_source import SparkDatasetSource
 from mlflow.exceptions import MlflowException
 
+from tests.data.delta_utils import get_delta_package
+
 
 @pytest.fixture(scope="module")
 def spark_session():
@@ -14,7 +16,7 @@ def spark_session():
 
     with (
         SparkSession.builder.master("local[*]")
-        .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.0.0")
+        .config("spark.jars.packages", get_delta_package())
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
             "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog"
