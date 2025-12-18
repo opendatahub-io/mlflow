@@ -19,6 +19,11 @@ if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 
+pytestmark = pytest.mark.skip(
+    reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI"
+)
+
+
 @pytest.fixture(scope="module")
 def spark_session(tmp_path_factory: pytest.TempPathFactory):
     from pyspark.sql import SparkSession

@@ -27,6 +27,7 @@ def spark_session():
         yield session
 
 
+@pytest.mark.skip(reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI")
 def test_delta_dataset_source_from_path(spark_session, tmp_path):
     df = pd.DataFrame([[1, 2, 3], [1, 2, 3]], columns=["a", "b", "c"])
     df_spark = spark_session.createDataFrame(df)
@@ -46,6 +47,7 @@ def test_delta_dataset_source_from_path(spark_session, tmp_path):
     assert reloaded_source.to_json() == delta_datasource.to_json()
 
 
+@pytest.mark.skip(reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI")
 def test_delta_dataset_source_from_table(spark_session, tmp_path):
     df = pd.DataFrame([[1, 2, 3], [1, 2, 3]], columns=["a", "b", "c"])
     df_spark = spark_session.createDataFrame(df)
@@ -66,6 +68,7 @@ def test_delta_dataset_source_from_table(spark_session, tmp_path):
     assert reloaded_source.to_json() == delta_datasource.to_json()
 
 
+@pytest.mark.skip(reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI")
 def test_delta_dataset_source_from_table_versioned(spark_session, tmp_path):
     df = pd.DataFrame([[1, 2, 3], [1, 2, 3]], columns=["a", "b", "c"])
     df_spark = spark_session.createDataFrame(df)
@@ -96,6 +99,7 @@ def test_delta_dataset_source_from_table_versioned(spark_session, tmp_path):
     assert reloaded_source.to_json() == delta_datasource.to_json()
 
 
+@pytest.mark.skip(reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI")
 def test_delta_dataset_source_too_many_inputs(spark_session, tmp_path):
     df = pd.DataFrame([[1, 2, 3], [1, 2, 3]], columns=["a", "b", "c"])
     df_spark = spark_session.createDataFrame(df)
@@ -107,6 +111,7 @@ def test_delta_dataset_source_too_many_inputs(spark_session, tmp_path):
         DeltaDatasetSource(path=tmp_path, delta_table_name="temp_delta_too_many_inputs")
 
 
+@pytest.mark.skip(reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI")
 def test_uc_table_id_retrieval_works(spark_session, tmp_path):
     def mock_resolve_table_name(table_name, spark):
         if table_name == "temp_delta_versioned_with_id":

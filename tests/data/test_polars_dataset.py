@@ -19,6 +19,10 @@ from mlflow.types.schema import Array, ColSpec, DataType, Object, Property, Sche
 
 from tests.resources.data.dataset_source import SampleDatasetSource
 
+pytestmark = pytest.mark.skip(
+    reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI"
+)
+
 
 @pytest.fixture(name="source", scope="module")
 def sample_source() -> SampleDatasetSource:
