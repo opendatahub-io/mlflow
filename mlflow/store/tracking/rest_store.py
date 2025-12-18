@@ -194,13 +194,13 @@ class RestStore(AbstractStore):
         if response.status_code == 404:
             return False
 
-        if response.status_code >= 400:
+        if response.status_code != 200:
             raise MlflowException(
                 message=(
                     f"Failed to query {self._SERVER_FEATURES_ENDPOINT}: "
                     f"{response.status_code} {response.text}"
                 ),
-                error_code=databricks_pb2.UNAVAILABLE,
+                error_code=databricks_pb2.TEMPORARILY_UNAVAILABLE,
             )
 
         return response.json().get("workspaces_enabled", False)
