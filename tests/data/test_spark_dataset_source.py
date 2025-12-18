@@ -7,6 +7,10 @@ from mlflow.data.dataset_source_registry import get_dataset_source_from_json
 from mlflow.data.spark_dataset_source import SparkDatasetSource
 from mlflow.exceptions import MlflowException
 
+pytestmark = pytest.mark.skip(
+    reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI"
+)
+
 
 @pytest.fixture(scope="module")
 def spark_session():

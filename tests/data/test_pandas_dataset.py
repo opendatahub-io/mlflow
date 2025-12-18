@@ -17,6 +17,10 @@ from mlflow.types.utils import _infer_schema
 
 from tests.resources.data.dataset_source import SampleDatasetSource
 
+pytestmark = pytest.mark.skip(
+    reason="Temporarily skipped due to delta-spark 4.0.0 incompatibility in CI"
+)
+
 
 @pytest.fixture(scope="module")
 def spark_session():
