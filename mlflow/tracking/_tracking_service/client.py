@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from mlflow.entities import EvaluationDataset
 
 from mlflow.entities.dataset_input import DatasetInput
-from mlflow.environment_variables import MLFLOW_SUPPRESS_PRINTING_URL_TO_STDOUT
+from mlflow.environment_variables import MLFLOW_SUPPRESS_PRINTING_URL_TO_STDOUT, MLFLOW_WORKSPACE
 from mlflow.exceptions import MlflowException
 from mlflow.protos.databricks_pb2 import (
     INVALID_PARAMETER_VALUE,
@@ -779,7 +779,7 @@ class TrackingServiceClient:
         if is_databricks_uri(self.tracking_uri):
             experiment_url = f"{host_url}/ml/experiments/{experiment_id}"
         else:
-            workspace = get_request_workspace()
+            workspace = get_request_workspace() or MLFLOW_WORKSPACE.get()
             if workspace and workspace != DEFAULT_WORKSPACE_NAME:
                 encoded = urllib_parse.quote(workspace, safe="")
                 experiment_url = f"{host_url}/#/workspaces/{encoded}/experiments/{experiment_id}"
