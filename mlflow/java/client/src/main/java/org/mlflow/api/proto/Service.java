@@ -235279,6 +235279,35 @@ public final class Service {
      */
     com.google.protobuf.ByteString
         getDescriptionBytes();
+
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    boolean hasDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    java.lang.String getDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes();
   }
   /**
    * <pre>
@@ -235299,6 +235328,7 @@ public final class Service {
     private Workspace() {
       name_ = "";
       description_ = "";
+      defaultArtifactRoot_ = "";
     }
 
     @java.lang.Override
@@ -235342,6 +235372,12 @@ public final class Service {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
               description_ = bs;
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              defaultArtifactRoot_ = bs;
               break;
             }
             default: {
@@ -235497,6 +235533,66 @@ public final class Service {
       }
     }
 
+    public static final int DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER = 3;
+    private volatile java.lang.Object defaultArtifactRoot_;
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    @java.lang.Override
+    public boolean hasDefaultArtifactRoot() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public java.lang.String getDefaultArtifactRoot() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          defaultArtifactRoot_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override for this workspace.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        defaultArtifactRoot_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -235517,6 +235613,9 @@ public final class Service {
       if (((bitField0_ & 0x00000002) != 0)) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 2, description_);
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 3, defaultArtifactRoot_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -235531,6 +235630,9 @@ public final class Service {
       }
       if (((bitField0_ & 0x00000002) != 0)) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, description_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, defaultArtifactRoot_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -235557,6 +235659,11 @@ public final class Service {
         if (!getDescription()
             .equals(other.getDescription())) return false;
       }
+      if (hasDefaultArtifactRoot() != other.hasDefaultArtifactRoot()) return false;
+      if (hasDefaultArtifactRoot()) {
+        if (!getDefaultArtifactRoot()
+            .equals(other.getDefaultArtifactRoot())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -235575,6 +235682,10 @@ public final class Service {
       if (hasDescription()) {
         hash = (37 * hash) + DESCRIPTION_FIELD_NUMBER;
         hash = (53 * hash) + getDescription().hashCode();
+      }
+      if (hasDefaultArtifactRoot()) {
+        hash = (37 * hash) + DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER;
+        hash = (53 * hash) + getDefaultArtifactRoot().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -235717,6 +235828,8 @@ public final class Service {
         bitField0_ = (bitField0_ & ~0x00000001);
         description_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        defaultArtifactRoot_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -235753,6 +235866,10 @@ public final class Service {
           to_bitField0_ |= 0x00000002;
         }
         result.description_ = description_;
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.defaultArtifactRoot_ = defaultArtifactRoot_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -235810,6 +235927,11 @@ public final class Service {
         if (other.hasDescription()) {
           bitField0_ |= 0x00000002;
           description_ = other.description_;
+          onChanged();
+        }
+        if (other.hasDefaultArtifactRoot()) {
+          bitField0_ |= 0x00000004;
+          defaultArtifactRoot_ = other.defaultArtifactRoot_;
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -236054,6 +236176,114 @@ public final class Service {
   }
   bitField0_ |= 0x00000002;
         description_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object defaultArtifactRoot_ = "";
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return Whether the defaultArtifactRoot field is set.
+       */
+      public boolean hasDefaultArtifactRoot() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The defaultArtifactRoot.
+       */
+      public java.lang.String getDefaultArtifactRoot() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            defaultArtifactRoot_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The bytes for defaultArtifactRoot.
+       */
+      public com.google.protobuf.ByteString
+          getDefaultArtifactRootBytes() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          defaultArtifactRoot_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRoot(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDefaultArtifactRoot() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        defaultArtifactRoot_ = getDefaultInstance().getDefaultArtifactRoot();
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override for this workspace.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The bytes for defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRootBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
         onChanged();
         return this;
       }
@@ -237502,6 +237732,35 @@ public final class Service {
      */
     com.google.protobuf.ByteString
         getDescriptionBytes();
+
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    boolean hasDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    java.lang.String getDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes();
   }
   /**
    * <pre>
@@ -237522,6 +237781,7 @@ public final class Service {
     private CreateWorkspace() {
       name_ = "";
       description_ = "";
+      defaultArtifactRoot_ = "";
     }
 
     @java.lang.Override
@@ -237565,6 +237825,12 @@ public final class Service {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
               description_ = bs;
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              defaultArtifactRoot_ = bs;
               break;
             }
             default: {
@@ -238412,6 +238678,66 @@ public final class Service {
       }
     }
 
+    public static final int DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER = 3;
+    private volatile java.lang.Object defaultArtifactRoot_;
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    @java.lang.Override
+    public boolean hasDefaultArtifactRoot() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public java.lang.String getDefaultArtifactRoot() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          defaultArtifactRoot_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override to apply at creation time.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        defaultArtifactRoot_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -238432,6 +238758,9 @@ public final class Service {
       if (((bitField0_ & 0x00000002) != 0)) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 2, description_);
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 3, defaultArtifactRoot_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -238446,6 +238775,9 @@ public final class Service {
       }
       if (((bitField0_ & 0x00000002) != 0)) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, description_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, defaultArtifactRoot_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -238472,6 +238804,11 @@ public final class Service {
         if (!getDescription()
             .equals(other.getDescription())) return false;
       }
+      if (hasDefaultArtifactRoot() != other.hasDefaultArtifactRoot()) return false;
+      if (hasDefaultArtifactRoot()) {
+        if (!getDefaultArtifactRoot()
+            .equals(other.getDefaultArtifactRoot())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -238490,6 +238827,10 @@ public final class Service {
       if (hasDescription()) {
         hash = (37 * hash) + DESCRIPTION_FIELD_NUMBER;
         hash = (53 * hash) + getDescription().hashCode();
+      }
+      if (hasDefaultArtifactRoot()) {
+        hash = (37 * hash) + DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER;
+        hash = (53 * hash) + getDefaultArtifactRoot().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -238632,6 +238973,8 @@ public final class Service {
         bitField0_ = (bitField0_ & ~0x00000001);
         description_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        defaultArtifactRoot_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -238668,6 +239011,10 @@ public final class Service {
           to_bitField0_ |= 0x00000002;
         }
         result.description_ = description_;
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.defaultArtifactRoot_ = defaultArtifactRoot_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -238725,6 +239072,11 @@ public final class Service {
         if (other.hasDescription()) {
           bitField0_ |= 0x00000002;
           description_ = other.description_;
+          onChanged();
+        }
+        if (other.hasDefaultArtifactRoot()) {
+          bitField0_ |= 0x00000004;
+          defaultArtifactRoot_ = other.defaultArtifactRoot_;
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -238969,6 +239321,114 @@ public final class Service {
   }
   bitField0_ |= 0x00000002;
         description_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object defaultArtifactRoot_ = "";
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return Whether the defaultArtifactRoot field is set.
+       */
+      public boolean hasDefaultArtifactRoot() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The defaultArtifactRoot.
+       */
+      public java.lang.String getDefaultArtifactRoot() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            defaultArtifactRoot_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The bytes for defaultArtifactRoot.
+       */
+      public com.google.protobuf.ByteString
+          getDefaultArtifactRootBytes() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          defaultArtifactRoot_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRoot(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDefaultArtifactRoot() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        defaultArtifactRoot_ = getDefaultInstance().getDefaultArtifactRoot();
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override to apply at creation time.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The bytes for defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRootBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
         onChanged();
         return this;
       }
@@ -240440,6 +240900,35 @@ public final class Service {
      */
     com.google.protobuf.ByteString
         getDescriptionBytes();
+
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    boolean hasDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    java.lang.String getDefaultArtifactRoot();
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes();
   }
   /**
    * <pre>
@@ -240460,6 +240949,7 @@ public final class Service {
     private UpdateWorkspace() {
       workspaceName_ = "";
       description_ = "";
+      defaultArtifactRoot_ = "";
     }
 
     @java.lang.Override
@@ -240503,6 +240993,12 @@ public final class Service {
               com.google.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000002;
               description_ = bs;
+              break;
+            }
+            case 26: {
+              com.google.protobuf.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000004;
+              defaultArtifactRoot_ = bs;
               break;
             }
             default: {
@@ -241350,6 +241846,66 @@ public final class Service {
       }
     }
 
+    public static final int DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER = 3;
+    private volatile java.lang.Object defaultArtifactRoot_;
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return Whether the defaultArtifactRoot field is set.
+     */
+    @java.lang.Override
+    public boolean hasDefaultArtifactRoot() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public java.lang.String getDefaultArtifactRoot() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          defaultArtifactRoot_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <pre>
+     * Optional default artifact root override update.
+     * </pre>
+     *
+     * <code>optional string default_artifact_root = 3;</code>
+     * @return The bytes for defaultArtifactRoot.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getDefaultArtifactRootBytes() {
+      java.lang.Object ref = defaultArtifactRoot_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        defaultArtifactRoot_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -241370,6 +241926,9 @@ public final class Service {
       if (((bitField0_ & 0x00000002) != 0)) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 2, description_);
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 3, defaultArtifactRoot_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -241384,6 +241943,9 @@ public final class Service {
       }
       if (((bitField0_ & 0x00000002) != 0)) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, description_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, defaultArtifactRoot_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -241410,6 +241972,11 @@ public final class Service {
         if (!getDescription()
             .equals(other.getDescription())) return false;
       }
+      if (hasDefaultArtifactRoot() != other.hasDefaultArtifactRoot()) return false;
+      if (hasDefaultArtifactRoot()) {
+        if (!getDefaultArtifactRoot()
+            .equals(other.getDefaultArtifactRoot())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -241428,6 +241995,10 @@ public final class Service {
       if (hasDescription()) {
         hash = (37 * hash) + DESCRIPTION_FIELD_NUMBER;
         hash = (53 * hash) + getDescription().hashCode();
+      }
+      if (hasDefaultArtifactRoot()) {
+        hash = (37 * hash) + DEFAULT_ARTIFACT_ROOT_FIELD_NUMBER;
+        hash = (53 * hash) + getDefaultArtifactRoot().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -241570,6 +242141,8 @@ public final class Service {
         bitField0_ = (bitField0_ & ~0x00000001);
         description_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
+        defaultArtifactRoot_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -241606,6 +242179,10 @@ public final class Service {
           to_bitField0_ |= 0x00000002;
         }
         result.description_ = description_;
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.defaultArtifactRoot_ = defaultArtifactRoot_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -241663,6 +242240,11 @@ public final class Service {
         if (other.hasDescription()) {
           bitField0_ |= 0x00000002;
           description_ = other.description_;
+          onChanged();
+        }
+        if (other.hasDefaultArtifactRoot()) {
+          bitField0_ |= 0x00000004;
+          defaultArtifactRoot_ = other.defaultArtifactRoot_;
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -241907,6 +242489,114 @@ public final class Service {
   }
   bitField0_ |= 0x00000002;
         description_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object defaultArtifactRoot_ = "";
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return Whether the defaultArtifactRoot field is set.
+       */
+      public boolean hasDefaultArtifactRoot() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The defaultArtifactRoot.
+       */
+      public java.lang.String getDefaultArtifactRoot() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            defaultArtifactRoot_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return The bytes for defaultArtifactRoot.
+       */
+      public com.google.protobuf.ByteString
+          getDefaultArtifactRootBytes() {
+        java.lang.Object ref = defaultArtifactRoot_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          defaultArtifactRoot_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRoot(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDefaultArtifactRoot() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        defaultArtifactRoot_ = getDefaultInstance().getDefaultArtifactRoot();
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * Optional default artifact root override update.
+       * </pre>
+       *
+       * <code>optional string default_artifact_root = 3;</code>
+       * @param value The bytes for defaultArtifactRoot to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDefaultArtifactRootBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        defaultArtifactRoot_ = value;
         onChanged();
         return this;
       }
@@ -244838,437 +245528,439 @@ public final class Service {
       "(\t\022\023\n\013resource_id\030\003 \001(\t\032<\n\010Response\0220\n\010b" +
       "indings\030\001 \003(\0132\036.mlflow.GatewayEndpointBi" +
       "nding\"9\n\020GetSecretsConfig\032%\n\010Response\022\031\n" +
-      "\021secrets_available\030\001 \001(\010\"4\n\tWorkspace\022\022\n" +
-      "\004name\030\001 \001(\tB\004\370\206\031\001\022\023\n\013description\030\002 \001(\t\"p" +
-      "\n\016ListWorkspaces\0321\n\010Response\022%\n\nworkspac" +
-      "es\030\001 \003(\0132\021.mlflow.Workspace:+\342?(\n&com.da" +
-      "tabricks.rpc.RPC[$this.Response]\"\231\001\n\017Cre" +
-      "ateWorkspace\022\022\n\004name\030\001 \001(\tB\004\370\206\031\001\022\023\n\013desc" +
-      "ription\030\002 \001(\t\0320\n\010Response\022$\n\tworkspace\030\001" +
-      " \001(\0132\021.mlflow.Workspace:+\342?(\n&com.databr" +
-      "icks.rpc.RPC[$this.Response]\"\213\001\n\014GetWork" +
-      "space\022\034\n\016workspace_name\030\001 \001(\tB\004\370\206\031\001\0320\n\010R" +
+      "\021secrets_available\030\001 \001(\010\"S\n\tWorkspace\022\022\n" +
+      "\004name\030\001 \001(\tB\004\370\206\031\001\022\023\n\013description\030\002 \001(\t\022\035" +
+      "\n\025default_artifact_root\030\003 \001(\t\"p\n\016ListWor" +
+      "kspaces\0321\n\010Response\022%\n\nworkspaces\030\001 \003(\0132" +
+      "\021.mlflow.Workspace:+\342?(\n&com.databricks." +
+      "rpc.RPC[$this.Response]\"\270\001\n\017CreateWorksp" +
+      "ace\022\022\n\004name\030\001 \001(\tB\004\370\206\031\001\022\023\n\013description\030\002" +
+      " \001(\t\022\035\n\025default_artifact_root\030\003 \001(\t\0320\n\010R" +
       "esponse\022$\n\tworkspace\030\001 \001(\0132\021.mlflow.Work" +
       "space:+\342?(\n&com.databricks.rpc.RPC[$this" +
-      ".Response]\"\243\001\n\017UpdateWorkspace\022\034\n\016worksp" +
-      "ace_name\030\001 \001(\tB\004\370\206\031\001\022\023\n\013description\030\002 \001(" +
-      "\t\0320\n\010Response\022$\n\tworkspace\030\001 \001(\0132\021.mlflo" +
-      "w.Workspace:+\342?(\n&com.databricks.rpc.RPC" +
-      "[$this.Response]\"h\n\017DeleteWorkspace\022\034\n\016w" +
-      "orkspace_name\030\001 \001(\tB\004\370\206\031\001\032\n\n\010Response:+\342" +
-      "?(\n&com.databricks.rpc.RPC[$this.Respons" +
-      "e]*6\n\010ViewType\022\017\n\013ACTIVE_ONLY\020\001\022\020\n\014DELET" +
-      "ED_ONLY\020\002\022\007\n\003ALL\020\003*I\n\nSourceType\022\014\n\010NOTE" +
-      "BOOK\020\001\022\007\n\003JOB\020\002\022\013\n\007PROJECT\020\003\022\t\n\005LOCAL\020\004\022" +
-      "\014\n\007UNKNOWN\020\350\007*M\n\tRunStatus\022\013\n\007RUNNING\020\001\022" +
-      "\r\n\tSCHEDULED\020\002\022\014\n\010FINISHED\020\003\022\n\n\006FAILED\020\004" +
-      "\022\n\n\006KILLED\020\005*O\n\013TraceStatus\022\034\n\030TRACE_STA" +
-      "TUS_UNSPECIFIED\020\000\022\006\n\002OK\020\001\022\t\n\005ERROR\020\002\022\017\n\013" +
-      "IN_PROGRESS\020\003*\212\001\n\021LoggedModelStatus\022#\n\037L" +
-      "OGGED_MODEL_STATUS_UNSPECIFIED\020\000\022\030\n\024LOGG" +
-      "ED_MODEL_PENDING\020\001\022\026\n\022LOGGED_MODEL_READY" +
-      "\020\002\022\036\n\032LOGGED_MODEL_UPLOAD_FAILED\020\0032\372|\n\rM" +
-      "lflowService\022\246\001\n\023getExperimentByName\022\033.m" +
-      "lflow.GetExperimentByName\032$.mlflow.GetEx" +
-      "perimentByName.Response\"L\362\206\031H\n,\n\003GET\022\037/m" +
-      "lflow/experiments/get-by-name\032\004\010\002\020\000\020\001*\026G" +
-      "et Experiment By Name\022\224\001\n\020createExperime" +
-      "nt\022\030.mlflow.CreateExperiment\032!.mlflow.Cr" +
-      "eateExperiment.Response\"C\362\206\031?\n(\n\004POST\022\032/" +
-      "mlflow/experiments/create\032\004\010\002\020\000\020\001*\021Creat" +
-      "e Experiment\022\301\001\n\021searchExperiments\022\031.mlf" +
-      "low.SearchExperiments\032\".mlflow.SearchExp" +
-      "eriments.Response\"m\362\206\031i\n(\n\004POST\022\032/mlflow" +
-      "/experiments/search\032\004\010\002\020\000\n\'\n\003GET\022\032/mlflo" +
-      "w/experiments/search\032\004\010\002\020\000\020\001*\022Search Exp" +
-      "eriments\022\210\001\n\rgetExperiment\022\025.mlflow.GetE" +
-      "xperiment\032\036.mlflow.GetExperiment.Respons" +
-      "e\"@\362\206\0318\n$\n\003GET\022\027/mlflow/experiments/get\032" +
-      "\004\010\002\020\000\020\001*\016Get Experiment\272\214\031\000\022\224\001\n\020deleteEx" +
-      "periment\022\030.mlflow.DeleteExperiment\032!.mlf" +
-      "low.DeleteExperiment.Response\"C\362\206\031?\n(\n\004P" +
-      "OST\022\032/mlflow/experiments/delete\032\004\010\002\020\000\020\001*" +
-      "\021Delete Experiment\022\231\001\n\021restoreExperiment" +
-      "\022\031.mlflow.RestoreExperiment\032\".mlflow.Res" +
-      "toreExperiment.Response\"E\362\206\031A\n)\n\004POST\022\033/" +
-      "mlflow/experiments/restore\032\004\010\002\020\000\020\001*\022Rest" +
-      "ore Experiment\022\224\001\n\020updateExperiment\022\030.ml" +
-      "flow.UpdateExperiment\032!.mlflow.UpdateExp" +
-      "eriment.Response\"C\362\206\031?\n(\n\004POST\022\032/mlflow/" +
-      "experiments/update\032\004\010\002\020\000\020\001*\021Update Exper" +
-      "iment\022q\n\tcreateRun\022\021.mlflow.CreateRun\032\032." +
-      "mlflow.CreateRun.Response\"5\362\206\0311\n!\n\004POST\022" +
-      "\023/mlflow/runs/create\032\004\010\002\020\000\020\001*\nCreate Run" +
-      "\022q\n\tupdateRun\022\021.mlflow.UpdateRun\032\032.mlflo" +
-      "w.UpdateRun.Response\"5\362\206\0311\n!\n\004POST\022\023/mlf" +
-      "low/runs/update\032\004\010\002\020\000\020\001*\nUpdate Run\022q\n\td" +
-      "eleteRun\022\021.mlflow.DeleteRun\032\032.mlflow.Del" +
-      "eteRun.Response\"5\362\206\0311\n!\n\004POST\022\023/mlflow/r" +
-      "uns/delete\032\004\010\002\020\000\020\001*\nDelete Run\022v\n\nrestor" +
-      "eRun\022\022.mlflow.RestoreRun\032\033.mlflow.Restor" +
-      "eRun.Response\"7\362\206\0313\n\"\n\004POST\022\024/mlflow/run" +
-      "s/restore\032\004\010\002\020\000\020\001*\013Restore Run\022u\n\tlogMet" +
-      "ric\022\021.mlflow.LogMetric\032\032.mlflow.LogMetri" +
-      "c.Response\"9\362\206\0315\n%\n\004POST\022\027/mlflow/runs/l" +
-      "og-metric\032\004\010\002\020\000\020\001*\nLog Metric\022t\n\010logPara" +
-      "m\022\020.mlflow.LogParam\032\031.mlflow.LogParam.Re" +
-      "sponse\";\362\206\0317\n(\n\004POST\022\032/mlflow/runs/log-p" +
-      "arameter\032\004\010\002\020\000\020\001*\tLog Param\022\241\001\n\020setExper" +
-      "imentTag\022\030.mlflow.SetExperimentTag\032!.mlf" +
-      "low.SetExperimentTag.Response\"P\362\206\031L\n4\n\004P" +
-      "OST\022&/mlflow/experiments/set-experiment-" +
-      "tag\032\004\010\002\020\000\020\001*\022Set Experiment Tag\022\260\001\n\023dele" +
-      "teExperimentTag\022\033.mlflow.DeleteExperimen" +
-      "tTag\032$.mlflow.DeleteExperimentTag.Respon" +
-      "se\"V\362\206\031R\n7\n\004POST\022)/mlflow/experiments/de" +
-      "lete-experiment-tag\032\004\010\002\020\000\020\001*\025Delete Expe" +
-      "riment Tag\022f\n\006setTag\022\016.mlflow.SetTag\032\027.m" +
-      "lflow.SetTag.Response\"3\362\206\031/\n\"\n\004POST\022\024/ml" +
-      "flow/runs/set-tag\032\004\010\002\020\000\020\001*\007Set Tag\022\210\001\n\013s" +
-      "etTraceTag\022\023.mlflow.SetTraceTag\032\034.mlflow" +
-      ".SetTraceTag.Response\"F\362\206\031B\n/\n\005PATCH\022 /m" +
-      "lflow/traces/{request_id}/tags\032\004\010\002\020\000\020\003*\r" +
-      "Set Trace Tag\022\217\001\n\rsetTraceTagV3\022\025.mlflow" +
-      ".SetTraceTagV3\032\036.mlflow.SetTraceTagV3.Re" +
-      "sponse\"G\362\206\031C\n-\n\005PATCH\022\036/mlflow/traces/{t" +
-      "race_id}/tags\032\004\010\003\020\000\020\003*\020Set Trace Tag V3\022" +
-      "\225\001\n\016deleteTraceTag\022\026.mlflow.DeleteTraceT" +
-      "ag\032\037.mlflow.DeleteTraceTag.Response\"J\362\206\031" +
-      "F\n0\n\006DELETE\022 /mlflow/traces/{request_id}" +
-      "/tags\032\004\010\002\020\000\020\003*\020Delete Trace Tag\022\234\001\n\020dele" +
-      "teTraceTagV3\022\030.mlflow.DeleteTraceTagV3\032!" +
-      ".mlflow.DeleteTraceTagV3.Response\"K\362\206\031G\n" +
-      ".\n\006DELETE\022\036/mlflow/traces/{trace_id}/tag" +
-      "s\032\004\010\003\020\000\020\003*\023Delete Trace Tag V3\022u\n\tdelete" +
-      "Tag\022\021.mlflow.DeleteTag\032\032.mlflow.DeleteTa" +
-      "g.Response\"9\362\206\0315\n%\n\004POST\022\027/mlflow/runs/d" +
-      "elete-tag\032\004\010\002\020\000\020\001*\nDelete Tag\022e\n\006getRun\022" +
-      "\016.mlflow.GetRun\032\027.mlflow.GetRun.Response" +
-      "\"2\362\206\031*\n\035\n\003GET\022\020/mlflow/runs/get\032\004\010\002\020\000\020\001*" +
-      "\007Get Run\272\214\031\000\022y\n\nsearchRuns\022\022.mlflow.Sear" +
-      "chRuns\032\033.mlflow.SearchRuns.Response\":\362\206\031" +
-      "2\n!\n\004POST\022\023/mlflow/runs/search\032\004\010\002\020\000\020\001*\013" +
-      "Search Runs\272\214\031\000\022\207\001\n\rlistArtifacts\022\025.mlfl" +
-      "ow.ListArtifacts\032\036.mlflow.ListArtifacts." +
-      "Response\"?\362\206\0317\n#\n\003GET\022\026/mlflow/artifacts" +
-      "/list\032\004\010\002\020\000\020\001*\016List Artifacts\272\214\031\000\022\225\001\n\020ge" +
-      "tMetricHistory\022\030.mlflow.GetMetricHistory" +
-      "\032!.mlflow.GetMetricHistory.Response\"D\362\206\031" +
-      "@\n(\n\003GET\022\033/mlflow/metrics/get-history\032\004\010" +
-      "\002\020\000\020\001*\022Get Metric History\022\267\001\n\034getMetricH" +
-      "istoryBulkInterval\022$.mlflow.GetMetricHis" +
-      "toryBulkInterval\032-.mlflow.GetMetricHisto" +
-      "ryBulkInterval.Response\"B\362\206\031:\n6\n\003GET\022)/m" +
-      "lflow/metrics/get-history-bulk-interval\032" +
-      "\004\010\002\020\013\020\003\272\214\031\000\022p\n\010logBatch\022\020.mlflow.LogBatc" +
-      "h\032\031.mlflow.LogBatch.Response\"7\362\206\0313\n$\n\004PO" +
-      "ST\022\026/mlflow/runs/log-batch\032\004\010\002\020\000\020\001*\tLog " +
-      "Batch\022p\n\010logModel\022\020.mlflow.LogModel\032\031.ml" +
-      "flow.LogModel.Response\"7\362\206\0313\n$\n\004POST\022\026/m" +
-      "lflow/runs/log-model\032\004\010\002\020\000\020\001*\tLog Model\022" +
-      "u\n\tlogInputs\022\021.mlflow.LogInputs\032\032.mlflow" +
-      ".LogInputs.Response\"9\362\206\0315\n%\n\004POST\022\027/mlfl" +
-      "ow/runs/log-inputs\032\004\010\002\020\000\020\001*\nLog Inputs\022v" +
-      "\n\nlogOutputs\022\022.mlflow.LogOutputs\032\033.mlflo" +
-      "w.LogOutputs.Response\"7\362\206\0313\n\"\n\004POST\022\024/ml" +
-      "flow/runs/outputs\032\004\010\002\020\000\020\003*\013Log Outputs\022\207" +
-      "\001\n\016searchDatasets\022\026.mlflow.SearchDataset" +
-      "s\032\037.mlflow.SearchDatasets.Response\"<\362\206\0314" +
-      "\n0\n\004POST\022\"mlflow/experiments/search-data" +
-      "sets\032\004\010\002\020\000\020\003\272\214\031\000\022p\n\nstartTrace\022\022.mlflow." +
-      "StartTrace\032\033.mlflow.StartTrace.Response\"" +
-      "1\362\206\031-\n\034\n\004POST\022\016/mlflow/traces\032\004\010\002\020\000\020\003*\013S" +
-      "tart Trace\022v\n\010endTrace\022\020.mlflow.EndTrace" +
-      "\032\031.mlflow.EndTrace.Response\"=\362\206\0319\n*\n\005PAT" +
-      "CH\022\033/mlflow/traces/{request_id}\032\004\010\002\020\000\020\003*" +
-      "\tEnd Trace\022\211\001\n\014getTraceInfo\022\024.mlflow.Get" +
-      "TraceInfo\032\035.mlflow.GetTraceInfo.Response" +
-      "\"D\362\206\031@\n-\n\003GET\022 /mlflow/traces/{request_i" +
-      "d}/info\032\004\010\002\020\000\020\003*\rGet TraceInfo\022\213\001\n\016getTr" +
-      "aceInfoV3\022\026.mlflow.GetTraceInfoV3\032\037.mlfl" +
-      "ow.GetTraceInfoV3.Response\"@\362\206\031<\n&\n\003GET\022" +
-      "\031/mlflow/traces/{trace_id}\032\004\010\003\020\000\020\003*\020Get " +
-      "TraceInfo v3\022n\n\010getTrace\022\020.mlflow.GetTra" +
-      "ce\032\031.mlflow.GetTrace.Response\"5\362\206\0311\n\037\n\003G" +
-      "ET\022\022/mlflow/traces/get\032\004\010\003\020\000\020\003*\014Get Trac" +
-      "e v3\022\203\001\n\016batchGetTraces\022\026.mlflow.BatchGe" +
-      "tTraces\032\037.mlflow.BatchGetTraces.Response" +
-      "\"8\362\206\0314\n$\n\003GET\022\027/mlflow/traces/batchGet\032\004" +
-      "\010\003\020\000\020\003*\nGet Traces\022w\n\014searchTraces\022\024.mlf" +
-      "low.SearchTraces\032\035.mlflow.SearchTraces.R" +
-      "esponse\"2\362\206\031.\n\033\n\003GET\022\016/mlflow/traces\032\004\010\002" +
-      "\020\000\020\003*\rSearch Traces\022\210\001\n\016searchTracesV3\022\026" +
-      ".mlflow.SearchTracesV3\032\037.mlflow.SearchTr" +
-      "acesV3.Response\"=\362\206\0319\n#\n\004POST\022\025/mlflow/t" +
-      "races/search\032\004\010\003\020\000\020\003*\020Search Traces V3\022i" +
-      "\n\014startTraceV3\022\024.mlflow.StartTraceV3\032\035.m" +
-      "lflow.StartTraceV3.Response\"$\362\206\031 \n\034\n\004POS" +
-      "T\022\016/mlflow/traces\032\004\010\003\020\000\020\003\022\222\001\n\017linkTraces" +
-      "ToRun\022\027.mlflow.LinkTracesToRun\032 .mlflow." +
-      "LinkTracesToRun.Response\"D\362\206\031@\n(\n\004POST\022\032" +
-      "/mlflow/traces/link-to-run\032\004\010\002\020\000\020\003*\022Link" +
-      " Traces to Run\022\237\001\n\022linkPromptsToTrace\022\032." +
-      "mlflow.LinkPromptsToTrace\032#.mlflow.LinkP" +
-      "romptsToTrace.Response\"H\362\206\031D\n)\n\004POST\022\033/m" +
-      "lflow/traces/link-prompts\032\004\010\002\020\000\020\003*\025Link " +
-      "Prompts to Trace\022\242\001\n\031searchUnifiedTraceH" +
-      "andler\022\033.mlflow.SearchUnifiedTraces\032$.ml" +
-      "flow.SearchUnifiedTraces.Response\"B\362\206\031>\n" +
-      "#\n\003GET\022\026/mlflow/unified-traces\032\004\010\002\020\000\020\003*\025" +
-      "Search Unified Traces\022\257\001\n\025getOnlineTrace" +
-      "Details\022\035.mlflow.GetOnlineTraceDetails\032&" +
-      ".mlflow.GetOnlineTraceDetails.Response\"O" +
-      "\362\206\031K\n-\n\003GET\022 /mlflow/get-online-trace-de" +
-      "tails\032\004\010\002\020\000\020\003*\030Get Online Trace Details\022" +
-      "\206\001\n\014deleteTraces\022\024.mlflow.DeleteTraces\032\035" +
-      ".mlflow.DeleteTraces.Response\"A\362\206\031=\n*\n\004P" +
-      "OST\022\034/mlflow/traces/delete-traces\032\004\010\002\020\000\020" +
-      "\003*\rDelete Traces\022\217\001\n\016deleteTracesV3\022\026.ml" +
-      "flow.DeleteTracesV3\032\037.mlflow.DeleteTrace" +
-      "sV3.Response\"D\362\206\031@\n*\n\004POST\022\034/mlflow/trac" +
-      "es/delete-traces\032\004\010\003\020\000\020\003*\020Delete Traces " +
-      "V3\022\343\001\n\037calculateTraceFilterCorrelation\022\'" +
-      ".mlflow.CalculateTraceFilterCorrelation\032" +
-      "0.mlflow.CalculateTraceFilterCorrelation" +
-      ".Response\"e\362\206\031a\n9\n\004POST\022+/mlflow/traces/" +
-      "calculate-filter-correlation\032\004\010\003\020\000\020\003*\"Ca" +
-      "lculate Trace Filter Correlation\022\203\001\n\016lis" +
-      "tWorkspaces\022\026.mlflow.ListWorkspaces\032\037.ml" +
-      "flow.ListWorkspaces.Response\"8\362\206\0314\n\037\n\003GE" +
-      "T\022\022/mlflow/workspaces\032\004\010\002\020\000\020\003*\017List Work" +
-      "spaces\022\210\001\n\017createWorkspace\022\027.mlflow.Crea" +
-      "teWorkspace\032 .mlflow.CreateWorkspace.Res" +
-      "ponse\":\362\206\0316\n \n\004POST\022\022/mlflow/workspaces\032" +
-      "\004\010\002\020\000\020\003*\020Create Workspace\022\214\001\n\014getWorkspa" +
-      "ce\022\024.mlflow.GetWorkspace\032\035.mlflow.GetWor" +
-      "kspace.Response\"G\362\206\031C\n0\n\003GET\022#/mlflow/wo" +
-      "rkspaces/{workspace_name}\032\004\010\002\020\000\020\003*\rGet W" +
-      "orkspace\022\232\001\n\017updateWorkspace\022\027.mlflow.Up" +
-      "dateWorkspace\032 .mlflow.UpdateWorkspace.R" +
-      "esponse\"L\362\206\031H\n2\n\005PATCH\022#/mlflow/workspac" +
-      "es/{workspace_name}\032\004\010\002\020\000\020\003*\020Update Work" +
-      "space\022\233\001\n\017deleteWorkspace\022\027.mlflow.Delet" +
-      "eWorkspace\032 .mlflow.DeleteWorkspace.Resp" +
-      "onse\"M\362\206\031I\n3\n\006DELETE\022#/mlflow/workspaces" +
-      "/{workspace_name}\032\004\010\002\020\000\020\003*\020Delete Worksp" +
-      "ace\022\224\001\n\021createLoggedModel\022\031.mlflow.Creat" +
-      "eLoggedModel\032\".mlflow.CreateLoggedModel." +
-      "Response\"@\362\206\031<\n#\n\004POST\022\025/mlflow/logged-m" +
-      "odels\032\004\010\002\020\000\020\003*\023Create Logged Model\022\250\001\n\023f" +
-      "inalizeLoggedModel\022\033.mlflow.FinalizeLogg" +
-      "edModel\032$.mlflow.FinalizeLoggedModel.Res" +
-      "ponse\"N\362\206\031J\n/\n\005PATCH\022 /mlflow/logged-mod" +
-      "els/{model_id}\032\004\010\002\020\000\020\003*\025Finalize Logged " +
-      "Model\022\222\001\n\016getLoggedModel\022\026.mlflow.GetLog" +
-      "gedModel\032\037.mlflow.GetLoggedModel.Respons" +
-      "e\"G\362\206\031C\n-\n\003GET\022 /mlflow/logged-models/{m" +
-      "odel_id}\032\004\010\002\020\000\020\003*\020Get Logged Model\022\243\001\n\021d" +
-      "eleteLoggedModel\022\031.mlflow.DeleteLoggedMo" +
-      "del\032\".mlflow.DeleteLoggedModel.Response\"" +
-      "O\362\206\031K\n0\n\006DELETE\022 /mlflow/logged-models/{" +
-      "model_id}\032\004\010\002\020\000\020\003*\025Delete a Logged Model" +
-      "\022\236\001\n\022searchLoggedModels\022\032.mlflow.SearchL" +
-      "oggedModels\032#.mlflow.SearchLoggedModels." +
-      "Response\"G\362\206\031C\n*\n\004POST\022\034/mlflow/logged-m" +
-      "odels/search\032\004\010\002\020\000\020\003*\023Search LoggedModel" +
-      "s\022\251\001\n\022setLoggedModelTags\022\032.mlflow.SetLog" +
-      "gedModelTags\032#.mlflow.SetLoggedModelTags" +
-      ".Response\"R\362\206\031N\n4\n\005PATCH\022%/mlflow/logged" +
-      "-models/{model_id}/tags\032\004\010\002\020\000\020\003*\024Set Log" +
-      "ged Model Tag\022\275\001\n\024deleteLoggedModelTag\022\034" +
-      ".mlflow.DeleteLoggedModelTag\032%.mlflow.De" +
-      "leteLoggedModelTag.Response\"`\362\206\031\\\n?\n\006DEL" +
-      "ETE\022//mlflow/logged-models/{model_id}/ta" +
-      "gs/{tag_key}\032\004\010\002\020\000\020\003*\027Delete Logged Mode" +
-      "l Tag\022\326\001\n\030listLoggedModelArtifacts\022 .mlf" +
-      "low.ListLoggedModelArtifacts\032).mlflow.Li" +
-      "stLoggedModelArtifacts.Response\"m\362\206\031i\nC\n" +
-      "\003GET\0226/mlflow/logged-models/{model_id}/a" +
-      "rtifacts/directories\032\004\010\002\020\000\020\003* List Artif" +
-      "acts for Logged Models\022\301\001\n\024LogLoggedMode" +
-      "lParams\022#.mlflow.LogLoggedModelParamsReq" +
-      "uest\032,.mlflow.LogLoggedModelParamsReques" +
-      "t.Response\"V\362\206\031R\n5\n\004POST\022\'/mlflow/logged" +
-      "-models/{model_id}/params\032\004\010\002\020\000\020\003*\027Log L" +
-      "ogged Model Params\022\260\001\n\rGetAssessment\022\034.m" +
-      "lflow.GetAssessmentRequest\032%.mlflow.GetA",
-      "ssessmentRequest.Response\"Z\362\206\031V\nB\n\003GET\0225" +
-      "/mlflow/traces/{trace_id}/assessments/{a" +
-      "ssessment_id}\032\004\010\003\020\000\020\003*\016Get Assessment\022\337\001" +
-      "\n\020createAssessment\022\030.mlflow.CreateAssess" +
-      "ment\032!.mlflow.CreateAssessment.Response\"" +
-      "\215\001\362\206\031\210\001\n>\n\004POST\0220/mlflow/traces/{assessm" +
-      "ent.trace_id}/assessments\032\004\010\003\020\000\020\003\030\350\007\030\356\007\030" +
-      "\014\030\001*:Create an assessment of a trace or " +
-      "a span within the trace\022\320\001\n\020updateAssess" +
-      "ment\022\030.mlflow.UpdateAssessment\032!.mlflow." +
-      "UpdateAssessment.Response\"\177\362\206\031{\nD\n\005PATCH" +
-      "\0225/mlflow/traces/{trace_id}/assessments/" +
-      "{assessment_id}\032\004\010\003\020\000\020\003\030\350\007\030\356\007\030\001*)Update " +
-      "an existing assessment on a trace.\022\261\001\n\020d" +
-      "eleteAssessment\022\030.mlflow.DeleteAssessmen" +
-      "t\032!.mlflow.DeleteAssessment.Response\"`\362\206" +
-      "\031\\\nE\n\006DELETE\0225/mlflow/traces/{trace_id}/" +
-      "assessments/{assessment_id}\032\004\010\003\020\000\020\003*\021Del" +
-      "ete Assessment\022\232\001\n\rcreateDataset\022\025.mlflo" +
-      "w.CreateDataset\032\036.mlflow.CreateDataset.R" +
-      "esponse\"R\362\206\031N\n%\n\004POST\022\027/mlflow/datasets/" +
-      "create\032\004\010\003\020\000\020\003\030\350\007\030\356\007\030\014\030\001*\031Create Evaluat" +
-      "ion Dataset\022\221\001\n\ngetDataset\022\022.mlflow.GetD" +
-      "ataset\032\033.mlflow.GetDataset.Response\"R\362\206\031" +
-      "N\n*\n\003GET\022\035/mlflow/datasets/{dataset_id}\032" +
-      "\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\026Get Evaluation Dataset\022" +
-      "\240\001\n\rdeleteDataset\022\025.mlflow.DeleteDataset" +
-      "\032\036.mlflow.DeleteDataset.Response\"X\362\206\031T\n-" +
-      "\n\006DELETE\022\035/mlflow/datasets/{dataset_id}\032" +
-      "\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\031Delete Evaluation Datas" +
-      "et\022\335\001\n\030searchEvaluationDatasets\022 .mlflow" +
-      ".SearchEvaluationDatasets\032).mlflow.Searc" +
-      "hEvaluationDatasets.Response\"t\362\206\031p\n%\n\004PO" +
-      "ST\022\027/mlflow/datasets/search\032\004\010\003\020\000\n$\n\003GET" +
-      "\022\027/mlflow/datasets/search\032\004\010\003\020\000\020\003\030\350\007\030\001*\032" +
-      "Search Evaluation Datasets\022\251\001\n\016setDatase" +
-      "tTags\022\026.mlflow.SetDatasetTags\032\037.mlflow.S" +
-      "etDatasetTags.Response\"^\362\206\031Z\n1\n\005PATCH\022\"/" +
-      "mlflow/datasets/{dataset_id}/tags\032\004\010\003\020\000\020" +
-      "\003\030\350\007\030\272\027\030\001*\033Set Evaluation Dataset Tags\022\270" +
-      "\001\n\020deleteDatasetTag\022\030.mlflow.DeleteDatas" +
-      "etTag\032!.mlflow.DeleteDatasetTag.Response" +
-      "\"g\362\206\031c\n8\n\006DELETE\022(/mlflow/datasets/{data" +
-      "set_id}/tags/{key}\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\035Dele" +
-      "te Evaluation Dataset Tag\022\303\001\n\024upsertData" +
-      "setRecords\022\034.mlflow.UpsertDatasetRecords" +
-      "\032%.mlflow.UpsertDatasetRecords.Response\"" +
-      "f\362\206\031b\n3\n\004POST\022%/mlflow/datasets/{dataset" +
-      "_id}/records\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*!Upsert Eva" +
-      "luation Dataset Records\022\326\001\n\027getDatasetEx" +
-      "perimentIds\022\037.mlflow.GetDatasetExperimen" +
-      "tIds\032(.mlflow.GetDatasetExperimentIds.Re" +
-      "sponse\"p\362\206\031l\n9\n\003GET\022,/mlflow/datasets/{d" +
-      "ataset_id}/experiment-ids\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030" +
-      "\001*%Get Evaluation Dataset Experiment IDs" +
-      "\022\212\001\n\016registerScorer\022\026.mlflow.RegisterSco" +
-      "rer\032\037.mlflow.RegisterScorer.Response\"?\362\206" +
-      "\031;\n&\n\004POST\022\030/mlflow/scorers/register\032\004\010\003" +
-      "\020\000\020\001*\017Register Scorer\022y\n\013listScorers\022\023.m" +
-      "lflow.ListScorers\032\034.mlflow.ListScorers.R" +
-      "esponse\"7\362\206\0313\n!\n\003GET\022\024/mlflow/scorers/li" +
-      "st\032\004\010\003\020\000\020\001*\014List Scorers\022\232\001\n\022listScorerV" +
-      "ersions\022\032.mlflow.ListScorerVersions\032#.ml" +
-      "flow.ListScorerVersions.Response\"C\362\206\031?\n%" +
-      "\n\003GET\022\030/mlflow/scorers/versions\032\004\010\003\020\000\020\001*" +
-      "\024List Scorer Versions\022p\n\tgetScorer\022\021.mlf" +
-      "low.GetScorer\032\032.mlflow.GetScorer.Respons" +
-      "e\"4\362\206\0310\n \n\003GET\022\023/mlflow/scorers/get\032\004\010\003\020" +
-      "\000\020\001*\nGet Scorer\022\202\001\n\014deleteScorer\022\024.mlflo" +
-      "w.DeleteScorer\032\035.mlflow.DeleteScorer.Res" +
-      "ponse\"=\362\206\0319\n&\n\006DELETE\022\026/mlflow/scorers/d" +
-      "elete\032\004\010\003\020\000\020\001*\rDelete Scorer\022\266\001\n\021getData" +
-      "setRecords\022\031.mlflow.GetDatasetRecords\032\"." +
-      "mlflow.GetDatasetRecords.Response\"b\362\206\031^\n" +
-      "2\n\003GET\022%/mlflow/datasets/{dataset_id}/re" +
-      "cords\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\036Get Evaluation Da" +
-      "taset Records\022\315\001\n\027addDatasetToExperiment" +
-      "s\022\037.mlflow.AddDatasetToExperiments\032(.mlf" +
-      "low.AddDatasetToExperiments.Response\"g\362\206" +
-      "\031c\n;\n\004POST\022-/mlflow/datasets/{dataset_id" +
-      "}/add-experiments\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\032Add D" +
-      "ataset to Experiments\022\344\001\n\034removeDatasetF" +
-      "romExperiments\022$.mlflow.RemoveDatasetFro" +
-      "mExperiments\032-.mlflow.RemoveDatasetFromE" +
-      "xperiments.Response\"o\362\206\031k\n>\n\004POST\0220/mlfl" +
-      "ow/datasets/{dataset_id}/remove-experime" +
-      "nts\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\037Remove Dataset from" +
-      " Experiments\022\216\001\n\014createSecret\022\033.mlflow.C" +
-      "reateGatewaySecret\032$.mlflow.CreateGatewa" +
-      "ySecret.Response\";\362\206\0317\n$\n\004POST\022\026/mlflow/" +
-      "secrets/create\032\004\010\003\020\000\020\001*\rCreate Secret\022\217\001" +
-      "\n\rgetSecretInfo\022\034.mlflow.GetGatewaySecre" +
-      "tInfo\032%.mlflow.GetGatewaySecretInfo.Resp" +
-      "onse\"9\362\206\0315\n \n\003GET\022\023/mlflow/secrets/get\032\004" +
-      "\010\003\020\000\020\001*\017Get Secret Info\022\216\001\n\014updateSecret" +
-      "\022\033.mlflow.UpdateGatewaySecret\032$.mlflow.U" +
-      "pdateGatewaySecret.Response\";\362\206\0317\n$\n\004POS" +
-      "T\022\026/mlflow/secrets/update\032\004\010\003\020\000\020\001*\rUpdat" +
-      "e Secret\022\220\001\n\014deleteSecret\022\033.mlflow.Delet" +
-      "eGatewaySecret\032$.mlflow.DeleteGatewaySec" +
-      "ret.Response\"=\362\206\0319\n&\n\006DELETE\022\026/mlflow/se" +
-      "crets/delete\032\004\010\003\020\000\020\001*\rDelete Secret\022\223\001\n\017" +
-      "listSecretInfos\022\036.mlflow.ListGatewaySecr" +
-      "etInfos\032\'.mlflow.ListGatewaySecretInfos." +
-      "Response\"7\362\206\0313\n!\n\003GET\022\024/mlflow/secrets/l" +
-      "ist\032\004\010\003\020\000\020\001*\014List Secrets\022\230\001\n\016createEndp" +
-      "oint\022\035.mlflow.CreateGatewayEndpoint\032&.ml" +
-      "flow.CreateGatewayEndpoint.Response\"?\362\206\031" +
-      ";\n&\n\004POST\022\030/mlflow/endpoints/create\032\004\010\003\020" +
-      "\000\020\001*\017Create Endpoint\022\210\001\n\013getEndpoint\022\032.m" +
-      "lflow.GetGatewayEndpoint\032#.mlflow.GetGat" +
-      "ewayEndpoint.Response\"8\362\206\0314\n\"\n\003GET\022\025/mlf" +
-      "low/endpoints/get\032\004\010\003\020\000\020\001*\014Get Endpoint\022" +
-      "\230\001\n\016updateEndpoint\022\035.mlflow.UpdateGatewa" +
-      "yEndpoint\032&.mlflow.UpdateGatewayEndpoint" +
-      ".Response\"?\362\206\031;\n&\n\004POST\022\030/mlflow/endpoin" +
-      "ts/update\032\004\010\003\020\000\020\001*\017Update Endpoint\022\232\001\n\016d" +
-      "eleteEndpoint\022\035.mlflow.DeleteGatewayEndp" +
-      "oint\032&.mlflow.DeleteGatewayEndpoint.Resp" +
-      "onse\"A\362\206\031=\n(\n\006DELETE\022\030/mlflow/endpoints/" +
-      "delete\032\004\010\003\020\000\020\001*\017Delete Endpoint\022\221\001\n\rlist" +
-      "Endpoints\022\034.mlflow.ListGatewayEndpoints\032" +
-      "%.mlflow.ListGatewayEndpoints.Response\";" +
-      "\362\206\0317\n#\n\003GET\022\026/mlflow/endpoints/list\032\004\010\003\020" +
-      "\000\020\001*\016List Endpoints\022\275\001\n\025createModelDefin" +
-      "ition\022$.mlflow.CreateGatewayModelDefinit" +
-      "ion\032-.mlflow.CreateGatewayModelDefinitio" +
-      "n.Response\"O\362\206\031K\n.\n\004POST\022 /mlflow/model-" +
-      "definitions/create\032\004\010\003\020\000\020\001*\027Create Model" +
-      " Definition\022\255\001\n\022getModelDefinition\022!.mlf" +
-      "low.GetGatewayModelDefinition\032*.mlflow.G" +
-      "etGatewayModelDefinition.Response\"H\362\206\031D\n" +
-      "*\n\003GET\022\035/mlflow/model-definitions/get\032\004\010" +
-      "\003\020\000\020\001*\024Get Model Definition\022\266\001\n\024listMode" +
-      "lDefinitions\022#.mlflow.ListGatewayModelDe" +
-      "finitions\032,.mlflow.ListGatewayModelDefin" +
-      "itions.Response\"K\362\206\031G\n+\n\003GET\022\036/mlflow/mo" +
-      "del-definitions/list\032\004\010\003\020\000\020\001*\026List Model" +
-      " Definitions\022\275\001\n\025updateModelDefinition\022$" +
-      ".mlflow.UpdateGatewayModelDefinition\032-.m" +
-      "lflow.UpdateGatewayModelDefinition.Respo" +
-      "nse\"O\362\206\031K\n.\n\004POST\022 /mlflow/model-definit" +
-      "ions/update\032\004\010\003\020\000\020\001*\027Update Model Defini" +
-      "tion\022\277\001\n\025deleteModelDefinition\022$.mlflow." +
-      "DeleteGatewayModelDefinition\032-.mlflow.De" +
-      "leteGatewayModelDefinition.Response\"Q\362\206\031" +
-      "M\n0\n\006DELETE\022 /mlflow/model-definitions/d" +
-      "elete\032\004\010\003\020\000\020\001*\027Delete Model Definition\022\275" +
-      "\001\n\025attachModelToEndpoint\022$.mlflow.Attach" +
-      "ModelToGatewayEndpoint\032-.mlflow.AttachMo" +
-      "delToGatewayEndpoint.Response\"O\362\206\031K\n-\n\004P" +
-      "OST\022\037/mlflow/endpoints/models/attach\032\004\010\003" +
-      "\020\000\020\001*\030Attach Model to Endpoint\022\305\001\n\027detac" +
-      "hModelFromEndpoint\022&.mlflow.DetachModelF" +
-      "romGatewayEndpoint\032/.mlflow.DetachModelF" +
-      "romGatewayEndpoint.Response\"Q\362\206\031M\n-\n\004POS" +
-      "T\022\037/mlflow/endpoints/models/detach\032\004\010\003\020\000" +
-      "\020\001*\032Detach Model from Endpoint\022\276\001\n\025creat" +
-      "eEndpointBinding\022$.mlflow.CreateGatewayE" +
-      "ndpointBinding\032-.mlflow.CreateGatewayEnd" +
-      "pointBinding.Response\"P\362\206\031L\n/\n\004POST\022!/ml" +
-      "flow/endpoints/bindings/create\032\004\010\003\020\000\020\001*\027" +
-      "Create Endpoint Binding\022\300\001\n\025deleteEndpoi" +
-      "ntBinding\022$.mlflow.DeleteGatewayEndpoint" +
-      "Binding\032-.mlflow.DeleteGatewayEndpointBi" +
-      "nding.Response\"R\362\206\031N\n1\n\006DELETE\022!/mlflow/" +
-      "endpoints/bindings/delete\032\004\010\003\020\000\020\001*\027Delet" +
-      "e Endpoint Binding\022\267\001\n\024listEndpointBindi" +
-      "ngs\022#.mlflow.ListGatewayEndpointBindings" +
-      "\032,.mlflow.ListGatewayEndpointBindings.Re" +
-      "sponse\"L\362\206\031H\n,\n\003GET\022\037/mlflow/endpoints/b" +
-      "indings/list\032\004\010\003\020\000\020\001*\026List Endpoint Bind" +
-      "ings\022\220\001\n\020getSecretsConfig\022\030.mlflow.GetSe" +
-      "cretsConfig\032!.mlflow.GetSecretsConfig.Re" +
-      "sponse\"?\362\206\031;\n#\n\003GET\022\026/mlflow/secrets/con" +
-      "fig\032\004\010\003\020\000\020\001*\022Get Secrets ConfigB\036\n\024org.m" +
-      "lflow.api.proto\220\001\001\342?\002\020\001"
+      ".Response]\"\213\001\n\014GetWorkspace\022\034\n\016workspace" +
+      "_name\030\001 \001(\tB\004\370\206\031\001\0320\n\010Response\022$\n\tworkspa" +
+      "ce\030\001 \001(\0132\021.mlflow.Workspace:+\342?(\n&com.da" +
+      "tabricks.rpc.RPC[$this.Response]\"\302\001\n\017Upd" +
+      "ateWorkspace\022\034\n\016workspace_name\030\001 \001(\tB\004\370\206" +
+      "\031\001\022\023\n\013description\030\002 \001(\t\022\035\n\025default_artif" +
+      "act_root\030\003 \001(\t\0320\n\010Response\022$\n\tworkspace\030" +
+      "\001 \001(\0132\021.mlflow.Workspace:+\342?(\n&com.datab" +
+      "ricks.rpc.RPC[$this.Response]\"h\n\017DeleteW" +
+      "orkspace\022\034\n\016workspace_name\030\001 \001(\tB\004\370\206\031\001\032\n" +
+      "\n\010Response:+\342?(\n&com.databricks.rpc.RPC[" +
+      "$this.Response]*6\n\010ViewType\022\017\n\013ACTIVE_ON" +
+      "LY\020\001\022\020\n\014DELETED_ONLY\020\002\022\007\n\003ALL\020\003*I\n\nSourc" +
+      "eType\022\014\n\010NOTEBOOK\020\001\022\007\n\003JOB\020\002\022\013\n\007PROJECT\020" +
+      "\003\022\t\n\005LOCAL\020\004\022\014\n\007UNKNOWN\020\350\007*M\n\tRunStatus\022" +
+      "\013\n\007RUNNING\020\001\022\r\n\tSCHEDULED\020\002\022\014\n\010FINISHED\020" +
+      "\003\022\n\n\006FAILED\020\004\022\n\n\006KILLED\020\005*O\n\013TraceStatus" +
+      "\022\034\n\030TRACE_STATUS_UNSPECIFIED\020\000\022\006\n\002OK\020\001\022\t" +
+      "\n\005ERROR\020\002\022\017\n\013IN_PROGRESS\020\003*\212\001\n\021LoggedMod" +
+      "elStatus\022#\n\037LOGGED_MODEL_STATUS_UNSPECIF" +
+      "IED\020\000\022\030\n\024LOGGED_MODEL_PENDING\020\001\022\026\n\022LOGGE" +
+      "D_MODEL_READY\020\002\022\036\n\032LOGGED_MODEL_UPLOAD_F" +
+      "AILED\020\0032\372|\n\rMlflowService\022\246\001\n\023getExperim" +
+      "entByName\022\033.mlflow.GetExperimentByName\032$" +
+      ".mlflow.GetExperimentByName.Response\"L\362\206" +
+      "\031H\n,\n\003GET\022\037/mlflow/experiments/get-by-na" +
+      "me\032\004\010\002\020\000\020\001*\026Get Experiment By Name\022\224\001\n\020c" +
+      "reateExperiment\022\030.mlflow.CreateExperimen" +
+      "t\032!.mlflow.CreateExperiment.Response\"C\362\206" +
+      "\031?\n(\n\004POST\022\032/mlflow/experiments/create\032\004" +
+      "\010\002\020\000\020\001*\021Create Experiment\022\301\001\n\021searchExpe" +
+      "riments\022\031.mlflow.SearchExperiments\032\".mlf" +
+      "low.SearchExperiments.Response\"m\362\206\031i\n(\n\004" +
+      "POST\022\032/mlflow/experiments/search\032\004\010\002\020\000\n\'" +
+      "\n\003GET\022\032/mlflow/experiments/search\032\004\010\002\020\000\020" +
+      "\001*\022Search Experiments\022\210\001\n\rgetExperiment\022" +
+      "\025.mlflow.GetExperiment\032\036.mlflow.GetExper" +
+      "iment.Response\"@\362\206\0318\n$\n\003GET\022\027/mlflow/exp" +
+      "eriments/get\032\004\010\002\020\000\020\001*\016Get Experiment\272\214\031\000" +
+      "\022\224\001\n\020deleteExperiment\022\030.mlflow.DeleteExp" +
+      "eriment\032!.mlflow.DeleteExperiment.Respon" +
+      "se\"C\362\206\031?\n(\n\004POST\022\032/mlflow/experiments/de" +
+      "lete\032\004\010\002\020\000\020\001*\021Delete Experiment\022\231\001\n\021rest" +
+      "oreExperiment\022\031.mlflow.RestoreExperiment" +
+      "\032\".mlflow.RestoreExperiment.Response\"E\362\206" +
+      "\031A\n)\n\004POST\022\033/mlflow/experiments/restore\032" +
+      "\004\010\002\020\000\020\001*\022Restore Experiment\022\224\001\n\020updateEx" +
+      "periment\022\030.mlflow.UpdateExperiment\032!.mlf" +
+      "low.UpdateExperiment.Response\"C\362\206\031?\n(\n\004P" +
+      "OST\022\032/mlflow/experiments/update\032\004\010\002\020\000\020\001*" +
+      "\021Update Experiment\022q\n\tcreateRun\022\021.mlflow" +
+      ".CreateRun\032\032.mlflow.CreateRun.Response\"5" +
+      "\362\206\0311\n!\n\004POST\022\023/mlflow/runs/create\032\004\010\002\020\000\020" +
+      "\001*\nCreate Run\022q\n\tupdateRun\022\021.mlflow.Upda" +
+      "teRun\032\032.mlflow.UpdateRun.Response\"5\362\206\0311\n" +
+      "!\n\004POST\022\023/mlflow/runs/update\032\004\010\002\020\000\020\001*\nUp" +
+      "date Run\022q\n\tdeleteRun\022\021.mlflow.DeleteRun" +
+      "\032\032.mlflow.DeleteRun.Response\"5\362\206\0311\n!\n\004PO" +
+      "ST\022\023/mlflow/runs/delete\032\004\010\002\020\000\020\001*\nDelete " +
+      "Run\022v\n\nrestoreRun\022\022.mlflow.RestoreRun\032\033." +
+      "mlflow.RestoreRun.Response\"7\362\206\0313\n\"\n\004POST" +
+      "\022\024/mlflow/runs/restore\032\004\010\002\020\000\020\001*\013Restore " +
+      "Run\022u\n\tlogMetric\022\021.mlflow.LogMetric\032\032.ml" +
+      "flow.LogMetric.Response\"9\362\206\0315\n%\n\004POST\022\027/" +
+      "mlflow/runs/log-metric\032\004\010\002\020\000\020\001*\nLog Metr" +
+      "ic\022t\n\010logParam\022\020.mlflow.LogParam\032\031.mlflo" +
+      "w.LogParam.Response\";\362\206\0317\n(\n\004POST\022\032/mlfl" +
+      "ow/runs/log-parameter\032\004\010\002\020\000\020\001*\tLog Param" +
+      "\022\241\001\n\020setExperimentTag\022\030.mlflow.SetExperi" +
+      "mentTag\032!.mlflow.SetExperimentTag.Respon" +
+      "se\"P\362\206\031L\n4\n\004POST\022&/mlflow/experiments/se" +
+      "t-experiment-tag\032\004\010\002\020\000\020\001*\022Set Experiment" +
+      " Tag\022\260\001\n\023deleteExperimentTag\022\033.mlflow.De" +
+      "leteExperimentTag\032$.mlflow.DeleteExperim" +
+      "entTag.Response\"V\362\206\031R\n7\n\004POST\022)/mlflow/e" +
+      "xperiments/delete-experiment-tag\032\004\010\002\020\000\020\001" +
+      "*\025Delete Experiment Tag\022f\n\006setTag\022\016.mlfl" +
+      "ow.SetTag\032\027.mlflow.SetTag.Response\"3\362\206\031/" +
+      "\n\"\n\004POST\022\024/mlflow/runs/set-tag\032\004\010\002\020\000\020\001*\007" +
+      "Set Tag\022\210\001\n\013setTraceTag\022\023.mlflow.SetTrac" +
+      "eTag\032\034.mlflow.SetTraceTag.Response\"F\362\206\031B" +
+      "\n/\n\005PATCH\022 /mlflow/traces/{request_id}/t" +
+      "ags\032\004\010\002\020\000\020\003*\rSet Trace Tag\022\217\001\n\rsetTraceT" +
+      "agV3\022\025.mlflow.SetTraceTagV3\032\036.mlflow.Set" +
+      "TraceTagV3.Response\"G\362\206\031C\n-\n\005PATCH\022\036/mlf" +
+      "low/traces/{trace_id}/tags\032\004\010\003\020\000\020\003*\020Set " +
+      "Trace Tag V3\022\225\001\n\016deleteTraceTag\022\026.mlflow" +
+      ".DeleteTraceTag\032\037.mlflow.DeleteTraceTag." +
+      "Response\"J\362\206\031F\n0\n\006DELETE\022 /mlflow/traces" +
+      "/{request_id}/tags\032\004\010\002\020\000\020\003*\020Delete Trace" +
+      " Tag\022\234\001\n\020deleteTraceTagV3\022\030.mlflow.Delet" +
+      "eTraceTagV3\032!.mlflow.DeleteTraceTagV3.Re" +
+      "sponse\"K\362\206\031G\n.\n\006DELETE\022\036/mlflow/traces/{" +
+      "trace_id}/tags\032\004\010\003\020\000\020\003*\023Delete Trace Tag" +
+      " V3\022u\n\tdeleteTag\022\021.mlflow.DeleteTag\032\032.ml" +
+      "flow.DeleteTag.Response\"9\362\206\0315\n%\n\004POST\022\027/" +
+      "mlflow/runs/delete-tag\032\004\010\002\020\000\020\001*\nDelete T" +
+      "ag\022e\n\006getRun\022\016.mlflow.GetRun\032\027.mlflow.Ge" +
+      "tRun.Response\"2\362\206\031*\n\035\n\003GET\022\020/mlflow/runs" +
+      "/get\032\004\010\002\020\000\020\001*\007Get Run\272\214\031\000\022y\n\nsearchRuns\022" +
+      "\022.mlflow.SearchRuns\032\033.mlflow.SearchRuns." +
+      "Response\":\362\206\0312\n!\n\004POST\022\023/mlflow/runs/sea" +
+      "rch\032\004\010\002\020\000\020\001*\013Search Runs\272\214\031\000\022\207\001\n\rlistArt" +
+      "ifacts\022\025.mlflow.ListArtifacts\032\036.mlflow.L" +
+      "istArtifacts.Response\"?\362\206\0317\n#\n\003GET\022\026/mlf" +
+      "low/artifacts/list\032\004\010\002\020\000\020\001*\016List Artifac" +
+      "ts\272\214\031\000\022\225\001\n\020getMetricHistory\022\030.mlflow.Get" +
+      "MetricHistory\032!.mlflow.GetMetricHistory." +
+      "Response\"D\362\206\031@\n(\n\003GET\022\033/mlflow/metrics/g" +
+      "et-history\032\004\010\002\020\000\020\001*\022Get Metric History\022\267" +
+      "\001\n\034getMetricHistoryBulkInterval\022$.mlflow" +
+      ".GetMetricHistoryBulkInterval\032-.mlflow.G" +
+      "etMetricHistoryBulkInterval.Response\"B\362\206" +
+      "\031:\n6\n\003GET\022)/mlflow/metrics/get-history-b" +
+      "ulk-interval\032\004\010\002\020\013\020\003\272\214\031\000\022p\n\010logBatch\022\020.m" +
+      "lflow.LogBatch\032\031.mlflow.LogBatch.Respons" +
+      "e\"7\362\206\0313\n$\n\004POST\022\026/mlflow/runs/log-batch\032" +
+      "\004\010\002\020\000\020\001*\tLog Batch\022p\n\010logModel\022\020.mlflow." +
+      "LogModel\032\031.mlflow.LogModel.Response\"7\362\206\031" +
+      "3\n$\n\004POST\022\026/mlflow/runs/log-model\032\004\010\002\020\000\020" +
+      "\001*\tLog Model\022u\n\tlogInputs\022\021.mlflow.LogIn" +
+      "puts\032\032.mlflow.LogInputs.Response\"9\362\206\0315\n%" +
+      "\n\004POST\022\027/mlflow/runs/log-inputs\032\004\010\002\020\000\020\001*" +
+      "\nLog Inputs\022v\n\nlogOutputs\022\022.mlflow.LogOu" +
+      "tputs\032\033.mlflow.LogOutputs.Response\"7\362\206\0313" +
+      "\n\"\n\004POST\022\024/mlflow/runs/outputs\032\004\010\002\020\000\020\003*\013" +
+      "Log Outputs\022\207\001\n\016searchDatasets\022\026.mlflow." +
+      "SearchDatasets\032\037.mlflow.SearchDatasets.R" +
+      "esponse\"<\362\206\0314\n0\n\004POST\022\"mlflow/experiment" +
+      "s/search-datasets\032\004\010\002\020\000\020\003\272\214\031\000\022p\n\nstartTr" +
+      "ace\022\022.mlflow.StartTrace\032\033.mlflow.StartTr" +
+      "ace.Response\"1\362\206\031-\n\034\n\004POST\022\016/mlflow/trac" +
+      "es\032\004\010\002\020\000\020\003*\013Start Trace\022v\n\010endTrace\022\020.ml" +
+      "flow.EndTrace\032\031.mlflow.EndTrace.Response" +
+      "\"=\362\206\0319\n*\n\005PATCH\022\033/mlflow/traces/{request" +
+      "_id}\032\004\010\002\020\000\020\003*\tEnd Trace\022\211\001\n\014getTraceInfo" +
+      "\022\024.mlflow.GetTraceInfo\032\035.mlflow.GetTrace" +
+      "Info.Response\"D\362\206\031@\n-\n\003GET\022 /mlflow/trac" +
+      "es/{request_id}/info\032\004\010\002\020\000\020\003*\rGet TraceI" +
+      "nfo\022\213\001\n\016getTraceInfoV3\022\026.mlflow.GetTrace" +
+      "InfoV3\032\037.mlflow.GetTraceInfoV3.Response\"" +
+      "@\362\206\031<\n&\n\003GET\022\031/mlflow/traces/{trace_id}\032" +
+      "\004\010\003\020\000\020\003*\020Get TraceInfo v3\022n\n\010getTrace\022\020." +
+      "mlflow.GetTrace\032\031.mlflow.GetTrace.Respon" +
+      "se\"5\362\206\0311\n\037\n\003GET\022\022/mlflow/traces/get\032\004\010\003\020" +
+      "\000\020\003*\014Get Trace v3\022\203\001\n\016batchGetTraces\022\026.m" +
+      "lflow.BatchGetTraces\032\037.mlflow.BatchGetTr" +
+      "aces.Response\"8\362\206\0314\n$\n\003GET\022\027/mlflow/trac" +
+      "es/batchGet\032\004\010\003\020\000\020\003*\nGet Traces\022w\n\014searc" +
+      "hTraces\022\024.mlflow.SearchTraces\032\035.mlflow.S" +
+      "earchTraces.Response\"2\362\206\031.\n\033\n\003GET\022\016/mlfl" +
+      "ow/traces\032\004\010\002\020\000\020\003*\rSearch Traces\022\210\001\n\016sea" +
+      "rchTracesV3\022\026.mlflow.SearchTracesV3\032\037.ml" +
+      "flow.SearchTracesV3.Response\"=\362\206\0319\n#\n\004PO" +
+      "ST\022\025/mlflow/traces/search\032\004\010\003\020\000\020\003*\020Searc" +
+      "h Traces V3\022i\n\014startTraceV3\022\024.mlflow.Sta" +
+      "rtTraceV3\032\035.mlflow.StartTraceV3.Response" +
+      "\"$\362\206\031 \n\034\n\004POST\022\016/mlflow/traces\032\004\010\003\020\000\020\003\022\222" +
+      "\001\n\017linkTracesToRun\022\027.mlflow.LinkTracesTo" +
+      "Run\032 .mlflow.LinkTracesToRun.Response\"D\362" +
+      "\206\031@\n(\n\004POST\022\032/mlflow/traces/link-to-run\032" +
+      "\004\010\002\020\000\020\003*\022Link Traces to Run\022\237\001\n\022linkProm" +
+      "ptsToTrace\022\032.mlflow.LinkPromptsToTrace\032#" +
+      ".mlflow.LinkPromptsToTrace.Response\"H\362\206\031" +
+      "D\n)\n\004POST\022\033/mlflow/traces/link-prompts\032\004" +
+      "\010\002\020\000\020\003*\025Link Prompts to Trace\022\242\001\n\031search" +
+      "UnifiedTraceHandler\022\033.mlflow.SearchUnifi" +
+      "edTraces\032$.mlflow.SearchUnifiedTraces.Re" +
+      "sponse\"B\362\206\031>\n#\n\003GET\022\026/mlflow/unified-tra" +
+      "ces\032\004\010\002\020\000\020\003*\025Search Unified Traces\022\257\001\n\025g" +
+      "etOnlineTraceDetails\022\035.mlflow.GetOnlineT" +
+      "raceDetails\032&.mlflow.GetOnlineTraceDetai" +
+      "ls.Response\"O\362\206\031K\n-\n\003GET\022 /mlflow/get-on" +
+      "line-trace-details\032\004\010\002\020\000\020\003*\030Get Online T" +
+      "race Details\022\206\001\n\014deleteTraces\022\024.mlflow.D" +
+      "eleteTraces\032\035.mlflow.DeleteTraces.Respon" +
+      "se\"A\362\206\031=\n*\n\004POST\022\034/mlflow/traces/delete-" +
+      "traces\032\004\010\002\020\000\020\003*\rDelete Traces\022\217\001\n\016delete" +
+      "TracesV3\022\026.mlflow.DeleteTracesV3\032\037.mlflo" +
+      "w.DeleteTracesV3.Response\"D\362\206\031@\n*\n\004POST\022" +
+      "\034/mlflow/traces/delete-traces\032\004\010\003\020\000\020\003*\020D" +
+      "elete Traces V3\022\343\001\n\037calculateTraceFilter" +
+      "Correlation\022\'.mlflow.CalculateTraceFilte" +
+      "rCorrelation\0320.mlflow.CalculateTraceFilt" +
+      "erCorrelation.Response\"e\362\206\031a\n9\n\004POST\022+/m" +
+      "lflow/traces/calculate-filter-correlatio" +
+      "n\032\004\010\003\020\000\020\003*\"Calculate Trace Filter Correl" +
+      "ation\022\203\001\n\016listWorkspaces\022\026.mlflow.ListWo" +
+      "rkspaces\032\037.mlflow.ListWorkspaces.Respons" +
+      "e\"8\362\206\0314\n\037\n\003GET\022\022/mlflow/workspaces\032\004\010\002\020\000" +
+      "\020\003*\017List Workspaces\022\210\001\n\017createWorkspace\022" +
+      "\027.mlflow.CreateWorkspace\032 .mlflow.Create" +
+      "Workspace.Response\":\362\206\0316\n \n\004POST\022\022/mlflo" +
+      "w/workspaces\032\004\010\002\020\000\020\003*\020Create Workspace\022\214" +
+      "\001\n\014getWorkspace\022\024.mlflow.GetWorkspace\032\035." +
+      "mlflow.GetWorkspace.Response\"G\362\206\031C\n0\n\003GE" +
+      "T\022#/mlflow/workspaces/{workspace_name}\032\004" +
+      "\010\002\020\000\020\003*\rGet Workspace\022\232\001\n\017updateWorkspac" +
+      "e\022\027.mlflow.UpdateWorkspace\032 .mlflow.Upda" +
+      "teWorkspace.Response\"L\362\206\031H\n2\n\005PATCH\022#/ml" +
+      "flow/workspaces/{workspace_name}\032\004\010\002\020\000\020\003" +
+      "*\020Update Workspace\022\233\001\n\017deleteWorkspace\022\027" +
+      ".mlflow.DeleteWorkspace\032 .mlflow.DeleteW" +
+      "orkspace.Response\"M\362\206\031I\n3\n\006DELETE\022#/mlfl" +
+      "ow/workspaces/{workspace_name}\032\004\010\002\020\000\020\003*\020" +
+      "Delete Workspace\022\224\001\n\021createLoggedModel\022\031" +
+      ".mlflow.CreateLoggedModel\032\".mlflow.Creat" +
+      "eLoggedModel.Response\"@\362\206\031<\n#\n\004POST\022\025/ml" +
+      "flow/logged-models\032\004\010\002\020\000\020\003*\023Create Logge" +
+      "d Model\022\250\001\n\023finalizeLoggedModel\022\033.mlflow" +
+      ".FinalizeLoggedModel\032$.mlflow.FinalizeLo" +
+      "ggedModel.Response\"N\362\206\031J\n/\n\005PATCH\022 /mlfl" +
+      "ow/logged-models/{model_id}\032\004\010\002\020\000\020\003*\025Fin" +
+      "alize Logged Model\022\222\001\n\016getLoggedModel\022\026." +
+      "mlflow.GetLoggedModel\032\037.mlflow.GetLogged" +
+      "Model.Response\"G\362\206\031C\n-\n\003GET\022 /mlflow/log" +
+      "ged-models/{model_id}\032\004\010\002\020\000\020\003*\020Get Logge" +
+      "d Model\022\243\001\n\021deleteLoggedModel\022\031.mlflow.D" +
+      "eleteLoggedModel\032\".mlflow.DeleteLoggedMo" +
+      "del.Response\"O\362\206\031K\n0\n\006DELETE\022 /mlflow/lo" +
+      "gged-models/{model_id}\032\004\010\002\020\000\020\003*\025Delete a" +
+      " Logged Model\022\236\001\n\022searchLoggedModels\022\032.m" +
+      "lflow.SearchLoggedModels\032#.mlflow.Search" +
+      "LoggedModels.Response\"G\362\206\031C\n*\n\004POST\022\034/ml" +
+      "flow/logged-models/search\032\004\010\002\020\000\020\003*\023Searc" +
+      "h LoggedModels\022\251\001\n\022setLoggedModelTags\022\032." +
+      "mlflow.SetLoggedModelTags\032#.mlflow.SetLo" +
+      "ggedModelTags.Response\"R\362\206\031N\n4\n\005PATCH\022%/" +
+      "mlflow/logged-models/{model_id}/tags\032\004\010\002" +
+      "\020\000\020\003*\024Set Logged Model Tag\022\275\001\n\024deleteLog" +
+      "gedModelTag\022\034.mlflow.DeleteLoggedModelTa" +
+      "g\032%.mlflow.DeleteLoggedModelTag.Response" +
+      "\"`\362\206\031\\\n?\n\006DELETE\022//mlflow/logged-models/" +
+      "{model_id}/tags/{tag_key}\032\004\010\002\020\000\020\003*\027Delet" +
+      "e Logged Model Tag\022\326\001\n\030listLoggedModelAr" +
+      "tifacts\022 .mlflow.ListLoggedModelArtifact" +
+      "s\032).mlflow.ListLoggedModelArtifacts.Resp" +
+      "onse\"m\362\206\031i\nC\n\003GET\0226/mlflow/logged-models" +
+      "/{model_id}/artifacts/directories\032\004\010\002\020\000\020" +
+      "\003* List Artifacts for Logged Models\022\301\001\n\024" +
+      "LogLoggedModelParams\022#.mlflow.LogLoggedM" +
+      "odelParamsRequest\032,.mlflow.LogLoggedMode" +
+      "lParamsRequest.Response\"V\362\206\031R\n5\n\004POST\022\'/" +
+      "mlflow/logged-models/{model_id}/params\032\004",
+      "\010\002\020\000\020\003*\027Log Logged Model Params\022\260\001\n\rGetA" +
+      "ssessment\022\034.mlflow.GetAssessmentRequest\032" +
+      "%.mlflow.GetAssessmentRequest.Response\"Z" +
+      "\362\206\031V\nB\n\003GET\0225/mlflow/traces/{trace_id}/a" +
+      "ssessments/{assessment_id}\032\004\010\003\020\000\020\003*\016Get " +
+      "Assessment\022\337\001\n\020createAssessment\022\030.mlflow" +
+      ".CreateAssessment\032!.mlflow.CreateAssessm" +
+      "ent.Response\"\215\001\362\206\031\210\001\n>\n\004POST\0220/mlflow/tr" +
+      "aces/{assessment.trace_id}/assessments\032\004" +
+      "\010\003\020\000\020\003\030\350\007\030\356\007\030\014\030\001*:Create an assessment o" +
+      "f a trace or a span within the trace\022\320\001\n" +
+      "\020updateAssessment\022\030.mlflow.UpdateAssessm" +
+      "ent\032!.mlflow.UpdateAssessment.Response\"\177" +
+      "\362\206\031{\nD\n\005PATCH\0225/mlflow/traces/{trace_id}" +
+      "/assessments/{assessment_id}\032\004\010\003\020\000\020\003\030\350\007\030" +
+      "\356\007\030\001*)Update an existing assessment on a" +
+      " trace.\022\261\001\n\020deleteAssessment\022\030.mlflow.De" +
+      "leteAssessment\032!.mlflow.DeleteAssessment" +
+      ".Response\"`\362\206\031\\\nE\n\006DELETE\0225/mlflow/trace" +
+      "s/{trace_id}/assessments/{assessment_id}" +
+      "\032\004\010\003\020\000\020\003*\021Delete Assessment\022\232\001\n\rcreateDa" +
+      "taset\022\025.mlflow.CreateDataset\032\036.mlflow.Cr" +
+      "eateDataset.Response\"R\362\206\031N\n%\n\004POST\022\027/mlf" +
+      "low/datasets/create\032\004\010\003\020\000\020\003\030\350\007\030\356\007\030\014\030\001*\031C" +
+      "reate Evaluation Dataset\022\221\001\n\ngetDataset\022" +
+      "\022.mlflow.GetDataset\032\033.mlflow.GetDataset." +
+      "Response\"R\362\206\031N\n*\n\003GET\022\035/mlflow/datasets/" +
+      "{dataset_id}\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\026Get Evalua" +
+      "tion Dataset\022\240\001\n\rdeleteDataset\022\025.mlflow." +
+      "DeleteDataset\032\036.mlflow.DeleteDataset.Res" +
+      "ponse\"X\362\206\031T\n-\n\006DELETE\022\035/mlflow/datasets/" +
+      "{dataset_id}\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\031Delete Eva" +
+      "luation Dataset\022\335\001\n\030searchEvaluationData" +
+      "sets\022 .mlflow.SearchEvaluationDatasets\032)" +
+      ".mlflow.SearchEvaluationDatasets.Respons" +
+      "e\"t\362\206\031p\n%\n\004POST\022\027/mlflow/datasets/search" +
+      "\032\004\010\003\020\000\n$\n\003GET\022\027/mlflow/datasets/search\032\004" +
+      "\010\003\020\000\020\003\030\350\007\030\001*\032Search Evaluation Datasets\022" +
+      "\251\001\n\016setDatasetTags\022\026.mlflow.SetDatasetTa" +
+      "gs\032\037.mlflow.SetDatasetTags.Response\"^\362\206\031" +
+      "Z\n1\n\005PATCH\022\"/mlflow/datasets/{dataset_id" +
+      "}/tags\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\033Set Evaluation D" +
+      "ataset Tags\022\270\001\n\020deleteDatasetTag\022\030.mlflo" +
+      "w.DeleteDatasetTag\032!.mlflow.DeleteDatase" +
+      "tTag.Response\"g\362\206\031c\n8\n\006DELETE\022(/mlflow/d" +
+      "atasets/{dataset_id}/tags/{key}\032\004\010\003\020\000\020\003\030" +
+      "\350\007\030\272\027\030\001*\035Delete Evaluation Dataset Tag\022\303" +
+      "\001\n\024upsertDatasetRecords\022\034.mlflow.UpsertD" +
+      "atasetRecords\032%.mlflow.UpsertDatasetReco" +
+      "rds.Response\"f\362\206\031b\n3\n\004POST\022%/mlflow/data" +
+      "sets/{dataset_id}/records\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030" +
+      "\001*!Upsert Evaluation Dataset Records\022\326\001\n" +
+      "\027getDatasetExperimentIds\022\037.mlflow.GetDat" +
+      "asetExperimentIds\032(.mlflow.GetDatasetExp" +
+      "erimentIds.Response\"p\362\206\031l\n9\n\003GET\022,/mlflo" +
+      "w/datasets/{dataset_id}/experiment-ids\032\004" +
+      "\010\003\020\000\020\003\030\350\007\030\272\027\030\001*%Get Evaluation Dataset E" +
+      "xperiment IDs\022\212\001\n\016registerScorer\022\026.mlflo" +
+      "w.RegisterScorer\032\037.mlflow.RegisterScorer" +
+      ".Response\"?\362\206\031;\n&\n\004POST\022\030/mlflow/scorers" +
+      "/register\032\004\010\003\020\000\020\001*\017Register Scorer\022y\n\013li" +
+      "stScorers\022\023.mlflow.ListScorers\032\034.mlflow." +
+      "ListScorers.Response\"7\362\206\0313\n!\n\003GET\022\024/mlfl" +
+      "ow/scorers/list\032\004\010\003\020\000\020\001*\014List Scorers\022\232\001" +
+      "\n\022listScorerVersions\022\032.mlflow.ListScorer" +
+      "Versions\032#.mlflow.ListScorerVersions.Res" +
+      "ponse\"C\362\206\031?\n%\n\003GET\022\030/mlflow/scorers/vers" +
+      "ions\032\004\010\003\020\000\020\001*\024List Scorer Versions\022p\n\tge" +
+      "tScorer\022\021.mlflow.GetScorer\032\032.mlflow.GetS" +
+      "corer.Response\"4\362\206\0310\n \n\003GET\022\023/mlflow/sco" +
+      "rers/get\032\004\010\003\020\000\020\001*\nGet Scorer\022\202\001\n\014deleteS" +
+      "corer\022\024.mlflow.DeleteScorer\032\035.mlflow.Del" +
+      "eteScorer.Response\"=\362\206\0319\n&\n\006DELETE\022\026/mlf" +
+      "low/scorers/delete\032\004\010\003\020\000\020\001*\rDelete Score" +
+      "r\022\266\001\n\021getDatasetRecords\022\031.mlflow.GetData" +
+      "setRecords\032\".mlflow.GetDatasetRecords.Re" +
+      "sponse\"b\362\206\031^\n2\n\003GET\022%/mlflow/datasets/{d" +
+      "ataset_id}/records\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\036Get " +
+      "Evaluation Dataset Records\022\315\001\n\027addDatase" +
+      "tToExperiments\022\037.mlflow.AddDatasetToExpe" +
+      "riments\032(.mlflow.AddDatasetToExperiments" +
+      ".Response\"g\362\206\031c\n;\n\004POST\022-/mlflow/dataset" +
+      "s/{dataset_id}/add-experiments\032\004\010\003\020\000\020\003\030\350" +
+      "\007\030\272\027\030\001*\032Add Dataset to Experiments\022\344\001\n\034r" +
+      "emoveDatasetFromExperiments\022$.mlflow.Rem" +
+      "oveDatasetFromExperiments\032-.mlflow.Remov" +
+      "eDatasetFromExperiments.Response\"o\362\206\031k\n>" +
+      "\n\004POST\0220/mlflow/datasets/{dataset_id}/re" +
+      "move-experiments\032\004\010\003\020\000\020\003\030\350\007\030\272\027\030\001*\037Remove" +
+      " Dataset from Experiments\022\216\001\n\014createSecr" +
+      "et\022\033.mlflow.CreateGatewaySecret\032$.mlflow" +
+      ".CreateGatewaySecret.Response\";\362\206\0317\n$\n\004P" +
+      "OST\022\026/mlflow/secrets/create\032\004\010\003\020\000\020\001*\rCre" +
+      "ate Secret\022\217\001\n\rgetSecretInfo\022\034.mlflow.Ge" +
+      "tGatewaySecretInfo\032%.mlflow.GetGatewaySe" +
+      "cretInfo.Response\"9\362\206\0315\n \n\003GET\022\023/mlflow/" +
+      "secrets/get\032\004\010\003\020\000\020\001*\017Get Secret Info\022\216\001\n" +
+      "\014updateSecret\022\033.mlflow.UpdateGatewaySecr" +
+      "et\032$.mlflow.UpdateGatewaySecret.Response" +
+      "\";\362\206\0317\n$\n\004POST\022\026/mlflow/secrets/update\032\004" +
+      "\010\003\020\000\020\001*\rUpdate Secret\022\220\001\n\014deleteSecret\022\033" +
+      ".mlflow.DeleteGatewaySecret\032$.mlflow.Del" +
+      "eteGatewaySecret.Response\"=\362\206\0319\n&\n\006DELET" +
+      "E\022\026/mlflow/secrets/delete\032\004\010\003\020\000\020\001*\rDelet" +
+      "e Secret\022\223\001\n\017listSecretInfos\022\036.mlflow.Li" +
+      "stGatewaySecretInfos\032\'.mlflow.ListGatewa" +
+      "ySecretInfos.Response\"7\362\206\0313\n!\n\003GET\022\024/mlf" +
+      "low/secrets/list\032\004\010\003\020\000\020\001*\014List Secrets\022\230" +
+      "\001\n\016createEndpoint\022\035.mlflow.CreateGateway" +
+      "Endpoint\032&.mlflow.CreateGatewayEndpoint." +
+      "Response\"?\362\206\031;\n&\n\004POST\022\030/mlflow/endpoint" +
+      "s/create\032\004\010\003\020\000\020\001*\017Create Endpoint\022\210\001\n\013ge" +
+      "tEndpoint\022\032.mlflow.GetGatewayEndpoint\032#." +
+      "mlflow.GetGatewayEndpoint.Response\"8\362\206\0314" +
+      "\n\"\n\003GET\022\025/mlflow/endpoints/get\032\004\010\003\020\000\020\001*\014" +
+      "Get Endpoint\022\230\001\n\016updateEndpoint\022\035.mlflow" +
+      ".UpdateGatewayEndpoint\032&.mlflow.UpdateGa" +
+      "tewayEndpoint.Response\"?\362\206\031;\n&\n\004POST\022\030/m" +
+      "lflow/endpoints/update\032\004\010\003\020\000\020\001*\017Update E" +
+      "ndpoint\022\232\001\n\016deleteEndpoint\022\035.mlflow.Dele" +
+      "teGatewayEndpoint\032&.mlflow.DeleteGateway" +
+      "Endpoint.Response\"A\362\206\031=\n(\n\006DELETE\022\030/mlfl" +
+      "ow/endpoints/delete\032\004\010\003\020\000\020\001*\017Delete Endp" +
+      "oint\022\221\001\n\rlistEndpoints\022\034.mlflow.ListGate" +
+      "wayEndpoints\032%.mlflow.ListGatewayEndpoin" +
+      "ts.Response\";\362\206\0317\n#\n\003GET\022\026/mlflow/endpoi" +
+      "nts/list\032\004\010\003\020\000\020\001*\016List Endpoints\022\275\001\n\025cre" +
+      "ateModelDefinition\022$.mlflow.CreateGatewa" +
+      "yModelDefinition\032-.mlflow.CreateGatewayM" +
+      "odelDefinition.Response\"O\362\206\031K\n.\n\004POST\022 /" +
+      "mlflow/model-definitions/create\032\004\010\003\020\000\020\001*" +
+      "\027Create Model Definition\022\255\001\n\022getModelDef" +
+      "inition\022!.mlflow.GetGatewayModelDefiniti" +
+      "on\032*.mlflow.GetGatewayModelDefinition.Re" +
+      "sponse\"H\362\206\031D\n*\n\003GET\022\035/mlflow/model-defin" +
+      "itions/get\032\004\010\003\020\000\020\001*\024Get Model Definition" +
+      "\022\266\001\n\024listModelDefinitions\022#.mlflow.ListG" +
+      "atewayModelDefinitions\032,.mlflow.ListGate" +
+      "wayModelDefinitions.Response\"K\362\206\031G\n+\n\003GE" +
+      "T\022\036/mlflow/model-definitions/list\032\004\010\003\020\000\020" +
+      "\001*\026List Model Definitions\022\275\001\n\025updateMode" +
+      "lDefinition\022$.mlflow.UpdateGatewayModelD" +
+      "efinition\032-.mlflow.UpdateGatewayModelDef" +
+      "inition.Response\"O\362\206\031K\n.\n\004POST\022 /mlflow/" +
+      "model-definitions/update\032\004\010\003\020\000\020\001*\027Update" +
+      " Model Definition\022\277\001\n\025deleteModelDefinit" +
+      "ion\022$.mlflow.DeleteGatewayModelDefinitio" +
+      "n\032-.mlflow.DeleteGatewayModelDefinition." +
+      "Response\"Q\362\206\031M\n0\n\006DELETE\022 /mlflow/model-" +
+      "definitions/delete\032\004\010\003\020\000\020\001*\027Delete Model" +
+      " Definition\022\275\001\n\025attachModelToEndpoint\022$." +
+      "mlflow.AttachModelToGatewayEndpoint\032-.ml" +
+      "flow.AttachModelToGatewayEndpoint.Respon" +
+      "se\"O\362\206\031K\n-\n\004POST\022\037/mlflow/endpoints/mode" +
+      "ls/attach\032\004\010\003\020\000\020\001*\030Attach Model to Endpo" +
+      "int\022\305\001\n\027detachModelFromEndpoint\022&.mlflow" +
+      ".DetachModelFromGatewayEndpoint\032/.mlflow" +
+      ".DetachModelFromGatewayEndpoint.Response" +
+      "\"Q\362\206\031M\n-\n\004POST\022\037/mlflow/endpoints/models" +
+      "/detach\032\004\010\003\020\000\020\001*\032Detach Model from Endpo" +
+      "int\022\276\001\n\025createEndpointBinding\022$.mlflow.C" +
+      "reateGatewayEndpointBinding\032-.mlflow.Cre" +
+      "ateGatewayEndpointBinding.Response\"P\362\206\031L" +
+      "\n/\n\004POST\022!/mlflow/endpoints/bindings/cre" +
+      "ate\032\004\010\003\020\000\020\001*\027Create Endpoint Binding\022\300\001\n" +
+      "\025deleteEndpointBinding\022$.mlflow.DeleteGa" +
+      "tewayEndpointBinding\032-.mlflow.DeleteGate" +
+      "wayEndpointBinding.Response\"R\362\206\031N\n1\n\006DEL" +
+      "ETE\022!/mlflow/endpoints/bindings/delete\032\004" +
+      "\010\003\020\000\020\001*\027Delete Endpoint Binding\022\267\001\n\024list" +
+      "EndpointBindings\022#.mlflow.ListGatewayEnd" +
+      "pointBindings\032,.mlflow.ListGatewayEndpoi" +
+      "ntBindings.Response\"L\362\206\031H\n,\n\003GET\022\037/mlflo" +
+      "w/endpoints/bindings/list\032\004\010\003\020\000\020\001*\026List " +
+      "Endpoint Bindings\022\220\001\n\020getSecretsConfig\022\030" +
+      ".mlflow.GetSecretsConfig\032!.mlflow.GetSec" +
+      "retsConfig.Response\"?\362\206\031;\n#\n\003GET\022\026/mlflo" +
+      "w/secrets/config\032\004\010\003\020\000\020\001*\022Get Secrets Co" +
+      "nfigB\036\n\024org.mlflow.api.proto\220\001\001\342?\002\020\001"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -246709,7 +247401,7 @@ public final class Service {
     internal_static_mlflow_Workspace_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_mlflow_Workspace_descriptor,
-        new java.lang.String[] { "Name", "Description", });
+        new java.lang.String[] { "Name", "Description", "DefaultArtifactRoot", });
     internal_static_mlflow_ListWorkspaces_descriptor =
       getDescriptor().getMessageTypes().get(134);
     internal_static_mlflow_ListWorkspaces_fieldAccessorTable = new
@@ -246727,7 +247419,7 @@ public final class Service {
     internal_static_mlflow_CreateWorkspace_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_mlflow_CreateWorkspace_descriptor,
-        new java.lang.String[] { "Name", "Description", });
+        new java.lang.String[] { "Name", "Description", "DefaultArtifactRoot", });
     internal_static_mlflow_CreateWorkspace_Response_descriptor =
       internal_static_mlflow_CreateWorkspace_descriptor.getNestedTypes().get(0);
     internal_static_mlflow_CreateWorkspace_Response_fieldAccessorTable = new
@@ -246751,7 +247443,7 @@ public final class Service {
     internal_static_mlflow_UpdateWorkspace_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_mlflow_UpdateWorkspace_descriptor,
-        new java.lang.String[] { "WorkspaceName", "Description", });
+        new java.lang.String[] { "WorkspaceName", "Description", "DefaultArtifactRoot", });
     internal_static_mlflow_UpdateWorkspace_Response_descriptor =
       internal_static_mlflow_UpdateWorkspace_descriptor.getNestedTypes().get(0);
     internal_static_mlflow_UpdateWorkspace_Response_fieldAccessorTable = new
