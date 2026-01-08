@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { DesignSystemProvider, DesignSystemThemeProvider } from '@databricks/design-system';
 import { ColorsPaletteDatalist } from './ColorsPaletteDatalist';
 import { Theme } from '@emotion/react';
@@ -49,17 +49,6 @@ export const DesignSystemContainer = (props: DesignSystemContainerProps) => {
     }
     return document.body;
   }, []);
-
-  useEffect(() => {
-    const patternflyDarkModeSwitcher = document.getElementById('patternfly-dark-mode-switcher');
-    if (patternflyDarkModeSwitcher) {
-      if (isDarkTheme) {
-        patternflyDarkModeSwitcher.classList.add('pf-v6-theme-dark');
-      } else {
-        patternflyDarkModeSwitcher.classList.remove('pf-v6-theme-dark');
-      }
-    }
-  }, [isDarkTheme]);
 
   return (
     <ThemeProvider isDarkTheme={isDarkTheme}>
