@@ -63,21 +63,9 @@ export const ExperimentsHomeView = ({
 
   return (
     <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-      <div
-        css={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: theme.spacing.md,
-        }}
-      >
-        <Typography.Title level={3} css={{ margin: 0 }}>
-          <FormattedMessage defaultMessage="Experiments" description="Home page experiments preview title" />
-        </Typography.Title>
-        <Link to={Routes.experimentsObservatoryRoute}>
-          <FormattedMessage defaultMessage="View all" description="Home page experiments view all link" />
-        </Link>
-      </div>
+      <Typography.Title level={3} css={{ margin: 0 }}>
+        <FormattedMessage defaultMessage="Experiments" description="Home page experiments preview title" />
+      </Typography.Title>
       <div
         css={{
           border: `1px solid ${theme.colors.border}`,
@@ -118,7 +106,16 @@ export const ExperimentsHomeView = ({
           />
         )}
       </div>
-      <Spacer shrinks={false} />
+      <Spacer size="xs" />
+      <Link to={Routes.experimentsObservatoryRoute} style={{ alignSelf: 'flex-start' }}>
+        <span css={{ fontSize: theme.typography.fontSizeBase }}>
+          <FormattedMessage
+            defaultMessage="Go to <b>Experiments</b>"
+            description="Home page experiments view all link"
+            values={{ b: (chunks) => <strong>{chunks}</strong> }}
+          />
+        </span>
+      </Link>
     </section>
   );
 };
