@@ -181,6 +181,8 @@ export const ExperimentListTable = ({
         ) : undefined
       }
       empty={getEmptyState()}
+      // This is the length of the cards + gap when the window is at full width.
+      style={{ maxWidth: '1316px' }}
     >
       <TableRow isHeader>
         {table.getLeafHeaders().map((header) => (
