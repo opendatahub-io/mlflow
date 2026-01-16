@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Spacer, Typography, useDesignSystemTheme } from '@databricks/design-system';
 import type { RowSelectionState, SortingState } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
@@ -61,8 +61,48 @@ export const ExperimentsHomeView = ({
   const topExperiments = useMemo(() => experiments?.slice(0, 5) ?? [], [experiments]);
   const shouldShowEmptyState = !isLoading && !error && topExperiments.length === 0;
 
+  const cardWidthPx = 320;
+  const cardGapPx = theme.spacing.sm + theme.spacing.xs;
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    let rafId: number | null = null;
+
+    const computeColumns = () => {
+      const w = el.getBoundingClientRect().width;
+      const nextColumns = w
+        ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx)))
+        : 1;
+      setColumns((prev) => (prev === nextColumns ? prev : nextColumns));
+    };
+
+    computeColumns();
+
+    const ro = new ResizeObserver(() => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(computeColumns);
+    });
+
+    ro.observe(el);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      ro.disconnect();
+    };
+  }, [cardGapPx]);
+
+  const snappedWidth = columns === 1 ? '100%' : cardWidthPx * columns + cardGapPx * (columns - 1);
+
   return (
-    <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+    <section ref={containerRef} css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
       <Typography.Title level={3} css={{ margin: 0 }}>
         <FormattedMessage defaultMessage="Experiments" description="Home page experiments preview title" />
       </Typography.Title>
@@ -71,6 +111,7 @@ export const ExperimentsHomeView = ({
           border: `1px solid ${theme.colors.border}`,
           overflow: 'hidden',
           backgroundColor: theme.colors.backgroundPrimary,
+          width: snappedWidth,
         }}
       >
         {error ? (
