@@ -75,9 +75,7 @@ export const ExperimentsHomeView = ({
 
     const computeColumns = () => {
       const w = el.getBoundingClientRect().width;
-      const nextColumns = w
-        ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx)))
-        : 1;
+      const nextColumns = w ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx))) : 1;
       setColumns((prev) => (prev === nextColumns ? prev : nextColumns));
     };
 

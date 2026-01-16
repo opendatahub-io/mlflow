@@ -110,16 +110,16 @@ export const DiscoverNews = () => {
           ))}
         </div>
       </section>
-        <Typography.Link
-            componentId="mlflow.home.news.view_more"
-            href="https://mlflow.org/blog/"
-            openInNewTab
-            css={{ color: theme.colors.textSecondary, alignSelf: 'flex-start' }}
-        >
-          <span css={{ fontSize: theme.typography.fontSizeBase }}>
-            <FormattedMessage defaultMessage="View all features" description="Home page news section view more link" />
-          </span>
-        </Typography.Link>
+      <Typography.Link
+        componentId="mlflow.home.news.view_more"
+        href="https://mlflow.org/blog/"
+        openInNewTab
+        css={{ color: theme.colors.textSecondary, alignSelf: 'flex-start' }}
+      >
+        <span css={{ fontSize: theme.typography.fontSizeBase }}>
+          <FormattedMessage defaultMessage="View all features" description="Home page news section view more link" />
+        </span>
+      </Typography.Link>
     </section>
   );
 };
