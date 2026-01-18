@@ -154,6 +154,10 @@ from mlflow.server import app as mlflow_app
 from mlflow.server import handlers as mlflow_handlers
 from mlflow.server.fastapi_app import FASTAPI_NATIVE_PREFIXES, create_fastapi_app
 from mlflow.server.handlers import STATIC_PREFIX_ENV_VAR, get_endpoints
+from mlflow.server.workspace_helpers import (
+    WORKSPACE_HEADER_NAME,
+    resolve_workspace_from_header,
+)
 from mlflow.tracing.utils.otlp import OTLP_TRACES_PATH
 from mlflow.utils import workspace_context
 
@@ -1456,7 +1460,24 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
         if _is_unprotected_path(canonical_path):
             return await call_next(request)
 
+        # Resolve workspace from request headers and set context
+        # This is necessary because FastAPI middlewares execute in reverse order,
+        # so this authorization middleware runs BEFORE MLflow's workspace context middleware.
+        # We need to set the workspace context here so authorization checks can access it.
         workspace_name = workspace_context.get_request_workspace()
+        workspace_token = None
+
+        if workspace_name is None:
+            # Workspace not set in context yet - resolve from header
+            try:
+                workspace = resolve_workspace_from_header(
+                    request.headers.get(WORKSPACE_HEADER_NAME)
+                )
+                if workspace:
+                    workspace_token = workspace_context.set_current_workspace(workspace.name)
+                    workspace_name = workspace.name
+            except Exception:
+                pass  # Let authorization handle the error
 
         # Check permissions if verb is specified
         try:
@@ -1487,8 +1508,14 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
                 content={"error": {"code": exc.error_code, "message": exc.message}},
             )
 
-        # Continue with the request
-        return await call_next(request)
+        # Continue with the request, ensuring workspace context is reset afterwards
+        try:
+            response = await call_next(request)
+        finally:
+            # Reset workspace context if we set it
+            if workspace_token is not None:
+                workspace_context.reset_workspace(workspace_token)
+        return response
 
 
 def _override_run_user(username: str) -> None:
