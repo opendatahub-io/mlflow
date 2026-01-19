@@ -25,7 +25,8 @@ for every MLflow API request. Each MLflow workspace maps 1:1 to a Kubernetes nam
   `Authorization: Bearer <token>` header or the `X-Forwarded-Access-Token` header when running
   behind a proxy.
 - Evaluates Kubernetes `SelfSubjectAccessReview` objects for each MLflow API call across the
-  `experiments`, `registeredmodels`, and `jobs` resources in the `mlflow.kubeflow.org` API group.
+  `experiments`, `registeredmodels`, `jobs`, `gatewaysecrets`, `gatewayendpoints`, and
+  `gatewaymodeldefinitions` resources in the `mlflow.kubeflow.org` API group.
 - Transparently rewrites run requests so the authenticated user becomes the run owner.
 - Filters workspace listings to the set of namespaces the caller can `list`.
 - Denies workspace create/update/delete operations, even if RBAC would otherwise allow them, keeping
@@ -206,7 +207,8 @@ are also protected.
 
 ## Sending requests
 
-Clients must supply **both** a workspace context and a bearer token.
+Clients must supply a workspace context and either a bearer token
+(`self_subject_access_review`) or trusted proxy headers (`subject_access_review`).
 
 ### Workspace context options
 
@@ -220,6 +222,8 @@ Clients must supply **both** a workspace context and a bearer token.
   the REST API.
 - Export `MLFLOW_TRACKING_TOKEN=$(kubectl -n team-a create token mlflow-writer)` so MLflow CLIs and
   SDKs automatically send the bearer token without additional flags.
+- When `MLFLOW_K8S_AUTH_AUTHORIZATION_MODE=subject_access_review`, supply the configured
+  remote user/group headers (defaults: `x-remote-user`, `x-remote-groups`).
 
 If neither a workspace header nor `MLFLOW_K8S_DEFAULT_WORKSPACE` is provided, the server fails the
 request with `INVALID_PARAMETER_VALUE` before executing any work.
@@ -285,15 +289,29 @@ The authorization plugin evaluates Kubernetes `SelfSubjectAccessReview` requests
 `mlflow.kubeflow.org` API group. Tokens presented to the MLflow API must be authorized for the
 following for full access:
 
-| Resource           | Verbs                                       |
-| ------------------ | ------------------------------------------- |
-| `experiments`      | `get`, `list`, `create`, `update`, `delete` |
-| `registeredmodels` | `get`, `list`, `create`, `update`, `delete` |
-| `jobs`             | `get`, `list`, `create`                     |
+| Resource                      | Verbs                                       |
+| ----------------------------- | ------------------------------------------- |
+| `experiments`                 | `get`, `list`, `create`, `update`, `delete` |
+| `registeredmodels`            | `get`, `list`, `create`, `update`, `delete` |
+| `jobs`                        | `get`, `list`, `create`, `update`           |
+| `gatewaysecrets`              | `get`, `list`, `create`, `update`, `delete` |
+| `gatewaysecrets/use`          | `create`                                    |
+| `gatewayendpoints`            | `get`, `list`, `create`, `update`, `delete` |
+| `gatewayendpoints/use`        | `create`                                    |
+| `gatewaymodeldefinitions`     | `get`, `list`, `create`, `update`, `delete` |
+| `gatewaymodeldefinitions/use` | `create`                                    |
 
 > **Note:** Prompts share storage and permissions with registered models. Granting access to the
 > `registeredmodels` resource automatically covers prompt operations; no separate `prompts` RBAC
 > entry is required.
+>
+> **Note:** Scorers use experiment permissions. There is no separate `scorers` resource; all scorer
+> operations are authorized via the `experiments` resource.
+>
+> **Note:** Gateway resources use `use` subresources for fine-grained control. Grant `create` on
+> `gatewayendpoints/use` to invoke endpoints, `gatewaymodeldefinitions/use` to reference model
+> definitions when creating/updating endpoints, and `gatewaysecrets/use` to reference secrets when
+> creating/updating model definitions.
 
 For workloads restricted to a single namespace, grant the service account these permissions with a
 `Role` and `RoleBinding`:
@@ -305,17 +323,29 @@ metadata:
   name: mlflow-k8s-namespace-access
   namespace: <workspace-namespace>
 rules:
-  - apiGroups: ["mlflow.kubeflow.org"]
+  - apiGroups:
+      - mlflow.kubeflow.org
     resources:
       - experiments
       - registeredmodels
       - jobs
+      - gatewaysecrets
+      - gatewayendpoints
+      - gatewaymodeldefinitions
     verbs:
       - get
       - list
       - create
       - update
       - delete
+  - apiGroups:
+      - mlflow.kubeflow.org
+    resources:
+      - gatewaysecrets/use
+      - gatewayendpoints/use
+      - gatewaymodeldefinitions/use
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -374,12 +404,23 @@ rules:
       - experiments
       - registeredmodels
       - jobs
+      - gatewaysecrets
+      - gatewayendpoints
+      - gatewaymodeldefinitions
     verbs:
       - get
       - list
       - create
       - update
       - delete
+  - apiGroups:
+      - mlflow.kubeflow.org
+    resources:
+      - gatewaysecrets/use
+      - gatewayendpoints/use
+      - gatewaymodeldefinitions/use
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -405,7 +446,6 @@ rules:
       - mlflow.kubeflow.org
     resources:
       - experiments
-      - jobs
     verbs:
       - get
       - list

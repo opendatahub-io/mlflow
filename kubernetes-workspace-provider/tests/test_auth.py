@@ -15,14 +15,14 @@ import pytest
 from flask import Flask, g, request
 from kubernetes_workspace_provider.auth import (
     AUTHORIZATION_MODE_ENV,
-    GRAPHQL_OPERATION_RULES,
-    K8S_GRAPHQL_OPERATION_RESOURCE_MAP,
-    K8S_GRAPHQL_OPERATION_VERB_MAP,
     PATH_AUTHORIZATION_RULES,
     REMOTE_GROUPS_HEADER_ENV,
     REMOTE_USER_HEADER_ENV,
     RESOURCE_EXPERIMENTS,
-    RESOURCE_WORKSPACES,
+    RESOURCE_GATEWAY_ENDPOINTS,
+    RESOURCE_GATEWAY_MODEL_DEFINITIONS,
+    RESOURCE_GATEWAY_SECRETS,
+    RESOURCE_REGISTERED_MODELS,
     STATIC_PREFIX_ENV_VAR,
     AuthorizationMode,
     AuthorizationRule,
@@ -33,7 +33,6 @@ from kubernetes_workspace_provider.auth import (
     _CacheEntry,
     _canonicalize_path,
     _compile_authorization_rules,
-    _find_authorization_rule,
     _is_unprotected_path,
     _override_run_user,
     _parse_jwt_subject,
@@ -64,20 +63,20 @@ def _compile_rules(monkeypatch):
     def _fake_get_endpoints(resolver):
         return [
             ("/api/2.0/mlflow/runs/create", resolver(CreateRun), ["POST"]),
-            ("/api/2.0/mlflow/workspaces", resolver(ListWorkspaces), ["GET"]),
-            ("/api/2.0/mlflow/workspaces", resolver(CreateWorkspace), ["POST"]),
+            ("/api/3.0/mlflow/workspaces", resolver(ListWorkspaces), ["GET"]),
+            ("/api/3.0/mlflow/workspaces", resolver(CreateWorkspace), ["POST"]),
             (
-                "/api/2.0/mlflow/workspaces/<workspace_name>",
+                "/api/3.0/mlflow/workspaces/<workspace_name>",
                 resolver(GetWorkspace),
                 ["GET"],
             ),
             (
-                "/api/2.0/mlflow/workspaces/<workspace_name>",
+                "/api/3.0/mlflow/workspaces/<workspace_name>",
                 resolver(UpdateWorkspace),
                 ["PATCH"],
             ),
             (
-                "/api/2.0/mlflow/workspaces/<workspace_name>",
+                "/api/3.0/mlflow/workspaces/<workspace_name>",
                 resolver(DeleteWorkspace),
                 ["DELETE"],
             ),
@@ -186,9 +185,15 @@ def test_canonicalize_path_static_prefix_applies_to_static_routes_only(monkeypat
 
     ajax_path = "/mlflow/ajax-api/2.0/mlflow/runs/create"
     api_path = "/mlflow/api/2.0/mlflow/runs/create"
+    health_path = "/mlflow/health"
+    metrics_path = "/mlflow/metrics"
+    version_path = "/mlflow/version"
 
     assert _canonicalize_path(raw_path=ajax_path) == "/ajax-api/2.0/mlflow/runs/create"
     assert _canonicalize_path(raw_path=api_path) == api_path
+    assert _canonicalize_path(raw_path=health_path) == "/health"
+    assert _canonicalize_path(raw_path=metrics_path) == "/metrics"
+    assert _canonicalize_path(raw_path=version_path) == "/version"
 
 
 def test_request_identity_subject_hash_missing_token_in_ssar():
@@ -225,7 +230,6 @@ def test_kubernetes_auth_config_empty_groups_header(monkeypatch):
 
 
 def test_override_run_user_with_json_request():
-    """Test that _override_run_user correctly modifies JSON requests."""
     app = Flask(__name__)
 
     @app.route("/test", methods=["POST"])
@@ -263,7 +267,6 @@ def test_override_run_user_with_json_request():
 
 
 def test_override_run_user_with_empty_request():
-    """Test _override_run_user with an empty JSON request."""
     app = Flask(__name__)
 
     with app.test_request_context(
@@ -279,7 +282,6 @@ def test_override_run_user_with_empty_request():
 
 
 def test_override_run_user_with_non_json_request():
-    """Test that _override_run_user ignores non-JSON requests."""
     app = Flask(__name__)
 
     with app.test_request_context(
@@ -296,7 +298,6 @@ def test_override_run_user_with_non_json_request():
 
 
 def test_override_run_user_preserves_other_fields():
-    """Test that _override_run_user preserves all other JSON fields."""
     app = Flask(__name__)
 
     original_payload = {
@@ -322,7 +323,6 @@ def test_override_run_user_preserves_other_fields():
 
 
 def test_flask_create_run_request_processing(monkeypatch):
-    """Test that CreateRun requests are processed correctly with user override."""
     from kubernetes_workspace_provider.auth import create_app
 
     # Create a minimal Flask app with auth
@@ -336,14 +336,14 @@ def test_flask_create_run_request_processing(monkeypatch):
 
     @app.before_request
     def _set_rbac_context():
-        g._workspace_token = workspace_context.set_current_workspace("default")
+        g._workspace_set = True
+        workspace_context.set_server_request_workspace("default")
 
     @app.teardown_request
     def _reset_rbac_context(_response):
-        token = getattr(g, "_workspace_token", None)
-        if token is not None:
-            workspace_context.reset_workspace(token)
-            delattr(g, "_workspace_token")
+        if getattr(g, "_workspace_set", False):
+            workspace_context.clear_server_request_workspace()
+            delattr(g, "_workspace_set")
 
     # Set up the app with Kubernetes auth
     monkeypatch.setenv("MLFLOW_K8S_AUTH_CACHE_TTL_SECONDS", "300")
@@ -391,11 +391,11 @@ def _build_workspace_app(monkeypatch):
 
     app = Flask(__name__)
 
-    @app.route("/api/2.0/mlflow/workspaces", methods=["GET"])
+    @app.route("/api/3.0/mlflow/workspaces", methods=["GET"])
     def list_workspaces():
         return {"workspaces": [{"name": "team-a"}]}
 
-    @app.route("/api/2.0/mlflow/workspaces", methods=["POST"])
+    @app.route("/api/3.0/mlflow/workspaces", methods=["POST"])
     def create_workspace_endpoint():
         payload = request.get_json()
         return (
@@ -425,7 +425,7 @@ def test_list_workspaces_without_context(monkeypatch):
         return_value="k8s-user",
     ):
         response = client.get(
-            "/api/2.0/mlflow/workspaces",
+            "/api/3.0/mlflow/workspaces",
             headers={"Authorization": "Bearer list-token"},
         )
 
@@ -449,7 +449,7 @@ def test_create_workspace_requests_are_denied(monkeypatch):
 
     app = Flask(__name__)
 
-    @app.route("/api/2.0/mlflow/workspaces", methods=["POST"])
+    @app.route("/api/3.0/mlflow/workspaces", methods=["POST"])
     def create_workspace_endpoint():
         payload = request.get_json()
         return {"workspace": {"name": payload.get("name")}}, 201
@@ -462,7 +462,7 @@ def test_create_workspace_requests_are_denied(monkeypatch):
         return_value="k8s-user",
     ):
         response = client.post(
-            "/api/2.0/mlflow/workspaces",
+            "/api/3.0/mlflow/workspaces",
             json={"name": "team-new"},
             headers={"Authorization": "Bearer create-token"},
         )
@@ -484,14 +484,14 @@ def _build_flask_auth_app(monkeypatch, *, is_allowed=True):
 
     @app.before_request
     def _set_rbac_context():
-        g._workspace_token = workspace_context.set_current_workspace("default")
+        g._workspace_set = True
+        workspace_context.set_server_request_workspace("default")
 
     @app.teardown_request
     def _reset_rbac_context(_response):
-        token = getattr(g, "_workspace_token", None)
-        if token is not None:
-            workspace_context.reset_workspace(token)
-            delattr(g, "_workspace_token")
+        if getattr(g, "_workspace_set", False):
+            workspace_context.clear_server_request_workspace()
+            delattr(g, "_workspace_set")
 
     mock_is_allowed = Mock(return_value=is_allowed)
     monkeypatch.setattr(
@@ -543,8 +543,9 @@ def test_forwarded_access_token_header_allows_request(monkeypatch):
 
     assert response.status_code == 200
     mock_is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_is_allowed.call_args[0]
     assert identity.token == "test-token"
+    assert subresource is None
 
 
 def test_invalid_authorization_header_with_forwarded_token(monkeypatch):
@@ -562,8 +563,9 @@ def test_invalid_authorization_header_with_forwarded_token(monkeypatch):
 
     assert response.status_code == 200
     mock_is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
+    assert subresource is None
 
 
 def test_permission_denied_returns_403(monkeypatch):
@@ -579,9 +581,10 @@ def test_permission_denied_returns_403(monkeypatch):
     assert response.status_code == 403
     assert "Permission denied" in response.json["message"]
     mock_is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_is_allowed.call_args[0]
     assert identity.token == "test-token"
     assert (resource, verb, namespace) == ("experiments", "update", "default")
+    assert subresource is None
 
 
 def test_workspace_scope_string_is_normalized(monkeypatch):
@@ -589,8 +592,8 @@ def test_workspace_scope_string_is_normalized(monkeypatch):
     authorizer.is_allowed.return_value = True
 
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: AuthorizationRule("list", resource="experiments"),
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [AuthorizationRule("list", resource="experiments")],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -613,7 +616,7 @@ def test_workspace_scope_string_is_normalized(monkeypatch):
     call_args = authorizer.is_allowed.call_args[0]
     identity_arg = call_args[0]
     assert identity_arg.token == "valid-token"
-    assert call_args[1:] == ("experiments", "list", "team-a")
+    assert call_args[1:] == ("experiments", "list", "team-a", None)
     assert result.username == "k8s-user"
 
 
@@ -621,13 +624,12 @@ def test_workspace_listing_allows_missing_context(monkeypatch):
     authorizer = Mock()
     rule = AuthorizationRule(
         None,
-        resource=RESOURCE_WORKSPACES,
         apply_workspace_filter=True,
         requires_workspace=False,
     )
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: rule,
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -640,7 +642,7 @@ def test_workspace_listing_allows_missing_context(monkeypatch):
         forwarded_access_token=None,
         remote_user_header_value=None,
         remote_groups_header_value=None,
-        path="/api/2.0/mlflow/workspaces",
+        path="/api/3.0/mlflow/workspaces",
         method="GET",
         authorizer=authorizer,
         config_values=config,
@@ -648,7 +650,7 @@ def test_workspace_listing_allows_missing_context(monkeypatch):
     )
 
     assert result.username == "k8s-user"
-    assert result.rule.apply_workspace_filter
+    assert result.rules[0].apply_workspace_filter
     authorizer.is_allowed.assert_not_called()
 
 
@@ -657,8 +659,8 @@ def test_subject_access_review_mode_uses_remote_headers(monkeypatch):
     authorizer.is_allowed.return_value = True
     rule = AuthorizationRule("list", resource=RESOURCE_EXPERIMENTS)
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: rule,
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
     )
 
     config = KubernetesAuthConfig(authorization_mode=AuthorizationMode.SUBJECT_ACCESS_REVIEW)
@@ -675,11 +677,12 @@ def test_subject_access_review_mode_uses_remote_headers(monkeypatch):
         workspace="team-a",
     )
 
-    identity, resource, verb, namespace = authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = authorizer.is_allowed.call_args[0]
     assert identity.token is None
     assert identity.user == "proxy-user"
     assert identity.groups == ("group-a", "group-b")
     assert (resource, verb, namespace) == ("experiments", "list", "team-a")
+    assert subresource is None
     assert result.username == "proxy-user"
 
 
@@ -687,8 +690,8 @@ def test_subject_access_review_mode_requires_user_header(monkeypatch):
     authorizer = Mock()
     rule = AuthorizationRule("get", resource=RESOURCE_EXPERIMENTS)
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: rule,
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
     )
 
     config = KubernetesAuthConfig(authorization_mode=AuthorizationMode.SUBJECT_ACCESS_REVIEW)
@@ -710,28 +713,209 @@ def test_subject_access_review_mode_requires_user_header(monkeypatch):
     authorizer.is_allowed.assert_not_called()
 
 
-def test_workspace_scope_falls_back_to_view_args(monkeypatch):
+def test_gateway_endpoint_create_requires_model_definition_use(monkeypatch):
     app = Flask(__name__)
     authorizer = Mock()
-    authorizer.can_access_workspace.return_value = True
-    rule = AuthorizationRule(None, resource=RESOURCE_WORKSPACES)
+    # First call: endpoint create allowed, second call: model definitions use denied
+    authorizer.is_allowed.side_effect = [True, False]
+    rule = AuthorizationRule("create", resource=RESOURCE_GATEWAY_ENDPOINTS)
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: rule,
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
         lambda token, claim: "k8s-user",
     )
 
-    with app.test_request_context("/api/2.0/mlflow/workspaces/team-a", method="GET"):
+    with app.test_request_context(
+        "/api/2.0/mlflow/gateway/endpoints/create",
+        method="POST",
+        data=json.dumps({"name": "endpoint-1"}),
+        content_type="application/json",
+    ):
+        with pytest.raises(MlflowException, match="Permission denied") as exc:
+            _authorize_request(
+                authorization_header="Bearer token",
+                forwarded_access_token=None,
+                remote_user_header_value=None,
+                remote_groups_header_value=None,
+                path="/api/2.0/mlflow/gateway/endpoints/create",
+                method="POST",
+                authorizer=authorizer,
+                config_values=KubernetesAuthConfig(),
+                workspace="team-a",
+            )
+
+    assert exc.value.error_code == databricks_pb2.ErrorCode.Name(databricks_pb2.PERMISSION_DENIED)
+    assert "'use' permission on gateway model definitions" in exc.value.message
+    assert authorizer.is_allowed.call_count == 2
+    # Verify 'create' verb on 'gatewaymodeldefinitions/use' subresource
+    assert authorizer.is_allowed.call_args_list[1][0][1:] == (
+        RESOURCE_GATEWAY_MODEL_DEFINITIONS,
+        "create",
+        "team-a",
+        "use",
+    )
+
+
+def test_gateway_endpoint_update_requires_model_definition_use(monkeypatch):
+    app = Flask(__name__)
+    authorizer = Mock()
+    # First call: endpoint update allowed, second call: model definitions use denied
+    authorizer.is_allowed.side_effect = [True, False]
+    rule = AuthorizationRule("update", resource=RESOURCE_GATEWAY_ENDPOINTS)
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
+    )
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._parse_jwt_subject",
+        lambda token, claim: "k8s-user",
+    )
+
+    with app.test_request_context(
+        "/api/2.0/mlflow/gateway/endpoints/update",
+        method="PATCH",
+        data=json.dumps({"endpoint_id": "ep-1"}),
+        content_type="application/json",
+    ):
+        with pytest.raises(MlflowException, match="Permission denied") as exc:
+            _authorize_request(
+                authorization_header="Bearer token",
+                forwarded_access_token=None,
+                remote_user_header_value=None,
+                remote_groups_header_value=None,
+                path="/api/2.0/mlflow/gateway/endpoints/update",
+                method="PATCH",
+                authorizer=authorizer,
+                config_values=KubernetesAuthConfig(),
+                workspace="team-a",
+            )
+
+    assert exc.value.error_code == databricks_pb2.ErrorCode.Name(databricks_pb2.PERMISSION_DENIED)
+    assert "'use' permission on gateway model definitions" in exc.value.message
+    # Verify 'create' verb on 'gatewaymodeldefinitions/use' subresource
+    assert authorizer.is_allowed.call_args_list[1][0][1:] == (
+        RESOURCE_GATEWAY_MODEL_DEFINITIONS,
+        "create",
+        "team-a",
+        "use",
+    )
+
+
+def test_gateway_model_definition_create_requires_secret_use(monkeypatch):
+    app = Flask(__name__)
+    authorizer = Mock()
+    # First call: model definition create allowed, second call: secrets use denied
+    authorizer.is_allowed.side_effect = [True, False]
+    rule = AuthorizationRule("create", resource=RESOURCE_GATEWAY_MODEL_DEFINITIONS)
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
+    )
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._parse_jwt_subject",
+        lambda token, claim: "k8s-user",
+    )
+
+    with app.test_request_context(
+        "/api/2.0/mlflow/gateway/model-definitions/create",
+        method="POST",
+        data=json.dumps({"name": "model-def-1"}),
+        content_type="application/json",
+    ):
+        with pytest.raises(MlflowException, match="Permission denied") as exc:
+            _authorize_request(
+                authorization_header="Bearer token",
+                forwarded_access_token=None,
+                remote_user_header_value=None,
+                remote_groups_header_value=None,
+                path="/api/2.0/mlflow/gateway/model-definitions/create",
+                method="POST",
+                authorizer=authorizer,
+                config_values=KubernetesAuthConfig(),
+                workspace="team-a",
+            )
+
+    assert exc.value.error_code == databricks_pb2.ErrorCode.Name(databricks_pb2.PERMISSION_DENIED)
+    assert "'use' permission on gateway secrets" in exc.value.message
+    # Verify 'create' verb on 'gatewaysecrets/use' subresource
+    assert authorizer.is_allowed.call_args_list[1][0][1:] == (
+        RESOURCE_GATEWAY_SECRETS,
+        "create",
+        "team-a",
+        "use",
+    )
+
+
+def test_gateway_model_definition_update_requires_secret_use(monkeypatch):
+    app = Flask(__name__)
+    authorizer = Mock()
+    # First call: model definition update allowed, second call: secrets use denied
+    authorizer.is_allowed.side_effect = [True, False]
+    rule = AuthorizationRule("update", resource=RESOURCE_GATEWAY_MODEL_DEFINITIONS)
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
+    )
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._parse_jwt_subject",
+        lambda token, claim: "k8s-user",
+    )
+
+    with app.test_request_context(
+        "/api/2.0/mlflow/gateway/model-definitions/update",
+        method="PATCH",
+        data=json.dumps({"model_definition_id": "md-1"}),
+        content_type="application/json",
+    ):
+        with pytest.raises(MlflowException, match="Permission denied") as exc:
+            _authorize_request(
+                authorization_header="Bearer token",
+                forwarded_access_token=None,
+                remote_user_header_value=None,
+                remote_groups_header_value=None,
+                path="/api/2.0/mlflow/gateway/model-definitions/update",
+                method="PATCH",
+                authorizer=authorizer,
+                config_values=KubernetesAuthConfig(),
+                workspace="team-a",
+            )
+
+    assert exc.value.error_code == databricks_pb2.ErrorCode.Name(databricks_pb2.PERMISSION_DENIED)
+    assert "'use' permission on gateway secrets" in exc.value.message
+    # Verify 'create' verb on 'gatewaysecrets/use' subresource
+    assert authorizer.is_allowed.call_args_list[1][0][1:] == (
+        RESOURCE_GATEWAY_SECRETS,
+        "create",
+        "team-a",
+        "use",
+    )
+
+
+def test_workspace_scope_falls_back_to_view_args(monkeypatch):
+    app = Flask(__name__)
+    authorizer = Mock()
+    authorizer.can_access_workspace.return_value = True
+    rule = AuthorizationRule(None, requires_workspace=False, workspace_access_check=True)
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
+    )
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._parse_jwt_subject",
+        lambda token, claim: "k8s-user",
+    )
+
+    with app.test_request_context("/api/3.0/mlflow/workspaces/team-a", method="GET"):
         request.view_args = {"workspace_name": "team-a"}
         _authorize_request(
             authorization_header="Bearer scope-token",
             forwarded_access_token=None,
             remote_user_header_value=None,
             remote_groups_header_value=None,
-            path="/api/2.0/mlflow/workspaces/team-a",
+            path="/api/3.0/mlflow/workspaces/team-a",
             method="GET",
             authorizer=authorizer,
             config_values=KubernetesAuthConfig(),
@@ -748,10 +932,10 @@ def test_workspace_scope_falls_back_to_view_args(monkeypatch):
 def test_workspace_create_requests_are_denied(monkeypatch):
     app = Flask(__name__)
     authorizer = Mock()
-    rule = AuthorizationRule("create", resource=RESOURCE_WORKSPACES, deny=True)
+    rule = AuthorizationRule("create", deny=True, requires_workspace=False)
     monkeypatch.setattr(
-        "kubernetes_workspace_provider.auth._find_authorization_rule",
-        lambda path, method: rule,
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -759,7 +943,7 @@ def test_workspace_create_requests_are_denied(monkeypatch):
     )
 
     with app.test_request_context(
-        "/api/2.0/mlflow/workspaces",
+        "/api/3.0/mlflow/workspaces",
         method="POST",
         data=json.dumps({"name": "team-new"}),
         content_type="application/json",
@@ -772,7 +956,7 @@ def test_workspace_create_requests_are_denied(monkeypatch):
                 forwarded_access_token=None,
                 remote_user_header_value=None,
                 remote_groups_header_value=None,
-                path="/api/2.0/mlflow/workspaces",
+                path="/api/3.0/mlflow/workspaces",
                 method="POST",
                 authorizer=authorizer,
                 config_values=KubernetesAuthConfig(),
@@ -811,32 +995,39 @@ def test_compile_rules_raise_for_uncovered_endpoint(monkeypatch):
     assert "/api/2.0/mlflow/uncovered" in str(exc.value)
 
 
-def test_graphql_operation_map_matches_constant():
-    assert set(K8S_GRAPHQL_OPERATION_RESOURCE_MAP) == set(K8S_GRAPHQL_OPERATION_VERB_MAP)
-    for operation_name in K8S_GRAPHQL_OPERATION_RESOURCE_MAP:
-        assert operation_name in GRAPHQL_OPERATION_RULES
-        assert (
-            GRAPHQL_OPERATION_RULES[operation_name].verb
-            == K8S_GRAPHQL_OPERATION_VERB_MAP[operation_name]
-        )
-
-
-def test_graphql_unknown_operation_defaults_to_read_only():
-    app = Flask(__name__)
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"operationName": "NewGraphQLOperation"},
-    ):
-        rule = _find_authorization_rule("/graphql", "POST")
-    assert rule.verb == "get"
-
-
 def test_gateway_proxy_routes_require_verbs():
     get_rule = PATH_AUTHORIZATION_RULES[("/api/2.0/mlflow/gateway-proxy", "GET")]
     post_rule = PATH_AUTHORIZATION_RULES[("/ajax-api/2.0/mlflow/gateway-proxy", "POST")]
-    assert get_rule.verb == "get"
-    assert post_rule.verb == "update"
+    assert (get_rule.verb, get_rule.resource, get_rule.subresource) == (
+        "create",
+        RESOURCE_GATEWAY_ENDPOINTS,
+        "use",
+    )
+    assert (post_rule.verb, post_rule.resource, post_rule.subresource) == (
+        "create",
+        RESOURCE_GATEWAY_ENDPOINTS,
+        "use",
+    )
+
+
+def test_gateway_invocation_routes_require_use():
+    routes = [
+        ("/gateway/<endpoint_name>/mlflow/invocations", "POST"),
+        ("/gateway/mlflow/v1/chat/completions", "POST"),
+        ("/gateway/openai/v1/chat/completions", "POST"),
+        ("/gateway/openai/v1/embeddings", "POST"),
+        ("/gateway/openai/v1/responses", "POST"),
+        ("/gateway/anthropic/v1/messages", "POST"),
+        ("/gateway/gemini/v1beta/models/<endpoint_name>:generateContent", "POST"),
+        ("/gateway/gemini/v1beta/models/<endpoint_name>:streamGenerateContent", "POST"),
+    ]
+    for route in routes:
+        rule = PATH_AUTHORIZATION_RULES[route]
+        assert (rule.verb, rule.resource, rule.subresource) == (
+            "create",
+            RESOURCE_GATEWAY_ENDPOINTS,
+            "use",
+        )
 
 
 def test_misc_path_authorization_rules_cover_recent_endpoints():
@@ -861,15 +1052,33 @@ def test_misc_path_authorization_rules_cover_recent_endpoints():
         ].verb
         == "get"
     )
+    assert (
+        PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/get-trace-artifact", "GET")].verb == "get"
+    )
+    assert (
+        PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/scorers/online-configs", "GET")].verb
+        == "get"
+    )
+    assert (
+        PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/scorers/online-config", "PUT")].verb
+        == "update"
+    )
+    assert PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/scorer/invoke", "POST")].verb == "update"
+    assert (
+        PATH_AUTHORIZATION_RULES[
+            ("/ajax-api/3.0/mlflow/gateway/supported-providers", "GET")
+        ].resource
+        == RESOURCE_GATEWAY_MODEL_DEFINITIONS
+    )
 
 
 def test_server_features_endpoints_are_unprotected():
-    assert _is_unprotected_path("/api/2.0/mlflow/server-features")
-    assert _is_unprotected_path("/ajax-api/2.0/mlflow/server-features")
+    assert _is_unprotected_path("/api/3.0/mlflow/server-features")
+    assert _is_unprotected_path("/ajax-api/3.0/mlflow/server-features")
+    assert _is_unprotected_path("/ajax-api/3.0/mlflow/ui-telemetry")
 
 
 def test_flask_script_name_prefix_is_stripped_before_rule_matching(monkeypatch):
-    """Ensure SCRIPT_NAME/root_path prefixes don't cause uncovered-endpoint failures."""
     from kubernetes_workspace_provider.auth import create_app
 
     app = Flask(__name__)
@@ -952,7 +1161,7 @@ def test_experiment_permissions_are_checked_first(monkeypatch):
     authorizer = KubernetesAuthorizer(config)
 
     def _fake_permission(identity, resource, verb, namespace):
-        return resource == "experiments" and namespace == "team-a"
+        return resource == RESOURCE_EXPERIMENTS and namespace == "team-a"
 
     authorizer.is_allowed = Mock(side_effect=_fake_permission)  # type: ignore[method-assign]
 
@@ -961,7 +1170,7 @@ def test_experiment_permissions_are_checked_first(monkeypatch):
 
     assert accessible == {"team-a"}
     first_call = authorizer.is_allowed.call_args_list[0][0]
-    assert first_call[1] == "experiments"
+    assert first_call[1] == RESOURCE_EXPERIMENTS
 
 
 def test_can_access_workspace_iterates_priority_resources(monkeypatch):
@@ -983,7 +1192,7 @@ def test_can_access_workspace_iterates_priority_resources(monkeypatch):
     authorizer = KubernetesAuthorizer(config)
 
     def _fake_permission(identity, resource, verb, namespace):
-        return resource == "registeredmodels" and namespace == "team-a" and verb == "get"
+        return resource == RESOURCE_REGISTERED_MODELS and namespace == "team-a" and verb == "get"
 
     authorizer.is_allowed = Mock(side_effect=_fake_permission)  # type: ignore[method-assign]
 
@@ -991,12 +1200,18 @@ def test_can_access_workspace_iterates_priority_resources(monkeypatch):
     assert authorizer.can_access_workspace(identity, "team-a", verb="get") is True
 
     calls = authorizer.is_allowed.call_args_list
-    assert calls[0][0][1] == "experiments"
-    assert calls[1][0][1] == "registeredmodels"
+    assert calls[0][0][1] == RESOURCE_EXPERIMENTS
+    assert calls[1][0][1] == RESOURCE_REGISTERED_MODELS
 
     authorizer.is_allowed.reset_mock()
     assert authorizer.can_access_workspace(identity, "team-b", verb="get") is False
 
     calls = authorizer.is_allowed.call_args_list
-    assert len(calls) == 3
-    assert [c[0][1] for c in calls] == ["experiments", "registeredmodels", "jobs"]
+    assert len(calls) == 5
+    assert [c[0][1] for c in calls] == [
+        RESOURCE_EXPERIMENTS,
+        RESOURCE_REGISTERED_MODELS,
+        RESOURCE_GATEWAY_SECRETS,
+        RESOURCE_GATEWAY_ENDPOINTS,
+        RESOURCE_GATEWAY_MODEL_DEFINITIONS,
+    ]

@@ -40,6 +40,9 @@ def core_api(monkeypatch):
         def stop(self):
             return None
 
+        def close(self):
+            return None
+
     monkeypatch.setattr(
         "kubernetes_workspace_provider.provider.watch.Watch",
         lambda: _FakeWatch(),

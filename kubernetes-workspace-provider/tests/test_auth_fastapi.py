@@ -7,7 +7,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import FastAPI
+from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.testclient import TestClient
+from flask import Flask
 from kubernetes_workspace_provider.auth import (
     DEFAULT_REMOTE_GROUPS_HEADER,
     DEFAULT_REMOTE_GROUPS_SEPARATOR,
@@ -24,6 +26,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES
 from mlflow.exceptions import MlflowException
 from mlflow.tracing.utils.otlp import OTLP_TRACES_PATH
 from mlflow.utils import workspace_context
@@ -43,7 +46,6 @@ def _compile_rules(monkeypatch):
 
 
 def test_otel_endpoints_in_auth_rules():
-    """Verify OTEL endpoints are registered in PATH_AUTHORIZATION_RULES."""
     # Check that OTEL endpoints are registered
     assert (OTLP_TRACES_PATH, "POST") in PATH_AUTHORIZATION_RULES
 
@@ -53,7 +55,6 @@ def test_otel_endpoints_in_auth_rules():
 
 
 def test_trace_get_endpoints_in_auth_rules():
-    """Ensure REST trace retrieval endpoints are mapped."""
     paths = [
         "/api/3.0/mlflow/traces/get",
         "/ajax-api/3.0/mlflow/traces/get",
@@ -65,10 +66,10 @@ def test_trace_get_endpoints_in_auth_rules():
 
 
 def test_job_api_endpoints_in_auth_rules():
-    """Ensure Job API endpoints are explicitly mapped."""
     cases = [
         ("/ajax-api/3.0/jobs", "POST", "create"),
         ("/ajax-api/3.0/jobs/<job_id>", "GET", "get"),
+        ("/ajax-api/3.0/jobs/cancel/<job_id>", "PATCH", "update"),
         ("/ajax-api/3.0/jobs/search", "POST", "list"),
     ]
 
@@ -103,12 +104,6 @@ def fastapi_app_with_k8s_auth(mock_authorizer, mock_config):
     """Create a FastAPI app with Kubernetes auth middleware."""
     app = FastAPI()
 
-    app.add_middleware(
-        KubernetesAuthMiddleware,
-        authorizer=mock_authorizer,
-        config_values=mock_config,
-    )
-
     class _WorkspaceContextMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next):
             workspace_header = request.headers.get(WORKSPACE_HEADER_NAME)
@@ -124,13 +119,11 @@ def fastapi_app_with_k8s_auth(mock_authorizer, mock_config):
                     status_code=400,
                     content={"error": {"message": "Missing X-MLflow-Experiment-Id header"}},
                 )
-            token = workspace_context.set_current_workspace(workspace_header)
+            workspace_context.set_server_request_workspace(workspace_header)
             try:
                 return await call_next(request)
             finally:
-                workspace_context.reset_workspace(token)
-
-    app.add_middleware(_WorkspaceContextMiddleware)
+                workspace_context.clear_server_request_workspace()
 
     # Add a mock OTEL endpoint
     @app.post(OTLP_TRACES_PATH)
@@ -141,12 +134,6 @@ def fastapi_app_with_k8s_auth(mock_authorizer, mock_config):
             "workspace": workspace_name,
         }
 
-    # Add a mock Flask-style endpoint (should NOT be processed by K8s middleware)
-    @app.post("/api/2.0/mlflow/experiments/create")
-    async def mock_flask_endpoint(request: Request):
-        # This should be called without auth processing
-        return {"status": "flask_endpoint"}
-
     # Add a mock Job API endpoint (should be processed by K8s middleware)
     @app.get("/ajax-api/3.0/jobs/123")
     async def mock_job_endpoint(request: Request):
@@ -156,11 +143,27 @@ def fastapi_app_with_k8s_auth(mock_authorizer, mock_config):
             "workspace": workspace_name,
         }
 
+    # Add a mock Flask-style endpoint (should NOT be processed by K8s middleware)
+    flask_app = Flask(__name__)
+
+    @flask_app.post("/api/2.0/mlflow/experiments/create")
+    def mock_flask_endpoint():
+        # This should be called without auth processing
+        return {"status": "flask_endpoint"}
+
+    app.mount("/", WSGIMiddleware(flask_app))
+
+    app.add_middleware(
+        KubernetesAuthMiddleware,
+        authorizer=mock_authorizer,
+        config_values=mock_config,
+    )
+    app.add_middleware(_WorkspaceContextMiddleware)
+
     return app
 
 
 def test_otel_endpoint_requires_auth(fastapi_app_with_k8s_auth):
-    """OTEL endpoints must receive an auth header."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -178,7 +181,6 @@ def test_otel_endpoint_requires_auth(fastapi_app_with_k8s_auth):
 
 
 def test_otel_endpoint_requires_bearer_token(fastapi_app_with_k8s_auth):
-    """OTEL endpoints enforce Bearer token formatting."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -194,7 +196,6 @@ def test_otel_endpoint_requires_bearer_token(fastapi_app_with_k8s_auth):
 
 
 def test_otel_endpoint_requires_experiment_id(fastapi_app_with_k8s_auth):
-    """OTEL endpoints require the experiment header."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -209,7 +210,6 @@ def test_otel_endpoint_requires_experiment_id(fastapi_app_with_k8s_auth):
 
 
 def test_otel_endpoint_requires_workspace_header(fastapi_app_with_k8s_auth):
-    """OTEL endpoints require the workspace header."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -225,7 +225,6 @@ def test_otel_endpoint_requires_workspace_header(fastapi_app_with_k8s_auth):
 
 
 def test_otel_endpoint_with_valid_auth(fastapi_app_with_k8s_auth, mock_authorizer):
-    """Successful OTEL request propagates workspace info."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     with patch("kubernetes_workspace_provider.auth._parse_jwt_subject", return_value="test-user"):
@@ -243,13 +242,13 @@ def test_otel_endpoint_with_valid_auth(fastapi_app_with_k8s_auth, mock_authorize
     assert response.json()["workspace"] == "team-a"
 
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "valid-token"
     assert (resource, verb, namespace) == ("experiments", "update", "team-a")
+    assert subresource is None
 
 
 def test_otel_endpoint_with_root_path_requires_auth(mock_authorizer, mock_config) -> None:
-    """When FastAPI runs under a root_path, K8s middleware must still enforce auth."""
     app = FastAPI(root_path="/mlflow")
     app.add_middleware(
         KubernetesAuthMiddleware,
@@ -265,11 +264,11 @@ def test_otel_endpoint_with_root_path_requires_auth(mock_authorizer, mock_config
                     status_code=400,
                     content={"error": {"message": f"Missing {WORKSPACE_HEADER_NAME} header"}},
                 )
-            token = workspace_context.set_current_workspace(workspace_header)
+            workspace_context.set_server_request_workspace(workspace_header)
             try:
                 return await call_next(request)
             finally:
-                workspace_context.reset_workspace(token)
+                workspace_context.clear_server_request_workspace()
 
     # Ensure workspace context is set before Kubernetes auth middleware runs.
     app.add_middleware(_WorkspaceContextMiddleware)
@@ -295,7 +294,6 @@ def test_otel_endpoint_with_root_path_requires_auth(mock_authorizer, mock_config
 
 
 def test_job_api_endpoints_with_root_path_require_auth(mock_authorizer, mock_config) -> None:
-    """Job API endpoints must remain protected when served under a root_path."""
     app = FastAPI(root_path="/mlflow")
     app.add_middleware(
         KubernetesAuthMiddleware,
@@ -311,11 +309,11 @@ def test_job_api_endpoints_with_root_path_require_auth(mock_authorizer, mock_con
                     status_code=400,
                     content={"error": {"message": f"Missing {WORKSPACE_HEADER_NAME} header"}},
                 )
-            token = workspace_context.set_current_workspace(workspace_header)
+            workspace_context.set_server_request_workspace(workspace_header)
             try:
                 return await call_next(request)
             finally:
-                workspace_context.reset_workspace(token)
+                workspace_context.clear_server_request_workspace()
 
     app.add_middleware(_WorkspaceContextMiddleware)
 
@@ -339,7 +337,6 @@ def test_job_api_endpoints_with_root_path_require_auth(mock_authorizer, mock_con
 def test_otel_endpoint_accepts_forwarded_access_token(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:
-    """OTEL endpoints accept the forwarded token header."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -354,15 +351,15 @@ def test_otel_endpoint_accepts_forwarded_access_token(
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
     assert (resource, verb, namespace) == ("experiments", "update", "team-a")
+    assert subresource is None
 
 
 def test_otel_endpoint_prefers_forwarded_token_on_invalid_authorization(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:
-    """Forwarded token is used when Authorization header is invalid."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -377,13 +374,13 @@ def test_otel_endpoint_prefers_forwarded_token_on_invalid_authorization(
 
     assert response.status_code == 200
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
     assert (resource, verb, namespace) == ("experiments", "update", "team-a")
+    assert subresource is None
 
 
 def test_otel_endpoint_permission_denied(fastapi_app_with_k8s_auth, mock_authorizer):
-    """Permission denial propagates to clients."""
     mock_authorizer.is_allowed.return_value = False
     client = TestClient(fastapi_app_with_k8s_auth)
 
@@ -403,7 +400,6 @@ def test_otel_endpoint_permission_denied(fastapi_app_with_k8s_auth, mock_authori
 def test_flask_endpoints_bypass_fastapi_middleware(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:
-    """Flask endpoints should not be processed by the FastAPI middleware."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -417,7 +413,6 @@ def test_flask_endpoints_bypass_fastapi_middleware(
 
 
 def test_job_api_endpoints_require_auth(fastapi_app_with_k8s_auth, mock_authorizer):
-    """Job API endpoints must enforce authentication."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.get(
@@ -444,15 +439,15 @@ def test_job_api_endpoints_require_auth(fastapi_app_with_k8s_auth, mock_authoriz
     assert response.json()["status"] == "job_endpoint"
     assert response.json()["workspace"] == "team-a"
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "valid-token"
     assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert subresource is None
 
 
 def test_job_api_endpoints_accept_forwarded_access_token(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:
-    """Ensure Job API GETs authorize successfully using only the forwarded token header."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.get(
@@ -466,15 +461,15 @@ def test_job_api_endpoints_accept_forwarded_access_token(
     assert response.status_code == 200
     assert response.json()["status"] == "job_endpoint"
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
     assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert subresource is None
 
 
 def test_job_api_endpoints_prefer_forwarded_token_on_invalid_authorization(
     fastapi_app_with_k8s_auth, mock_authorizer
 ) -> None:
-    """Job API falls back to forwarded token when Authorization invalid."""
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.get(
@@ -488,18 +483,25 @@ def test_job_api_endpoints_prefer_forwarded_token_on_invalid_authorization(
 
     assert response.status_code == 200
     mock_authorizer.is_allowed.assert_called_once()
-    identity, resource, verb, namespace = mock_authorizer.is_allowed.call_args[0]
+    identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
     assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert subresource is None
 
 
-def test_job_api_missing_workspace_context_returns_error(mock_authorizer, mock_config) -> None:
-    """Missing workspace context should be surfaced as a server error."""
+def test_job_api_missing_workspace_context_returns_error(
+    mock_authorizer, mock_config, monkeypatch
+) -> None:
     app = FastAPI()
     app.add_middleware(
         KubernetesAuthMiddleware,
         authorizer=mock_authorizer,
         config_values=mock_config,
+    )
+    monkeypatch.setenv(MLFLOW_ENABLE_WORKSPACES.name, "true")
+    monkeypatch.setattr(
+        "mlflow.server.workspace_helpers.get_default_workspace_optional",
+        lambda _store: (None, False),
     )
 
     @app.get("/ajax-api/3.0/jobs/123")
@@ -512,7 +514,6 @@ def test_job_api_missing_workspace_context_returns_error(mock_authorizer, mock_c
         "/ajax-api/3.0/jobs/123",
         headers={
             "Authorization": "Bearer valid-token",
-            WORKSPACE_HEADER_NAME: "team-a",
         },
     )
 
