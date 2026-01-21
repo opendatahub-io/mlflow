@@ -4,6 +4,7 @@ USER 0
 RUN npm install -g yarn
 COPY --chown=1001:0 mlflow/server/js/ .
 USER 1001
+ENV MLFLOW_ENABLE_ASSISTANT=false
 RUN yarn install --silent \
     && NODE_OPTIONS="--max_old_space_size=4096" yarn build
 
@@ -20,7 +21,8 @@ FROM registry.access.redhat.com/ubi9/python-311:9.6
 ARG MLFLOW_VERSION=3.3.2
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MLFLOW_DISABLE_TELEMETRY=true
+    MLFLOW_DISABLE_TELEMETRY=true \
+    MLFLOW_ENABLE_ASSISTANT=false
 WORKDIR /app
 
 USER 0

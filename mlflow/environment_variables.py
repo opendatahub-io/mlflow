@@ -115,6 +115,10 @@ MLFLOW_WORKSPACE_STORE_URI = _EnvironmentVariable("MLFLOW_WORKSPACE_STORE_URI", 
 #: (default: ``False``)
 MLFLOW_ENABLE_WORKSPACES = _BooleanEnvironmentVariable("MLFLOW_ENABLE_WORKSPACES", False)
 
+#: Enables MLflow Assistant UI and server endpoints.
+#: (default: ``True``)
+MLFLOW_ENABLE_ASSISTANT = _BooleanEnvironmentVariable("MLFLOW_ENABLE_ASSISTANT", True)
+
 #: Specifies the active workspace for client operations.
 #: (default: ``None``)
 MLFLOW_WORKSPACE = _EnvironmentVariable("MLFLOW_WORKSPACE", str, None)
