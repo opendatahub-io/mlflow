@@ -49,6 +49,7 @@ RUN set -eux; \
 
 EXPOSE 5000
 
-# Default command. Override in Kubernetes as needed.
+# Default command with signal handling for graceful shutdown.
+# Override in Kubernetes as needed.
 USER 1001
-CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--app-name", "kubernetes-auth", "--enable-workspaces", "--workspace-store-uri", "kubernetes://", "--serve-artifacts"]
+CMD ["/bin/sh", "-c", "child=\"\"; trap '[ -n \"$child\" ] && kill -TERM $child' TERM INT; mlflow server --host 0.0.0.0 --port 5000 --app-name kubernetes-auth --enable-workspaces --workspace-store-uri kubernetes:// --serve-artifacts & child=$!; wait $child"]
