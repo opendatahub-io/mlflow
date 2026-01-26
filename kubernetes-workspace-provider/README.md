@@ -18,6 +18,10 @@ for every MLflow API request. Each MLflow workspace maps 1:1 to a Kubernetes nam
   `~/.kube/config`.
 - Provides a read-only experience: namespace lifecycle is owned outside of MLflow and all CRUD calls
   raise `NotImplementedError`.
+- Supports per-namespace artifact storage overrides via the optional `MLflowConfig` CRD
+  (`mlflowconfigs.mlflow.kubeflow.org`). Namespace owners can point their workspace at a different
+  S3 bucket and/or artifact-path by creating an `MLflowConfig` resource with `spec.artifactRootSecret`
+  (referencing a Secret containing `AWS_S3_BUCKET`) and an optional `spec.artifactRootPath`.
 
 ### Kubernetes authorization plugin (`kubernetes-auth`)
 
@@ -46,7 +50,10 @@ for every MLflow API request. Each MLflow workspace maps 1:1 to a Kubernetes nam
 - MLflow 3.6+ with the workspaces feature flag enabled (via `--enable-workspaces` or
   `MLFLOW_ENABLE_WORKSPACES=1`).
 - A Kubernetes cluster reachable from the MLflow tracking server.
-- The service account used by the MLflow server must be allowed to list and watch namespaces.
+- The service account used by the MLflow server must be allowed to list and watch namespaces. If
+  per-namespace artifact root overrides are enabled (via the `MLflowConfig` CRD), the service account
+  also needs permissions to list and watch `mlflowconfigs.mlflow.kubeflow.org` cluster-wide, and to
+  get the `mlflow-artifact-connection` Secret in namespaces that define an `MLflowConfig`.
 - Users (or service accounts acting on their behalf) need permissions in the `mlflow.kubeflow.org`
   API group that align with the operations they perform (see
   [Kubernetes RBAC requirements](#kubernetes-rbac-requirements)).
@@ -270,6 +277,15 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["list", "watch"]
+  # Required only when the MLflowConfig CRD is installed for per-namespace
+  # artifact root overrides. Safe to omit if the CRD is not used.
+  - apiGroups: ["mlflow.kubeflow.org"]
+    resources: ["mlflowconfigs"]
+    verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["mlflow-artifact-connection"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -284,6 +300,11 @@ subjects:
     name: <service-account-name>
     namespace: <service-account-namespace>
 ```
+
+> **Note:** The `mlflowconfigs` and `secrets` rules are only required when using the `MLflowConfig`
+> CRD for per-namespace artifact storage overrides. The CRD enforces the Secret name
+> `mlflow-artifact-connection`, so `resourceNames` can be scoped accordingly. If the CRD is not
+> installed, these permissions are unnecessary.
 
 The authorization plugin evaluates Kubernetes `SelfSubjectAccessReview` requests against the
 `mlflow.kubeflow.org` API group. Tokens presented to the MLflow API must be authorized for the
