@@ -195,6 +195,10 @@ def test_get_store_sqlalchemy_store(tmp_path, monkeypatch, db_type):
             "mlflow.store.tracking.sqlalchemy_store.SqlAlchemyStore.search_experiments",
             return_value=[],
         ),
+        mock.patch(
+            "mlflow.store.tracking.sqlalchemy_store.SqlAlchemyStore._initialize_store_state",
+            return_value=None,
+        ),
     ):
         store = _get_store()
         assert isinstance(store, SqlAlchemyStore)
@@ -226,6 +230,10 @@ def test_get_store_sqlalchemy_store_with_artifact_uri(tmp_path, monkeypatch, db_
         mock.patch(
             "mlflow.store.tracking.sqlalchemy_store.SqlAlchemyStore.search_experiments",
             return_value=[],
+        ),
+        mock.patch(
+            "mlflow.store.tracking.sqlalchemy_store.SqlAlchemyStore._initialize_store_state",
+            return_value=None,
         ),
     ):
         store = _get_store(artifact_uri=artifact_uri)

@@ -93,16 +93,17 @@ def cached_db(tmp_path_factory) -> Path:
 
 
 @pytest.fixture
-def store(tmp_path: Path, cached_db: Path) -> SqlAlchemyStore:
+def store(tmp_path: Path, cached_db: Path, workspaces_enabled) -> SqlAlchemyStore:
+    store_cls = WorkspaceAwareSqlAlchemyStore if workspaces_enabled else SqlAlchemyStore
     artifact_uri = tmp_path / "artifacts"
     artifact_uri.mkdir(exist_ok=True)
     if db_uri_env := MLFLOW_TRACKING_URI.get():
-        s = SqlAlchemyStore(db_uri_env, artifact_uri.as_uri())
+        s = store_cls(db_uri_env, artifact_uri.as_uri())
         yield s
         _cleanup_database(s)
     else:
         db_path = tmp_path / "mlflow.db"
         shutil.copy(cached_db, db_path)
         db_uri = f"sqlite:///{db_path}"
-        s = SqlAlchemyStore(db_uri, artifact_uri.as_uri())
+        s = store_cls(db_uri, artifact_uri.as_uri())
         yield s

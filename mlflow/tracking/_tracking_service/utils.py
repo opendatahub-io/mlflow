@@ -7,7 +7,7 @@ from functools import lru_cache, partial
 from pathlib import Path
 from typing import Generator
 
-from mlflow.environment_variables import MLFLOW_TRACKING_URI
+from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES, MLFLOW_TRACKING_URI
 from mlflow.store.db.db_types import DATABASE_ENGINES
 from mlflow.store.tracking import DEFAULT_LOCAL_FILE_AND_ARTIFACT_PATH, DEFAULT_TRACKING_URI
 from mlflow.store.tracking.databricks_rest_store import DatabricksTracingRestStore
@@ -180,7 +180,10 @@ def _get_file_store(store_uri, **_):
 
 
 def _get_sqlalchemy_store(store_uri, artifact_uri):
-    from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore
+    from mlflow.store.tracking.sqlalchemy_store import (
+        SqlAlchemyStore,
+        WorkspaceAwareSqlAlchemyStore,
+    )
 
     # When running inside the server process (e.g., Model.log() triggered by a job/API),
     # inherit the server's configured artifact root from the environment rather than
@@ -190,7 +193,9 @@ def _get_sqlalchemy_store(store_uri, artifact_uri):
         artifact_uri = os.environ.get(
             _SERVER_ARTIFACT_ROOT_ENV_VAR, DEFAULT_LOCAL_FILE_AND_ARTIFACT_PATH
         )
-    return SqlAlchemyStore(store_uri, artifact_uri)
+
+    store_cls = WorkspaceAwareSqlAlchemyStore if MLFLOW_ENABLE_WORKSPACES.get() else SqlAlchemyStore
+    return store_cls(store_uri, artifact_uri)
 
 
 def _get_rest_store(store_uri, **_):
