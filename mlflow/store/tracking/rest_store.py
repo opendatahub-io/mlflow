@@ -46,6 +46,7 @@ from mlflow.environment_variables import (
     _MLFLOW_DELETE_TRACES_MAX_BATCH_SIZE,
     _MLFLOW_LOG_LOGGED_MODEL_PARAMS_BATCH_SIZE,
     MLFLOW_ASYNC_TRACE_LOGGING_RETRY_TIMEOUT,
+    MLFLOW_TRACKING_URI,
 )
 from mlflow.exceptions import MlflowException
 from mlflow.protos import databricks_pb2
@@ -129,6 +130,7 @@ from mlflow.store.tracking.abstract_store import AbstractStore
 from mlflow.store.tracking.gateway.rest_mixin import RestGatewayStoreMixin
 from mlflow.tracing.analysis import TraceFilterCorrelationResult
 from mlflow.tracing.utils.otlp import MLFLOW_EXPERIMENT_ID_HEADER, OTLP_TRACES_PATH
+from mlflow.utils import rest_utils
 from mlflow.utils.databricks_utils import databricks_api_disabled
 from mlflow.utils.proto_json_utils import message_to_json
 from mlflow.utils.rest_utils import (
@@ -145,6 +147,7 @@ from mlflow.utils.rest_utils import (
     http_request,
     verify_rest_response,
 )
+from mlflow.utils.uri import is_databricks_uri
 from mlflow.utils.validation import _resolve_experiment_ids_and_locations
 
 _logger = logging.getLogger(__name__)
@@ -166,14 +169,62 @@ class RestStore(RestGatewayStoreMixin, AbstractStore):
     """
 
     _METHOD_TO_INFO = extract_api_info_for_service(MlflowService, _REST_API_PATH_PREFIX)
+
     _V3_METHOD_TO_INFO = extract_api_info_for_service(MlflowService, _V3_REST_API_PATH_PREFIX)
 
     # Set of v3 APIs - includes Gateway APIs from mixin
     _V3_APIS = RestGatewayStoreMixin._V3_GATEWAY_APIS
 
+    _SERVER_FEATURES_ENDPOINT = "/api/2.0/mlflow/server-features"
+
     def __init__(self, get_host_creds):
         super().__init__()
         self.get_host_creds = get_host_creds
+        self._workspace_support: bool | None = None
+
+    def supports_workspaces(self) -> bool:
+        if self._workspace_support is not None:
+            return self._workspace_support
+
+        tracking_uri = MLFLOW_TRACKING_URI.get()
+        if tracking_uri and is_databricks_uri(tracking_uri):
+            self._workspace_support = False
+            return False
+
+        supported = self._probe_workspace_support()
+        self._workspace_support = supported
+        return supported
+
+    def _probe_workspace_support(self) -> bool:
+        host_creds = self.get_host_creds()
+        try:
+            response = http_request(
+                host_creds=host_creds,
+                endpoint=self._SERVER_FEATURES_ENDPOINT,
+                method="GET",
+                timeout=3,
+                max_retries=0,
+                raise_on_status=False,
+            )
+        except Exception as exc:  # pragma: no cover - network errors vary
+            raise MlflowException(
+                message=f"Failed to query {self._SERVER_FEATURES_ENDPOINT}: {exc}",
+                error_code=databricks_pb2.INTERNAL_ERROR,
+            ) from exc
+
+        if response.status_code == 404:
+            return False
+
+        if response.status_code >= 400:
+            raise MlflowException(
+                message=(
+                    f"Failed to query {self._SERVER_FEATURES_ENDPOINT}: "
+                    f"{response.status_code} {response.text}"
+                ),
+                error_code=databricks_pb2.UNAVAILABLE,
+            )
+
+        return response.json().get("workspaces_enabled", False)
 
     @staticmethod
     @functools.lru_cache
@@ -223,6 +274,14 @@ class RestStore(RestGatewayStoreMixin, AbstractStore):
         else:
             endpoint, method = method_to_info[api]
         response_proto = response_proto or api.Response()
+        workspace = rest_utils._resolve_active_workspace()
+        if workspace is not None and not self.supports_workspaces():
+            raise MlflowException(
+                f"Active workspace '{workspace}' cannot be used because the remote tracking "
+                "server does not support workspaces. Restart the server with --enable-workspaces "
+                "or unset the active workspace.",
+                error_code=databricks_pb2.FEATURE_DISABLED,
+            )
         return call_endpoint(
             self.get_host_creds(),
             endpoint,
@@ -1958,6 +2017,15 @@ class RestStore(RestGatewayStoreMixin, AbstractStore):
             raise MlflowException(
                 f"All spans must belong to the same trace. Found trace IDs: {trace_ids}",
                 error_code=databricks_pb2.INVALID_PARAMETER_VALUE,
+            )
+
+        workspace = rest_utils._resolve_active_workspace()
+        if workspace and not self.supports_workspaces():
+            raise MlflowException(
+                f"Active workspace '{workspace}' cannot be used because the remote tracking "
+                "server does not support workspaces. Restart the server with --enable-workspaces "
+                "or unset the active workspace.",
+                error_code=databricks_pb2.FEATURE_DISABLED,
             )
 
         request = ExportTraceServiceRequest()
