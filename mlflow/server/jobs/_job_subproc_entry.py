@@ -12,9 +12,16 @@ import logging
 import os
 import threading
 import traceback
+from contextlib import nullcontext
 
 from mlflow.server.jobs.logging_utils import configure_logging_for_jobs
-from mlflow.server.jobs.utils import JobResult, _exit_when_orphaned, _load_function
+from mlflow.server.jobs.utils import (
+    JOB_WORKSPACE_ENV_VAR,
+    JobResult,
+    _exit_when_orphaned,
+    _load_function,
+)
+from mlflow.utils.workspace_context import WorkspaceContext
 
 _logger = logging.getLogger(__name__)
 # Configure Python logging to suppress noisy job logs
@@ -33,6 +40,7 @@ if __name__ == "__main__":
     result_dump_path = os.environ["_MLFLOW_SERVER_JOB_RESULT_DUMP_PATH"]
     transient_error_classes_path = os.environ["_MLFLOW_SERVER_JOB_TRANSIENT_ERROR_ClASSES_PATH"]
 
+<<<<<<< HEAD
     with open(transient_error_classes_path) as f:
         content = f.read()
 
@@ -44,8 +52,12 @@ if __name__ == "__main__":
         module = importlib.import_module(".".join(module_parts))
         transient_error_classes.append(getattr(module, cls_name))
 
+    workspace = os.environ.get(JOB_WORKSPACE_ENV_VAR)
+    ctx = WorkspaceContext(workspace) if workspace else nullcontext()
+
     try:
-        value = function(**params)
+        with ctx:
+            value = function(**params)
         job_result = JobResult(
             succeeded=True,
             result=json.dumps(value),

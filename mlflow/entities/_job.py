@@ -21,6 +21,7 @@ class Job(_MlflowObject):
         result: str | None,
         retry_count: int,
         last_update_time: int,
+        workspace: str | None = None,
     ):
         super().__init__()
         self._job_id = job_id
@@ -32,6 +33,7 @@ class Job(_MlflowObject):
         self._result = result
         self._retry_count = retry_count
         self._last_update_time = last_update_time
+        self._workspace = workspace
 
     @property
     def job_id(self) -> str:
@@ -102,5 +104,16 @@ class Job(_MlflowObject):
         """Last update timestamp of the job, in number of milliseconds since the UNIX epoch."""
         return self._last_update_time
 
+    @property
+    def workspace(self) -> str | None:
+        """Workspace associated with this job."""
+        return self._workspace
+
     def __repr__(self) -> str:
-        return f"<Job(job_id={self.job_id}, job_name={self.job_name})>"
+        return (
+            "<Job(job_id={job_id}, job_name={job_name}), workspace={workspace})>"
+        ).format(
+            job_id=self.job_id,
+            job_name=self.job_name,
+            workspace=self.workspace,
+        )

@@ -19,14 +19,18 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from mlflow.entities._job_status import JobStatus
 from mlflow.environment_variables import (
+    MLFLOW_ENABLE_WORKSPACES,
     MLFLOW_SERVER_JOB_TRANSIENT_ERROR_RETRY_BASE_DELAY,
     MLFLOW_SERVER_JOB_TRANSIENT_ERROR_RETRY_MAX_DELAY,
+    MLFLOW_WORKSPACE,
 )
 from mlflow.exceptions import MlflowException
 from mlflow.server.constants import HUEY_STORAGE_PATH_ENV_VAR
 from mlflow.utils.environment import _PythonEnv
 from mlflow.utils.import_hooks import register_post_import_hook
 from mlflow.utils.process import _exec_cmd
+from mlflow.utils.workspace_context import WorkspaceContext
+from mlflow.utils.workspace_utils import DEFAULT_WORKSPACE_NAME
 
 if TYPE_CHECKING:
     import huey
@@ -34,6 +38,7 @@ if TYPE_CHECKING:
     from mlflow.store.jobs.abstract_store import AbstractJobStore
 
 _logger = logging.getLogger(__name__)
+JOB_WORKSPACE_ENV_VAR = "_MLFLOW_SERVER_JOB_WORKSPACE"
 
 # Reserved Huey instance key for periodic tasks
 HUEY_PERIODIC_TASKS_INSTANCE_KEY = "periodic_tasks"
@@ -153,6 +158,7 @@ def _exec_job_in_subproc(
     job_store: "AbstractJobStore",
     job_id: str,
     job_name: str,
+    workspace: str,
 ) -> JobResult | None:
     """
     Executes the job function in a subprocess,
@@ -211,16 +217,22 @@ def _exec_job_in_subproc(
         for cls in transient_error_classes:
             f.write(f"{cls.__module__}.{cls.__name__}\n")
 
+    job_env = {
+        **os.environ,
+        MLFLOW_SERVER_JOB_NAME_ENV_VAR: job_name,
+        "_MLFLOW_SERVER_JOB_PARAMS": json.dumps(params),
+        "_MLFLOW_SERVER_JOB_FUNCTION_FULLNAME": function_fullname,
+        "_MLFLOW_SERVER_JOB_RESULT_DUMP_PATH": result_file,
+        "_MLFLOW_SERVER_JOB_TRANSIENT_ERROR_ClASSES_PATH": transient_error_classes_file,
+    }
+
+    if workspace:
+        job_env[JOB_WORKSPACE_ENV_VAR] = workspace
+        job_env[MLFLOW_WORKSPACE.name] = workspace
+
     with subprocess.Popen(
         job_cmd,
-        env={
-            **os.environ,
-            MLFLOW_SERVER_JOB_NAME_ENV_VAR: job_name,
-            "_MLFLOW_SERVER_JOB_PARAMS": json.dumps(params),
-            "_MLFLOW_SERVER_JOB_FUNCTION_FULLNAME": function_fullname,
-            "_MLFLOW_SERVER_JOB_RESULT_DUMP_PATH": result_file,
-            "_MLFLOW_SERVER_JOB_TRANSIENT_ERROR_ClASSES_PATH": transient_error_classes_file,
-        },
+        env=job_env,
     ) as popen:
         beg_time = time.time()
         while popen.poll() is None:
@@ -268,6 +280,8 @@ def _compute_exclusive_lock_key(job_name: str, params: dict[str, Any]) -> str:
 def _exec_job(
     job_id: str,
     job_name: str,
+    workspace: str,
+    function: Callable[..., Any],
     params: dict[str, Any],
     timeout: float | None,
     exclusive: bool | list[str] = False,
@@ -312,40 +326,28 @@ def _exec_job(
         lock = None
 
     try:
-        job_store.start_job(job_id)
+        with WorkspaceContext(workspace):
+            job_store.start_job(job_id)
 
-        fn_fullname = get_job_fn_fullname(job_name)
-        function = _load_function(fn_fullname)
-        fn_metadata = function._job_fn_metadata
+            fn_fullname = get_job_fn_fullname(job_name)
+            function = _load_function(fn_fullname)
+            fn_metadata = function._job_fn_metadata
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            job_result = _exec_job_in_subproc(
-                fn_metadata.fn_fullname,
-                params,
-                fn_metadata.python_env,
-                fn_metadata.transient_error_classes,
-                timeout,
-                tmpdir,
-                job_store,
-                job_id,
-                job_name,
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                job_result = _exec_job_in_subproc(
+                    fn_metadata.fn_fullname,
+                    params,
+                    fn_metadata.python_env,
+                    fn_metadata.transient_error_classes,
+                    timeout,
+                    tmpdir,
+                    job_store,
+                    job_id,
+                    job_name,
+                    workspace,
+                )
 
-        if job_result is None:
-            return
 
-        if job_result.succeeded:
-            job_store.finish_job(job_id, job_result.result)
-            return
-
-        if job_result.is_transient_error:
-            # For transient errors, if the retry count is less than max allowed count,
-            # trigger task retry by raising `RetryTask` exception.
-            retry_count = job_store.retry_or_fail_job(job_id, job_result.error)
-            if retry_count is not None:
-                _exponential_backoff_retry(retry_count)
-        else:
-            job_store.fail_job(job_id, job_result.error)
     finally:
         if lock is not None:
             lock.release()
@@ -536,29 +538,61 @@ def _load_function(fullname: str) -> Callable[..., Any]:
         )
 
 
+def _workspace_names_for_recovery() -> list[str]:
+    """
+    Determine the set of workspace names that may contain unfinished jobs.
+
+    When multi-tenancy is disabled, this returns only the default workspace. Otherwise, it
+    queries the configured workspace store to enumerate all defined workspaces so the job runner
+    can resume tasks for each tenant.
+    """
+    if not MLFLOW_ENABLE_WORKSPACES.get():
+        return [DEFAULT_WORKSPACE_NAME]
+
+    from mlflow.server.workspace_helpers import _get_workspace_store  # avoid circular import
+
+    store = _get_workspace_store()
+    names: list[str] = []
+    seen: set[str] = set()
+
+    for workspace in store.list_workspaces():
+        ws_name = workspace.name
+        if ws_name not in seen:
+            names.append(ws_name)
+            seen.add(ws_name)
+
+    if DEFAULT_WORKSPACE_NAME not in seen:
+        names.insert(0, DEFAULT_WORKSPACE_NAME)
+    return names or [DEFAULT_WORKSPACE_NAME]
+
+
 def _enqueue_unfinished_jobs(server_launching_timestamp: int) -> None:
     from mlflow.server.handlers import _get_job_store
 
     job_store = _get_job_store()
 
-    unfinished_jobs = job_store.list_jobs(
-        statuses=[JobStatus.PENDING, JobStatus.RUNNING],
-        # filter out jobs created after the server is launched.
-        end_timestamp=server_launching_timestamp,
-    )
+    for workspace in _workspace_names_for_recovery():
+        with WorkspaceContext(workspace):
+            unfinished_jobs = job_store.list_jobs(
+                statuses=[JobStatus.PENDING, JobStatus.RUNNING],
+                # filter out jobs created after the server is launched.
+                end_timestamp=server_launching_timestamp,
+            )
 
-    for job in unfinished_jobs:
-        if job.status == JobStatus.RUNNING:
-            job_store.reset_job(job.job_id)  # reset the job status to PENDING
+            for job in unfinished_jobs:
+                if job.status == JobStatus.RUNNING:
+                    job_store.reset_job(job.job_id)  # reset the job status to PENDING
 
-        params = json.loads(job.params)
-        timeout = job.timeout
-        # Look up exclusive flag from function metadata
-        fn_fullname = get_job_fn_fullname(job.job_name)
-        fn_metadata = _load_function(fn_fullname)._job_fn_metadata
-        _get_or_init_huey_instance(job.job_name).submit_task(
-            job.job_id, job.job_name, params, timeout, fn_metadata.exclusive
-        )
+                params = json.loads(job.params)
+                timeout = job.timeout
+                # Look up exclusive flag from function metadata
+                fn_fullname = get_job_fn_fullname(job.job_name)
+                fn_metadata = _load_function(fn_fullname)._job_fn_metadata
+                job_workspace = job.workspace or workspace or DEFAULT_WORKSPACE_NAME
+                # enqueue job
+                _get_or_init_huey_instance(job.job_name).submit_task(
+                    job.job_id, job_workspace job.job_name, params, timeout, fn_metadata.exclusive
+                )
 
 
 def _validate_function_parameters(function: Callable[..., Any], params: dict[str, Any]) -> None:

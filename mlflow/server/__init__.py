@@ -48,6 +48,8 @@ from mlflow.server.handlers import (
     get_ui_telemetry_handler,
     post_ui_telemetry_handler,
     upload_artifact_handler,
+    workspace_before_request_handler,
+    workspace_teardown_request_handler,
 )
 from mlflow.server.workspace_helpers import (
     workspace_before_request_handler,
