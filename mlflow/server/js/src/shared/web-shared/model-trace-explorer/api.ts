@@ -12,7 +12,7 @@ import type {
   ModelTraceLocationUcSchema,
   ModelTraceSpanV3,
 } from './ModelTrace.types';
-import { fetchAPI, getAjaxUrl } from './ModelTraceExplorer.request.utils';
+import { fetchAPI, getAjaxUrl } from '@mlflow/mlflow/src/common/utils/FetchUtils';
 import {
   createTraceV4SerializedLocation,
   parseTraceV4SerializedLocation,
@@ -36,10 +36,10 @@ export const createAssessment = ({
 }: {
   payload: CreateAssessmentPayload;
 }): Promise<CreateAssessmentV3Response> =>
-  fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${payload.assessment.trace_id}/assessments`), 'POST', payload);
+  fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${payload.assessment.trace_id}/assessments`), { method: 'POST', body: payload });
 
 export const fetchTraceInfoV3 = ({ traceId }: { traceId: string }) =>
-  fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${traceId}`));
+  fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${traceId}`), { method: 'GET' });
 
 export type UpdateAssessmentPayload = {
   // we only support updating these fields
@@ -66,7 +66,8 @@ export const updateAssessment = ({
   traceId: string;
   assessmentId: string;
   payload: UpdateAssessmentPayload;
-}) => fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${traceId}/assessments/${assessmentId}`), 'PATCH', payload);
+}) =>
+  fetchAPI(getAjaxUrl(`ajax-api/3.0/mlflow/traces/${traceId}/assessments/${assessmentId}`), { method: 'PATCH', body: payload });
 
 export type CreateAssessmentV4Response = Assessment;
 
@@ -103,7 +104,7 @@ const createAssessmentV4 = ({
   );
   const urlWithParams = `${endpointPath}?${queryParams.toString()}`;
 
-  return fetchAPI(urlWithParams, 'POST', requestBody);
+  return fetchAPI(urlWithParams, { method: 'POST', body: requestBody });
 };
 
 export type UpdateAssessmentV4Response = Assessment;
@@ -143,7 +144,7 @@ const updateAssessmentV4 = ({
     `ajax-api/4.0/mlflow/traces/${serializedLocation}/${traceId}/assessments/${assessmentId}`,
   );
   const urlWithParams = `${endpointPath}?${queryParams.toString()}`;
-  return fetchAPI(urlWithParams, 'PATCH', assessment);
+  return fetchAPI(urlWithParams, { method: 'PATCH', body: assessment });
 };
 
 /**
@@ -177,7 +178,7 @@ const deleteAssessmentV4 = ({
     `ajax-api/4.0/mlflow/traces/${serializedLocation}/${traceId}/assessments/${assessmentId}`,
   );
   const urlWithParams = `${endpointPath}?${queryParams.toString()}`;
-  return fetchAPI(urlWithParams, 'DELETE');
+  return fetchAPI(urlWithParams, { method: 'DELETE' });
 };
 
 export const searchTracesV4 = async ({
@@ -199,7 +200,11 @@ export const searchTracesV4 = async ({
     max_results: pageSize ?? 1000,
     order_by: orderBy,
   };
-  const queryResponse = await fetchAPI(getAjaxUrl('ajax-api/4.0/mlflow/traces/search'), 'POST', payload, signal);
+  const queryResponse = await fetchAPI(getAjaxUrl('ajax-api/4.0/mlflow/traces/search'), {
+    method: 'POST',
+    body: payload,
+    signal,
+  });
 
   const json = queryResponse as { trace_infos: ModelTraceInfoV3[]; next_page_token?: string };
 
@@ -235,7 +240,7 @@ export const getBatchTracesV4 = async ({
       trace_info: ModelTraceInfoV3;
       spans: ModelTraceSpanV3[];
     }[];
-  } = await fetchAPI(urlWithParams, 'GET');
+  } = await fetchAPI(urlWithParams, { method: 'GET' });
 
   return data;
 };
@@ -316,7 +321,7 @@ export const getTraceInfoV4 = ({
 
   const urlWithParams = `${endpointPath}?${queryParams.toString()}`;
 
-  return fetchAPI(urlWithParams);
+  return fetchAPI(urlWithParams, { method: 'GET' });
 };
 
 export const setTraceTagV4 = async ({
@@ -333,7 +338,7 @@ export const setTraceTagV4 = async ({
   const searchParams = new URLSearchParams();
   const queryString = searchParams.toString();
   const uri = `${endpointPath}?${queryString}`;
-  return fetchAPI(uri, 'PATCH', tag);
+  return fetchAPI(uri, { method: 'PATCH', body: tag });
 };
 
 export const deleteTraceTagV4 = async ({
@@ -352,12 +357,12 @@ export const deleteTraceTagV4 = async ({
   const searchParams = new URLSearchParams();
   const queryString = searchParams.toString();
   const uri = `${endpointPath}?${queryString}`;
-  return fetchAPI(uri, 'DELETE');
+  return fetchAPI(uri, { method: 'DELETE' });
 };
 
 export const setTraceTagV3 = async ({ tag, traceId }: { tag: { key: string; value: string }; traceId: string }) => {
   const endpointPath = getAjaxUrl(`ajax-api/3.0/mlflow/traces/${traceId}/tags`);
-  return fetchAPI(endpointPath, 'PATCH', tag);
+  return fetchAPI(endpointPath, { method: 'PATCH', body: tag });
 };
 
 export const getTraceV3Data = (traceId: string) => {
@@ -394,7 +399,7 @@ export const deleteTraceTagV3 = async ({ tagKey, traceId }: { tagKey: string; tr
 
   const queryString = searchParams.toString();
   const uri = `${endpointPath}?${queryString}`;
-  return fetchAPI(uri, 'DELETE');
+  return fetchAPI(uri, { method: 'DELETE' });
 };
 
 /**
