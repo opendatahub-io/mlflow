@@ -12,6 +12,7 @@ import { isNil, pickBy } from 'lodash';
 import { ErrorWrapper } from './ErrorWrapper';
 import { matchPredefinedError } from '@databricks/web-shared/errors';
 import { matchPredefinedErrorFromResponse } from '@databricks/web-shared/errors';
+import { getWorkspaceOrDefault } from './WorkspaceUtils';
 
 export const HTTPMethods = {
   GET: 'GET',
@@ -48,13 +49,25 @@ export const getDefaultHeadersFromCookies = (cookieStr: any) => {
 
 export const getDefaultHeaders = (cookieStr: any) => {
   const cookieHeaders = getDefaultHeadersFromCookies(cookieStr);
+
+  // Forward Authorization header for OAuth/Kubernetes integration
+  const authHeader = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mlflow-auth-header') : null;
+
+  const workspace = getWorkspaceOrDefault();
+
   return {
     ...cookieHeaders,
+    ...(authHeader ? { Authorization: authHeader } : {}),
+    ...(workspace ? { 'X-MLFLOW-WORKSPACE': workspace } : {}),
   };
 };
 
 export const getAjaxUrl = (relativeUrl: any) => {
-  if (process.env['MLFLOW_USE_ABSOLUTE_AJAX_URLS'] === 'true' && !relativeUrl.startsWith('/')) {
+  if (
+    process.env['MLFLOW_USE_ABSOLUTE_AJAX_URLS'] === 'true' &&
+    typeof relativeUrl === 'string' &&
+    !relativeUrl.startsWith('/')
+  ) {
     return '/' + relativeUrl;
   }
   return relativeUrl;
@@ -453,8 +466,14 @@ function serializeRequestBody(payload: any | FormData | Blob) {
     : JSON.stringify(payload);
 }
 
+<<<<<<< HEAD
 // Helper method to make a request to the backend.
-export const fetchAPI = async (url: string, method: 'POST' | 'GET' | 'PATCH' | 'DELETE' = 'GET', body?: any) => {
+export const fetchAPI = async (
+  url: string,
+  method: 'POST' | 'GET' | 'PATCH' | 'DELETE' = 'GET',
+  body?: any,
+  signal?: AbortSignal,
+) => {
   // eslint-disable-next-line no-restricted-globals
   const fetchFn = fetch;
   const headers = {
@@ -465,6 +484,7 @@ export const fetchAPI = async (url: string, method: 'POST' | 'GET' | 'PATCH' | '
     method,
     body: serializeRequestBody(body),
     headers,
+    signal,
   });
   if (!response.ok) {
     const predefinedError = matchPredefinedError(response);

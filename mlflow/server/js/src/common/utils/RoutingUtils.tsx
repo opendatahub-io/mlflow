@@ -14,7 +14,7 @@ import {
   generatePath,
   Route,
   UNSAFE_NavigationContext,
-  NavLink,
+  NavLink as NavLinkDirect,
   Outlet as OutletDirect,
   Link as LinkDirect,
   useNavigate as useNavigateDirect,
@@ -30,6 +30,7 @@ import {
   type Location,
   type NavigateFunction,
   type Params,
+  type PathMatch,
 } from 'react-router-dom';
 
 /**
@@ -37,7 +38,9 @@ import {
  */
 import { HashRouter as HashRouterV5, Link as LinkV5, NavLink as NavLinkV5 } from 'react-router-dom';
 import type { ComponentProps } from 'react';
-import React from 'react';
+import React, { useCallback } from 'react';
+
+import { prefixPathnameWithWorkspace, prefixRouteWithWorkspace } from './WorkspaceUtils';
 
 const useLocation = useLocationDirect;
 
@@ -45,13 +48,55 @@ const useSearchParams = useSearchParamsDirect;
 
 const useParams = useParamsDirect;
 
-const useNavigate = useNavigateDirect;
+const useNavigate = (): NavigateFunction => {
+  const navigate = useNavigateDirect();
+  const wrappedNavigate = useCallback(
+    (to: To | number, options?: NavigateOptions) => {
+      if (typeof to === 'number') {
+        navigate(to);
+        return;
+      }
+      navigate(prefixRouteWithWorkspaceForTo(to), options);
+    },
+    [navigate],
+  );
+
+  return wrappedNavigate as NavigateFunction;
+};
 
 const useMatches = useMatchesDirect;
 
 const Outlet = OutletDirect;
 
-const Link = LinkDirect;
+const prefixRouteWithWorkspaceForTo = (to: To): To => {
+  if (typeof to === 'string') {
+    return prefixRouteWithWorkspace(to);
+  }
+  if (typeof to === 'object' && to !== null) {
+    const pathname = 'pathname' in to ? to.pathname : undefined;
+    if (typeof pathname === 'string') {
+      return {
+        ...to,
+        pathname: prefixPathnameWithWorkspace(pathname),
+      };
+    }
+  }
+  return to;
+};
+
+const Link = React.forwardRef<HTMLAnchorElement, ComponentProps<typeof LinkDirect>>((props, ref) => {
+  const { to, ...rest } = props;
+  return <LinkDirect ref={ref} to={prefixRouteWithWorkspaceForTo(to)} {...rest} />;
+});
+
+Link.displayName = 'Link';
+
+const NavLink = React.forwardRef<HTMLAnchorElement, ComponentProps<typeof NavLinkDirect>>((props, ref) => {
+  const { to, ...rest } = props;
+  return <NavLinkDirect ref={ref} to={prefixRouteWithWorkspaceForTo(to)} {...rest} />;
+});
+
+NavLink.displayName = 'NavLink';
 
 export const createMLflowRoutePath = (routePath: string) => {
   return routePath;
@@ -63,6 +108,7 @@ export {
   MemoryRouter,
   HashRouter,
   Link,
+  NavLink,
   useNavigate,
   useLocation,
   useParams,
@@ -145,4 +191,5 @@ export const useAssistantPrompts = (): string[] => {
   return DEFAULT_ASSISTANT_PROMPTS;
 };
 
-export type { Location, NavigateFunction, Params, To, NavigateOptions };
+
+export type { Location, NavigateFunction, Params, To, NavigateOptions, PathMatch };

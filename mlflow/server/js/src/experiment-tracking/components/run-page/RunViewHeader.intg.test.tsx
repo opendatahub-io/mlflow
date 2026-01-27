@@ -8,6 +8,7 @@ import { ExperimentKind, ExperimentPageTabName } from '@mlflow/mlflow/src/experi
 import { EXPERIMENT_KIND_TAG_KEY } from '../../utils/ExperimentKindUtils';
 import { TestRouter, testRoute, waitForRoutesToBeRendered } from '@mlflow/mlflow/src/common/utils/RoutingTestUtils';
 import Routes from '../../routes';
+import { prefixRouteWithWorkspace } from '@mlflow/mlflow/src/common/utils/WorkspaceUtils';
 
 jest.mock('../../../common/utils/FeatureUtils', () => ({
   shouldEnableExperimentPageHeaderV2: () => true,
@@ -91,7 +92,9 @@ describe('RunViewHeader - integration test', () => {
 
     const experimentLink = screen.getByTestId('experiment-observatory-link-runs');
     expect(experimentLink.textContent).toBe('Evaluations');
-    const expectedPath = Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.EvaluationRuns);
+    const expectedPath = prefixRouteWithWorkspace(
+      Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.EvaluationRuns),
+    );
     expect(experimentLink.getAttribute('href')).toBe(expectedPath);
   });
 
@@ -115,7 +118,9 @@ describe('RunViewHeader - integration test', () => {
 
     const experimentLink = screen.getByTestId('experiment-observatory-link-runs');
     expect(experimentLink.textContent).toBe('Runs');
-    const expectedPath = Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.Runs);
+    const expectedPath = prefixRouteWithWorkspace(
+      Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.Runs),
+    );
     expect(experimentLink.getAttribute('href')).toBe(expectedPath);
   });
 
@@ -134,7 +139,9 @@ describe('RunViewHeader - integration test', () => {
 
     const experimentLink = screen.getByTestId('experiment-observatory-link-runs');
     expect(experimentLink.textContent).toBe('Runs');
-    const expectedPath = Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.Runs);
+    const expectedPath = prefixRouteWithWorkspace(
+      Routes.getExperimentPageTabRoute(testExperimentId, ExperimentPageTabName.Runs),
+    );
     expect(experimentLink.getAttribute('href')).toBe(expectedPath);
   });
 });

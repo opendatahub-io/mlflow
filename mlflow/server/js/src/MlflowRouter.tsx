@@ -9,13 +9,17 @@ import {
   RouterProvider,
   Outlet,
   createLazyRouteElement,
+  useLocation,
+  useNavigate,
   useParams,
   usePageTitle,
 } from './common/utils/RoutingUtils';
 import { MlflowHeader } from './common/components/MlflowHeader';
+
 import { useDarkThemeContext } from './common/contexts/DarkThemeContext';
 import { WorkflowTypeProvider } from './common/contexts/WorkflowTypeContext';
 import { shouldEnableWorkflowBasedNavigation } from './common/utils/FeatureUtils';
+import { shouldEnableWorkspaces } from './common/utils/FeatureUtils';
 
 // Route definition imports:
 import { getRouteDefs as getExperimentTrackingRouteDefs } from './experiment-tracking/route-defs';
@@ -26,6 +30,22 @@ import { useInitializeExperimentRunColors } from './experiment-tracking/componen
 import { MlflowSidebar } from './common/components/MlflowSidebar';
 import { AssistantProvider, AssistantRouteContextProvider } from './assistant';
 import { RootAssistantLayout } from './common/components/RootAssistantLayout';
+import {
+  DEFAULT_WORKSPACE_NAME,
+  extractWorkspaceFromPathname,
+  setActiveWorkspace,
+  subscribeToWorkspaceChanges,
+  getCurrentWorkspace,
+} from './common/utils/WorkspaceUtils';
+import { prefixRoutePathWithWorkspace } from './common/utils/WorkspaceRouteUtils';
+
+type MlflowRouteDef = {
+  path?: string;
+  element?: React.ReactNode;
+  pageId?: string;
+  children?: MlflowRouteDef[];
+  [key: string]: unknown;
+};
 
 /**
  * This is root element for MLflow routes, containing app header.
@@ -95,33 +115,104 @@ const MlflowRootRoute = () => {
     </AssistantProvider>
   );
 };
-export const MlflowRouter = () => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const routes = useMemo(
-    () => [
-      ...getExperimentTrackingRouteDefs(),
-      ...getModelRegistryRouteDefs(),
-      ...getGatewayRouteDefs(),
-      ...getCommonRouteDefs(),
-    ],
-    [],
-  );
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const hashRouter = useMemo(
-    () =>
-      createHashRouter([
-        {
-          path: '/',
-          element: <MlflowRootRoute />,
-          children: routes,
-        },
-      ]),
-    [routes],
-  );
 
-  return (
-    <React.Suspense fallback={<LegacySkeleton />}>
-      <RouterProvider router={hashRouter} />
-    </React.Suspense>
-  );
+const WorkspaceRouterSync = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!shouldEnableWorkspaces()) {
+      setActiveWorkspace(null);
+      return;
+    }
+
+    const workspace = extractWorkspaceFromPathname(location.pathname);
+    const activeWorkspace = getCurrentWorkspace();
+    if (!workspace) {
+      const fallbackWorkspace = activeWorkspace || DEFAULT_WORKSPACE_NAME;
+      if (activeWorkspace !== fallbackWorkspace) {
+        setActiveWorkspace(fallbackWorkspace);
+      }
+      const suffix = location.pathname === '/' ? '' : location.pathname;
+      const search = location.search ?? '';
+      const targetPath = `/workspaces/${encodeURIComponent(fallbackWorkspace)}${suffix === '/' ? '' : suffix}`;
+      if (location.pathname !== targetPath) {
+        navigate(`${targetPath}${search}`, { replace: true });
+      }
+      return;
+    }
+
+    if (workspace !== activeWorkspace) {
+      setActiveWorkspace(workspace);
+    }
+  }, [location, navigate]);
+
+  return null;
 };
+
+const WorkspaceAwareRootRoute = (props: React.ComponentProps<typeof MlflowRootRoute>) => (
+  <>
+    <WorkspaceRouterSync />
+    <MlflowRootRoute {...props} />
+  </>
+);
+
+const prependWorkspaceToRoutes = (routeDefs: MlflowRouteDef[]): MlflowRouteDef[] =>
+  routeDefs.map((route) => {
+    const children = route.children ? prependWorkspaceToRoutes(route.children) : undefined;
+
+    return {
+      ...route,
+      path: prefixRoutePathWithWorkspace(route.path),
+      ...(children ? { children } : {}),
+    };
+  });
+
+  export const MlflowRouter = () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const routes = useMemo<MlflowRouteDef[]>(
+      () => [
+        ...getExperimentTrackingRouteDefs(),
+        ...getModelRegistryRouteDefs(),
+        ...getGatewayRouteDefs(),
+        ...getCommonRouteDefs(),
+      ],
+      [],
+    );
+    const workspacesEnabled = shouldEnableWorkspaces();
+    const [workspaceKey, setWorkspaceKey] = useState(() => getCurrentWorkspace() ?? DEFAULT_WORKSPACE_NAME);
+
+    useEffect(() => {
+      return subscribeToWorkspaceChanges((workspace) => {
+        setWorkspaceKey(workspace ?? DEFAULT_WORKSPACE_NAME);
+      });
+    }, []);
+
+    const workspaceRoutes = useMemo(
+      () => (workspacesEnabled ? prependWorkspaceToRoutes(routes) : []),
+      [routes, workspacesEnabled],
+    );
+    const combinedRoutes = useMemo(
+      () => (workspacesEnabled ? [...routes, ...workspaceRoutes] : routes),
+      [routes, workspaceRoutes, workspacesEnabled],
+    );
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const hashRouter = useMemo(
+      () =>
+        createHashRouter([
+          {
+            path: '/',
+            element: <WorkspaceAwareRootRoute key={workspaceKey}/>,
+            children: combinedRoutes,
+          },
+        ]),
+      [combinedRoutes],
+    );
+
+    return (
+
+      <React.Suspense fallback={<LegacySkeleton />}>
+        <RouterProvider router={hashRouter} />
+      </React.Suspense>
+    );
+  };

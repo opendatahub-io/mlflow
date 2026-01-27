@@ -5,6 +5,7 @@ import { DarkThemeSwitch } from '@mlflow/mlflow/src/common/components/DarkThemeS
 import { Button, MenuIcon, useDesignSystemTheme } from '@databricks/design-system';
 import { AssistantIconButton } from '../../assistant/AssistantIconButton';
 import { MlflowLogo } from './MlflowLogo';
+import { WorkspaceSelector } from './WorkspaceSelector';
 
 export const MlflowHeader = ({
   isDarkTheme = false,
@@ -68,6 +69,7 @@ export const MlflowHeader = ({
       </div>
       <div css={{ flex: 1 }} />
       <div css={{ display: 'flex', gap: theme.spacing.md, alignItems: 'center' }}>
+        <WorkspaceSelector />
         <AssistantIconButton tooltipSide="bottom" iconSize={18} />
         <DarkThemeSwitch isDarkTheme={isDarkTheme} setIsDarkTheme={setIsDarkTheme} />
         <a href="https://github.com/mlflow/mlflow">GitHub</a>

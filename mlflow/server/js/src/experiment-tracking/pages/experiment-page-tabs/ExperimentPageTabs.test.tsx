@@ -13,6 +13,7 @@ import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/util
 import { ExperimentKind } from '../../constants';
 import { createLazyRouteElement, createMLflowRoutePath } from '../../../common/utils/RoutingUtils';
 import { PageId, RoutePaths } from '../../routes';
+import { prefixRoutePathWithWorkspace } from '../../../common/utils/WorkspaceRouteUtils';
 
 // eslint-disable-next-line no-restricted-syntax -- TODO(FEINF-4392)
 jest.setTimeout(60000); // Larger timeout for integration testing
@@ -79,6 +80,27 @@ describe('ExperimentLoggedModelListPage', () => {
     rest.post('/ajax-api/2.0/mlflow/runs/search', (req, res, ctx) => res(ctx.json({ runs: [] }))),
   );
 
+  const createExperimentRoute = (pathMapper: (path: string) => string | undefined) => {
+    const mapPath = (path: string) => pathMapper(path) ?? path;
+    return {
+      path: mapPath(RoutePaths.experimentPage),
+      pageId: PageId.experimentPage,
+      element: createLazyRouteElement(() => import('./ExperimentPageTabs')),
+      children: [
+        {
+          path: mapPath(RoutePaths.experimentPageTabTraces),
+          pageId: PageId.experimentPageTabTraces,
+          element: createLazyRouteElement(() => import('../experiment-traces/ExperimentTracesPage')),
+        },
+        {
+          path: mapPath(RoutePaths.experimentPageTabModels),
+          pageId: PageId.experimentPageTabModels,
+          element: createLazyRouteElement(() => import('../experiment-logged-models/ExperimentLoggedModelListPage')),
+        },
+      ],
+    };
+  };
+
   const renderTestComponent = (initialPath = '/experiments/12345678/models') => {
     const queryClient = new QueryClient();
     return render(
@@ -88,6 +110,7 @@ describe('ExperimentLoggedModelListPage', () => {
             <QueryClientProvider client={queryClient}>
               <DesignSystemProvider>
                 <TestRouter
+<<<<<<< HEAD
                   routes={[
                     {
                       path: RoutePaths.experimentPage,
@@ -121,6 +144,9 @@ describe('ExperimentLoggedModelListPage', () => {
                       ],
                     },
                   ]}
+=======
+                  routes={[createExperimentRoute((path) => path), createExperimentRoute(prefixRoutePathWithWorkspace)]}
+>>>>>>> c87cc2b57 (Add multi-tenancy UI with workspace routing)
                   history={history}
                   initialEntries={[createMLflowRoutePath(initialPath)]}
                 />
