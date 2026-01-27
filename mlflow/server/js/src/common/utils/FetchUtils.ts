@@ -466,26 +466,28 @@ function serializeRequestBody(payload: any | FormData | Blob) {
     : JSON.stringify(payload);
 }
 
-<<<<<<< HEAD
+
+type FetchAPIOptions = Omit<RequestInit, 'body'> & {
+  body?: any;
+};
+
 // Helper method to make a request to the backend.
-export const fetchAPI = async (
-  url: string,
-  method: 'POST' | 'GET' | 'PATCH' | 'DELETE' = 'GET',
-  body?: any,
-  signal?: AbortSignal,
-) => {
+export const fetchAPI = async (url: string, options: FetchAPIOptions = {}) => {
   // eslint-disable-next-line no-restricted-globals
+  const { method, headers, body, ...restOptions } = options;
+  
   const fetchFn = fetch;
-  const headers = {
-    ...(body ? { 'Content-Type': 'application/json' } : {}),
-    ...getDefaultHeaders(document.cookie),
-  };
-  const response = await fetchFn(url, {
-    method,
+  const fetchOptions: RequestInit = {
+    ...restOptions,
+    method: method || HTTPMethods.GET,
     body: serializeRequestBody(body),
-    headers,
-    signal,
-  });
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...getDefaultHeaders(document.cookie),
+      ...headers,
+    },
+  };
+  const response = await fetchFn(url, fetchOptions);
   if (!response.ok) {
     const predefinedError = matchPredefinedError(response);
     if (predefinedError) {
