@@ -1,10 +1,14 @@
 import { Global } from '@emotion/react';
 import { useEffect, useState } from 'react';
+import {
+  getCurrentDarkModePreference,
+  setDarkModePreference,
+  subscribeToDarkModeChanges,
+} from '../utils/DarkModeUtils';
 
-// bundled JS needs to read this key in order to enable dark mode
-const databricksDarkModePrefLocalStorageKey = 'databricks-dark-mode-pref';
-const darkModePrefLocalStorageKey = '_mlflow_dark_mode_toggle_enabled';
 const darkModeBodyClassName = 'dark-mode';
+const patternflyDarkModeSwitcherElementId = 'patternfly-dark-mode-switcher';
+const patternflyDarkModeClassName = 'pf-v6-theme-dark';
 
 // CSS attributes to be applied when dark mode is enabled. Affects inputs and other form elements.
 const darkModeCSSStyles = { body: { [`&.${darkModeBodyClassName}`]: { colorScheme: 'dark' } } };
@@ -22,22 +26,24 @@ export const useMLflowDarkTheme = (): [
   React.ComponentType<React.PropsWithChildren<unknown>>,
 ] => {
   const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    // If the user has explicitly set a preference, use that.
-    const darkModePref = localStorage.getItem(darkModePrefLocalStorageKey);
-    if (darkModePref !== null) {
-      return darkModePref === 'true';
-    }
-    // Otherwise, use the system preference as a default.
-    return window.matchMedia('(prefers-color-scheme: dark)').matches || false;
+    return getCurrentDarkModePreference();
   });
 
   useEffect(() => {
     // Update the theme when the user changes their system preference.
     document.body.classList.toggle(darkModeBodyClassName, isDarkTheme);
-    // Persist the user's preference in local storage.
-    localStorage.setItem(darkModePrefLocalStorageKey, isDarkTheme ? 'true' : 'false');
-    localStorage.setItem(databricksDarkModePrefLocalStorageKey, isDarkTheme ? 'dark' : 'light');
+    const patternflyDarkModeSwitcher = document.getElementById(patternflyDarkModeSwitcherElementId);
+    if (patternflyDarkModeSwitcher) {
+      patternflyDarkModeSwitcher.classList.toggle(patternflyDarkModeClassName, isDarkTheme);
+    }
+    setDarkModePreference(isDarkTheme);
   }, [isDarkTheme]);
+
+  useEffect(() => {
+    return subscribeToDarkModeChanges((nextValue) => {
+      setIsDarkTheme((current) => (current === nextValue ? current : nextValue));
+    });
+  }, []);
 
   return [isDarkTheme, setIsDarkTheme, DarkModeStylesComponent];
 };
