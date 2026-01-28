@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Spacer, Typography, useDesignSystemTheme } from '@databricks/design-system';
 import type { RowSelectionState, SortingState } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
@@ -61,28 +61,55 @@ export const ExperimentsHomeView = ({
   const topExperiments = useMemo(() => experiments?.slice(0, 5) ?? [], [experiments]);
   const shouldShowEmptyState = !isLoading && !error && topExperiments.length === 0;
 
+  const cardWidthPx = 320;
+  const cardGapPx = theme.spacing.sm + theme.spacing.xs;
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    let rafId: number | null = null;
+
+    const computeColumns = () => {
+      const w = el.getBoundingClientRect().width;
+      const nextColumns = w ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx))) : 1;
+      setColumns((prev) => (prev === nextColumns ? prev : nextColumns));
+    };
+
+    computeColumns();
+
+    const ro = new ResizeObserver(() => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(computeColumns);
+    });
+
+    ro.observe(el);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      ro.disconnect();
+    };
+  }, [cardGapPx]);
+
+  const snappedWidth = columns === 1 ? '100%' : cardWidthPx * columns + cardGapPx * (columns - 1);
+
   return (
-    <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-      <div
-        css={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: theme.spacing.md,
-        }}
-      >
-        <Typography.Title level={3} css={{ margin: 0 }}>
-          <FormattedMessage defaultMessage="Recent Experiments" description="Home page experiments preview title" />
-        </Typography.Title>
-        <Link to={Routes.experimentsObservatoryRoute}>
-          <FormattedMessage defaultMessage="View all" description="Home page experiments view all link" />
-        </Link>
-      </div>
+    <section ref={containerRef} css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+      <Typography.Title level={3} css={{ margin: 0 }}>
+        <FormattedMessage defaultMessage="Experiments" description="Home page experiments preview title" />
+      </Typography.Title>
       <div
         css={{
           border: `1px solid ${theme.colors.border}`,
           overflow: 'hidden',
           backgroundColor: theme.colors.backgroundPrimary,
+          width: snappedWidth,
         }}
       >
         {error ? (
@@ -118,7 +145,16 @@ export const ExperimentsHomeView = ({
           />
         )}
       </div>
-      <Spacer shrinks={false} />
+      <Spacer size="xs" />
+      <Link to={Routes.experimentsObservatoryRoute} style={{ alignSelf: 'flex-start' }}>
+        <span css={{ fontSize: theme.typography.fontSizeBase }}>
+          <FormattedMessage
+            defaultMessage="Go to <b>Experiments</b>"
+            description="Home page experiments view all link"
+            values={{ b: (chunks) => <strong>{chunks}</strong> }}
+          />
+        </span>
+      </Link>
     </section>
   );
 };

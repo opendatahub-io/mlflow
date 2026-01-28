@@ -93,26 +93,9 @@ export const DiscoverNews = () => {
 
   return (
     <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
-      <div
-        css={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: theme.spacing.md,
-        }}
-      >
-        <Typography.Title level={3} css={{ margin: 0 }}>
-          <FormattedMessage defaultMessage="Discover new features" description="Home page news section title" />
-        </Typography.Title>
-        <Typography.Link
-          componentId="mlflow.home.news.view_more"
-          href="https://mlflow.org/blog/"
-          openInNewTab
-          css={{ color: theme.colors.textSecondary }}
-        >
-          <FormattedMessage defaultMessage="View all" description="Home page news section view more link" />
-        </Typography.Link>
-      </div>
+      <Typography.Title level={3} css={{ margin: 0 }}>
+        <FormattedMessage defaultMessage="Discover new features" description="Home page news section title" />
+      </Typography.Title>
       <section css={{ width: '100%', minWidth: 0 }}>
         <div
           css={{
@@ -127,6 +110,16 @@ export const DiscoverNews = () => {
           ))}
         </div>
       </section>
+      <Typography.Link
+        componentId="mlflow.home.news.view_more"
+        href="https://mlflow.org/blog/"
+        openInNewTab
+        css={{ color: theme.colors.textSecondary, alignSelf: 'flex-start' }}
+      >
+        <span css={{ fontSize: theme.typography.fontSizeBase }}>
+          <FormattedMessage defaultMessage="View all features" description="Home page news section view more link" />
+        </span>
+      </Typography.Link>
     </section>
   );
 };

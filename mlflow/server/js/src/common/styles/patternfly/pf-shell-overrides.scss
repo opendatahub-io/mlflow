@@ -325,6 +325,9 @@
 
   div[role='table'] {
     div[role='row']:not([class*='table-isHeader']) {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
       border-block-end: var(--pf-t--global--border--width--divider--default) solid
         var(--pf-t--global--border--color--default) !important;
       padding-block-start: var(--pf-t--global--spacer--sm);
@@ -340,6 +343,14 @@
 
         &:hover {
           background-color: transparent;
+        }
+
+        span > a {
+          color: var(--pf-t--global--text--color--link--default);
+          text-decoration: underline;
+          &:hover {
+            color: var(--pf-t--global--text--color--link--hover);
+          }
         }
       }
     }
@@ -1288,7 +1299,7 @@
     .du-bois-dark-tree-checkbox-inner,
     [class*='checkbox-inner'] {
       border-color: var(--pf-t--global--border--color--default) !important;
-      border-radius: var(--pf-t--global--border--radius--small) !important;
+      border-radius: var(--pf-t--global--border--radius--tiny) !important;
       background-color: var(--pf-t--global--background--color--control--default) !important;
     }
 

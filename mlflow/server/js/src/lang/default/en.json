@@ -711,6 +711,10 @@
     "defaultMessage": "Please complete all required fields",
     "description": "Tooltip shown when submit button is disabled due to incomplete form"
   },
+  "2zICpQ": {
+    "defaultMessage": "View all features",
+    "description": "Home page news section view more link"
+  },
   "2zy+D5": {
     "defaultMessage": "Add new tag",
     "description": "Experiment tracking > experiment page > runs > add new tag button"
@@ -985,6 +989,10 @@
   "5UrahG": {
     "defaultMessage": "Viewing version {version}",
     "description": "Title of the prompt details page for a given version"
+  },
+  "5YDkeM": {
+    "defaultMessage": "Experiments",
+    "description": "Home page experiments preview title"
   },
   "5YOBk/": {
     "defaultMessage": "Export as CSV",
@@ -3988,10 +3996,6 @@
   "ReQ01f": {
     "defaultMessage": "Do retrieved documents contain all necessary information?",
     "description": "Hint for RetrievalSufficiency template"
-  },
-  "RgVN+O": {
-    "defaultMessage": "View all",
-    "description": "Home page news section view more link"
   },
   "RhQhT4": {
     "defaultMessage": "Model",
@@ -7931,6 +7935,10 @@
     "defaultMessage": "Use the runs difference view to compare model and system metrics, parameters, attributes, and tags across runs.",
     "description": "Experiment tracking > runs charts > cards > RunsChartsDifferenceChartCard > chart not configured warning > description"
   },
+  "sff/Wd": {
+    "defaultMessage": "Go to <b>Experiments</b>",
+    "description": "Home page experiments view all link"
+  },
   "sguNEF": {
     "defaultMessage": "No evaluation tables logged",
     "description": "Experiment page > artifact compare view > empty state for no evaluation tables logged > title"
@@ -8519,10 +8527,6 @@
     "defaultMessage": "Chat",
     "description": "Label for chat prompt type in the prompt creation modal"
   },
-  "xNKhsu": {
-    "defaultMessage": "Recent Experiments",
-    "description": "Home page experiments preview title"
-  },
   "xPkIEE": {
     "defaultMessage": "Active",
     "description": "Tab text to view active versions under details tab\n                                on the model view page"
@@ -8650,10 +8654,6 @@
   "yCncIr": {
     "defaultMessage": "Metric",
     "description": "Experiment page > view controls > global settings for line chart view > settings for x-axis > label for setting to use metric axis in all charts"
-  },
-  "yDLCp6": {
-    "defaultMessage": "View all",
-    "description": "Home page experiments view all link"
   },
   "yFl8nB": {
     "defaultMessage": "This model will be deprecated on {date}",
