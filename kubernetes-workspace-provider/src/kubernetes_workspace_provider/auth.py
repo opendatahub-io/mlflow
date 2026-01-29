@@ -1082,7 +1082,7 @@ def _authorize_request(
     rules = _find_authorization_rules(path, method)
     if rules is None or len(rules) == 0:
         raise MlflowException(
-            f"Endpoint '{method} {path}' is not covered by Kubernetes authorization.",
+            f"Missing auth rule for endpoint '{method} {path}'. Request failed authorization.",
             error_code=databricks_pb2.INTERNAL_ERROR,
         )
 
