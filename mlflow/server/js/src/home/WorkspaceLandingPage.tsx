@@ -8,7 +8,6 @@ import { setActiveWorkspace } from '../common/utils/WorkspaceUtils';
 
 // Loaders and lazy imports for expensive components
 import LogTracesDrawerLoader from './components/LogTracesDrawerLoader';
-import { TelemetryInfoAlert } from '../telemetry/TelemetryInfoAlert';
 const GetStarted = React.lazy(() => import('./components/GetStarted'));
 const WorkspacesHomeView = React.lazy(() => import('./components/WorkspacesHomeView'));
 
@@ -37,7 +36,6 @@ const WorkspaceLandingPage = () => {
       }}
     >
       <Header title={<FormattedMessage defaultMessage="Welcome to MLflow" description="Home page hero title" />} />
-      <TelemetryInfoAlert />
       <React.Suspense fallback={<HomePageSectionSkeleton />}>
         <GetStarted />
       </React.Suspense>

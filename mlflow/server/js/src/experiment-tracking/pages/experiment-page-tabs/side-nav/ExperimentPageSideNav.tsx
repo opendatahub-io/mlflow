@@ -1,4 +1,5 @@
 import { TitleSkeleton, useDesignSystemTheme } from '@databricks/design-system';
+import { patternflyResponsive } from '@mlflow/mlflow/src/common/styles/patternfly/patternflyStyles/patternflyResponsive';
 import { ExperimentPageTabName } from '../../../constants';
 import { ExperimentKind } from '../../../constants';
 import { useExperimentEvaluationRunsData } from '../../../components/experiment-page/hooks/useExperimentEvaluationRunsData';
@@ -57,7 +58,7 @@ export const ExperimentPageSideNav = ({
         },
         ...(!forceCollapsed
           ? {
-              [theme.responsive.mediaQueries.xl]: {
+              [patternflyResponsive.mediaQueries.xl]: {
                 width: SIDE_NAV_WIDTH,
                 [`& .${COLLAPSED_CLASS_NAME}`]: {
                   display: 'none',
@@ -93,7 +94,7 @@ export const ExperimentPageSideNavSkeleton = () => {
         paddingRight: theme.spacing.sm,
         borderRight: `1px solid ${theme.colors.border}`,
         width: SIDE_NAV_COLLAPSED_WIDTH,
-        [theme.responsive.mediaQueries.xl]: {
+        [patternflyResponsive.mediaQueries.xl]: {
           width: SIDE_NAV_WIDTH,
         },
       }}

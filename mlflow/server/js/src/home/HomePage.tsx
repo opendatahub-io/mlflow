@@ -10,7 +10,6 @@ import { useInvalidateExperimentList } from '../experiment-tracking/components/e
 
 // Loaders and lazy imports for expensive components
 import LogTracesDrawerLoader from './components/LogTracesDrawerLoader';
-import { TelemetryInfoAlert } from '../telemetry/TelemetryInfoAlert';
 const GetStarted = React.lazy(() => import('./components/GetStarted'));
 const DiscoverNews = React.lazy(() => import('./components/DiscoverNews'));
 const ExperimentsHomeView = React.lazy(() => import('./components/ExperimentsHomeView'));
@@ -59,7 +58,6 @@ const HomePage = () => {
       }}
     >
       <Header title={<FormattedMessage defaultMessage="Welcome to MLflow" description="Home page hero title" />} />
-      <TelemetryInfoAlert />
       <React.Suspense fallback={<HomePageSectionSkeleton />}>
         <GetStarted />
       </React.Suspense>

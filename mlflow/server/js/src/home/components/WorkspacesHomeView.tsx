@@ -153,7 +153,7 @@ const WorkspaceRow = ({ workspace, isLastUsed }: { workspace: Workspace; isLastU
             borderBottom: `1px solid ${theme.colors.border}`,
           }}
         >
-          <div css={{ display: 'flex' }}>
+          <div css={{ display: 'flex', alignItems: 'center' }}>
             <div
               css={{
                 overflow: 'hidden',
@@ -203,7 +203,7 @@ const WorkspaceRow = ({ workspace, isLastUsed }: { workspace: Workspace; isLastU
             borderBottom: `1px solid ${theme.colors.border}`,
           }}
         >
-          <div css={{ display: 'flex' }}>
+          <div css={{ display: 'flex', alignItems: 'center' }}>
             <div
               css={{
                 overflow: 'hidden',
