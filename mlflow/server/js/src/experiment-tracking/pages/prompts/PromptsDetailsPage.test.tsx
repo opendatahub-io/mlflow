@@ -20,6 +20,10 @@ import { DesignSystemProvider } from '@databricks/design-system';
 import { getTableRowByCellText } from '@databricks/design-system/test-utils/rtl';
 import { MockedReduxStoreProvider } from '../../../common/utils/TestUtils';
 
+jest.mock('../../../common/utils/ServerFeaturesContext', () => ({
+  getWorkspacesEnabledSync: () => false,
+}));
+
 // eslint-disable-next-line no-restricted-syntax -- TODO(FEINF-4392)
 jest.setTimeout(60000); // increase timeout due to heavier use of tables, modals and forms
 

@@ -82,6 +82,10 @@ jest.mock('../../../../pages/experiment-evaluation-datasets/components/ExportTra
   ExportTracesToDatasetModal: jest.fn(() => null),
 }));
 
+jest.mock('../../../../../common/utils/ServerFeaturesContext', () => ({
+  getWorkspacesEnabledSync: () => false,
+}));
+
 const renderComponent = (props = {}) => {
   const queryClient = new QueryClient({
     defaultOptions: {
