@@ -397,9 +397,7 @@ def test_otel_endpoint_permission_denied(fastapi_app_with_k8s_auth, mock_authori
     assert "Permission denied" in response.json()["error"]["message"]
 
 
-def test_flask_endpoints_bypass_fastapi_middleware(
-    fastapi_app_with_k8s_auth, mock_authorizer
-) -> None:
+def test_flask_endpoints_require_fastapi_auth(fastapi_app_with_k8s_auth, mock_authorizer) -> None:
     client = TestClient(fastapi_app_with_k8s_auth)
 
     response = client.post(
@@ -407,8 +405,11 @@ def test_flask_endpoints_bypass_fastapi_middleware(
         headers={WORKSPACE_HEADER_NAME: "team-a"},
     )
 
-    assert response.status_code == 200
-    assert response.json()["status"] == "flask_endpoint"
+    assert response.status_code == 401
+    assert (
+        "Missing Authorization header or X-Forwarded-Access-Token header"
+        in response.json()["error"]["message"]
+    )
     mock_authorizer.is_allowed.assert_not_called()
 
 
