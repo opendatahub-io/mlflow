@@ -27,7 +27,16 @@ from mlflow.store.workspace.abstract_store import AbstractStore
 _logger = logging.getLogger(__name__)
 
 DEFAULT_DESCRIPTION_ANNOTATION = "mlflow.kubeflow.org/workspace-description"
-DEFAULT_NAMESPACE_EXCLUDE_GLOBS: tuple[str, ...] = ("kube-*", "openshift-*")
+DEFAULT_NAMESPACE_EXCLUDE_GLOBS: tuple[str, ...] = (
+    "dedicated-admin",
+    "kube-*",
+    "nvidia-gpu-operator",
+    "open-cluster-management",
+    "open-cluster-management-*",
+    "openshift-*",
+    "openshift",
+    "redhat-ods-*",
+)
 
 
 def _parse_glob_input(value: Iterable[str] | str | None) -> tuple[str, ...] | None:

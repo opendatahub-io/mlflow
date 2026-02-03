@@ -156,8 +156,14 @@ def test_create_workspace_store_parses_uri_options(core_api):
     assert store._config.label_selector == "team=mlflow"
     assert store._config.default_workspace == "shared"
     assert store._config.namespace_exclude_globs == (
+        "dedicated-admin",
         "kube-*",
+        "nvidia-gpu-operator",
+        "open-cluster-management",
+        "open-cluster-management-*",
         "openshift-*",
+        "openshift",
+        "redhat-ods-*",
         "team-secret-*",
         "extra",
     )
