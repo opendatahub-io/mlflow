@@ -654,6 +654,33 @@ def test_workspace_listing_allows_missing_context(monkeypatch):
     authorizer.is_allowed.assert_not_called()
 
 
+def test_unmapped_endpoint_returns_not_found(monkeypatch):
+    authorizer = Mock()
+    authorizer.is_allowed.return_value = True
+    monkeypatch.setattr(
+        "kubernetes_workspace_provider.auth._find_authorization_rules",
+        lambda path, method: None,
+    )
+
+    config = KubernetesAuthConfig()
+
+    with pytest.raises(MlflowException, match="Endpoint not found.") as exc:
+        _authorize_request(
+            authorization_header="Bearer missing-rule-token",
+            forwarded_access_token=None,
+            remote_user_header_value=None,
+            remote_groups_header_value=None,
+            path="/api/2.0/mlflow/unknown",
+            method="GET",
+            authorizer=authorizer,
+            config_values=config,
+            workspace="default",
+        )
+
+    assert exc.value.error_code == databricks_pb2.ErrorCode.Name(databricks_pb2.ENDPOINT_NOT_FOUND)
+    authorizer.is_allowed.assert_not_called()
+
+
 def test_subject_access_review_mode_uses_remote_headers(monkeypatch):
     authorizer = Mock()
     authorizer.is_allowed.return_value = True

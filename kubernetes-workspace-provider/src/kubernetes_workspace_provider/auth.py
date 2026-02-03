@@ -1043,9 +1043,14 @@ def _authorize_request(
 
     rules = _find_authorization_rules(path, method)
     if rules is None or len(rules) == 0:
+        _logger.warning(
+            "No Kubernetes authorization rule matched request %s %s; returning 404.",
+            method,
+            path,
+        )
         raise MlflowException(
-            f"Endpoint '{method} {path}' is not covered by Kubernetes authorization.",
-            error_code=databricks_pb2.INTERNAL_ERROR,
+            "Endpoint not found.",
+            error_code=databricks_pb2.ENDPOINT_NOT_FOUND,
         )
 
     # Extract workspace from request if not provided via header
