@@ -10,6 +10,7 @@ import os
 import re
 import threading
 import time
+from contextvars import ContextVar
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
@@ -256,6 +257,9 @@ from kubernetes_workspace_provider.auth_graphql import (
 )
 
 _logger = logging.getLogger(__name__)
+_AUTHORIZATION_HANDLED: ContextVar[_AuthorizationResult | None] = ContextVar(
+    "_AUTHORIZATION_HANDLED", default=None
+)
 
 
 class AuthorizationMode(str, Enum):
@@ -837,48 +841,6 @@ def _fastapi_path_to_template(path: str) -> str:
 def _templated_path_to_probe(path: str, placeholder: str = "probe") -> str:
     """Replace templated segments with a concrete placeholder for matching."""
     return _TEMPLATE_TOKEN_PATTERN.sub(placeholder, path)
-
-
-def _iter_fastapi_routes(fastapi_app: FastAPI) -> Iterable[APIRoute]:
-    for route in getattr(fastapi_app, "routes", []):
-        if isinstance(route, APIRoute):
-            yield route
-
-
-def _build_fastapi_route_matchers(
-    fastapi_app: FastAPI,
-) -> list[tuple[re.Pattern[str], set[str]]]:
-    state = getattr(fastapi_app, "state", None)
-    routes = getattr(fastapi_app, "routes", [])
-    route_count = len(routes) if isinstance(routes, list) else len(list(routes))
-    if state is not None:
-        cached_matchers = getattr(state, "fastapi_route_matchers", None)
-        cached_count = getattr(state, "fastapi_route_matcher_count", None)
-        if cached_matchers is not None and cached_count == route_count:
-            if not cached_matchers:
-                return cached_matchers
-            if isinstance(cached_matchers[0], tuple) and len(cached_matchers[0]) == 2:
-                return cached_matchers
-    matchers: list[tuple[re.Pattern[str], set[str]]] = []
-    for route in _iter_fastapi_routes(fastapi_app):
-        methods = set(route.methods or set())
-        canonical_path = _canonicalize_path(raw_path=route.path or "")
-        if not canonical_path:
-            continue
-        template_path = _fastapi_path_to_template(canonical_path)
-        matchers.append((_re_compile_path(template_path), methods))
-    return matchers
-
-
-def _is_fastapi_route(
-    path: str, method: str, matchers: list[tuple[re.Pattern[str], set[str]]]
-) -> bool:
-    if not path:
-        return False
-    for pattern, methods in matchers:
-        if method in methods and pattern.fullmatch(path):
-            return True
-    return False
 
 
 def _parse_jwt_subject(token: str, claim: str) -> str | None:
@@ -1556,7 +1518,9 @@ def _validate_fastapi_route_authorization(fastapi_app: FastAPI) -> None:
     """Ensure all protected FastAPI routes are covered by authorization rules."""
     missing: list[tuple[str, str]] = []
 
-    for route in _iter_fastapi_routes(fastapi_app):
+    for route in getattr(fastapi_app, "routes", []):
+        if not isinstance(route, APIRoute):
+            continue
         methods = getattr(route, "methods", set()) or set()
         canonical_path = _canonicalize_path(raw_path=route.path or "")
         if not canonical_path or _is_unprotected_path(canonical_path):
@@ -1629,10 +1593,9 @@ def _find_authorization_rules(request_path: str, method: str) -> list[Authorizat
     return None
 
 
-# MLflow has some APIs that are through Flask and some through FastAPI. This middleware is only
-# responsible for the FastAPI APIs. When MLflow is running under uvicorn, the FastAPI app wraps the
-# entire Flask app, so we need to be selective about which requests the FastAPI middleware
-# processes.
+# MLflow has some APIs that are through Flask and some through FastAPI. When MLflow is running
+# under uvicorn, the FastAPI app wraps the entire Flask app, so we rely on a context variable to
+# ensure the Flask middleware can skip duplicate authorization checks.
 class KubernetesAuthMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for Kubernetes-based authorization."""
 
@@ -1643,90 +1606,93 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Process each request through the authorization pipeline."""
-        canonical_path = _canonicalize_path(
-            raw_path=str(request.url.path or ""),
-            scope_path=request.scope.get("path"),
-            root_path=request.scope.get("root_path"),
-        )
-        fastapi_app = request.scope.get("app")
-        if fastapi_app is None:
-            exc = MlflowException(
-                "FastAPI app missing from request scope.",
-                error_code=databricks_pb2.INTERNAL_ERROR,
-            )
-            return JSONResponse(
-                status_code=exc.get_http_status_code(),
-                content={"error": {"code": exc.error_code, "message": exc.message}},
-            )
-        matchers = _build_fastapi_route_matchers(fastapi_app)
-        if not _is_fastapi_route(canonical_path, request.method, matchers):
-            # Skip if not a FastAPI route handled by this middleware.
-            return await call_next(request)
-
-        # Skip authentication for unprotected paths
-        if _is_unprotected_path(canonical_path):
-            return await call_next(request)
-
-        workspace_name = workspace_context.get_request_workspace()
-        workspace_set = False
-
-        if workspace_name is None:
-            # FastAPI executes middlewares in reverse order, so this auth middleware can run before
-            # the MLflow workspace middleware. Resolve here using the same helper, which also falls
-            # back to the configured default workspace when the header is missing or empty.
-            try:
-                workspace = resolve_workspace_from_header(
-                    request.headers.get(WORKSPACE_HEADER_NAME)
-                )
-            except MlflowException as exc:
-                return JSONResponse(
-                    status_code=exc.get_http_status_code(),
-                    content=json.loads(exc.serialize_as_json()),
-                )
-
-            if workspace is not None:
-                workspace_name = workspace.name
-                workspace_context.set_server_request_workspace(workspace_name)
-                workspace_set = True
-
-        # Check permissions if verb is specified
+        authorization_token = _AUTHORIZATION_HANDLED.set(None)
         try:
-            _authorize_request(
-                authorization_header=request.headers.get("Authorization"),
-                forwarded_access_token=request.headers.get("X-Forwarded-Access-Token"),
-                remote_user_header_value=request.headers.get(self.config_values.user_header),
-                remote_groups_header_value=request.headers.get(self.config_values.groups_header),
-                path=canonical_path,
-                method=request.method,
-                authorizer=self.authorizer,
-                config_values=self.config_values,
-                workspace=workspace_name,
+            canonical_path = _canonicalize_path(
+                raw_path=str(request.url.path or ""),
+                scope_path=request.scope.get("path"),
+                root_path=request.scope.get("root_path"),
             )
-        except MlflowException as exc:
-            if workspace_set:
-                workspace_context.clear_server_request_workspace()
-            if (
-                workspace_name is None
-                and exc.error_code
-                == databricks_pb2.ErrorCode.Name(databricks_pb2.INVALID_PARAMETER_VALUE)
-                and exc.message == _WORKSPACE_REQUIRED_ERROR_MESSAGE
-            ):
+            fastapi_app = request.scope.get("app")
+            if fastapi_app is None:
                 exc = MlflowException(
-                    _WORKSPACE_REQUIRED_ERROR_MESSAGE,
+                    "FastAPI app missing from request scope.",
                     error_code=databricks_pb2.INTERNAL_ERROR,
                 )
-            return JSONResponse(
-                status_code=exc.get_http_status_code(),
-                content={"error": {"code": exc.error_code, "message": exc.message}},
-            )
+                return JSONResponse(
+                    status_code=exc.get_http_status_code(),
+                    content={"error": {"code": exc.error_code, "message": exc.message}},
+                )
 
-        # Continue with the request, clearing any temporary workspace context.
-        try:
-            response = await call_next(request)
+            # Skip authentication for unprotected paths
+            if _is_unprotected_path(canonical_path):
+                return await call_next(request)
+
+            workspace_name = workspace_context.get_request_workspace()
+            workspace_set = False
+
+            if workspace_name is None:
+                # FastAPI executes middlewares in reverse order, so this auth middleware can run
+                # before the MLflow workspace middleware. Resolve here using the same helper, which
+                # also falls back to the configured default workspace when the header is missing
+                # or empty.
+                try:
+                    workspace = resolve_workspace_from_header(
+                        request.headers.get(WORKSPACE_HEADER_NAME)
+                    )
+                except MlflowException as exc:
+                    return JSONResponse(
+                        status_code=exc.get_http_status_code(),
+                        content=json.loads(exc.serialize_as_json()),
+                    )
+
+                if workspace is not None:
+                    workspace_name = workspace.name
+                    workspace_context.set_server_request_workspace(workspace_name)
+                    workspace_set = True
+
+            try:
+                auth_result = _authorize_request(
+                    authorization_header=request.headers.get("Authorization"),
+                    forwarded_access_token=request.headers.get("X-Forwarded-Access-Token"),
+                    remote_user_header_value=request.headers.get(self.config_values.user_header),
+                    remote_groups_header_value=request.headers.get(
+                        self.config_values.groups_header
+                    ),
+                    path=canonical_path,
+                    method=request.method,
+                    authorizer=self.authorizer,
+                    config_values=self.config_values,
+                    workspace=workspace_name,
+                )
+                _AUTHORIZATION_HANDLED.set(auth_result)
+            except MlflowException as exc:
+                if workspace_set:
+                    workspace_context.clear_server_request_workspace()
+                if (
+                    workspace_name is None
+                    and exc.error_code
+                    == databricks_pb2.ErrorCode.Name(databricks_pb2.INVALID_PARAMETER_VALUE)
+                    and exc.message == _WORKSPACE_REQUIRED_ERROR_MESSAGE
+                ):
+                    exc = MlflowException(
+                        _WORKSPACE_REQUIRED_ERROR_MESSAGE,
+                        error_code=databricks_pb2.INTERNAL_ERROR,
+                    )
+                return JSONResponse(
+                    status_code=exc.get_http_status_code(),
+                    content={"error": {"code": exc.error_code, "message": exc.message}},
+                )
+
+            # Continue with the request, clearing any temporary workspace context.
+            try:
+                response = await call_next(request)
+            finally:
+                if workspace_set:
+                    workspace_context.clear_server_request_workspace()
+            return response
         finally:
-            if workspace_set:
-                workspace_context.clear_server_request_workspace()
-        return response
+            _AUTHORIZATION_HANDLED.reset(authorization_token)
 
 
 def _override_run_user(username: str) -> None:
@@ -1750,6 +1716,16 @@ def _override_run_user(username: str) -> None:
     request.environ["CONTENT_TYPE"] = "application/json"
 
 
+def _record_authorization_metadata(auth_result: _AuthorizationResult) -> None:
+    """Record auth metadata on the Flask request context."""
+    primary_rule = auth_result.rules[0]
+    if auth_result.username and primary_rule.override_run_user:
+        _override_run_user(auth_result.username)
+
+    g.mlflow_k8s_identity = auth_result.identity
+    g.mlflow_k8s_apply_workspace_filter = primary_rule.apply_workspace_filter
+
+
 def create_app(app: Flask = mlflow_app) -> Flask:
     """Enable Kubernetes-based authorization for the MLflow tracking server."""
 
@@ -1765,6 +1741,11 @@ def create_app(app: Flask = mlflow_app) -> Flask:
 
     @app.before_request
     def _k8s_auth_before_request():
+        auth_result = _AUTHORIZATION_HANDLED.get()
+        if auth_result is not None:
+            _record_authorization_metadata(auth_result)
+            return None
+
         canonical_path = _canonicalize_path(
             raw_path=request.path or "",
             path_info=request.environ.get("PATH_INFO"),
@@ -1792,13 +1773,7 @@ def create_app(app: Flask = mlflow_app) -> Flask:
             return response
 
         # Use the first rule for metadata - these properties are consistent across all rules
-        primary_rule = auth_result.rules[0]
-        if auth_result.username and primary_rule.override_run_user:
-            _override_run_user(auth_result.username)
-
-        # These can be used in after_request hooks to modify the response.
-        g.mlflow_k8s_identity = auth_result.identity
-        g.mlflow_k8s_apply_workspace_filter = primary_rule.apply_workspace_filter
+        _record_authorization_metadata(auth_result)
 
         return None
 
@@ -1841,6 +1816,7 @@ def create_app(app: Flask = mlflow_app) -> Flask:
             ):
                 if hasattr(g, attr):
                     delattr(g, attr)
+            _AUTHORIZATION_HANDLED.set(None)
 
         return response
 
@@ -1851,11 +1827,9 @@ def create_app(app: Flask = mlflow_app) -> Flask:
         # Important: This must be added AFTER security middleware but BEFORE routes
         # to ensure proper middleware ordering
         #
-        # Note: The KubernetesAuthMiddleware only handles native FastAPI routes and
-        # skips the Flask WSGI mount. All other routes are handled by the Flask auth
-        # handlers defined above. This is because when running under uvicorn, the
-        # FastAPI app wraps the entire Flask app, so we need to be selective about
-        # which requests the FastAPI middleware processes.
+        # Note: The KubernetesAuthMiddleware runs for all requests when the Flask app
+        # is mounted under FastAPI. It sets a context variable so the Flask auth hooks
+        # can skip duplicate authorization work when FastAPI already handled it.
         fastapi_app.add_middleware(
             KubernetesAuthMiddleware,
             authorizer=authorizer,
