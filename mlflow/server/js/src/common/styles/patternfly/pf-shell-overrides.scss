@@ -35,16 +35,11 @@
       .ag-cell *
     ):not(.ag-grid-sticky *) {
     color: var(--pf-t--global--text--color--brand--default) !important;
-    border-color: var(--pf-t--global--border--color--brand--default) !important;
     position: relative; // Required for ::after positioning
-    border: 0 !important; // Remove native border
+    border: none !important; // Remove native border
     span > svg {
       color: var(--pf-t--global--text--color--brand--default) !important;
     }
-    min-height: calc(
-        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
-          var(--pf-t--global--spacer--sm) * 2
-      ) !important;
     padding-block-start: calc(
       var(--pf-t--global--spacer--xs) + var(--pf-t--global--border--width--action--default)
     ) !important;
@@ -1468,12 +1463,6 @@
   .du-bois-dark-input-affix-wrapper,
   .du-bois-light-input-affix-wrapper {
     background-color: var(--pf-t--global--background--color--control--default) !important;
-    /* Ensure consistent height with Select form controls */
-    min-height: calc(
-      var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
-        var(--pf-t--global--spacer--sm) * 2
-    ) !important;
-    box-sizing: border-box !important;
 
     input,
     .du-bois-dark-input,
