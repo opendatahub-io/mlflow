@@ -41,6 +41,10 @@
     span > svg {
       color: var(--pf-t--global--text--color--brand--default) !important;
     }
+    min-height: calc(
+        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+          var(--pf-t--global--spacer--sm) * 2
+      ) !important;
     padding-block-start: calc(
       var(--pf-t--global--spacer--xs) + var(--pf-t--global--border--width--action--default)
     ) !important;
@@ -154,10 +158,6 @@
   button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled,
   button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled {
     background-color: transparent !important;
-  }
-
-  button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled,
-  button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled {
     padding-block-start: var(--pf-t--global--spacer--sm) !important;
     padding-block-end: var(--pf-t--global--spacer--sm) !important;
   }
@@ -753,47 +753,84 @@
     }
   }
 
-  /* Dialog combobox */
+  /* Dialog combobox - styled like Button for PatternFly consistency */
   .du-bois-light-dialogcombobox,
   .du-bois-dark-dialogcombobox,
   .du-bois-dark-selectv2,
   .du-bois-light-selectv2 {
+    background-color: transparent !important;
     button {
       position: relative;
-      background-color: var(--pf-t--global--background--color--control--default) !important;
+      color: var(--pf-t--global--text--color--brand--default) !important;
+      border: none !important;
+      border-radius: var(--pf-t--global--border--radius--pill) !important;
+      box-sizing: border-box !important;
+      font-size: var(--pf-t--global--font--size--body--default) !important;
+      /* Ensure consistent height with Input form controls */
+      min-height: calc(
+        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+          var(--pf-t--global--spacer--sm) * 2
+      ) !important;
+      padding-block-start: calc(
+        var(--pf-t--global--spacer--xs) + var(--pf-t--global--border--width--action--default)
+      ) !important;
+      padding-block-end: calc(
+        var(--pf-t--global--spacer--xs) + var(--pf-t--global--border--width--action--default)
+      ) !important;
+      padding-inline-start: calc(
+        var(--pf-t--global--spacer--md) + var(--pf-t--global--border--width--action--default)
+      ) !important;
+      padding-inline-end: calc(
+        var(--pf-t--global--spacer--md) + var(--pf-t--global--border--width--action--default)
+      ) !important;
+
+      span > svg {
+        color: var(--pf-t--global--text--color--brand--default) !important;
+      }
 
       &::after {
         position: absolute;
         inset: 0;
         pointer-events: none;
         content: '';
-        border: var(--pf-t--global--border--width--action--hover) solid;
-        border-color: var(--pf-t--global--border--color--brand--hover);
+        border: var(--pf-t--global--border--width--action--default) solid;
+        border-color: var(--pf-t--global--border--color--brand--default);
         border-radius: inherit;
-        display: none;
+        display: block !important;
       }
 
       &:hover,
       &:focus,
       &:focus-visible {
-        background-color: var(--pf-t--global--background--color--control--default) !important;
+        color: var(--pf-t--global--text--color--brand--hover) !important;
+
+        span > svg {
+          color: var(--pf-t--global--text--color--brand--hover) !important;
+        }
+
+        &::after {
+          border-width: var(--pf-t--global--border--width--action--hover) !important;
+          border-color: var(--pf-t--global--border--color--brand--hover) !important;
+        }
       }
 
       &[aria-expanded='true'],
       &:active {
-        background-color: var(--pf-t--global--background--color--control--default) !important;
-        border-color: transparent !important;
 
         &::after {
-          display: block !important;
+          border-width: var(--pf-t--global--border--width--action--hover) !important;
+          border-color: var(--pf-t--global--border--color--brand--hover) !important;
         }
       }
 
       &:disabled,
       &[aria-disabled='true'] {
-        border-color: transparent !important;
         color: var(--pf-t--global--text--color--on-disabled) !important;
         background-color: var(--pf-t--global--background--color--disabled--default) !important;
+
+        span > svg {
+          color: var(--pf-t--global--text--color--on-disabled) !important;
+        }
 
         &::after {
           display: none !important;
@@ -873,7 +910,12 @@
     .du-bois-dark-select-selector {
       overflow: hidden !important;
       border-radius: var(--pf-t--global--border--radius--small) !important;
-      background-color: var(--pf-t--global--background--color--control--default) !important;
+      /* Ensure consistent height with Input form controls */
+      min-height: calc(
+        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+          var(--pf-t--global--spacer--sm) * 2
+      ) !important;
+      box-sizing: border-box !important;
 
       .du-bois-light-select-selection-search,
       .du-bois-dark-select-selection-search {
@@ -883,7 +925,6 @@
       .du-bois-dark-select-selection-search-input,
       .du-bois-light-select-selection-search-input {
         border-radius: var(--pf-t--global--border--radius--small) !important;
-        background-color: var(--pf-t--global--background--color--control--default) !important;
       }
 
       .search-input-tooltip-content {
@@ -1276,6 +1317,14 @@
     color: var(--pf-t--global--text--color--regular) !important;
   }
 
+  /* Override Emotion styles with higher specificity */
+  [class*='getTreeEmotionStyles'] .du-bois-light-tree-title,
+  [class*='getTreeEmotionStyles'] .du-bois-dark-tree-title,
+  .du-bois-light-tree .du-bois-light-tree-treenode .du-bois-light-tree-title,
+  .du-bois-dark-tree .du-bois-dark-tree-treenode .du-bois-dark-tree-title {
+    padding: 0 !important;
+  }
+
   .du-bois-light-tree-indent,
   .du-bois-dark-tree-indent,
   .du-bois-light-tree-switcher-leaf-line,
@@ -1406,8 +1455,8 @@
     margin-inline-start: var(--pf-t--global--spacer--sm) !important;
   }
 
-  .du-bois-light-btn[aria-haspopup='dialog'] > span > span.anticon-btn-end-icon > span[role='img']::after,
-  .du-bois-dark-btn[aria-haspopup='dialog'] > span > span.anticon-btn-end-icon > span[role='img']::after {
+  .du-bois-light-btn[aria-haspopup='dialog']:not(.du-bois-light-btn-primary) > span > span.anticon-btn-end-icon > span[role='img']::after,
+  .du-bois-dark-btn[aria-haspopup='dialog']:not(.du-bois-dark-btn-primary) > span > span.anticon-btn-end-icon > span[role='img']::after {
     background-color: var(--pf-t--global--text--color--brand--default) !important;
   }
 
@@ -1419,6 +1468,12 @@
   .du-bois-dark-input-affix-wrapper,
   .du-bois-light-input-affix-wrapper {
     background-color: var(--pf-t--global--background--color--control--default) !important;
+    /* Ensure consistent height with Select form controls */
+    min-height: calc(
+      var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+        var(--pf-t--global--spacer--sm) * 2
+    ) !important;
+    box-sizing: border-box !important;
 
     input,
     .du-bois-dark-input,
@@ -1431,5 +1486,54 @@
   h2.du-bois-light-typography {
     line-height: var(--pf-t--global--font--line-height--heading) !important;
     padding-bottom: 0.1em !important;
+  }
+
+  /* React-MDE markdown editor dark mode fixes */
+  .react-mde {
+    border-color: var(--pf-t--global--border--color--default) !important;
+
+    .mde-header {
+      background-color: var(--pf-t--global--background--color--secondary--default) !important;
+      border-bottom-color: var(--pf-t--global--border--color--default) !important;
+
+      .mde-tabs {
+        button {
+          color: var(--pf-t--global--text--color--subtle) !important;
+          background-color: transparent !important;
+          border: none !important;  
+
+          &.selected {
+            color: var(--pf-t--global--text--color--regular) !important;
+            background-color: var(--pf-t--global--background--color--primary--default) !important;
+            border: 1px solid var(--pf-t--global--border--color--default) !important;
+          }
+        }
+      }
+
+      .mde-header-group {
+        .mde-header-item {
+          button {
+            color: var(--pf-t--global--text--color--regular) !important;
+
+            &:hover {
+              color: var(--pf-t--global--text--color--brand--default) !important;
+            }
+          }
+        }
+      }
+    }
+
+    .mde-text {
+      background-color: var(--pf-t--global--background--color--primary--default) !important;
+      color: var(--pf-t--global--text--color--regular) !important;
+    }
+
+    .mde-preview {
+      background-color: var(--pf-t--global--background--color--primary--default) !important;
+
+      .mde-preview-content {
+        color: var(--pf-t--global--text--color--regular) !important;
+      }
+    }
   }
 }
