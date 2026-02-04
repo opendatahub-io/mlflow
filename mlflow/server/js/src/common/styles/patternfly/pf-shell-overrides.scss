@@ -811,7 +811,6 @@
 
       &[aria-expanded='true'],
       &:active {
-
         &::after {
           border-width: var(--pf-t--global--border--width--action--hover) !important;
           border-color: var(--pf-t--global--border--color--brand--hover) !important;
@@ -1450,8 +1449,14 @@
     margin-inline-start: var(--pf-t--global--spacer--sm) !important;
   }
 
-  .du-bois-light-btn[aria-haspopup='dialog']:not(.du-bois-light-btn-primary) > span > span.anticon-btn-end-icon > span[role='img']::after,
-  .du-bois-dark-btn[aria-haspopup='dialog']:not(.du-bois-dark-btn-primary) > span > span.anticon-btn-end-icon > span[role='img']::after {
+  .du-bois-light-btn[aria-haspopup='dialog']:not(.du-bois-light-btn-primary)
+    > span
+    > span.anticon-btn-end-icon
+    > span[role='img']::after,
+  .du-bois-dark-btn[aria-haspopup='dialog']:not(.du-bois-dark-btn-primary)
+    > span
+    > span.anticon-btn-end-icon
+    > span[role='img']::after {
     background-color: var(--pf-t--global--text--color--brand--default) !important;
   }
 
@@ -1489,7 +1494,7 @@
         button {
           color: var(--pf-t--global--text--color--subtle) !important;
           background-color: transparent !important;
-          border: none !important;  
+          border: none !important;
 
           &.selected {
             color: var(--pf-t--global--text--color--regular) !important;
