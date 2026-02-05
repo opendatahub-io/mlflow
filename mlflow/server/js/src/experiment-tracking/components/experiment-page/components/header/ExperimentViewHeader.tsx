@@ -27,6 +27,7 @@ import { ExperimentViewHeaderShareButton } from './ExperimentViewHeaderShareButt
 import { useExperimentKind, isGenAIExperimentKind } from '../../../../utils/ExperimentKindUtils';
 import { ExperimentViewManagementMenu } from './ExperimentViewManagementMenu';
 import { shouldEnableExperimentPageSideTabs } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
+import { isEmbeddedCheck } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 import { ExperimentKind } from '../../../../constants';
 
@@ -74,6 +75,7 @@ export const ExperimentViewHeader = React.memo(
         navigate('/' + pathSegments.join('/'));
       }
     }, [location.pathname, navigate]);
+    const isEmbedded = isEmbeddedCheck();
     const breadcrumbs: React.ReactNode[] = useMemo(
       () => [
         // eslint-disable-next-line react/jsx-key
@@ -147,7 +149,7 @@ export const ExperimentViewHeader = React.memo(
           marginBottom: shouldEnableExperimentPageSideTabs() ? theme.spacing.xs : theme.spacing.sm,
         }}
       >
-        {!shouldEnableExperimentPageSideTabs() && (
+        {!shouldEnableExperimentPageSideTabs() && !isEmbedded && (
           <Breadcrumb includeTrailingCaret>
             {breadcrumbs.map((breadcrumb, index) => (
               <Breadcrumb.Item key={index}>{breadcrumb}</Breadcrumb.Item>
@@ -226,7 +228,7 @@ export const ExperimentViewHeader = React.memo(
               searchFacetsState={searchFacetsState}
               uiState={uiState}
             />
-            {shouldEnableExperimentPageSideTabs() && (
+            {shouldEnableExperimentPageSideTabs() && !isEmbedded && (
               <Typography.Link
                 componentId="mlflow.experiment-page.header.docs-link"
                 href={docLinkHref}

@@ -18,6 +18,7 @@ import { LegacySkeleton } from '@databricks/design-system';
 // eslint-disable-next-line no-useless-rename
 import { MlflowRouter as MlflowRouter } from './MlflowRouter';
 import { useMLflowDarkTheme } from './common/hooks/useMLflowDarkTheme';
+import { useEmbeddedLinkInterceptor } from './common/hooks/useEmbeddedLinkInterceptor';
 import { DarkThemeProvider } from './common/contexts/DarkThemeContext';
 import { telemetryClient } from './telemetry';
 import { ServerFeaturesProvider } from './common/utils/ServerFeaturesContext';
@@ -26,6 +27,10 @@ import '@patternfly/patternfly/patternfly.css';
 export function MLFlowRoot() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const intl = useI18nInit();
+
+  // Intercept link clicks when embedded to control navigation behavior
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEmbeddedLinkInterceptor();
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const apolloClient = useMemo(() => createApolloClient(), []);

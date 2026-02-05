@@ -26,14 +26,14 @@
 
   button.du-bois-light-btn:not(.du-bois-light-btn-primary):not(.du-bois-light-btn-dangerous):not(
       .du-bois-light-btn-icon-only
-    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']):not(
-      .ag-cell *
-    ):not(.ag-grid-sticky *),
+    ):not(.du-bois-light-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
+      [aria-label='Remove filter']
+    ):not(.ag-cell *):not(.ag-grid-sticky *),
   button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous):not(
       .du-bois-dark-btn-icon-only
-    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']):not(
-      .ag-cell *
-    ):not(.ag-grid-sticky *) {
+    ):not(.du-bois-dark-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
+      [aria-label='Remove filter']
+    ):not(.ag-cell *):not(.ag-grid-sticky *) {
     color: var(--pf-t--global--text--color--brand--default) !important;
     position: relative; // Required for ::after positioning
     border: none !important; // Remove native border
@@ -146,6 +146,7 @@
     height: auto !important;
   }
 
+  button.du-bois-light-btn.du-bois-light-btn-link,
   button.du-bois-dark-btn.du-bois-dark-btn-link {
     background-color: transparent !important;
   }
@@ -191,7 +192,13 @@
     border-color: transparent !important;
 
     &:hover:not(:disabled) {
+      background-color: var(--pf-t--global--color--status--danger--hover) !important;
       color: var(--pf-t--global--text--color--status--on-danger--hover) !important;
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--pf-t--global--color--status--danger--clicked) !important;
+      color: var(--pf-t--global--text--color--status--on-danger--default) !important;
     }
 
     &:disabled {
@@ -270,6 +277,48 @@
   main {
     box-shadow: none;
     border-radius: var(--pf-t--global--border--radius--medium);
+  }
+
+  /* Embedded mode styles - applied when .mlflow-embedded class exists */
+  .mlflow-embedded {
+    main {
+      border-radius: 0;
+      margin: 0;
+
+      > div {
+        padding: 0;
+      }
+    }
+  }
+
+  /* 
+   * Embedded mode link styles - use :has() to apply globally when embedded.
+   * This ensures styles apply to portal elements (dropdowns, modals) rendered outside .mlflow-embedded.
+   */
+  &:has(.mlflow-embedded) {
+    /* Disable navigation links except experiment tracking routes */
+    /* Allowed routes: experiments, runs, compare-experiments, compare-runs, metric */
+    /* Make disabled links look like plain text instead of links */
+    a:not([data-testid='error-view-link']):not([href*='#/experiments']):not([href*='#/runs']):not(
+        [href*='#/compare-experiments']
+      ):not([href*='#/compare-runs']):not([href*='#/metric']) {
+      pointer-events: none !important;
+      cursor: default !important;
+      color: inherit !important;
+      text-decoration: none !important;
+    }
+
+    /* Make external doc links (mlflow.org) appear as plain text */
+    a[href*='mlflow.org'] {
+      pointer-events: none !important;
+      cursor: default !important;
+      color: inherit !important;
+      text-decoration: none !important;
+
+      svg {
+        display: none !important;
+      }
+    }
   }
 
   a:not([class]) {
@@ -362,6 +411,7 @@
       padding-block-end: var(--pf-t--global--spacer--sm);
       padding-inline-start: var(--pf-t--global--spacer--sm);
       padding-inline-end: var(--pf-t--global--spacer--sm);
+      background-color: var(--pf-t--global--background--color--primary--default);
     }
     div[role='row'] {
       height: auto;

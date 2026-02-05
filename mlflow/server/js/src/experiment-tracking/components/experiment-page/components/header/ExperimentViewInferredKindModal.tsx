@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { ExperimentKind } from '../../../../constants';
 import { ExperimentKindDropdownLabels } from '../../../../utils/ExperimentKindUtils';
+import { isEmbeddedCheck } from '../../../../../common/utils/embedUtils';
 
 export const ExperimentViewInferredKindModal = ({
   onDismiss,
@@ -12,7 +13,11 @@ export const ExperimentViewInferredKindModal = ({
   onConfirm: (kind: ExperimentKind) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
-  const [selectedKind, setSelectedKind] = useState<ExperimentKind>(ExperimentKind.GENAI_DEVELOPMENT);
+  const isEmbedded = isEmbeddedCheck();
+  // Default to Machine Learning when embedded (GenAI is not available)
+  const [selectedKind, setSelectedKind] = useState<ExperimentKind>(
+    isEmbedded ? ExperimentKind.CUSTOM_MODEL_DEVELOPMENT : ExperimentKind.GENAI_DEVELOPMENT,
+  );
 
   return (
     <Modal
@@ -49,6 +54,7 @@ export const ExperimentViewInferredKindModal = ({
         <Radio
           checked={selectedKind === ExperimentKind.GENAI_DEVELOPMENT}
           onChange={() => setSelectedKind(ExperimentKind.GENAI_DEVELOPMENT)}
+          disabled={isEmbedded}
         >
           <FormattedMessage {...ExperimentKindDropdownLabels[ExperimentKind.GENAI_DEVELOPMENT]} />
         </Radio>

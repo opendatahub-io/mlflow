@@ -17,6 +17,7 @@ import { CompareRunBox } from './CompareRunBox';
 import CompareRunContour from './CompareRunContour';
 import Routes from '../routes';
 import { Link } from '../../common/utils/RoutingUtils';
+import { isEmbeddedCheck } from '../../common/utils/embedUtils';
 import { getLatestMetrics } from '../reducers/MetricReducer';
 import CompareRunUtil from './CompareRunUtil';
 import Utils from '../../common/utils/Utils';
@@ -411,8 +412,9 @@ class CompareRunView extends Component<CompareRunViewProps, CompareRunViewState>
     const colWidthStyle = this.genWidthStyle(colWidth);
 
     const title = this.getTitle();
+    const isEmbedded = isEmbeddedCheck();
     /* eslint-disable-next-line prefer-const */
-    let breadcrumbs = [this.getExperimentLink()];
+    let breadcrumbs = isEmbedded ? [] : [this.getExperimentLink()];
 
     const paramsLabel = this.props.intl.formatMessage({
       defaultMessage: 'Parameters',
