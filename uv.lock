@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'darwin'",
@@ -30,7 +30,6 @@ constraints = [
     { name = "transformers", specifier = "<5" },
     { name = "xgboost", specifier = "<3.1.0" },
 ]
-excludes = ["uv"]
 
 [[package]]
 name = "absl-py"
@@ -1160,7 +1159,7 @@ wheels = [
 [[package]]
 name = "clint"
 version = "0.1.0"
-source = { editable = "dev/clint" }
+source = { virtual = "dev/clint" }
 dependencies = [
     { name = "tomli" },
     { name = "typing-extensions" },
@@ -4442,7 +4441,7 @@ dev = [
     { name = "blacken-docs", specifier = "==1.18.0" },
     { name = "build" },
     { name = "claude-agent-sdk" },
-    { name = "clint", editable = "dev/clint" },
+    { name = "clint", virtual = "dev/clint" },
     { name = "mlflow-test-plugin", editable = "tests/resources/mlflow-test-plugin" },
     { name = "mypy", specifier = "==1.17.1" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -4462,7 +4461,7 @@ dev = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ruff", specifier = "==0.14.10" },
     { name = "setuptools" },
-    { name = "skills", editable = ".claude/skills" },
+    { name = "skills", virtual = ".claude/skills" },
     { name = "tiktoken" },
     { name = "toml", specifier = "==0.10.2" },
     { name = "wheel" },
@@ -4503,7 +4502,7 @@ lint = [
     { name = "black", specifier = "==23.7.0" },
     { name = "blacken-docs", specifier = "==1.18.0" },
     { name = "claude-agent-sdk" },
-    { name = "clint", editable = "dev/clint" },
+    { name = "clint", virtual = "dev/clint" },
     { name = "mypy", specifier = "==1.17.1" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pre-commit", specifier = "==4.0.1" },
@@ -7924,7 +7923,7 @@ wheels = [
 [[package]]
 name = "skills"
 version = "0.1.0"
-source = { editable = ".claude/skills" }
+source = { virtual = ".claude/skills" }
 dependencies = [
     { name = "aiohttp" },
     { name = "claude-agent-sdk" },
