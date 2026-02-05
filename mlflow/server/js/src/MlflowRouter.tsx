@@ -27,6 +27,7 @@ import { getGatewayRouteDefs } from './gateway/route-defs';
 import { useInitializeExperimentRunColors } from './experiment-tracking/components/experiment-page/hooks/useExperimentRunColor';
 import { MlflowSidebar } from './common/components/MlflowSidebar';
 import { AssistantProvider, AssistantRouteContextProvider } from './assistant';
+import { isEmbeddedCheck } from './common/utils/embedUtils';
 import { RootAssistantLayout } from './common/components/RootAssistantLayout';
 import {
   extractWorkspaceFromSearchParams,
@@ -58,6 +59,7 @@ const MlflowRootRoute = () => {
   const { experimentId } = useParams();
   const { setIsDarkTheme } = useDarkThemeContext();
   const isDarkTheme = theme.isDarkMode;
+  const isEmbedded = isEmbeddedCheck();
 
   // Hide sidebar if we are in a single experiment page
   const isSingleExperimentPage = Boolean(experimentId);
@@ -65,18 +67,27 @@ const MlflowRootRoute = () => {
     setShowSidebar(!isSingleExperimentPage);
   }, [isSingleExperimentPage]);
 
+  // When embedded, hide header and sidebar
+  const shouldShowHeader = !isEmbedded;
+  const shouldShowSidebar = showSidebar && !isEmbedded;
+
   return (
     <AssistantProvider>
       <AssistantRouteContextProvider />
-      <div css={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div
+        className={isEmbedded ? 'mlflow-embedded' : ''}
+        css={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+      >
         <ErrorModal />
         <AppErrorBoundary>
-          <MlflowHeader
-            isDarkTheme={isDarkTheme}
-            setIsDarkTheme={setIsDarkTheme}
-            sidebarOpen={showSidebar}
-            toggleSidebar={() => setShowSidebar((isOpen) => !isOpen)}
-          />
+          {shouldShowHeader && (
+            <MlflowHeader
+              isDarkTheme={isDarkTheme}
+              setIsDarkTheme={setIsDarkTheme}
+              sidebarOpen={showSidebar}
+              toggleSidebar={() => setShowSidebar((isOpen) => !isOpen)}
+            />
+          )}
           <RootAssistantLayout>
             <div
               css={{
@@ -86,7 +97,7 @@ const MlflowRootRoute = () => {
                 width: '100%',
               }}
             >
-              {showSidebar && <MlflowSidebar />}
+              {shouldShowSidebar && <MlflowSidebar />}
               <main
                 css={{
                   width: '100%',

@@ -15,6 +15,7 @@ import { RunIcon } from './assets/RunIcon';
 import { ExperimentPageTabName } from '@mlflow/mlflow/src/experiment-tracking/constants';
 import { EXPERIMENT_KIND_TAG_KEY } from '../../utils/ExperimentKindUtils';
 import { useMemo } from 'react';
+import { isEmbeddedCheck } from '../../../common/utils/embedUtils';
 const RunViewHeaderIcon = () => {
   const { theme } = useDesignSystemTheme();
   return (
@@ -66,6 +67,7 @@ export const RunViewHeader = ({
   isLoading?: boolean;
 }) => {
   const { theme } = useDesignSystemTheme();
+  const isEmbedded = isEmbeddedCheck();
 
   const shouldRouteToEvaluations = useMemo(() => {
     const isGenAIExperiment =
@@ -98,8 +100,8 @@ export const RunViewHeader = ({
     );
   }
 
-  const breadcrumbs = [getExperimentPageLink()];
-  if (experiment.experimentId) {
+  const breadcrumbs = isEmbedded ? [] : [getExperimentPageLink()];
+  if (!isEmbedded && experiment.experimentId) {
     breadcrumbs.push(
       <Link to={experimentPageTabRoute} data-testid="experiment-observatory-link-runs">
         {shouldRouteToEvaluations ? (

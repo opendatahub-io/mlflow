@@ -7,6 +7,7 @@ import {
   useDesignSystemTheme,
 } from '@databricks/design-system';
 import MLFlowAgGrid from '../../../common/components/ag-grid/AgGrid';
+import { isEmbeddedCheck } from '../../../common/utils/embedUtils';
 import { useExperimentAgGridTableStyles } from '../experiment-page/components/runs/ExperimentViewRunsTable';
 import type { LoggedModelProto, RunEntity } from '../../types';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -81,6 +82,8 @@ const ExperimentLoggedModelListPageTableImpl = ({
   const { theme } = useDesignSystemTheme();
 
   const styles = useExperimentAgGridTableStyles({ usingCustomHeaderComponent: false });
+
+  const isEmbedded = isEmbeddedCheck();
 
   // Keep track of expanded groups in the table
   const [expandedGroups, setExpandedGroups] = React.useState<string[]>([]);
@@ -182,7 +185,8 @@ const ExperimentLoggedModelListPageTableImpl = ({
     >
       <div
         css={{
-          overflow: 'hidden',
+          // Use 'auto' when embedded to fix scrolling in the AG Grid container
+          overflow: isEmbedded ? 'auto' : 'hidden',
           flex: 1,
           ...styles,
           '.ag-cell': {
