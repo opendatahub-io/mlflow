@@ -30,11 +30,14 @@ import { ExperimentListViewTagsFilter } from './experiment-page/components/Exper
 import { shouldEnableWorkspaces } from '../../common/utils/FeatureUtils';
 import { extractWorkspaceFromSearchParams } from '../../workspaces/utils/WorkspaceUtils';
 import { useSearchParams } from '../../common/utils/RoutingUtils';
+import { isEmbeddedCheck } from '../../common/utils/embedUtils';
 
 export const ExperimentListView = () => {
   const [searchParams] = useSearchParams();
   const workspacesEnabled = shouldEnableWorkspaces();
   const workspaceFromUrl = extractWorkspaceFromSearchParams(searchParams);
+  const isEmbedded = isEmbeddedCheck();
+
   // Only show creation buttons when: workspaces are disabled OR a workspace is selected
   const showCreationButtons = !workspacesEnabled || workspaceFromUrl !== null;
 
@@ -97,53 +100,62 @@ export const ExperimentListView = () => {
     navigate(route);
   };
 
+  // Extract header buttons for reuse in table filter layout when embedded
+  const headerButtons = (
+    <>
+      {showCreationButtons && (
+        <Button
+          componentId="mlflow.experiment_list_view.new_experiment_button"
+          type="primary"
+          onClick={handleCreateExperiment}
+          data-testid="create-experiment-button"
+        >
+          <FormattedMessage
+            defaultMessage="Create"
+            description="Label for the create experiment action on the experiments list page"
+          />
+        </Button>
+      )}
+      <Button
+        componentId="mlflow.experiment_list_view.compare_experiments_button"
+        onClick={pushExperimentRoute}
+        data-testid="compare-experiment-button"
+        disabled={checkedKeys.length < 2}
+      >
+        <FormattedMessage
+          defaultMessage="Compare"
+          description="Label for the compare experiments action on the experiments list page"
+        />
+      </Button>
+      <Button
+        componentId="mlflow.experiment_list_view.bulk_delete_button"
+        onClick={() => setShowBulkDeleteExperimentModal(true)}
+        data-testid="delete-experiments-button"
+        disabled={checkedKeys.length < 1}
+        danger
+      >
+        <FormattedMessage
+          defaultMessage="Delete"
+          description="Label for the delete experiments action on the experiments list page"
+        />
+      </Button>
+    </>
+  );
+
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <Spacer shrinks={false} />
-      <Header
-        title={<FormattedMessage defaultMessage="Experiments" description="Header title for the experiments page" />}
-        buttons={
-          <>
-            {showCreationButtons && (
-              <Button
-                componentId="mlflow.experiment_list_view.new_experiment_button"
-                type="primary"
-                onClick={handleCreateExperiment}
-                data-testid="create-experiment-button"
-              >
-                <FormattedMessage
-                  defaultMessage="Create"
-                  description="Label for the create experiment action on the experiments list page"
-                />
-              </Button>
-            )}
-            <Button
-              componentId="mlflow.experiment_list_view.compare_experiments_button"
-              onClick={pushExperimentRoute}
-              data-testid="compare-experiment-button"
-              disabled={checkedKeys.length < 2}
-            >
-              <FormattedMessage
-                defaultMessage="Compare"
-                description="Label for the compare experiments action on the experiments list page"
-              />
-            </Button>
-            <Button
-              componentId="mlflow.experiment_list_view.bulk_delete_button"
-              onClick={() => setShowBulkDeleteExperimentModal(true)}
-              data-testid="delete-experiments-button"
-              disabled={checkedKeys.length < 1}
-              danger
-            >
-              <FormattedMessage
-                defaultMessage="Delete"
-                description="Label for the delete experiments action on the experiments list page"
-              />
-            </Button>
-          </>
-        }
-      />
-      <Spacer shrinks={false} />
+      {!isEmbedded && (
+        <>
+          <Header
+            title={
+              <FormattedMessage defaultMessage="Experiments" description="Header title for the experiments page" />
+            }
+            buttons={headerButtons}
+          />
+          <Spacer shrinks={false} />
+        </>
+      )}
       {error && (
         <Alert
           css={{ marginBlockEnd: theme.spacing.sm }}
@@ -199,6 +211,17 @@ export const ExperimentListView = () => {
               <ExperimentListViewTagsFilter tagsFilter={tagsFilter} setTagsFilter={setTagsFilter} />
             </Popover.Content>
           </Popover.Root>
+          {isEmbedded && (
+            <div
+              css={{
+                marginLeft: 'auto',
+                display: 'flex',
+                gap: theme.spacing.sm,
+              }}
+            >
+              {headerButtons}
+            </div>
+          )}
         </TableFilterLayout>
         <ExperimentListTable
           experiments={experiments}
