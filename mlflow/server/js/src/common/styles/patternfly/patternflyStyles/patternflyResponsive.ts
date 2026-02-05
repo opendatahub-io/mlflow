@@ -9,18 +9,18 @@ import {
 } from '@patternfly/react-tokens';
 import { t_global_breakpoint_lg } from '@patternfly/react-tokens';
 import { t_global_breakpoint_xl } from '@patternfly/react-tokens';
-import { convertPxStringToPx } from '../utils';
+import { convertRemStringToPx } from '../utils';
 
 type availableBreakpoints = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 type ResponsiveOptions<RType> = Record<availableBreakpoints, RType>;
 
 const breakpoints: ResponsiveOptions<number> = {
-  xs: convertPxStringToPx(t_global_breakpoint_xs.value),
-  sm: convertPxStringToPx(t_global_breakpoint_sm.value),
-  md: convertPxStringToPx(t_global_breakpoint_md.value),
-  lg: convertPxStringToPx(t_global_breakpoint_lg.value),
-  xl: convertPxStringToPx(t_global_breakpoint_xl.value),
-  xxl: convertPxStringToPx(t_global_breakpoint_2xl.value),
+  xs: convertRemStringToPx(t_global_breakpoint_xs.value),
+  sm: convertRemStringToPx(t_global_breakpoint_sm.value),
+  md: convertRemStringToPx(t_global_breakpoint_md.value),
+  lg: convertRemStringToPx(t_global_breakpoint_lg.value),
+  xl: convertRemStringToPx(t_global_breakpoint_xl.value),
+  xxl: convertRemStringToPx(t_global_breakpoint_2xl.value),
 };
 
 const mediaQueries: ResponsiveOptions<string> = {

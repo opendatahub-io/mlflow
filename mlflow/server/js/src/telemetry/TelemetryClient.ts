@@ -132,5 +132,9 @@ class TelemetryClient {
   }
 }
 
-// Singleton instance
-export const telemetryClient: TelemetryClient = new TelemetryClient();
+// No-op telemetry client - telemetry disabled
+export const telemetryClient = {
+  logEvent: async (_event: any) => {},
+  shutdown: () => {},
+  start: () => {},
+};

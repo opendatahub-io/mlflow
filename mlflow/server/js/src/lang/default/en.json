@@ -27,10 +27,6 @@
     "defaultMessage": "Follow these steps to enable the AI Gateway feature for managing AI provider credentials.",
     "description": "AI Gateway setup guide > Subtitle"
   },
-  "+CGMk6": {
-    "defaultMessage": "On",
-    "description": "Telemetry enabled label"
-  },
   "+Cr7Gu": {
     "defaultMessage": "Search metrics",
     "description": "Placeholder text for the search input in the logged model details metrics table"
@@ -1526,6 +1522,10 @@
     "defaultMessage": "No prompt versions created",
     "description": "A header for the empty state in the prompt versions table"
   },
+  "9qvqIZ": {
+    "defaultMessage": "No settings available",
+    "description": "No settings available title"
+  },
   "9tCd/m": {
     "defaultMessage": "AI Gateway",
     "description": "Header title for the AI Gateway configuration page"
@@ -2905,10 +2905,6 @@
   "LTbwXS": {
     "defaultMessage": "Artifact evaluation",
     "description": "A tooltip for the view mode switcher in the experiment view, corresponding to artifact evaluation view"
-  },
-  "LXz6c5": {
-    "defaultMessage": "This setting enables UI telemetry data collection. Learn more about what types of data are collected in our {documentation}.",
-    "description": "Enable telemetry settings description"
   },
   "LajLDb": {
     "defaultMessage": "Move to top",
@@ -4759,10 +4755,6 @@
     "defaultMessage": "Outputs",
     "description": "Table subtitle for schema outputs in the model comparison page"
   },
-  "aCzpU3": {
-    "defaultMessage": "Off",
-    "description": "Telemetry disabled label"
-  },
   "aE6zVg": {
     "defaultMessage": "Configure predefined judges, create guidelines-based LLM judges, or build custom judge functions to track your unique metrics. {link}",
     "description": "Description for the empty state of the judges page"
@@ -5679,10 +5671,6 @@
     "defaultMessage": "Automatically log traces for DSPy executions by calling the {code} function. For example:",
     "description": "Description of how to log traces for the DSPy package using MLflow autologging. This message is followed by a code example."
   },
-  "h2398a": {
-    "defaultMessage": "documentation",
-    "description": "Documentation link text"
-  },
   "h2Ejm7": {
     "defaultMessage": "Learn more",
     "description": "Link to the documentation page for user and session tracking"
@@ -5766,10 +5754,6 @@
   "hcDB9U": {
     "defaultMessage": "+∞",
     "description": "Label displaying positive infinity symbol displayed on a plot UI element"
-  },
-  "hg+bcy": {
-    "defaultMessage": "Enable telemetry",
-    "description": "Enable telemetry settings title"
   },
   "hjAgZ8": {
     "defaultMessage": "Unified OpenAI compatible API for model invocations. Set the endpoint name as the model parameter.",

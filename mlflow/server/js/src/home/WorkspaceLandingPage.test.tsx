@@ -80,7 +80,6 @@ describe('WorkspaceLandingPage', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByTestId('telemetry-alert')).toBeInTheDocument();
       expect(screen.getByTestId('get-started')).toBeInTheDocument();
       expect(screen.getByTestId('log-traces-drawer')).toBeInTheDocument();
     });
