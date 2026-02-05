@@ -9,8 +9,6 @@ import { CreateExperimentModal } from '../experiment-tracking/components/modals/
 import { useInvalidateExperimentList } from '../experiment-tracking/components/experiment-page/hooks/useExperimentListQuery';
 import { FeaturesSection } from './components/features';
 import { LogTracesDrawer } from './components/LogTracesDrawer';
-import { TelemetryInfoAlert } from '../telemetry/TelemetryInfoAlert';
-
 const ExperimentsHomeView = React.lazy(() => import('./components/ExperimentsHomeView'));
 
 type ExperimentQueryKey = ['home', 'recent-experiments'];
@@ -57,7 +55,6 @@ const HomePage = () => {
       }}
     >
       <Header title={<FormattedMessage defaultMessage="Welcome to MLflow" description="Home page hero title" />} />
-      <TelemetryInfoAlert />
       <React.Suspense fallback={<HomePageSectionSkeleton />}>
         <ExperimentsHomeView
           experiments={experiments}

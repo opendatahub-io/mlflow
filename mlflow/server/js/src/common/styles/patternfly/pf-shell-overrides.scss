@@ -26,10 +26,14 @@
 
   button.du-bois-light-btn:not(.du-bois-light-btn-primary):not(.du-bois-light-btn-dangerous):not(
       .du-bois-light-btn-icon-only
-    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']),
+    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']):not(
+      .ag-cell *
+    ):not(.ag-grid-sticky *),
   button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous):not(
       .du-bois-dark-btn-icon-only
-    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']) {
+    ):not([type='submit']):not([aria-label='Toggle visibility of rows']):not([aria-label='Remove filter']):not(
+      .ag-cell *
+    ):not(.ag-grid-sticky *) {
     color: var(--pf-t--global--text--color--brand--default) !important;
     border-color: var(--pf-t--global--border--color--brand--default) !important;
     position: relative; // Required for ::after positioning
@@ -124,8 +128,8 @@
     border-end-end-radius: var(--pf-t--global--border--radius--pill);
   }
 
-  button.du-bois-light-btn:not([aria-label='Toggle visibility of rows']),
-  button.du-bois-dark-btn:not([aria-label='Toggle visibility of rows']) {
+  button.du-bois-light-btn:not([aria-label='Toggle visibility of rows']):not(.ag-cell *):not(.ag-grid-sticky *),
+  button.du-bois-dark-btn:not([aria-label='Toggle visibility of rows']):not(.ag-cell *):not(.ag-grid-sticky *) {
     padding-block-start: var(--pf-t--global--spacer--xs) !important;
     padding-block-end: var(--pf-t--global--spacer--xs) !important;
     padding-inline-start: var(--pf-t--global--spacer--md) !important;
@@ -504,6 +508,10 @@
 
   div:has(.mlflow-experiment-page-side-nav-collapsed) {
     color: initial;
+  }
+
+  a:has(.mlflow-experiment-page-side-nav-full) {
+    text-decoration: none;
   }
 
   aside {
