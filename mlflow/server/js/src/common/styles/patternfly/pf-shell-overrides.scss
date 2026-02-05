@@ -93,9 +93,9 @@
       }
     }
 
-    &:hover,
-    &:hover:active,
-    &:hover:focus {
+    &:hover:not(:disabled),
+    &:hover:active:not(:disabled),
+    &:hover:focus:not(:disabled) {
       color: var(--pf-t--global--text--color--brand--hover) !important;
       background: transparent !important;
       &::after {
@@ -190,7 +190,7 @@
     color: var(--pf-t--global--text--color--status--on-danger--default) !important;
     border-color: transparent !important;
 
-    &:hover {
+    &:hover:not(:disabled) {
       color: var(--pf-t--global--text--color--status--on-danger--hover) !important;
     }
 
