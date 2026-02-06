@@ -5,6 +5,7 @@ RUN npm install -g yarn
 COPY --chown=1001:0 mlflow/server/js/ .
 USER 1001
 ENV MLFLOW_ENABLE_ASSISTANT=false
+ENV MLFLOW_ENABLE_AI_GATEWAY=false
 RUN yarn install --silent \
     && NODE_OPTIONS="--max_old_space_size=4096" yarn build
 
@@ -23,7 +24,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MLFLOW_DISABLE_TELEMETRY=true \
     MLFLOW_SERVER_ENABLE_JOB_EXECUTION=false \
-    MLFLOW_ENABLE_ASSISTANT=false
+    MLFLOW_ENABLE_ASSISTANT=false \
+    MLFLOW_ENABLE_AI_GATEWAY=false
 WORKDIR /app
 
 USER 0

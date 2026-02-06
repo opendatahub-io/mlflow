@@ -432,6 +432,7 @@ module.exports = function () {
       plugins: [
         new webpack.EnvironmentPlugin({
           MLFLOW_ENABLE_ASSISTANT: process.env.MLFLOW_ENABLE_ASSISTANT ?? 'true',
+          MLFLOW_ENABLE_AI_GATEWAY: process.env.MLFLOW_ENABLE_AI_GATEWAY ?? 'true',
           MLFLOW_SHOW_GDPR_PURGING_MESSAGES: process.env.MLFLOW_SHOW_GDPR_PURGING_MESSAGES ? 'true' : 'false',
           MLFLOW_USE_ABSOLUTE_AJAX_URLS: process.env.MLFLOW_USE_ABSOLUTE_AJAX_URLS ? 'true' : 'false',
         }),

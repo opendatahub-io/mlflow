@@ -31,7 +31,7 @@ import {
 import Routes from '../../experiment-tracking/routes';
 import { FormattedMessage } from 'react-intl';
 import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
-import { shouldEnableWorkspaces } from '../utils/FeatureUtils';
+import { shouldEnableAIGateway, shouldEnableWorkspaces } from '../utils/FeatureUtils';
 import { extractWorkspaceFromSearchParams } from '../../workspaces/utils/WorkspaceUtils';
 
 // With query param-based workspace routing, paths no longer contain workspace prefix
@@ -156,18 +156,26 @@ export function MlflowSidebar() {
               ),
             },
           },
-          {
-            key: 'gateway',
-            icon: <CloudModelIcon />,
-            linkProps: {
-              to: GatewayRoutes.gatewayPageRoute,
-              isActive: isGatewayActive,
-              children: (
-                <FormattedMessage defaultMessage="AI Gateway" description="Sidebar link for gateway configuration" />
-              ),
-            },
-            componentId: 'mlflow.sidebar.gateway_tab_link',
-          },
+          // Only include AI Gateway menu item when the feature is enabled
+          ...(shouldEnableAIGateway()
+            ? [
+                {
+                  key: 'gateway',
+                  icon: <CloudModelIcon />,
+                  linkProps: {
+                    to: GatewayRoutes.gatewayPageRoute,
+                    isActive: isGatewayActive,
+                    children: (
+                      <FormattedMessage
+                        defaultMessage="AI Gateway"
+                        description="Sidebar link for gateway configuration"
+                      />
+                    ),
+                  },
+                  componentId: 'mlflow.sidebar.gateway_tab_link',
+                },
+              ]
+            : []),
         ];
 
   const logTelemetryEvent = useLogTelemetryEvent();
