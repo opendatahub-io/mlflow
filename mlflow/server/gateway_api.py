@@ -12,10 +12,11 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from mlflow.entities.gateway_endpoint import GatewayModelLinkageType
+from mlflow.environment_variables import MLFLOW_ENABLE_AI_GATEWAY
 from mlflow.exceptions import MlflowException
 from mlflow.gateway.config import (
     AnthropicConfig,
@@ -29,6 +30,7 @@ from mlflow.gateway.config import (
     Provider,
     _AuthConfigKey,
 )
+from mlflow.gateway.constants import GATEWAY_DISABLED_MESSAGE
 from mlflow.gateway.providers import get_provider
 from mlflow.gateway.providers.base import (
     PASSTHROUGH_ROUTES,
@@ -56,7 +58,17 @@ from mlflow.tracking._tracking_service.utils import _get_store
 
 _logger = logging.getLogger(__name__)
 
-gateway_router = APIRouter(prefix="/gateway", tags=["gateway"])
+
+async def _check_gateway_disabled():
+    if not MLFLOW_ENABLE_AI_GATEWAY.get():
+        raise HTTPException(status_code=501, detail=GATEWAY_DISABLED_MESSAGE)
+
+
+gateway_router = APIRouter(
+    prefix="/gateway",
+    tags=["gateway"],
+    dependencies=[Depends(_check_gateway_disabled)],
+)
 
 
 async def _get_request_body(request: Request) -> dict[str, Any]:

@@ -26,6 +26,7 @@ import { getRouteDefs as getExperimentTrackingRouteDefs } from './experiment-tra
 import { getRouteDefs as getModelRegistryRouteDefs } from './model-registry/route-defs';
 import { getRouteDefs as getCommonRouteDefs } from './common/route-defs';
 import { getGatewayRouteDefs } from './gateway/route-defs';
+import { shouldEnableAIGateway } from './common/utils/FeatureUtils';
 import { useInitializeExperimentRunColors } from './experiment-tracking/components/experiment-page/hooks/useExperimentRunColor';
 import { MlflowSidebar } from './common/components/MlflowSidebar';
 import { AssistantProvider, AssistantRouteContextProvider } from './assistant';
@@ -204,7 +205,7 @@ export const MlflowRouter = () => {
     () => [
       ...getExperimentTrackingRouteDefs(),
       ...getModelRegistryRouteDefs(),
-      ...getGatewayRouteDefs(),
+      ...(shouldEnableAIGateway() ? getGatewayRouteDefs() : []),
       ...getCommonRouteDefs(),
     ],
     [],
