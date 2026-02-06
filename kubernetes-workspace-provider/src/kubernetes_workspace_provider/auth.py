@@ -1633,6 +1633,11 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
             if _is_unprotected_path(canonical_path):
                 return await call_next(request)
 
+            # Skip authorization for GraphQL in FastAPI - let Flask handle it
+            # (Flask's request.get_json() works properly in Flask context)
+            if canonical_path.endswith("/graphql"):
+                return await call_next(request)
+
             workspace_name = workspace_context.get_request_workspace()
             workspace_set = False
 
