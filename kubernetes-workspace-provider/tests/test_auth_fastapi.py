@@ -3,6 +3,7 @@
 These tests ensure OTEL and job APIs enforce workspace-aware authentication.
 """
 
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -10,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.testclient import TestClient
 from flask import Flask
+from flask import request as flask_request
 from kubernetes_workspace_provider.auth import (
     DEFAULT_REMOTE_GROUPS_HEADER,
     DEFAULT_REMOTE_GROUPS_SEPARATOR,
@@ -26,7 +28,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES
 from mlflow.exceptions import MlflowException
 from mlflow.tracing.utils.otlp import OTLP_TRACES_PATH
 from mlflow.utils import workspace_context
@@ -490,6 +491,88 @@ def test_job_api_endpoints_prefer_forwarded_token_on_invalid_authorization(
     assert subresource is None
 
 
+def test_graphql_flask_authorizes_when_fastapi_defers(
+    mock_authorizer, mock_config, monkeypatch
+) -> None:
+    from kubernetes_workspace_provider.auth import create_app
+
+    flask_app = Flask(__name__)
+
+    @flask_app.post("/graphql")
+    def graphql_endpoint():
+        payload = flask_request.get_json(silent=True) or {}
+        return {"query": payload.get("query")}
+
+    monkeypatch.setenv("MLFLOW_K8S_AUTH_CACHE_TTL_SECONDS", "300")
+    fake_k8s_config = SimpleNamespace(
+        host="https://cluster.local",
+        ssl_ca_cert=None,
+        verify_ssl=True,
+        proxy=None,
+        no_proxy=None,
+        proxy_headers=None,
+        safe_chars_for_path_param=None,
+        connection_pool_maxsize=10,
+    )
+    with (
+        patch(
+            "kubernetes_workspace_provider.auth.KubernetesAuthorizer.is_allowed",
+            return_value=True,
+        ) as flask_is_allowed,
+        patch(
+            "kubernetes_workspace_provider.auth._load_kubernetes_configuration",
+            return_value=fake_k8s_config,
+        ),
+    ):
+        create_app(flask_app)
+
+        fastapi_app = FastAPI()
+        fastapi_app.mount("/", WSGIMiddleware(flask_app))
+
+        class _WorkspaceContextMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                workspace_header = request.headers.get(WORKSPACE_HEADER_NAME)
+                if not workspace_header:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"error": {"message": f"Missing {WORKSPACE_HEADER_NAME} header"}},
+                    )
+                workspace_context.set_server_request_workspace(workspace_header)
+                try:
+                    return await call_next(request)
+                finally:
+                    workspace_context.clear_server_request_workspace()
+
+        fastapi_app.add_middleware(
+            KubernetesAuthMiddleware,
+            authorizer=mock_authorizer,
+            config_values=mock_config,
+        )
+        fastapi_app.add_middleware(_WorkspaceContextMiddleware)
+
+        client = TestClient(fastapi_app)
+        query = '{ mlflowGetExperiment(input: { experimentId: "123" }) { experiment { name } } }'
+        with patch(
+            "kubernetes_workspace_provider.auth._parse_jwt_subject",
+            return_value="test-user",
+        ):
+            response = client.post(
+                "/graphql",
+                headers={
+                    "Authorization": "Bearer valid-token",
+                    WORKSPACE_HEADER_NAME: "team-a",
+                },
+                json={"query": query},
+            )
+
+    assert response.status_code == 200
+    assert response.json()["query"] == query
+    # FastAPI middleware should NOT have called its authorizer
+    mock_authorizer.is_allowed.assert_not_called()
+    # Flask's before_request handler SHOULD have called the authorizer
+    flask_is_allowed.assert_called_once()
+
+
 def test_job_api_missing_workspace_context_returns_error(
     mock_authorizer, mock_config, monkeypatch
 ) -> None:
@@ -499,10 +582,9 @@ def test_job_api_missing_workspace_context_returns_error(
         authorizer=mock_authorizer,
         config_values=mock_config,
     )
-    monkeypatch.setenv(MLFLOW_ENABLE_WORKSPACES.name, "true")
     monkeypatch.setattr(
-        "mlflow.server.workspace_helpers.get_default_workspace_optional",
-        lambda _store: (None, False),
+        "kubernetes_workspace_provider.auth.resolve_workspace_from_header",
+        lambda _header: None,
     )
 
     @app.get("/ajax-api/3.0/jobs/123")

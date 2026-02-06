@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from flask import Flask
 from kubernetes_workspace_provider.auth import (
     GRAPHQL_OPERATION_RULES,
     AuthorizationRule,
@@ -57,13 +56,9 @@ def test_graphql_operation_map_matches_constant():
 
 
 def test_graphql_unknown_operation_returns_none():
-    app = Flask(__name__)
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"operationName": "NewGraphQLOperation"},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules(
+        "/graphql", "POST", graphql_payload={"operationName": "NewGraphQLOperation"}
+    )
     assert rules is None
 
 
@@ -272,14 +267,8 @@ def test_determine_graphql_rules_nested_model_access_with_list_verb():
 
 
 def test_graphql_query_parsing_without_operation_name_experiments():
-    app = Flask(__name__)
     query = '{ mlflowGetExperiment(input: { experimentId: "123" }) { experiment { name } } }'
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     assert rules is not None
     assert len(rules) == 1
     assert rules[0].resource == RESOURCE_EXPERIMENTS
@@ -287,15 +276,9 @@ def test_graphql_query_parsing_without_operation_name_experiments():
 
 
 def test_graphql_query_parsing_without_operation_name_models():
-    app = Flask(__name__)
     # This query requests modelVersions in the response which triggers nested detection too
     query = '{ mlflowSearchModelVersions(input: { filter: "" }) { modelVersions { name } } }'
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     assert rules is not None
     # Returns 2 rules: list (from root field) + get (from nested modelVersions)
     assert len(rules) == 2
@@ -307,19 +290,13 @@ def test_graphql_query_parsing_without_operation_name_models():
 
 
 def test_graphql_query_parsing_mixed_query():
-    app = Flask(__name__)
     query = """
     {
         mlflowGetExperiment(input: { experimentId: "123" }) { experiment { name } }
         mlflowSearchModelVersions(input: { filter: "" }) { modelVersions { name } }
     }
     """
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     # Mixed queries return 3 rules:
     # - experiments:get (from mlflowGetExperiment)
     # - registeredmodels:list (from mlflowSearchModelVersions)
@@ -338,15 +315,10 @@ def test_graphql_operation_name_does_not_bypass_query_parsing():
     model registry fields in the query, attempting to bypass authorization checks.
     We must always parse the actual query to determine required permissions.
     """
-    app = Flask(__name__)
     # Query contains model registry fields, but operationName claims it's an experiment query
     query = '{ mlflowSearchModelVersions(input: { filter: "" }) { modelVersions { name } } }'
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query, "operationName": "MlflowGetExperimentQuery"},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    payload = {"query": query, "operationName": "MlflowGetExperimentQuery"}
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload=payload)
     # Query parsing should be used, not operationName - requires registry permissions
     assert rules is not None
     assert len(rules) == 2  # model registry root + nested modelVersions
@@ -355,7 +327,6 @@ def test_graphql_operation_name_does_not_bypass_query_parsing():
 
 
 def test_graphql_query_with_nested_model_versions_requires_both():
-    app = Flask(__name__)
     # Query is for runs (experiment resource) but includes nested modelVersions
     query = """
     {
@@ -367,12 +338,7 @@ def test_graphql_query_with_nested_model_versions_requires_both():
         }
     }
     """
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     # Should require BOTH experiments and model registry access
     assert rules is not None
     assert len(rules) == 2
@@ -382,7 +348,6 @@ def test_graphql_query_with_nested_model_versions_requires_both():
 
 
 def test_graphql_search_runs_with_nested_model_versions():
-    app = Flask(__name__)
     query = """
     {
         mlflowSearchRuns(input: { experimentIds: ["1"] }) {
@@ -393,12 +358,7 @@ def test_graphql_search_runs_with_nested_model_versions():
         }
     }
     """
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     # Should require BOTH experiments (list) and model registry (get for nested) access
     assert rules is not None
     assert len(rules) == 2
@@ -525,45 +485,23 @@ def test_validate_graphql_field_authorization_detects_missing_verb(monkeypatch):
 
 
 def test_graphql_empty_query_returns_none():
-    app = Flask(__name__)
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": ""},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": ""})
     assert rules is None
 
 
 def test_graphql_unparsable_query_returns_none():
-    app = Flask(__name__)
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": "not valid graphql {{{"},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules(
+        "/graphql", "POST", graphql_payload={"query": "not valid graphql {{{"}
+    )
     assert rules is None
 
 
 def test_graphql_no_query_or_operation_name_returns_none():
-    app = Flask(__name__)
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={})
     assert rules is None
 
 
 def test_graphql_query_with_unknown_fields_returns_none():
-    app = Flask(__name__)
     query = "{ unknownField { data } }"
-    with app.test_request_context(
-        "/graphql",
-        method="POST",
-        json={"query": query},
-    ):
-        rules = _find_authorization_rules("/graphql", "POST")
+    rules = _find_authorization_rules("/graphql", "POST", graphql_payload={"query": query})
     assert rules is None
