@@ -1002,6 +1002,7 @@ def _authorize_request(
     authorizer: KubernetesAuthorizer,
     config_values: KubernetesAuthConfig,
     workspace: str | None,
+    graphql_payload: dict[str, object] | None = None,
 ) -> _AuthorizationResult:
     """
     Resolve the caller identity and ensure the MLflow request is permitted.
@@ -1041,7 +1042,7 @@ def _authorize_request(
     if isinstance(workspace, str):
         workspace_name = workspace.strip() or None
 
-    rules = _find_authorization_rules(path, method)
+    rules = _find_authorization_rules(path, method, graphql_payload=graphql_payload)
     if rules is None or len(rules) == 0:
         _logger.warning(
             "No Kubernetes authorization rule matched request %s %s; returning 404.",
@@ -1550,7 +1551,9 @@ def _validate_fastapi_route_authorization(fastapi_app: FastAPI) -> None:
         )
 
 
-def _find_authorization_rules(request_path: str, method: str) -> list[AuthorizationRule] | None:
+def _find_authorization_rules(
+    request_path: str, method: str, graphql_payload: dict[str, object] | None = None
+) -> list[AuthorizationRule] | None:
     """Find authorization rules for a request.
 
     For most endpoints, returns a single-element list. For GraphQL endpoints,
@@ -1569,10 +1572,7 @@ def _find_authorization_rules(request_path: str, method: str) -> list[Authorizat
         # send operationName="GetRun" but include model registry fields in the
         # query, bypassing authorization checks for those resources.
         if canonical_path.endswith("/graphql"):
-            try:
-                payload = request.get_json(silent=True) or {}
-            except Exception:
-                payload = {}
+            payload = graphql_payload or {}
 
             query_string = payload.get("query", "")
             if not query_string:
@@ -1655,6 +1655,14 @@ class KubernetesAuthMiddleware(BaseHTTPMiddleware):
                     workspace_name = workspace.name
                     workspace_context.set_server_request_workspace(workspace_name)
                     workspace_set = True
+
+            if canonical_path.endswith("/graphql"):
+                # Let Flask authorize GraphQL to avoid consuming/rebuffering the ASGI body.
+                try:
+                    return await call_next(request)
+                finally:
+                    if workspace_set:
+                        workspace_context.clear_server_request_workspace()
 
             try:
                 auth_result = _authorize_request(
@@ -1759,6 +1767,15 @@ def create_app(app: Flask = mlflow_app) -> Flask:
         if _is_unprotected_path(canonical_path):
             return None
 
+        graphql_payload: dict[str, object] | None = None
+        if canonical_path.endswith("/graphql"):
+            try:
+                payload = request.get_json(silent=True) or {}
+                if isinstance(payload, dict):
+                    graphql_payload = payload
+            except Exception:
+                graphql_payload = None
+
         try:
             auth_result = _authorize_request(
                 authorization_header=request.headers.get("Authorization"),
@@ -1770,6 +1787,7 @@ def create_app(app: Flask = mlflow_app) -> Flask:
                 authorizer=authorizer,
                 config_values=config_values,
                 workspace=workspace_context.get_request_workspace(),
+                graphql_payload=graphql_payload,
             )
         except MlflowException as exc:
             response = Response(mimetype="application/json")

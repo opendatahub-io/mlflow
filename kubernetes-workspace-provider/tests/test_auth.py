@@ -593,7 +593,7 @@ def test_workspace_scope_string_is_normalized(monkeypatch):
 
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [AuthorizationRule("list", resource="experiments")],
+        lambda path, method, **kwargs: [AuthorizationRule("list", resource="experiments")],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -629,7 +629,7 @@ def test_workspace_listing_allows_missing_context(monkeypatch):
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -659,7 +659,7 @@ def test_unmapped_endpoint_returns_not_found(monkeypatch):
     authorizer.is_allowed.return_value = True
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: None,
+        lambda path, method, **kwargs: None,
     )
 
     config = KubernetesAuthConfig()
@@ -687,7 +687,7 @@ def test_subject_access_review_mode_uses_remote_headers(monkeypatch):
     rule = AuthorizationRule("list", resource=RESOURCE_EXPERIMENTS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
 
     config = KubernetesAuthConfig(authorization_mode=AuthorizationMode.SUBJECT_ACCESS_REVIEW)
@@ -718,7 +718,7 @@ def test_subject_access_review_mode_requires_user_header(monkeypatch):
     rule = AuthorizationRule("get", resource=RESOURCE_EXPERIMENTS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
 
     config = KubernetesAuthConfig(authorization_mode=AuthorizationMode.SUBJECT_ACCESS_REVIEW)
@@ -748,7 +748,7 @@ def test_gateway_endpoint_create_requires_model_definition_use(monkeypatch):
     rule = AuthorizationRule("create", resource=RESOURCE_GATEWAY_ENDPOINTS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -794,7 +794,7 @@ def test_gateway_endpoint_update_requires_model_definition_use(monkeypatch):
     rule = AuthorizationRule("update", resource=RESOURCE_GATEWAY_ENDPOINTS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -839,7 +839,7 @@ def test_gateway_model_definition_create_requires_secret_use(monkeypatch):
     rule = AuthorizationRule("create", resource=RESOURCE_GATEWAY_MODEL_DEFINITIONS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -884,7 +884,7 @@ def test_gateway_model_definition_update_requires_secret_use(monkeypatch):
     rule = AuthorizationRule("update", resource=RESOURCE_GATEWAY_MODEL_DEFINITIONS)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -928,7 +928,7 @@ def test_workspace_scope_falls_back_to_view_args(monkeypatch):
     rule = AuthorizationRule(None, requires_workspace=False, workspace_access_check=True)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
@@ -962,7 +962,7 @@ def test_workspace_create_requests_are_denied(monkeypatch):
     rule = AuthorizationRule("create", deny=True, requires_workspace=False)
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._find_authorization_rules",
-        lambda path, method: [rule],
+        lambda path, method, **kwargs: [rule],
     )
     monkeypatch.setattr(
         "kubernetes_workspace_provider.auth._parse_jwt_subject",
