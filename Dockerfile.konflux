@@ -34,7 +34,7 @@ COPY --from=python-builder /tmp/dist/mlflow_kubernetes_workspace_provider-*.whl 
 RUN set -eux; \
     dnf install -y --setopt=tsflags=nodocs postgresql-devel gcc python3-devel && \
     python -m pip install --no-cache-dir /tmp/dist/mlflow-*.whl /tmp/dist/mlflow_kubernetes_workspace_provider-*.whl && \
-    python -m pip install --no-cache-dir boto3 psycopg2 && \
+    python -m pip install --no-cache-dir boto3 psycopg2 prometheus-flask-exporter && \
     dnf clean all && \
     rm -f /tmp/dist/mlflow-*.whl /tmp/dist/mlflow_kubernetes_workspace_provider-*.whl
 
