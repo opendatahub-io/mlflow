@@ -18,6 +18,9 @@ from kubernetes_workspace_provider.auth import (
     PATH_AUTHORIZATION_RULES,
     REMOTE_GROUPS_HEADER_ENV,
     REMOTE_USER_HEADER_ENV,
+    REQUEST_AUTHORIZATION_RULES,
+    RESOURCE_ASSISTANTS,
+    RESOURCE_DATASETS,
     RESOURCE_EXPERIMENTS,
     RESOURCE_GATEWAY_ENDPOINTS,
     RESOURCE_GATEWAY_MODEL_DEFINITIONS,
@@ -33,7 +36,9 @@ from kubernetes_workspace_provider.auth import (
     _CacheEntry,
     _canonicalize_path,
     _compile_authorization_rules,
+    _find_authorization_rules,
     _is_unprotected_path,
+    _normalize_rules,
     _override_run_user,
     _parse_jwt_subject,
     _parse_remote_groups,
@@ -43,12 +48,25 @@ from kubernetes_workspace_provider.auth import (
 from mlflow.exceptions import MlflowException
 from mlflow.protos import databricks_pb2
 from mlflow.protos.service_pb2 import (
+    AddDatasetToExperiments,
+    CancelPromptOptimizationJob,
+    CreateDataset,
+    CreatePromptOptimizationJob,
     CreateRun,
     CreateWorkspace,
+    DeleteDataset,
+    DeleteDatasetRecords,
+    DeletePromptOptimizationJob,
     DeleteWorkspace,
+    GetDataset,
+    GetPromptOptimizationJob,
     GetWorkspace,
     ListWorkspaces,
+    RemoveDatasetFromExperiments,
+    SearchPromptOptimizationJobs,
+    SetDatasetTags,
     UpdateWorkspace,
+    UpsertDatasetRecords,
 )
 from mlflow.utils import workspace_context
 
@@ -1228,17 +1246,133 @@ def test_can_access_workspace_iterates_priority_resources(monkeypatch):
 
     calls = authorizer.is_allowed.call_args_list
     assert calls[0][0][1] == RESOURCE_EXPERIMENTS
-    assert calls[1][0][1] == RESOURCE_REGISTERED_MODELS
+    assert calls[1][0][1] == RESOURCE_DATASETS
+    assert calls[2][0][1] == RESOURCE_REGISTERED_MODELS
 
     authorizer.is_allowed.reset_mock()
     assert authorizer.can_access_workspace(identity, "team-b", verb="get") is False
 
     calls = authorizer.is_allowed.call_args_list
-    assert len(calls) == 5
+    assert len(calls) == 6
     assert [c[0][1] for c in calls] == [
         RESOURCE_EXPERIMENTS,
+        RESOURCE_DATASETS,
         RESOURCE_REGISTERED_MODELS,
         RESOURCE_GATEWAY_SECRETS,
         RESOURCE_GATEWAY_ENDPOINTS,
         RESOURCE_GATEWAY_MODEL_DEFINITIONS,
     ]
+
+
+def test_normalize_rules_single_rule():
+    rule = AuthorizationRule("get", resource=RESOURCE_EXPERIMENTS)
+    assert _normalize_rules(rule) == [rule]
+
+
+def test_normalize_rules_tuple_of_rules():
+    r1 = AuthorizationRule("update", resource=RESOURCE_DATASETS)
+    r2 = AuthorizationRule("update", resource=RESOURCE_EXPERIMENTS)
+    assert _normalize_rules((r1, r2)) == [r1, r2]
+
+
+def test_dataset_operations_use_datasets_resource():
+    dataset_ops = {
+        CreateDataset: ("create", RESOURCE_DATASETS),
+        DeleteDataset: ("delete", RESOURCE_DATASETS),
+        DeleteDatasetRecords: ("update", RESOURCE_DATASETS),
+        SetDatasetTags: ("update", RESOURCE_DATASETS),
+        UpsertDatasetRecords: ("update", RESOURCE_DATASETS),
+        GetDataset: ("get", RESOURCE_DATASETS),
+    }
+    for msg_type, (expected_verb, expected_resource) in dataset_ops.items():
+        value = REQUEST_AUTHORIZATION_RULES[msg_type]
+        rule = value if isinstance(value, AuthorizationRule) else value[0]
+        assert (rule.verb, rule.resource) == (expected_verb, expected_resource), msg_type.__name__
+
+
+def test_search_datasets_effective_compiled_rule_uses_datasets_resource():
+    """PATH_AUTHORIZATION_RULES overrides handler-derived rules at compile time.
+
+    Verify the effective rule for the search-datasets endpoints resolves to
+    datasets/list (not experiments/list) after compilation.
+    """
+    for path in (
+        "/api/2.0/mlflow/experiments/search-datasets",
+        "/ajax-api/2.0/mlflow/experiments/search-datasets",
+    ):
+        rules = _find_authorization_rules(path, "POST")
+        assert rules is not None, f"No rule found for {path}"
+        assert len(rules) == 1
+        assert (rules[0].verb, rules[0].resource) == ("list", RESOURCE_DATASETS), path
+
+
+def test_dataset_experiment_linking_requires_both_resources():
+    for msg_type in (AddDatasetToExperiments, RemoveDatasetFromExperiments):
+        value = REQUEST_AUTHORIZATION_RULES[msg_type]
+        assert isinstance(value, tuple), f"{msg_type.__name__} should be a tuple"
+        rules = list(value)
+        assert len(rules) == 2, f"{msg_type.__name__} should have 2 rules"
+        resources = {r.resource for r in rules}
+        assert resources == {RESOURCE_DATASETS, RESOURCE_EXPERIMENTS}, msg_type.__name__
+        assert all(r.verb == "update" for r in rules), msg_type.__name__
+
+
+def test_prompt_optimization_jobs_use_experiments_resource():
+    job_ops = {
+        CreatePromptOptimizationJob: "update",
+        GetPromptOptimizationJob: "get",
+        SearchPromptOptimizationJobs: "list",
+        CancelPromptOptimizationJob: "update",
+        DeletePromptOptimizationJob: "update",
+    }
+    for msg_type, expected_verb in job_ops.items():
+        rule = REQUEST_AUTHORIZATION_RULES[msg_type]
+        assert isinstance(rule, AuthorizationRule), msg_type.__name__
+        assert (rule.verb, rule.resource) == (expected_verb, RESOURCE_EXPERIMENTS), (
+            msg_type.__name__
+        )
+
+
+def test_server_info_endpoint_is_unprotected():
+    rule = PATH_AUTHORIZATION_RULES[("/server-info", "GET")]
+    assert rule.verb is None
+    assert rule.resource is None
+
+
+def test_assessment_delete_path_rules():
+    for prefix in ("/api/3.0", "/ajax-api/3.0"):
+        path = f"{prefix}/mlflow/traces/<trace_id>/assessments/<assessment_id>"
+        rule = PATH_AUTHORIZATION_RULES[(path, "DELETE")]
+        assert (rule.verb, rule.resource) == ("update", RESOURCE_EXPERIMENTS)
+
+
+def test_demo_generate_requires_multiple_resources():
+    value = PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/demo/generate", "POST")]
+    assert isinstance(value, tuple)
+    resources = {r.resource for r in value}
+    assert resources == {RESOURCE_EXPERIMENTS, RESOURCE_DATASETS, RESOURCE_REGISTERED_MODELS}
+    assert all(r.verb == "create" for r in value)
+
+
+def test_demo_delete_requires_multiple_resources():
+    value = PATH_AUTHORIZATION_RULES[("/ajax-api/3.0/mlflow/demo/delete", "POST")]
+    assert isinstance(value, tuple)
+    resources = {r.resource for r in value}
+    assert resources == {RESOURCE_EXPERIMENTS, RESOURCE_DATASETS, RESOURCE_REGISTERED_MODELS}
+
+
+def test_assistant_endpoints_use_assistants_resource():
+    assistant_routes = [
+        (("/ajax-api/3.0/mlflow/assistant/message", "POST"), "create"),
+        (("/ajax-api/3.0/mlflow/assistant/sessions/<session_id>/stream", "GET"), "get"),
+        (("/ajax-api/3.0/mlflow/assistant/status", "GET"), "get"),
+        (("/ajax-api/3.0/mlflow/assistant/sessions/<session_id>", "PATCH"), "update"),
+        (("/ajax-api/3.0/mlflow/assistant/providers/<provider>/health", "GET"), "get"),
+        (("/ajax-api/3.0/mlflow/assistant/config", "GET"), "get"),
+        (("/ajax-api/3.0/mlflow/assistant/config", "PUT"), "update"),
+        (("/ajax-api/3.0/mlflow/assistant/skills/install", "POST"), "update"),
+    ]
+    for route, expected_verb in assistant_routes:
+        rule = PATH_AUTHORIZATION_RULES[route]
+        assert isinstance(rule, AuthorizationRule), route
+        assert (rule.verb, rule.resource) == (expected_verb, RESOURCE_ASSISTANTS), route

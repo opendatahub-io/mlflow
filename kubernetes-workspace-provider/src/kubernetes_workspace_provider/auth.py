@@ -69,6 +69,7 @@ from mlflow.protos.service_pb2 import (
     AttachModelToGatewayEndpoint,
     BatchGetTraces,
     CalculateTraceFilterCorrelation,
+    CancelPromptOptimizationJob,
     CreateAssessment,
     CreateDataset,
     CreateExperiment,
@@ -77,10 +78,11 @@ from mlflow.protos.service_pb2 import (
     CreateGatewayModelDefinition,
     CreateGatewaySecret,
     CreateLoggedModel,
+    CreatePromptOptimizationJob,
     CreateRun,
     CreateWorkspace,
-    DeleteAssessment,
     DeleteDataset,
+    DeleteDatasetRecords,
     DeleteDatasetTag,
     DeleteExperiment,
     DeleteExperimentTag,
@@ -91,6 +93,7 @@ from mlflow.protos.service_pb2 import (
     DeleteGatewaySecret,
     DeleteLoggedModel,
     DeleteLoggedModelTag,
+    DeletePromptOptimizationJob,
     DeleteRun,
     DeleteScorer,
     DeleteTag,
@@ -114,6 +117,7 @@ from mlflow.protos.service_pb2 import (
     GetLoggedModel,
     GetMetricHistory,
     GetMetricHistoryBulkInterval,
+    GetPromptOptimizationJob,
     GetRun,
     GetScorer,
     GetTraceInfo,
@@ -146,6 +150,7 @@ from mlflow.protos.service_pb2 import (
     SearchEvaluationDatasets,
     SearchExperiments,
     SearchLoggedModels,
+    SearchPromptOptimizationJobs,
     SearchRuns,
     SearchTraces,
     SearchTracesV3,
@@ -210,22 +215,25 @@ _UNPROTECTED_PATHS = {
     "/ajax-api/3.0/mlflow/server-features",
     "/ajax-api/3.0/mlflow/ui-telemetry",
 }
+RESOURCE_ASSISTANTS = "assistants"
+RESOURCE_DATASETS = "datasets"
 RESOURCE_EXPERIMENTS = "experiments"
 RESOURCE_REGISTERED_MODELS = "registeredmodels"
-RESOURCE_JOBS = "jobs"
 RESOURCE_GATEWAY_SECRETS = "gatewaysecrets"
 RESOURCE_GATEWAY_ENDPOINTS = "gatewayendpoints"
 RESOURCE_GATEWAY_MODEL_DEFINITIONS = "gatewaymodeldefinitions"
 _ALLOWED_RESOURCES = {
+    RESOURCE_ASSISTANTS,
+    RESOURCE_DATASETS,
     RESOURCE_EXPERIMENTS,
     RESOURCE_REGISTERED_MODELS,
-    RESOURCE_JOBS,
     RESOURCE_GATEWAY_SECRETS,
     RESOURCE_GATEWAY_ENDPOINTS,
     RESOURCE_GATEWAY_MODEL_DEFINITIONS,
 }
 _WORKSPACE_PERMISSION_RESOURCE_PRIORITY = (
     RESOURCE_EXPERIMENTS,
+    RESOURCE_DATASETS,
     RESOURCE_REGISTERED_MODELS,
     RESOURCE_GATEWAY_SECRETS,
     RESOURCE_GATEWAY_ENDPOINTS,
@@ -393,16 +401,20 @@ class AuthorizationRule(NamedTuple):
     workspace_access_check: bool = False
 
 
+def _assistants_rule(verb: str | None, **kwargs) -> AuthorizationRule:
+    return AuthorizationRule(verb, resource=RESOURCE_ASSISTANTS, **kwargs)
+
+
+def _datasets_rule(verb: str | None, **kwargs) -> AuthorizationRule:
+    return AuthorizationRule(verb, resource=RESOURCE_DATASETS, **kwargs)
+
+
 def _experiments_rule(verb: str | None, **kwargs) -> AuthorizationRule:
     return AuthorizationRule(verb, resource=RESOURCE_EXPERIMENTS, **kwargs)
 
 
 def _registered_models_rule(verb: str | None, **kwargs) -> AuthorizationRule:
     return AuthorizationRule(verb, resource=RESOURCE_REGISTERED_MODELS, **kwargs)
-
-
-def _jobs_rule(verb: str | None, **kwargs) -> AuthorizationRule:
-    return AuthorizationRule(verb, resource=RESOURCE_JOBS, **kwargs)
 
 
 def _gateway_secrets_rule(verb: str | None, **kwargs) -> AuthorizationRule:
@@ -434,13 +446,13 @@ def _normalize_resource_name(resource: str | None) -> str | None:
     return normalized
 
 
-_AUTH_RULES: dict[tuple[str, str], AuthorizationRule] = {}
-_AUTH_REGEX_RULES: list[tuple[re.Pattern[str], str, AuthorizationRule]] = []
-_HANDLER_RULES: dict[object, AuthorizationRule] = {}
+_AUTH_RULES: dict[tuple[str, str], list[AuthorizationRule]] = {}
+_AUTH_REGEX_RULES: list[tuple[re.Pattern[str], str, list[AuthorizationRule]]] = []
+_HANDLER_RULES: dict[object, list[AuthorizationRule]] = {}
 _RULES_COMPILED = False
 
 
-REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule] = {
+REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule | tuple[AuthorizationRule, ...]] = {
     # Experiments
     CreateExperiment: _experiments_rule("create"),
     GetExperiment: _experiments_rule("get"),
@@ -451,17 +463,18 @@ REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule] = {
     SetExperimentTag: _experiments_rule("update"),
     DeleteExperimentTag: _experiments_rule("update"),
     SearchExperiments: _experiments_rule("list"),
+    # Datasets
+    AddDatasetToExperiments: (_datasets_rule("update"), _experiments_rule("update")),
+    CreateDataset: _datasets_rule("create"),
+    DeleteDataset: _datasets_rule("delete"),
+    DeleteDatasetRecords: _datasets_rule("update"),
+    DeleteDatasetTag: _datasets_rule("update"),
+    RemoveDatasetFromExperiments: (_datasets_rule("update"), _experiments_rule("update")),
+    SetDatasetTags: _datasets_rule("update"),
+    UpsertDatasetRecords: _datasets_rule("update"),
     # Experiment child resources (write operations)
-    AddDatasetToExperiments: _experiments_rule("update"),
     CreateAssessment: _experiments_rule("update"),
-    CreateDataset: _experiments_rule("update"),
-    DeleteAssessment: _experiments_rule("update"),
-    DeleteDataset: _experiments_rule("update"),
-    DeleteDatasetTag: _experiments_rule("update"),
-    RemoveDatasetFromExperiments: _experiments_rule("update"),
-    SetDatasetTags: _experiments_rule("update"),
     UpdateAssessment: _experiments_rule("update"),
-    UpsertDatasetRecords: _experiments_rule("update"),
     CreateRun: _experiments_rule("update", override_run_user=True),
     DeleteRun: _experiments_rule("update"),
     RestoreRun: _experiments_rule("update"),
@@ -512,12 +525,13 @@ REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule] = {
     GetTraceInfoV3: _experiments_rule("get"),
     DownloadArtifact: _experiments_rule("get"),
     ListArtifactsMlflowArtifacts: _experiments_rule("get"),
+    # Dataset reads
+    GetDataset: _datasets_rule("get"),
+    GetDatasetExperimentIds: _datasets_rule("list"),
+    GetDatasetRecords: _datasets_rule("list"),
+    SearchDatasets: _datasets_rule("list"),
+    SearchEvaluationDatasets: _datasets_rule("list"),
     # Experiment child resources (multi-experiment reads)
-    GetDataset: _experiments_rule("get"),
-    GetDatasetExperimentIds: _experiments_rule("list"),
-    GetDatasetRecords: _experiments_rule("list"),
-    SearchDatasets: _experiments_rule("list"),
-    SearchEvaluationDatasets: _experiments_rule("list"),
     SearchLoggedModels: _experiments_rule("list"),
     BatchGetTraces: _experiments_rule("list"),
     CalculateTraceFilterCorrelation: _experiments_rule("list"),
@@ -581,6 +595,12 @@ REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule] = {
     ListGatewayEndpointBindings: _gateway_endpoints_rule("list"),
     SetGatewayEndpointTag: _gateway_endpoints_rule("update"),
     DeleteGatewayEndpointTag: _gateway_endpoints_rule("update"),
+    # Prompt optimization jobs (experiment-scoped, matching upstream)
+    CreatePromptOptimizationJob: _experiments_rule("update"),
+    GetPromptOptimizationJob: _experiments_rule("get"),
+    SearchPromptOptimizationJobs: _experiments_rule("list"),
+    CancelPromptOptimizationJob: _experiments_rule("update"),
+    DeletePromptOptimizationJob: _experiments_rule("update"),
     # Workspaces
     # ListWorkspaces omits a direct RBAC verb/namespace check because a single
     # SelfSubjectAccessReview cannot cover the full list. The response is instead filtered per
@@ -593,9 +613,12 @@ REQUEST_AUTHORIZATION_RULES: dict[type, AuthorizationRule] = {
 }
 
 
-PATH_AUTHORIZATION_RULES: dict[tuple[str, str], AuthorizationRule] = {
+PATH_AUTHORIZATION_RULES: dict[
+    tuple[str, str], AuthorizationRule | tuple[AuthorizationRule, ...]
+] = {
     # Unprotected endpoints (no authorization required)
     ("/version", "GET"): AuthorizationRule(None),
+    ("/server-info", "GET"): AuthorizationRule(None),
     ("/api/2.0/mlflow/model-versions/search", "GET"): _registered_models_rule("list"),
     ("/ajax-api/2.0/mlflow/model-versions/search", "GET"): _registered_models_rule("list"),
     ("/graphql", "GET"): _experiments_rule("get"),
@@ -634,29 +657,44 @@ PATH_AUTHORIZATION_RULES: dict[tuple[str, str], AuthorizationRule] = {
         "/ajax-api/2.0/mlflow/logged-models/<model_id>/artifacts/files",
         "GET",
     ): _experiments_rule("get"),
-    ("/api/2.0/mlflow/experiments/search-datasets", "POST"): _experiments_rule("list"),
-    ("/ajax-api/2.0/mlflow/experiments/search-datasets", "POST"): _experiments_rule("list"),
+    ("/api/2.0/mlflow/experiments/search-datasets", "POST"): _datasets_rule("list"),
+    ("/ajax-api/2.0/mlflow/experiments/search-datasets", "POST"): _datasets_rule("list"),
+    # Assessment deletion (path-parameterized, not matched by handler rules)
+    ("/api/3.0/mlflow/traces/<trace_id>/assessments/<assessment_id>", "DELETE"): _experiments_rule(
+        "update"
+    ),
+    ("/ajax-api/3.0/mlflow/traces/<trace_id>/assessments/<assessment_id>", "DELETE"): (
+        _experiments_rule("update")
+    ),
     # Trace retrieval endpoints (REST v3)
     ("/api/3.0/mlflow/traces/get", "GET"): _experiments_rule("get"),
     ("/ajax-api/3.0/mlflow/traces/get", "GET"): _experiments_rule("get"),
     # OTEL trace ingestion endpoint
     (OTLP_TRACES_PATH, "POST"): _experiments_rule("update"),
-    # Job API endpoints (FastAPI router)
-    ("/ajax-api/3.0/jobs", "POST"): _jobs_rule("create"),
-    ("/ajax-api/3.0/jobs/", "POST"): _jobs_rule("create"),
-    ("/ajax-api/3.0/jobs/<job_id>", "GET"): _jobs_rule("get"),
-    ("/ajax-api/3.0/jobs/<job_id>/", "GET"): _jobs_rule("get"),
-    ("/ajax-api/3.0/jobs/cancel/<job_id>", "PATCH"): _jobs_rule("update"),
-    ("/ajax-api/3.0/jobs/cancel/<job_id>/", "PATCH"): _jobs_rule("update"),
-    ("/ajax-api/3.0/jobs/search", "POST"): _jobs_rule("list"),
-    ("/ajax-api/3.0/jobs/search/", "POST"): _jobs_rule("list"),
-    # Assistant API endpoints (FastAPI router)
-    ("/ajax-api/3.0/mlflow/assistant/message", "POST"): _experiments_rule("update"),
+    # Job API endpoints (FastAPI router, experiment-scoped, matching upstream)
+    ("/ajax-api/3.0/jobs", "POST"): _experiments_rule("update"),
+    ("/ajax-api/3.0/jobs/", "POST"): _experiments_rule("update"),
+    ("/ajax-api/3.0/jobs/<job_id>", "GET"): _experiments_rule("get"),
+    ("/ajax-api/3.0/jobs/<job_id>/", "GET"): _experiments_rule("get"),
+    ("/ajax-api/3.0/jobs/cancel/<job_id>", "PATCH"): _experiments_rule("update"),
+    ("/ajax-api/3.0/jobs/cancel/<job_id>/", "PATCH"): _experiments_rule("update"),
+    ("/ajax-api/3.0/jobs/search", "POST"): _experiments_rule("list"),
+    ("/ajax-api/3.0/jobs/search/", "POST"): _experiments_rule("list"),
+    # Assistant API endpoints (FastAPI router, currently localhost-only)
+    ("/ajax-api/3.0/mlflow/assistant/message", "POST"): _assistants_rule("create"),
     (
         "/ajax-api/3.0/mlflow/assistant/sessions/<session_id>/stream",
         "GET",
-    ): _experiments_rule("get"),
-    ("/ajax-api/3.0/mlflow/assistant/status", "GET"): _experiments_rule("get"),
+    ): _assistants_rule("get"),
+    ("/ajax-api/3.0/mlflow/assistant/status", "GET"): _assistants_rule("get"),
+    ("/ajax-api/3.0/mlflow/assistant/sessions/<session_id>", "PATCH"): _assistants_rule("update"),
+    (
+        "/ajax-api/3.0/mlflow/assistant/providers/<provider>/health",
+        "GET",
+    ): _assistants_rule("get"),
+    ("/ajax-api/3.0/mlflow/assistant/config", "GET"): _assistants_rule("get"),
+    ("/ajax-api/3.0/mlflow/assistant/config", "PUT"): _assistants_rule("update"),
+    ("/ajax-api/3.0/mlflow/assistant/skills/install", "POST"): _assistants_rule("update"),
     # Gateway discovery/config endpoints
     ("/ajax-api/3.0/mlflow/gateway/supported-providers", "GET"): _gateway_model_definitions_rule(
         "list"
@@ -672,6 +710,17 @@ PATH_AUTHORIZATION_RULES: dict[tuple[str, str], AuthorizationRule] = {
     ("/ajax-api/3.0/mlflow/scorers/online-config", "PUT"): _experiments_rule("update"),
     ("/api/3.0/mlflow/scorers/online-config", "PUT"): _experiments_rule("update"),
     ("/ajax-api/3.0/mlflow/scorer/invoke", "POST"): _experiments_rule("update"),
+    # Demo data generation and deletion
+    ("/ajax-api/3.0/mlflow/demo/generate", "POST"): (
+        _experiments_rule("create"),
+        _datasets_rule("create"),
+        _registered_models_rule("create"),
+    ),
+    ("/ajax-api/3.0/mlflow/demo/delete", "POST"): (
+        _experiments_rule("delete"),
+        _datasets_rule("delete"),
+        _registered_models_rule("delete"),
+    ),
 }
 
 
@@ -724,6 +773,7 @@ _STATIC_PREFIX_APPLICABLE_PREFIXES: tuple[str, ...] = (
     "/health",
     "/metrics",
     "/version",
+    "/server-info",
     "/ajax-api",
     "/get-artifact",
     "/model-versions/get-artifact",
@@ -1425,6 +1475,15 @@ class KubernetesAuthConfig:
         )
 
 
+def _normalize_rules(
+    value: AuthorizationRule | tuple[AuthorizationRule, ...],
+) -> list[AuthorizationRule]:
+    """Normalize a single rule or tuple of rules into a list."""
+    if isinstance(value, AuthorizationRule):
+        return [value]
+    return list(value)
+
+
 def _compile_authorization_rules() -> None:
     global _RULES_COMPILED
     if _RULES_COMPILED:
@@ -1433,17 +1492,17 @@ def _compile_authorization_rules() -> None:
     # Rebuild every cache/artifact so reconfiguration (e.g., during tests) is deterministic.
     _HANDLER_RULES.clear()
 
-    exact_rules: dict[tuple[str, str], AuthorizationRule] = {}
-    regex_rules: list[tuple[re.Pattern[str], str, AuthorizationRule]] = []
+    exact_rules: dict[tuple[str, str], list[AuthorizationRule]] = {}
+    regex_rules: list[tuple[re.Pattern[str], str, list[AuthorizationRule]]] = []
     uncovered: list[tuple[str, str]] = []
 
     def _get_request_authorization_handler(request_class):
         # Record the AuthorizationRule associated with the concrete Flask handler so we can
         # reference it later when iterating through Flask endpoints.
         handler = mlflow_handlers.get_handler(request_class)
-        rule = REQUEST_AUTHORIZATION_RULES.get(request_class)
-        if handler is not None and rule is not None:
-            _HANDLER_RULES[_unwrap_handler(handler)] = rule
+        value = REQUEST_AUTHORIZATION_RULES.get(request_class)
+        if handler is not None and value is not None:
+            _HANDLER_RULES[_unwrap_handler(handler)] = _normalize_rules(value)
         return handler
 
     # Inspect the protobuf-driven Flask routes and copy over authorization metadata.
@@ -1456,8 +1515,8 @@ def _compile_authorization_rules() -> None:
             continue
 
         base_handler = _unwrap_handler(handler)
-        rule = _HANDLER_RULES.get(base_handler)
-        if rule is None:
+        rules = _HANDLER_RULES.get(base_handler)
+        if rules is None:
             # If a protobuf route lacks a handler-derived rule, fall back to the explicit
             # PATH_AUTHORIZATION_RULES definition; otherwise flag it as uncovered.
             if all(
@@ -1471,9 +1530,9 @@ def _compile_authorization_rules() -> None:
         for method in methods:
             # Regex patterns are required for templated paths; literal paths can be matched exactly.
             if "<" in canonical_path:
-                regex_rules.append((_re_compile_path(canonical_path), method, rule))
+                regex_rules.append((_re_compile_path(canonical_path), method, rules))
             else:
-                exact_rules[(canonical_path, method)] = rule
+                exact_rules[(canonical_path, method)] = rules
 
     # Include custom Flask routes (e.g., get-artifact) that aren't part of the protobuf services.
     for rule in mlflow_app.url_map.iter_rules():
@@ -1500,11 +1559,12 @@ def _compile_authorization_rules() -> None:
             uncovered.extend(missing_methods)
 
     # Explicit allowlist entries (with and without templated segments) always win.
-    for (path, method), rule in PATH_AUTHORIZATION_RULES.items():
+    for (path, method), path_value in PATH_AUTHORIZATION_RULES.items():
+        normalized = _normalize_rules(path_value)
         if "<" in path:
-            regex_rules.append((_re_compile_path(path), method, rule))
+            regex_rules.append((_re_compile_path(path), method, normalized))
         else:
-            exact_rules[(path, method)] = rule
+            exact_rules[(path, method)] = normalized
 
     if uncovered:
         formatted = ", ".join(f"{method} {path}" for path, method in uncovered)
@@ -1564,8 +1624,8 @@ def _find_authorization_rules(
     """
     canonical_path = _canonicalize_path(raw_path=request_path or "")
 
-    rule = _AUTH_RULES.get((canonical_path, method))
-    if rule is not None:
+    rules = _AUTH_RULES.get((canonical_path, method))
+    if rules is not None:
         # Special handling for GraphQL operations
         # SECURITY: Always parse the query to determine authorization rules.
         # We cannot trust operationName alone because a malicious client could
@@ -1589,11 +1649,11 @@ def _find_authorization_rules(
 
             # _determine_graphql_rules returns None if unknown fields are present
             return _determine_graphql_rules(query_info, AuthorizationRule)
-        return [rule]
+        return rules
 
     for pattern, pattern_method, candidate in _AUTH_REGEX_RULES:
         if pattern_method == method and pattern.fullmatch(canonical_path):
-            return [candidate]
+            return candidate
 
     return None
 

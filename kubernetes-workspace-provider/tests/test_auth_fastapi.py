@@ -68,7 +68,7 @@ def test_trace_get_endpoints_in_auth_rules():
 
 def test_job_api_endpoints_in_auth_rules():
     cases = [
-        ("/ajax-api/3.0/jobs", "POST", "create"),
+        ("/ajax-api/3.0/jobs", "POST", "update"),
         ("/ajax-api/3.0/jobs/<job_id>", "GET", "get"),
         ("/ajax-api/3.0/jobs/cancel/<job_id>", "PATCH", "update"),
         ("/ajax-api/3.0/jobs/search", "POST", "list"),
@@ -76,7 +76,7 @@ def test_job_api_endpoints_in_auth_rules():
 
     for path, method, verb in cases:
         rule = PATH_AUTHORIZATION_RULES[(path, method)]
-        assert (rule.verb, rule.resource) == (verb, "jobs")
+        assert (rule.verb, rule.resource) == (verb, "experiments")
 
 
 @pytest.fixture
@@ -443,7 +443,7 @@ def test_job_api_endpoints_require_auth(fastapi_app_with_k8s_auth, mock_authoriz
     mock_authorizer.is_allowed.assert_called_once()
     identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "valid-token"
-    assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert (resource, verb, namespace) == ("experiments", "get", "team-a")
     assert subresource is None
 
 
@@ -465,7 +465,7 @@ def test_job_api_endpoints_accept_forwarded_access_token(
     mock_authorizer.is_allowed.assert_called_once()
     identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
-    assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert (resource, verb, namespace) == ("experiments", "get", "team-a")
     assert subresource is None
 
 
@@ -487,7 +487,7 @@ def test_job_api_endpoints_prefer_forwarded_token_on_invalid_authorization(
     mock_authorizer.is_allowed.assert_called_once()
     identity, resource, verb, namespace, subresource = mock_authorizer.is_allowed.call_args[0]
     assert identity.token == "forwarded-token"
-    assert (resource, verb, namespace) == ("jobs", "get", "team-a")
+    assert (resource, verb, namespace) == ("experiments", "get", "team-a")
     assert subresource is None
 
 

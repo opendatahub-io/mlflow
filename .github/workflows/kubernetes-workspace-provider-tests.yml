@@ -6,6 +6,9 @@ on:
       - "kubernetes-workspace-provider/**"
       - ".github/workflows/kubernetes-workspace-provider-tests.yml"
   push:
+    branches:
+      - master
+      - branch-[0-9]+.[0-9]+
     paths:
       - "kubernetes-workspace-provider/**"
       - ".github/workflows/kubernetes-workspace-provider-tests.yml"

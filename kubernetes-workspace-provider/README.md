@@ -25,8 +25,8 @@ for every MLflow API request. Each MLflow workspace maps 1:1 to a Kubernetes nam
   `Authorization: Bearer <token>` header or the `X-Forwarded-Access-Token` header when running
   behind a proxy.
 - Evaluates Kubernetes `SelfSubjectAccessReview` objects for each MLflow API call across the
-  `experiments`, `registeredmodels`, `jobs`, `gatewaysecrets`, `gatewayendpoints`, and
-  `gatewaymodeldefinitions` resources in the `mlflow.kubeflow.org` API group.
+  `assistants`, `datasets`, `experiments`, `registeredmodels`, `gatewaysecrets`,
+  `gatewayendpoints`, and `gatewaymodeldefinitions` resources in the `mlflow.kubeflow.org` API group.
 - Transparently rewrites run requests so the authenticated user becomes the run owner.
 - Filters workspace listings to the set of namespaces the caller can `list`.
 - Denies workspace create/update/delete operations, even if RBAC would otherwise allow them, keeping
@@ -291,9 +291,10 @@ following for full access:
 
 | Resource                      | Verbs                                       |
 | ----------------------------- | ------------------------------------------- |
+| `assistants`                  | `get`, `create`, `update`                   |
+| `datasets`                    | `get`, `list`, `create`, `update`, `delete` |
 | `experiments`                 | `get`, `list`, `create`, `update`, `delete` |
 | `registeredmodels`            | `get`, `list`, `create`, `update`, `delete` |
-| `jobs`                        | `get`, `list`, `create`, `update`           |
 | `gatewaysecrets`              | `get`, `list`, `create`, `update`, `delete` |
 | `gatewaysecrets/use`          | `create`                                    |
 | `gatewayendpoints`            | `get`, `list`, `create`, `update`, `delete` |
@@ -301,6 +302,16 @@ following for full access:
 | `gatewaymodeldefinitions`     | `get`, `list`, `create`, `update`, `delete` |
 | `gatewaymodeldefinitions/use` | `create`                                    |
 
+> **Note:** The assistant API is currently restricted to localhost access by MLflow itself. The
+> `assistants` resource exists for forward-compatibility in case this restriction is relaxed.
+>
+> **Note:** Datasets (evaluation datasets, dataset records, and dataset tags) are authorized via the
+> dedicated `datasets` resource.
+>
+> **Note:** Prompt optimization jobs use experiment permissions. There is no separate `jobs`
+> resource; all prompt optimization job operations are authorized via the `experiments` resource,
+> matching upstream MLflow.
+>
 > **Note:** Prompts share storage and permissions with registered models. Granting access to the
 > `registeredmodels` resource automatically covers prompt operations; no separate `prompts` RBAC
 > entry is required.
@@ -326,9 +337,10 @@ rules:
   - apiGroups:
       - mlflow.kubeflow.org
     resources:
+      - assistants
+      - datasets
       - experiments
       - registeredmodels
-      - jobs
       - gatewaysecrets
       - gatewayendpoints
       - gatewaymodeldefinitions
@@ -401,9 +413,10 @@ rules:
   - apiGroups:
       - mlflow.kubeflow.org
     resources:
+      - assistants
+      - datasets
       - experiments
       - registeredmodels
-      - jobs
       - gatewaysecrets
       - gatewayendpoints
       - gatewaymodeldefinitions

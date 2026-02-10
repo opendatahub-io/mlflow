@@ -45,7 +45,11 @@ import {
   useExperimentPageSideNavConfig,
 } from '../../experiment-tracking/pages/experiment-page-tabs/side-nav/constants';
 import { ExperimentPageTabName } from '../../experiment-tracking/constants';
-import { shouldEnableAIGateway, shouldEnableWorkflowBasedNavigation, shouldEnableWorkspaces } from '../utils/FeatureUtils';
+import {
+  shouldEnableAIGateway,
+  shouldEnableWorkflowBasedNavigation,
+  shouldEnableWorkspaces,
+} from '../utils/FeatureUtils';
 import { AssistantSparkleIcon } from '../../assistant/AssistantIconButton';
 import { useAssistant } from '../../assistant/AssistantContext';
 import { useExperimentEvaluationRunsData } from '../../experiment-tracking/components/experiment-page/hooks/useExperimentEvaluationRunsData';
