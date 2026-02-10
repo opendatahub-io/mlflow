@@ -1,4 +1,14 @@
+import os
+
 import click
+
+_BACKEND_STORE_URI_ENV_VAR = "MLFLOW_BACKEND_STORE_URI"
+
+
+def _resolve_db_url(url):
+    if env_url := os.environ.get(_BACKEND_STORE_URI_ENV_VAR):
+        return env_url
+    return url
 
 
 @click.group("db")
@@ -25,6 +35,38 @@ def upgrade(url):
 
     engine = mlflow.store.db.utils.create_sqlalchemy_engine_with_retry(url)
     mlflow.store.db.utils._upgrade_db(engine)
+
+
+@commands.command("fix-migration-gap")
+@click.argument("url", required=False, default=None)
+def fix_migration_gap(url):
+    """
+    Detect and fix the RHOAI 3.3 -> 3.4 database migration gap.
+
+    The database URL can be provided as an argument or via the MLFLOW_BACKEND_STORE_URI
+    environment variable (which takes precedence).
+
+    This command is safe to run on every startup. It detects whether the database
+    was upgraded from RHOAI 3.3 to 3.4 without intermediate migrations being
+    applied, and fixes the schema if needed. If no gap is detected, it exits
+    immediately with no changes.
+    """
+    import mlflow.store.db.utils
+    from mlflow.store.db.migration_gap import fix_migration_gap_if_needed
+
+    resolved_url = _resolve_db_url(url)
+    if not resolved_url:
+        raise click.UsageError(
+            f"No database URL provided. Pass it as an argument or set {_BACKEND_STORE_URI_ENV_VAR}."
+        )
+
+    engine = None
+    try:
+        engine = mlflow.store.db.utils.create_sqlalchemy_engine_with_retry(resolved_url)
+        fix_migration_gap_if_needed(engine)
+    finally:
+        if engine is not None:
+            engine.dispose()
 
 
 @commands.command("migrate-to-default-workspace")
