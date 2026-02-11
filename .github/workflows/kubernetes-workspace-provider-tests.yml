@@ -2,9 +2,6 @@ name: Kubernetes Workspace Provider Tests
 
 on:
   pull_request:
-    paths:
-      - "kubernetes-workspace-provider/**"
-      - ".github/workflows/kubernetes-workspace-provider-tests.yml"
   push:
     branches:
       - master
