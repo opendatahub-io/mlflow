@@ -1,22 +1,19 @@
 import { Button, Modal, Spinner, Typography, useDesignSystemTheme } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from '@databricks/i18n';
 import { useCallback, useState } from 'react';
-import { getAjaxUrl } from '../common/utils/FetchUtils';
-import { useDarkThemeContext } from '../common/contexts/DarkThemeContext';
+import { fetchEndpointRaw, HTTPMethods } from '../common/utils/FetchUtils';
 
 const SettingsPage = () => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
   const [isCleaningDemo, setIsCleaningDemo] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const { setIsDarkTheme } = useDarkThemeContext();
-  const isDarkTheme = theme.isDarkMode;
-
   const handleClearAllDemoData = useCallback(async () => {
     setIsCleaningDemo(true);
     try {
-      await fetch(getAjaxUrl('ajax-api/3.0/mlflow/demo/delete'), {
-        method: 'POST',
+      await fetchEndpointRaw({
+        relativeUrl: 'ajax-api/3.0/mlflow/demo/delete',
+        method: HTTPMethods.POST,
       });
     } catch (error) {
       console.error('Failed to clear demo data:', error);
