@@ -57,6 +57,17 @@ const ensureStorageListener = () => {
       notifyListeners(nextValue);
     }
   });
+
+  // Same-document: in federated mode (Module Federation), the host and remote
+  // share the same document. Storage events don't fire for same-document
+  // writes. The host dispatches 'odh-theme-change' to notify federated modules.
+  window.addEventListener('odh-theme-change', (e: Event) => {
+    const theme = (e as CustomEvent).detail?.theme;
+    const nextValue = theme === 'dark';
+    if (nextValue !== cachedIsDarkTheme) {
+      notifyListeners(nextValue);
+    }
+  });
 };
 
 export const setDarkModePreference = (isDarkTheme: boolean) => {

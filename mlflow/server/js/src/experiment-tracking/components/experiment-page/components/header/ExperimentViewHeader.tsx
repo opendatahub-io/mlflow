@@ -27,7 +27,7 @@ import { ExperimentViewHeaderShareButton } from './ExperimentViewHeaderShareButt
 import { useExperimentKind, isGenAIExperimentKind } from '../../../../utils/ExperimentKindUtils';
 import { ExperimentViewManagementMenu } from './ExperimentViewManagementMenu';
 import { shouldEnableExperimentPageSideTabs } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
-import { isEmbeddedCheck } from '@mlflow/mlflow/src/common/utils/embedUtils';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 import { ExperimentKind } from '../../../../constants';
 
@@ -75,7 +75,7 @@ export const ExperimentViewHeader = React.memo(
         navigate('/' + pathSegments.join('/'));
       }
     }, [location.pathname, navigate]);
-    const isEmbedded = isEmbeddedCheck();
+    const isEmbedded = useIsIntegrated();
     const breadcrumbs: React.ReactNode[] = useMemo(
       () => [
         // eslint-disable-next-line react/jsx-key

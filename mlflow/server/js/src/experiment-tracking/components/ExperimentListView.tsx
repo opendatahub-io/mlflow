@@ -30,13 +30,13 @@ import { ExperimentListViewTagsFilter } from './experiment-page/components/Exper
 import { shouldEnableWorkspaces } from '../../common/utils/FeatureUtils';
 import { extractWorkspaceFromSearchParams } from '../../workspaces/utils/WorkspaceUtils';
 import { useSearchParams } from '../../common/utils/RoutingUtils';
-import { isEmbeddedCheck } from '../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../common/utils/embedUtils';
 
 export const ExperimentListView = () => {
   const [searchParams] = useSearchParams();
   const workspacesEnabled = shouldEnableWorkspaces();
   const workspaceFromUrl = extractWorkspaceFromSearchParams(searchParams);
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   // Only show creation buttons when: workspaces are disabled OR a workspace is selected
   const showCreationButtons = !workspacesEnabled || workspaceFromUrl !== null;

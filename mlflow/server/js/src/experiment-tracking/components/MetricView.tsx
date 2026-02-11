@@ -17,7 +17,7 @@ import type { Location } from '../../common/utils/RoutingUtils';
 import { PageHeader } from '../../shared/building_blocks/PageHeader';
 import Routes from '../routes';
 import { withRouterNext } from '../../common/utils/withRouterNext';
-import { isEmbeddedCheck } from '../../common/utils/embedUtils';
+import { isIntegrated } from '../../common/utils/embedUtils';
 
 type MetricViewImplProps = {
   experiments: any[]; // TODO: PropTypes.instanceOf(Experiment)
@@ -104,7 +104,7 @@ export class MetricViewImpl extends Component<MetricViewImplProps> {
       ) : (
         selectedMetricKeys[0]
       );
-    const isEmbedded = isEmbeddedCheck();
+    const isEmbedded = isIntegrated();
     const breadcrumbs = isEmbedded ? [] : [this.getExperimentPageLink(), this.getRunPageLink()];
     return (
       <div>

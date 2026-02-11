@@ -8,7 +8,7 @@ import { useExperimentKind, isGenAIExperimentKind } from '../../utils/Experiment
 import { useGetExperimentQuery } from '../../hooks/useExperimentQuery';
 import { useParams } from '../../../common/utils/RoutingUtils';
 import invariant from 'invariant';
-import { isEmbeddedCheck } from '../../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 
 const EXAMPLE_INSTALL_CODE = `pip install -U 'mlflow>=3.1'`;
 
@@ -140,7 +140,7 @@ export const ExperimentLoggedModelListPageTableEmpty = ({
   const { theme } = useDesignSystemTheme();
   const { experimentId } = useParams();
   const cloud = 'AWS';
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   invariant(experimentId, 'Experiment ID must be defined');
 

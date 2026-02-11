@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { ExperimentKind } from '../../../../constants';
 import { ExperimentKindDropdownLabels } from '../../../../utils/ExperimentKindUtils';
-import { isEmbeddedCheck } from '../../../../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../../../../common/utils/embedUtils';
 
 export const ExperimentViewInferredKindModal = ({
   onDismiss,
@@ -13,7 +13,7 @@ export const ExperimentViewInferredKindModal = ({
   onConfirm: (kind: ExperimentKind) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
   // Default to Machine Learning when embedded (GenAI is not available)
   const [selectedKind, setSelectedKind] = useState<ExperimentKind>(
     isEmbedded ? ExperimentKind.CUSTOM_MODEL_DEVELOPMENT : ExperimentKind.GENAI_DEVELOPMENT,

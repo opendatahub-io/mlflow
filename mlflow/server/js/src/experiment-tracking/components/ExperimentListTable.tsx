@@ -28,6 +28,19 @@ export type ExperimentTableColumnDef = ColumnDef<ExperimentEntity>;
 
 export type ExperimentTableMetadata = { onEditTags: (editedEntity: ExperimentEntity) => void };
 
+// Row model factories MUST be hoisted to module level (created once).
+// Calling getCoreRowModel()/getSortedRowModel() inline creates new memo
+// closures on every render. Each new closure resets its internal deps,
+// triggering _autoResetPageIndex via a microtask (Promise.resolve().then).
+// In React 18 createRoot (concurrent mode, used by the host), microtask
+// state updates are processed synchronously, creating an infinite loop:
+//   render → new closure → "deps changed" → microtask setState → render → ...
+// In legacy ReactDOM.render (standalone CRA), microtasks are batched
+// asynchronously so the loop settles. Hoisting avoids the issue entirely.
+const coreRowModel = getCoreRowModel<ExperimentEntity>();
+const sortedRowModel = getSortedRowModel<ExperimentEntity>();
+const EMPTY_DATA: ExperimentEntity[] = [];
+
 const useExperimentsTableColumns = () => {
   const intl = useIntl();
   return useMemo(() => {
@@ -120,10 +133,10 @@ export const ExperimentListTable = ({
   const columns = useExperimentsTableColumns();
 
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/components/ExperimentListTable.tsx', {
-    data: experiments ?? [],
+    data: experiments ?? EMPTY_DATA,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getCoreRowModel: coreRowModel,
+    getSortedRowModel: sortedRowModel,
     getRowId: (row) => row.experimentId,
     enableRowSelection: true,
     enableMultiRowSelection: true,

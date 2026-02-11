@@ -170,7 +170,14 @@ export const prefixRouteWithWorkspace = (to: string): string => {
     return to;
   }
 
-  if (!getWorkspacesEnabledSync() || isAbsoluteUrl(to)) {
+  if (isAbsoluteUrl(to)) {
+    return to;
+  }
+  // Allow workspace prefixing when an active workspace is set, even if the
+  // server features flag hasn't resolved yet. This prevents a race condition
+  // in federated mode where the async feature fetch hasn't completed but the
+  // workspace is already known from the URL.
+  if (!getWorkspacesEnabledSync() && !getActiveWorkspace()) {
     return to;
   }
 

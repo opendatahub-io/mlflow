@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { ModularArchContextProvider, DeploymentMode } from 'mod-arch-core';
+import type { ModularArchConfig } from 'mod-arch-core';
 import { ApolloProvider } from '@mlflow/mlflow/src/common/utils/graphQLHooks';
 import { RawIntlProvider } from 'react-intl';
 
@@ -18,19 +20,24 @@ import { LegacySkeleton } from '@databricks/design-system';
 // eslint-disable-next-line no-useless-rename
 import { MlflowRouter as MlflowRouter } from './MlflowRouter';
 import { useMLflowDarkTheme } from './common/hooks/useMLflowDarkTheme';
-import { useEmbeddedLinkInterceptor } from './common/hooks/useEmbeddedLinkInterceptor';
 import { DarkThemeProvider } from './common/contexts/DarkThemeContext';
 import { telemetryClient } from './telemetry';
 import { ServerFeaturesProvider } from './common/utils/ServerFeaturesContext';
+
+// Note: In federated mode (Module Federation), app.tsx is NOT in the bundle --
+// the federated entry point (src/odh/extensions.ts) imports wrappers directly,
+// bypassing MLFlowRoot. So this CSS import only executes in standalone mode.
 import '@patternfly/patternfly/patternfly.css';
+
+const modularArchConfig: ModularArchConfig = {
+  deploymentMode: DeploymentMode.Standalone,
+  URL_PREFIX: '',
+  BFF_API_VERSION: 'v1',
+};
 
 export function MLFlowRoot() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const intl = useI18nInit();
-
-  // Intercept link clicks when embedded to control navigation behavior
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEmbeddedLinkInterceptor();
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const apolloClient = useMemo(() => createApolloClient(), []);
@@ -63,7 +70,9 @@ export function MLFlowRoot() {
               <DarkThemeProvider setIsDarkTheme={setIsDarkTheme}>
                 <QueryClientProvider client={queryClient}>
                   <ServerFeaturesProvider>
-                    <MlflowRouter />
+                    <ModularArchContextProvider config={modularArchConfig}>
+                      <MlflowRouter />
+                    </ModularArchContextProvider>
                   </ServerFeaturesProvider>
                 </QueryClientProvider>
               </DarkThemeProvider>

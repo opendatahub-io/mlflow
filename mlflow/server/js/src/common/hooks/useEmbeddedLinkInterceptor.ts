@@ -1,85 +1,50 @@
 import { useEffect } from 'react';
-import { isEmbeddedCheck } from '../utils/embedUtils';
+import { isIntegrated } from '../utils/embedUtils';
 
 /**
- * Build parent URL from MLflow hash path.
+ * Hook to intercept link clicks when MLflow runs in federated mode.
  *
- * Derives the parent's base path by comparing:
- * - Parent's current pathname (e.g., "/dashboard/mlflow/experiments/1")
- * - MLflow's current hash path (e.g., "/experiments/1")
+ * Many MLflow components use target="_blank" on links (run links, model links,
+ * metric links, etc.). In standalone mode these correctly open new tabs. In
+ * federated mode (Module Federation inside ODH dashboard) we want same-origin
+ * links to navigate in-place instead — opening a new tab would show the raw
+ * MLflow standalone UI outside the dashboard shell.
  *
- * The base path is the parent pathname minus the current hash path suffix.
+ * External links (different origin) still open in a new tab as expected.
  *
- * @param newHashPath - The target MLflow hash path (e.g., "/experiments/2?workspace=xxx")
- * @returns Parent URL or null if cross-origin or cannot derive base path
- */
-const buildParentUrl = (newHashPath: string): string | null => {
-  try {
-    const parent = window.top?.location;
-    if (!parent) return null;
-
-    // Get current MLflow hash path (without query params for comparison)
-    const currentHash = window.location.hash?.slice(1) || '';
-    const currentHashPath = currentHash.split('?')[0];
-
-    // Derive base path by removing current hash path from parent pathname
-    const parentPathname = parent.pathname;
-    if (currentHashPath && parentPathname.endsWith(currentHashPath)) {
-      const basePath = parentPathname.slice(0, -currentHashPath.length);
-      return `${parent.origin}${basePath}${newHashPath}`;
-    }
-
-    // Fallback: can't derive base path
-    return null;
-  } catch {
-    // Cross-origin iframe - cannot access window.top.location
-    return null;
-  }
-};
-
-/**
- * Hook to intercept link clicks when MLflow is embedded in an iframe.
- *
- * - target="_blank" links: Navigate within iframe instead of opening new tab
- * - Ctrl/Cmd+click: Open parent URL in new tab (falls back to in-iframe navigation)
- * - External links: Not intercepted
+ * Ctrl/Cmd+click always opens in a new tab (standard browser behavior).
  */
 export const useEmbeddedLinkInterceptor = () => {
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = isIntegrated();
 
   useEffect(() => {
     if (!isEmbedded) return;
 
     const handleClick = (event: MouseEvent) => {
+      // Only intercept clicks inside the MLflow federated wrapper.
+      const mlflowWrapper = document.querySelector('.mlflow-federated');
+      if (!mlflowWrapper || !mlflowWrapper.contains(event.target as Node)) return;
+
       const link = (event.target as Element).closest('a');
       if (!link?.href) return;
 
       const url = new URL(link.href, window.location.origin);
+
+      // External links: let them open normally (new tab)
       if (url.origin !== window.location.origin) return;
 
-      const hashPath = url.hash?.slice(1);
-      if (!hashPath) return;
+      // Ctrl/Cmd/Shift+click or middle-click: let browser open new tab
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) return;
 
-      const hasBlankTarget = link.target === '_blank';
-      const wantsNewTab = event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1;
-
-      if (hasBlankTarget || wantsNewTab) {
+      // Same-origin target="_blank" links: navigate in-place instead
+      if (link.target === '_blank') {
         event.preventDefault();
         event.stopPropagation();
 
-        if (wantsNewTab) {
-          // Cmd+click: Try to open parent URL in new tab
-          const parentUrl = buildParentUrl(hashPath);
-          if (parentUrl) {
-            window.open(parentUrl, '_blank');
-          } else {
-            // Fallback: navigate within iframe
-            window.location.hash = hashPath;
-          }
-        } else {
-          // target="_blank" without modifier: Navigate within iframe
-          window.location.hash = hashPath;
-        }
+        // Use pushState + popstate so both the host's v7 router and
+        // MLflow's v6 BrowserRouter detect the navigation.
+        window.history.pushState({}, '', url.pathname + url.search + url.hash);
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }
     };
 

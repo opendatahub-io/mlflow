@@ -2,7 +2,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { Link, useNavigate } from '../../../common/utils/RoutingUtils';
 import Routes from '../../routes';
 import { PageHeader } from '../../../shared/building_blocks/PageHeader';
-import { isEmbeddedCheck } from '../../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 import {
   Button,
   DropdownMenu,
@@ -35,7 +35,7 @@ export const ExperimentLoggedModelDetailsHeader = ({
   onSuccess?: () => void;
 }) => {
   const { theme } = useDesignSystemTheme();
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
   const modelDisplayName = loggedModel?.info?.name;
   const navigate = useNavigate();
   const intl = useIntl();

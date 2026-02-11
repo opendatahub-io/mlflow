@@ -7,6 +7,45 @@
     font-family: var(--pf-t--global--font--family--body);
   }
 
+  // Scoped element resets from antd's reset.css. In standalone mode
+  // these are applied globally via index.css -> reset.css. In federated
+  // mode we can't load reset.css (it targets html/body which would leak
+  // into the host), so we scope the essential resets here.
+  // PF base covers most resets but misses fieldset border, legend, and
+  // a few others that antd/DS components depend on.
+  fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  legend {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: normal;
+  }
+
+  img {
+    vertical-align: middle;
+    border-style: none;
+  }
+
+  svg:not(:root) {
+    overflow: hidden;
+  }
+
+  hr {
+    box-sizing: content-box;
+    height: 0;
+    overflow: visible;
+  }
+
   * {
     font-variant-numeric: normal;
   }
@@ -274,49 +313,14 @@
     border: none;
   }
 
-  main {
-    box-shadow: none;
-    border-radius: var(--pf-t--global--border--radius--medium);
-  }
-
-  /* Embedded mode styles - applied when .mlflow-embedded class exists */
-  .mlflow-embedded {
+  /* Federated mode styles - strip main element chrome */
+  .mlflow-federated {
     main {
       border-radius: 0;
       margin: 0;
 
       > div {
         padding: 0;
-      }
-    }
-  }
-
-  /* 
-   * Embedded mode link styles - use :has() to apply globally when embedded.
-   * This ensures styles apply to portal elements (dropdowns, modals) rendered outside .mlflow-embedded.
-   */
-  &:has(.mlflow-embedded) {
-    /* Disable navigation links except experiment tracking routes */
-    /* Allowed routes: experiments, runs, compare-experiments, compare-runs, metric */
-    /* Make disabled links look like plain text instead of links */
-    a:not([data-testid='error-view-link']):not([href*='#/experiments']):not([href*='#/runs']):not(
-        [href*='#/compare-experiments']
-      ):not([href*='#/compare-runs']):not([href*='#/metric']) {
-      pointer-events: none !important;
-      cursor: default !important;
-      color: inherit !important;
-      text-decoration: none !important;
-    }
-
-    /* Make external doc links (mlflow.org) appear as plain text */
-    a[href*='mlflow.org'] {
-      pointer-events: none !important;
-      cursor: default !important;
-      color: inherit !important;
-      text-decoration: none !important;
-
-      svg {
-        display: none !important;
       }
     }
   }
@@ -334,10 +338,6 @@
   header > div > a {
     color: var(--pf-v6-c-content--Color) !important;
     text-decoration: none !important;
-  }
-
-  div:has(.table-isScrollable) {
-    border: none;
   }
 
   button.du-bois-dark-btn.du-bois-dark-btn-icon-only[aria-label='Toggle sidebar'],
@@ -1449,7 +1449,8 @@
   }
 
   /* Plotly dark mode */
-  body.dark-mode {
+  body.dark-mode,
+  &.dark-mode {
     .plot-container {
       filter: invert(100%) hue-rotate(180deg);
 
@@ -1578,6 +1579,32 @@
       .mde-preview-content {
         color: var(--pf-t--global--text--color--regular) !important;
       }
+    }
+  }
+}
+
+// Federated mode: disable links to routes outside experiment tracking.
+// Applied to both .mlflow-federated (inline content) and portals on body.
+.mlflow-federated,
+body:has(.mlflow-federated) > div[data-radix-popper-content-wrapper],
+body:has(.mlflow-federated) > .du-bois-light-modal-root,
+body:has(.mlflow-federated) > .du-bois-dark-modal-root,
+body:has(.mlflow-federated) > .du-bois-light-dropdown,
+body:has(.mlflow-federated) > .du-bois-dark-dropdown {
+  a[href*='/models/']:not([href*='/experiments/']) {
+    pointer-events: none !important;
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href*='mlflow.org'] {
+    pointer-events: none !important;
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    svg {
+      display: none !important;
     }
   }
 }

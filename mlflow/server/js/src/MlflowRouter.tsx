@@ -30,7 +30,7 @@ import { shouldEnableAIGateway } from './common/utils/FeatureUtils';
 import { useInitializeExperimentRunColors } from './experiment-tracking/components/experiment-page/hooks/useExperimentRunColor';
 import { MlflowSidebar } from './common/components/MlflowSidebar';
 import { AssistantProvider, AssistantRouteContextProvider } from './assistant';
-import { isEmbeddedCheck } from './common/utils/embedUtils';
+import { useIsIntegrated } from './common/utils/embedUtils';
 import { RootAssistantLayout } from './common/components/RootAssistantLayout';
 import {
   extractWorkspaceFromSearchParams,
@@ -63,7 +63,7 @@ const MlflowRootRoute = () => {
   const { setIsDarkTheme } = useDarkThemeContext();
   const isDarkTheme = theme.isDarkMode;
   const enableWorkflowBasedNavigation = shouldEnableWorkflowBasedNavigation();
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   // Hide sidebar if we are in a single experiment page (only when feature flag is disabled)
   // When feature flag is enabled, sidebar should always be visible
@@ -80,10 +80,7 @@ const MlflowRootRoute = () => {
     <AssistantProvider>
       <AssistantRouteContextProvider />
       <WorkflowTypeProvider>
-        <div
-          className={isEmbedded ? 'mlflow-embedded' : ''}
-          css={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-        >
+        <div css={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <ErrorModal />
           <AppErrorBoundary>
             {shouldShowHeader && (

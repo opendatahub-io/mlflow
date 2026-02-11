@@ -7,7 +7,7 @@ import {
   useDesignSystemTheme,
 } from '@databricks/design-system';
 import MLFlowAgGrid from '../../../common/components/ag-grid/AgGrid';
-import { isEmbeddedCheck } from '../../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 import { useExperimentAgGridTableStyles } from '../experiment-page/components/runs/ExperimentViewRunsTable';
 import type { LoggedModelProto, RunEntity } from '../../types';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -83,7 +83,7 @@ const ExperimentLoggedModelListPageTableImpl = ({
 
   const styles = useExperimentAgGridTableStyles({ usingCustomHeaderComponent: false });
 
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   // Keep track of expanded groups in the table
   const [expandedGroups, setExpandedGroups] = React.useState<string[]>([]);

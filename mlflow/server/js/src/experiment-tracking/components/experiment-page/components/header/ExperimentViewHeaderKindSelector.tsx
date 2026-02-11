@@ -12,7 +12,7 @@ import {
   normalizeInferredExperimentKind,
 } from '../../../../utils/ExperimentKindUtils';
 import { ExperimentViewInferredKindPopover } from './ExperimentViewInferredKindPopover';
-import { isEmbeddedCheck } from '../../../../../common/utils/embedUtils';
+import { useIsIntegrated } from '../../../../../common/utils/embedUtils';
 
 const getVisibleLabel = (kind: ExperimentKind, readOnly: boolean) => {
   if (kind === ExperimentKind.NO_INFERRED_TYPE || kind === ExperimentKind.EMPTY) {
@@ -41,7 +41,7 @@ export const ExperimentViewHeaderKindSelector = ({
   isUpdating?: boolean;
   readOnly?: boolean;
 }) => {
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
   const dropdownItems = useMemo(
     () =>
       entries(ExperimentKindDropdownLabels).filter(([key]) =>

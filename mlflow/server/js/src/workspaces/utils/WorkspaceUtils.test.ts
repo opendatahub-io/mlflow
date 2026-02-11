@@ -297,6 +297,7 @@ describe('WorkspaceUtils', () => {
 
     it('returns original string when workspaces disabled', () => {
       getWorkspacesEnabledSyncMock.mockReturnValue(false);
+      setActiveWorkspace(null);
       expect(prefixRouteWithWorkspace('/experiments')).toBe('/experiments');
     });
 

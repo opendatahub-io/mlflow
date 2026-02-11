@@ -2,11 +2,11 @@ import { Empty, Typography, useDesignSystemTheme } from '@databricks/design-syst
 import datasetsEmptyImg from '@mlflow/mlflow/src/common/static/eval-datasets-empty.svg';
 import { FormattedMessage } from 'react-intl';
 import { CreateEvaluationDatasetButton } from './CreateEvaluationDatasetButton';
-import { isEmbeddedCheck } from '@mlflow/mlflow/src/common/utils/embedUtils';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 export const ExperimentEvaluationDatasetsEmptyState = ({ experimentId }: { experimentId: string }) => {
   const { theme } = useDesignSystemTheme();
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   return (
     <div

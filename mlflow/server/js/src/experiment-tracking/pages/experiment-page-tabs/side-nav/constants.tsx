@@ -15,7 +15,7 @@ import {
 } from '@databricks/design-system';
 import { FormattedMessage } from 'react-intl';
 import { enableScorersUI, shouldEnableExperimentOverviewTab } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
-import { isEmbeddedCheck } from '@mlflow/mlflow/src/common/utils/embedUtils';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 export const FULL_WIDTH_CLASS_NAME = 'mlflow-experiment-page-side-nav-full';
 export const COLLAPSED_CLASS_NAME = 'mlflow-experiment-page-side-nav-collapsed';
@@ -182,7 +182,7 @@ export const useExperimentPageSideNavConfig = ({
   experimentKind: ExperimentKind;
   hasTrainingRuns?: boolean;
 }): ExperimentPageSideNavConfig => {
-  const isEmbedded = isEmbeddedCheck();
+  const isEmbedded = useIsIntegrated();
 
   if (
     experimentKind === ExperimentKind.GENAI_DEVELOPMENT ||
