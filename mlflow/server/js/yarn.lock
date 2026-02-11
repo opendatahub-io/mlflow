@@ -4481,7 +4481,7 @@ __metadata:
     d3-array: "npm:^3.2.4"
     d3-scale: "npm:^2.1.0"
     dateformat: "npm:3.0.3"
-    diff: "npm:5.1.0"
+    diff: "npm:5.2.2"
     enzyme: "npm:^3.11.0"
     eslint: "npm:^8.56.0"
     eslint-config-prettier: "npm:^8.5.0"
@@ -15668,10 +15668,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"diff@npm:5.1.0":
-  version: 5.1.0
-  resolution: "diff@npm:5.1.0"
-  checksum: 10c0/77a0d9beb9ed54796154ac2511872288432124ac90a1cabb1878783c9b4d81f1847f3b746a0630b1e836181461d2c76e1e6b95559bef86ed16294d114862e364
+"diff@npm:5.2.2":
+  version: 5.2.2
+  resolution: "diff@npm:5.2.2"
+  checksum: 10c0/52da594c54e9033423da26984b1449ae6accd782d5afc4431c9a192a8507ddc83120fe8f925d7220b9da5b5963c7b6f5e46add3660a00cb36df7a13420a09d4b
   languageName: node
   linkType: hard
 
