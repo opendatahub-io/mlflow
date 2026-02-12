@@ -642,7 +642,6 @@ export function MlflowSidebar() {
             </div>
           )}
           <Link
-            disableWorkspacePrefix
             to={ExperimentTrackingRoutes.settingsPageRoute}
             aria-current={isSettingsActive(location) ? 'page' : undefined}
             css={{
