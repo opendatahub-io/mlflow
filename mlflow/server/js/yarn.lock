@@ -4531,7 +4531,7 @@ __metadata:
     json-bigint: "databricks/json-bigint#a1defaf9cd8dd749f0fd4d5f83a22cd846789658"
     knip: "npm:^5.30.2"
     leaflet: "npm:^1.5.1"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     mod-arch-core: "npm:^1.6.0"
     mod-arch-kubeflow: "npm:^1.2.1"
     moment: "npm:^2.29.4"
