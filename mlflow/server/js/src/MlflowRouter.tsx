@@ -19,7 +19,7 @@ import { MlflowHeader } from './common/components/MlflowHeader';
 import { useDarkThemeContext } from './common/contexts/DarkThemeContext';
 import { WorkflowTypeProvider } from './common/contexts/WorkflowTypeContext';
 import { shouldEnableWorkflowBasedNavigation } from './common/utils/FeatureUtils';
-import { useWorkspacesEnabled } from './common/utils/ServerFeaturesContext';
+import { useWorkspacesEnabled } from './experiment-tracking/hooks/useServerInfo';
 
 // Route definition imports:
 import { getRouteDefs as getExperimentTrackingRouteDefs } from './experiment-tracking/route-defs';
