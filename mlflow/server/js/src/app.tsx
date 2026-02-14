@@ -22,7 +22,7 @@ import { MlflowRouter as MlflowRouter } from './MlflowRouter';
 import { useMLflowDarkTheme } from './common/hooks/useMLflowDarkTheme';
 import { DarkThemeProvider } from './common/contexts/DarkThemeContext';
 import { telemetryClient } from './telemetry';
-import { ServerFeaturesProvider } from './common/utils/ServerFeaturesContext';
+import { ServerInfoProvider } from './experiment-tracking/hooks/useServerInfo';
 
 // Note: In federated mode (Module Federation), app.tsx is NOT in the bundle --
 // the federated entry point (src/odh/extensions.ts) imports wrappers directly,
@@ -69,11 +69,11 @@ export function MLFlowRoot() {
               <MlflowThemeGlobalStyles />
               <DarkThemeProvider setIsDarkTheme={setIsDarkTheme}>
                 <QueryClientProvider client={queryClient}>
-                  <ServerFeaturesProvider>
+                  <ServerInfoProvider>
                     <ModularArchContextProvider config={modularArchConfig}>
                       <MlflowRouter />
                     </ModularArchContextProvider>
-                  </ServerFeaturesProvider>
+                  </ServerInfoProvider>
                 </QueryClientProvider>
               </DarkThemeProvider>
             </DesignSystemContainer>
