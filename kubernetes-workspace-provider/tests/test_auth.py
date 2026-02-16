@@ -1117,9 +1117,9 @@ def test_misc_path_authorization_rules_cover_recent_endpoints():
     )
 
 
-def test_server_features_endpoints_are_unprotected():
-    assert _is_unprotected_path("/api/3.0/mlflow/server-features")
-    assert _is_unprotected_path("/ajax-api/3.0/mlflow/server-features")
+def test_server_info_endpoints_are_unprotected():
+    assert _is_unprotected_path("/api/3.0/mlflow/server-info")
+    assert _is_unprotected_path("/ajax-api/3.0/mlflow/server-info")
     assert _is_unprotected_path("/ajax-api/3.0/mlflow/ui-telemetry")
 
 

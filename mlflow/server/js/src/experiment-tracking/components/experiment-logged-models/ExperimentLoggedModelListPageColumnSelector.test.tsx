@@ -12,7 +12,7 @@ import { ExperimentLoggedModelListPageColumnSelector } from './ExperimentLoggedM
 
 // eslint-disable-next-line no-restricted-syntax -- TODO(FEINF-4392)
 jest.setTimeout(30000);
-jest.mock('../../../common/utils/ServerFeaturesContext', () => ({
+jest.mock('../../hooks/useServerInfo', () => ({
   getWorkspacesEnabledSync: () => false,
 }));
 

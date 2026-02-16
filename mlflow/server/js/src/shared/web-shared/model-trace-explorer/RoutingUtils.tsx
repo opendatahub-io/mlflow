@@ -20,7 +20,7 @@ import {
 /**
  * Workspace utilities — minimal self-contained copies for web-shared.
  * These mirror the functions in mlflow/server/js/src/workspaces/utils/WorkspaceUtils.ts
- * and mlflow/server/js/src/common/utils/ServerFeaturesContext.tsx but cannot be imported
+ * and mlflow/server/js/src/experiment-tracking/hooks/useServerInfo.tsx but cannot be imported
  * directly due to the web-shared package boundary.
  */
 

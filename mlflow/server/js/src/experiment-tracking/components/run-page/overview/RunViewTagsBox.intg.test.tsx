@@ -17,7 +17,7 @@ jest.mock('../../../actions', () => ({
   setRunTagsBulkApi: jest.fn(() => ({ type: 'setRunTagsBulkApi', payload: Promise.resolve() })),
 }));
 
-jest.mock('../../../../common/utils/ServerFeaturesContext', () => ({
+jest.mock('../../../hooks/useServerInfo', () => ({
   getWorkspacesEnabledSync: () => false,
 }));
 
