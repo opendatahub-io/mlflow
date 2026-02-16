@@ -39,7 +39,7 @@ import {
 import store from '../../store';
 import { useI18nInit } from '../../i18n/I18nUtils';
 import { createApolloClient } from '../../graphql/client';
-import { ServerFeaturesProvider } from '../../common/utils/ServerFeaturesContext';
+import { ServerInfoProvider } from '../../experiment-tracking/hooks/useServerInfo';
 import { DarkThemeProvider } from '../../common/contexts/DarkThemeContext';
 import { PATTERN_FLY_TOKEN_TRANSLATION } from '../../common/styles/patternfly/patternflyTokenTranslation';
 import '../../common/styles/patternfly/pf-shell-overrides.scss';
@@ -127,7 +127,7 @@ const MlflowExperimentWrapper: React.FC<MlflowExperimentWrapperProps> = ({ onBre
                     <EmotionThemeProvider theme={PATTERN_FLY_TOKEN_TRANSLATION}>
                       <DarkThemeProvider setIsDarkTheme={setIsDarkTheme}>
                         <QueryClientProvider client={queryClient}>
-                          <ServerFeaturesProvider>
+                          <ServerInfoProvider>
                             <BrowserRouter basename={MLFLOW_BASENAME}>
                               <WorkspaceSync>
                                 <BreadcrumbReporter onBreadcrumbChange={onBreadcrumbChange} />
@@ -136,7 +136,7 @@ const MlflowExperimentWrapper: React.FC<MlflowExperimentWrapperProps> = ({ onBre
                                 </React.Suspense>
                               </WorkspaceSync>
                             </BrowserRouter>
-                          </ServerFeaturesProvider>
+                          </ServerInfoProvider>
                         </QueryClientProvider>
                       </DarkThemeProvider>
                     </EmotionThemeProvider>

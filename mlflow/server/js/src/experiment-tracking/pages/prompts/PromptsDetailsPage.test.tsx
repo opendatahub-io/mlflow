@@ -20,7 +20,7 @@ import { DesignSystemProvider } from '@databricks/design-system';
 import { getTableRowByCellText } from '@databricks/design-system/test-utils/rtl';
 import { MockedReduxStoreProvider } from '../../../common/utils/TestUtils';
 
-jest.mock('../../../common/utils/ServerFeaturesContext', () => ({
+jest.mock('../../hooks/useServerInfo', () => ({
   getWorkspacesEnabledSync: () => false,
 }));
 

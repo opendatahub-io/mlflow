@@ -211,8 +211,8 @@ _UNPROTECTED_PATHS = {
     "/health",
     "/version",
     "/metrics",
-    "/api/3.0/mlflow/server-features",
-    "/ajax-api/3.0/mlflow/server-features",
+    "/api/3.0/mlflow/server-info",
+    "/ajax-api/3.0/mlflow/server-info",
     "/ajax-api/3.0/mlflow/ui-telemetry",
 }
 RESOURCE_ASSISTANTS = "assistants"

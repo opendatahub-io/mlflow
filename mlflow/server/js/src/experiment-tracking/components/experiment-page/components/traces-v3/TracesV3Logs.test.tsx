@@ -82,7 +82,7 @@ jest.mock('../../../../pages/experiment-evaluation-datasets/components/ExportTra
   ExportTracesToDatasetModal: jest.fn(() => null),
 }));
 
-jest.mock('../../../../../common/utils/ServerFeaturesContext', () => ({
+jest.mock('../../../../hooks/useServerInfo', () => ({
   getWorkspacesEnabledSync: () => false,
 }));
 
