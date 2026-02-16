@@ -1,0 +1,76 @@
+---
+lockfileVersion: 1
+lockfileVendor: redhat
+arches:
+  - arch: aarch64
+    packages:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/o/openblas-0.3.29-1.el9.aarch64.rpm
+        repoid: ubi-9-for-aarch64-appstream-rpms
+        size: 43101
+        checksum: sha256:36da31a22dd56a05028ff4f0eac750164174f806abb30831840b969cc6bb19c6
+        name: openblas
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.aarch64.rpm
+        repoid: ubi-9-for-aarch64-codeready-builder-rpms
+        size: 3825499
+        checksum: sha256:bf39666abbcf73859d258ffd63ad9b94f4cac346aa407454e971f527db2f0e76
+        name: openblas-threads
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+    source:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/o/openblas-0.3.29-1.el9.src.rpm
+        repoid: ubi-9-for-aarch64-appstream-source-rpms
+        size: 23777279
+        checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
+        name: openblas
+        evr: 0.3.29-1.el9
+    module_metadata: []
+  - arch: ppc64le
+    packages:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/o/openblas-0.3.29-1.el9.ppc64le.rpm
+        repoid: ubi-9-for-ppc64le-appstream-rpms
+        size: 43121
+        checksum: sha256:46d0525be8d2581a2e4cad8d25413171df8b5c504b2b43014a92e49abe081983
+        name: openblas
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.ppc64le.rpm
+        repoid: ubi-9-for-ppc64le-codeready-builder-rpms
+        size: 4652547
+        checksum: sha256:040dd5e1c29140acefd8210cef7027f6479ff397dd1617a503bfb7591265bb3e
+        name: openblas-threads
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+    source:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/o/openblas-0.3.29-1.el9.src.rpm
+        repoid: ubi-9-for-ppc64le-appstream-source-rpms
+        size: 23777279
+        checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
+        name: openblas
+        evr: 0.3.29-1.el9
+    module_metadata: []
+  - arch: x86_64
+    packages:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/o/openblas-0.3.29-1.el9.x86_64.rpm
+        repoid: ubi-9-for-x86_64-appstream-rpms
+        size: 43115
+        checksum: sha256:8e0936be32a50acb14286520fa8334b9f2d89bae1d6ae0c2ca6f4ddbe931beab
+        name: openblas
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.x86_64.rpm
+        repoid: ubi-9-for-x86_64-codeready-builder-rpms
+        size: 5526706
+        checksum: sha256:143aa15bdcd6ca40169a9e7c225604fa934907398e57dd7091853c55f648904c
+        name: openblas-threads
+        evr: 0.3.29-1.el9
+        sourcerpm: openblas-0.3.29-1.el9.src.rpm
+    source:
+      - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/o/openblas-0.3.29-1.el9.src.rpm
+        repoid: ubi-9-for-x86_64-appstream-source-rpms
+        size: 23777279
+        checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
+        name: openblas
+        evr: 0.3.29-1.el9
+    module_metadata: []
