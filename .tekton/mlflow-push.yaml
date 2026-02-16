@@ -24,13 +24,25 @@ spec:
     value: '{{revision}}'
   - name: output-image
     value: quay.io/opendatahub/mlflow:odh-stable
+  - name: additional-tags
+    value:
+    - 'odh-stable-{{revision}}'
+    - master
+    - latest
   - name: dockerfile
     value: Dockerfile.konflux
   - name: path-context
     value: .
+  # TODO: Enable hermetic builds once yarn/npm prefetching is supported.
+  - name: hermetic
+    value: 'false'
+  - name: prefetch-input
+    value: '[{"type": "pip", "path": ".", "requirements_files": ["requirements/konflux-pypi.txt"]}, {"type": "rpm", "path": "requirements"}]'
   - name: build-platforms
     value:
     - linux-extra-fast/amd64
+    - linux-m2xlarge/arm64
+    - linux/ppc64le
   pipelineRef:
     resolver: git
     params:
