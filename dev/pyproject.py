@@ -229,7 +229,7 @@ def build(package_type: PackageType) -> None:
     gateways_requirements = read_requirements_yaml(requirements_dir / "gateway-requirements.yaml")
     genai_requirements = read_requirements_yaml(requirements_dir / "genai-requirements.yaml")
     version_match = re.search(
-        r'^VERSION = "([a-z0-9\.]+)"$', Path("mlflow", "version.py").read_text(), re.MULTILINE
+        r'^VERSION = "([a-z0-9\.+]+)"$', Path("mlflow", "version.py").read_text(), re.MULTILINE
     )
     if version_match is None:
         raise ValueError(
