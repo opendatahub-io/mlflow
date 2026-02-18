@@ -229,11 +229,12 @@ def build(package_type: PackageType) -> None:
     gateways_requirements = read_requirements_yaml(requirements_dir / "gateway-requirements.yaml")
     genai_requirements = read_requirements_yaml(requirements_dir / "genai-requirements.yaml")
     version_match = re.search(
-        r'^VERSION = "([a-z0-9\.]+)"$', Path("mlflow", "version.py").read_text(), re.MULTILINE
+        r'^VERSION = "([a-z0-9\.+]+)"$', Path("mlflow", "version.py").read_text(), re.MULTILINE
     )
     if version_match is None:
         raise ValueError(
-            'Could not find VERSION in mlflow/version.py. Expected format: VERSION = "x.y.z"'
+            "Could not find VERSION in mlflow/version.py. "
+            + 'Expected format: VERSION = "x.y.z[+build]"'
         )
     package_version = version_match.group(1)
     python_version = Path(".python-version").read_text().strip()

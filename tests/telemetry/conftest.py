@@ -92,3 +92,4 @@ def bypass_env_check(monkeypatch):
     monkeypatch.setattr(mlflow.telemetry.utils, "_IS_MLFLOW_TESTING_TELEMETRY", False)
     monkeypatch.setattr(mlflow.telemetry.utils, "_IS_IN_CI_ENV_OR_TESTING", False)
     monkeypatch.setattr(mlflow.telemetry.utils, "_IS_MLFLOW_DEV_VERSION", False)
+    monkeypatch.setattr(mlflow.telemetry.utils, "VERSION", "3.7.1.dev0")
