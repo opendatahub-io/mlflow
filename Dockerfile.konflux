@@ -9,7 +9,7 @@ ENV MLFLOW_ENABLE_AI_GATEWAY=false
 RUN yarn install --silent \
     && NODE_OPTIONS="--max_old_space_size=4096" yarn build
 
-FROM registry.access.redhat.com/ubi9/python-311@sha256:bb09d55bce99b839b0df565ab9e244cdc545037e612dad388569016137367cab AS python-builder
+FROM registry.access.redhat.com/ubi9/python-311@sha256:e0c19fbfec42e6cf98287bc5bfee3d497d458c10b578889886d2bad6a15e2956 AS python-builder
 WORKDIR /src
 USER 0
 COPY --chown=1001:0 . .
@@ -21,7 +21,7 @@ RUN set -eux; \
     python -m build --wheel --outdir /tmp/dist; \
     python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
 
-FROM registry.access.redhat.com/ubi9/python-311@sha256:bb09d55bce99b839b0df565ab9e244cdc545037e612dad388569016137367cab
+FROM registry.access.redhat.com/ubi9/python-311@sha256:e0c19fbfec42e6cf98287bc5bfee3d497d458c10b578889886d2bad6a15e2956
 # Build cryptography from source against the system OpenSSL for FIPS compliance.
 # The pip manylinux wheel bundles its own non-FIPS OpenSSL, so we must compile
 # from source with OPENSSL_NO_VENDOR=1 to link against the system library.
