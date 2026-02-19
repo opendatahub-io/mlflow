@@ -25,6 +25,7 @@ constraints = [
     { name = "transformers", specifier = "<5" },
     { name = "xgboost", specifier = "<3.1.0" },
 ]
+excludes = ["uv"]
 
 [[package]]
 name = "absl-py"

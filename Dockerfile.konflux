@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/nodejs-20:9.7 AS ui-builder
+FROM registry.access.redhat.com/ubi9/nodejs-20:9.7@sha256:89d0be288e9e76dc42bb2b1f76cd9cc619dde6e5e28c05cfeb3dcf4249b55450 AS ui-builder
 WORKDIR /opt/app-root/src
 USER 0
 RUN npm install -g yarn
@@ -10,7 +10,7 @@ RUN yarn install --silent \
     && NODE_OPTIONS="--max_old_space_size=3072" yarn build \
     && NODE_OPTIONS="--max_old_space_size=3072" MLFLOW_API_BASE_URL=/mlflow yarn build:federated
 
-FROM registry.access.redhat.com/ubi9/python-312:9.7 AS python-builder
+FROM registry.access.redhat.com/ubi9/python-312:9.7@sha256:34263471b5e86b0704054e817d7703d0063b0909a64bd95360f4a8b0c730d970 AS python-builder
 ARG AIPCC_INDEX_URL=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
 WORKDIR /src
 USER 0
@@ -34,7 +34,7 @@ RUN dnf install -y --setopt=tsflags=nodocs postgresql-devel gcc python3.12-devel
     python -m build --wheel --outdir /tmp/dist . && \
     python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
 
-FROM registry.access.redhat.com/ubi9/python-312:9.7
+FROM registry.access.redhat.com/ubi9/python-312:9.7@sha256:34263471b5e86b0704054e817d7703d0063b0909a64bd95360f4a8b0c730d970
 ARG AIPCC_INDEX_URL=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
 ARG MLFLOW_VERSION=3.3.2
 ENV PYTHONDONTWRITEBYTECODE=1 \
