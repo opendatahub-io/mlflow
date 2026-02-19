@@ -47,7 +47,9 @@ def get_current_py_version() -> str:
 
 def get_java_py_version_pattern(version: str) -> str:
     version_without_suffix = replace_dev_or_rc_suffix_with(version, "")
-    return rf"{re.escape(version_without_suffix)}(-SNAPSHOT)?"
+    # RHOAI: Matches +local_label in existing file content (e.g., 3.10.0+rhai1),
+    # so re-running the bump script finds and replaces these correctly.
+    return rf"{re.escape(version_without_suffix)}(-SNAPSHOT|\+[a-zA-Z0-9.]+)?"
 
 
 def get_java_new_py_version(new_py_version: str) -> str:
@@ -57,7 +59,11 @@ def get_java_new_py_version(new_py_version: str) -> str:
 def replace_dev_or_rc_suffix_with(version: str, repl: str) -> str:
     parsed = Version(version)
     base_version = parsed.base_version
-    return base_version + repl if parsed.is_prerelease else version
+    # RHOAI: Strips local version labels (+rhai1) in addition to pre-release
+    # suffixes, returning just the base version
+    if parsed.is_prerelease or parsed.local:
+        return base_version + repl
+    return version
 
 
 def replace_occurrences(files: list[Path], pattern: str | re.Pattern[str], repl: str) -> None:
@@ -151,9 +157,12 @@ def replace_java_pom_xml(old_version: str, new_py_version: str, paths: list[Path
 def replace_r(old_py_version: str, new_py_version: str, paths: list[Path]) -> None:
     current_py_version_without_suffix = replace_dev_or_rc_suffix_with(old_py_version, "")
 
+    # RHOAI: Uses \S* after the base version to consume the full version string including
+    # any local label, so Version: 3.10.0+rhai1 gets matched and replaced with
+    # Version: 3.10.0
     replace_occurrences(
         files=paths,
-        pattern=f"Version: {re.escape(current_py_version_without_suffix)}",
+        pattern=rf"Version: {re.escape(current_py_version_without_suffix)}\S*",
         repl=f"Version: {replace_dev_or_rc_suffix_with(new_py_version, '')}",
     )
 

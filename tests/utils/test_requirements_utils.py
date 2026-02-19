@@ -251,7 +251,9 @@ def test_package_with_mismatched_pypi_and_import_name():
 
 
 def test_get_pinned_requirement(tmp_path, monkeypatch):
-    assert _get_pinned_requirement("mlflow") == f"mlflow=={mlflow.__version__}"
+    # RHOAI: strip local version label (+rhai1) since _get_pinned_requirement does the same.
+    expected_version = _strip_local_version_label(mlflow.__version__)
+    assert _get_pinned_requirement("mlflow") == f"mlflow=={expected_version}"
     assert _get_pinned_requirement("mlflow", version="1.2.3") == "mlflow==1.2.3"
 
     not_found_package = tmp_path.joinpath("not_found.py")
@@ -423,7 +425,9 @@ def test_capture_imported_modules_includes_gateway_extra(module_to_import, shoul
     assert ("mlflow.gateway" in captured_modules) == should_capture_extra
 
     pip_requirements = infer_pip_requirements(model_info.model_uri, "pyfunc")
-    assert (f"mlflow[gateway]=={mlflow.__version__}" in pip_requirements) == should_capture_extra
+    # RHOAI: strip local version label (+rhai1) since _get_pinned_requirement does the same.
+    expected_version = _strip_local_version_label(mlflow.__version__)
+    assert (f"mlflow[gateway]=={expected_version}" in pip_requirements) == should_capture_extra
 
 
 def test_gateway_extra_not_captured_when_importing_deployment_client_only():

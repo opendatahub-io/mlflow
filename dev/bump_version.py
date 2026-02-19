@@ -8,29 +8,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-# Files where the version string is maintained manually.
-# The generated pyproject files are handled by dev/pyproject.py afterwards.
-SOURCE_FILES: list[tuple[Path, str]] = [
-    (REPO_ROOT / "mlflow" / "version.py", r'VERSION = ".*"'),
-    (
-        REPO_ROOT / "mlflow" / "server" / "js" / "src" / "common" / "constants.tsx",
-        r"export const Version = '.*'",
-    ),
-    (REPO_ROOT / "docs" / "src" / "constants.ts", r"export const Version = '.*'"),
-]
-
-REPLACEMENT_TEMPLATES: list[str] = [
-    'VERSION = "{version}"',
-    "export const Version = '{version}'",
-    "export const Version = '{version}'",
-]
 
 
 def validate_version(version: str) -> None:
@@ -39,20 +23,24 @@ def validate_version(version: str) -> None:
         sys.exit(1)
 
 
-def update_source_files(version: str, *, dry_run: bool) -> None:
-    for (path, pattern), template in zip(SOURCE_FILES, REPLACEMENT_TEMPLATES):
-        text = path.read_text()
-        replacement = template.format(version=version)
-        new_text, count = re.subn(pattern, replacement, text)
-        if count == 0:
-            print(f"Warning: pattern not found in {path.relative_to(REPO_ROOT)}")
-            continue
-        rel = path.relative_to(REPO_ROOT)
-        if dry_run:
-            print(f"[dry-run] Would update {rel} -> {replacement}")
-        else:
-            path.write_text(new_text)
-            print(f"Updated {rel}")
+def update_all_source_files(version: str, *, dry_run: bool) -> None:
+    if dry_run:
+        print("[dry-run] Would run: update_versions() from dev/update_mlflow_versions.py")
+        return
+
+    # Use the existing update_versions() which handles all source files:
+    # Python (mlflow/version.py), TypeScript (constants.tsx, constants.ts),
+    # Java (.java files), Java POM XML (.xml files), R (DESCRIPTION),
+    # and pyproject.toml files (simple regex replacement).
+    # Load by file path to avoid mypy dual-module-name errors.
+    spec = importlib.util.spec_from_file_location(
+        "update_mlflow_versions", REPO_ROOT / "dev" / "update_mlflow_versions.py"
+    )
+    mod = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+
+    print("Updating all source files...")
+    mod.update_versions(version)
 
 
 def regenerate_pyproject(*, dry_run: bool) -> None:
@@ -61,6 +49,8 @@ def regenerate_pyproject(*, dry_run: bool) -> None:
         print("[dry-run] Would run: uv export ... > requirements.txt")
         return
 
+    # Regenerate pyproject files properly (overwrites the simple regex
+    # replacement done by update_versions above).
     print("Regenerating pyproject files...")
     subprocess.check_call(["uv", "run", "python", "dev/pyproject.py"], cwd=REPO_ROOT)
 
@@ -94,23 +84,13 @@ def main() -> None:
     args = parser.parse_args()
 
     validate_version(args.version)
-    update_source_files(args.version, dry_run=args.dry_run)
+    update_all_source_files(args.version, dry_run=args.dry_run)
     regenerate_pyproject(dry_run=args.dry_run)
 
     if args.dry_run:
         print("\nDry run complete. No files were modified.")
     else:
         print(f"\nVersion bumped to {args.version}")
-        print("Files updated:")
-        print("  - mlflow/version.py")
-        print("  - mlflow/server/js/src/common/constants.tsx")
-        print("  - docs/src/constants.ts")
-        print("  - pyproject.toml")
-        print("  - pyproject.release.toml")
-        print("  - libs/skinny/pyproject.toml")
-        print("  - libs/tracing/pyproject.toml")
-        print("  - uv.lock")
-        print("  - requirements.txt")
 
 
 if __name__ == "__main__":
