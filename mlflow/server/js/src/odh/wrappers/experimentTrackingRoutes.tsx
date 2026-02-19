@@ -22,14 +22,10 @@ export const getExperimentTrackingRouteElements = () => (
       index
       element={createLazyRouteElement(() => import('../../experiment-tracking/components/ExperimentListView'))}
     />
-    <Route
-      path="experiments"
-      element={createLazyRouteElement(() => import('../../experiment-tracking/components/ExperimentListView'))}
-    />
 
     {/* Single experiment with tabs */}
     <Route
-      path="experiments/:experimentId"
+      path=":experimentId"
       element={createLazyRouteElement(
         () => import('../../experiment-tracking/pages/experiment-page-tabs/ExperimentPageTabs'),
       )}
@@ -104,13 +100,13 @@ export const getExperimentTrackingRouteElements = () => (
 
     {/* Logged model details */}
     <Route
-      path="experiments/:experimentId/models/:loggedModelId/:tabName"
+      path=":experimentId/models/:loggedModelId/:tabName"
       element={createLazyRouteElement(
         () => import('../../experiment-tracking/pages/experiment-logged-models/ExperimentLoggedModelDetailsPage'),
       )}
     />
     <Route
-      path="experiments/:experimentId/models/:loggedModelId"
+      path=":experimentId/models/:loggedModelId"
       element={createLazyRouteElement(
         () => import('../../experiment-tracking/pages/experiment-logged-models/ExperimentLoggedModelDetailsPage'),
       )}
@@ -118,7 +114,7 @@ export const getExperimentTrackingRouteElements = () => (
 
     {/* Run pages */}
     <Route
-      path="experiments/:experimentId/runs/:runUuid/*"
+      path=":experimentId/runs/:runUuid/*"
       element={createLazyRouteElement(() => import('../../experiment-tracking/components/run-page/RunPage'))}
     />
 

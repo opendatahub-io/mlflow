@@ -15,6 +15,7 @@ from kubernetes import client, config
 
 from mlflow.exceptions import MlflowException
 from mlflow.tracking.request_auth.abstract_request_auth_provider import RequestAuthProvider
+from mlflow.utils.workspace_context import get_request_workspace, set_workspace
 
 # Cache for file reads (1 minute TTL)
 _FILE_CACHE_TTL = 60
@@ -165,6 +166,9 @@ class KubernetesAuth:
 
         if AUTHORIZATION_HEADER_NAME not in request.headers:
             request.headers[AUTHORIZATION_HEADER_NAME] = authorization
+
+        if not get_request_workspace():
+            set_workspace(namespace)
 
         return request
 

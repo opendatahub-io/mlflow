@@ -68,7 +68,10 @@ export const ExperimentViewHeader = React.memo(
       const pathSegments = location.pathname.split('/').filter(Boolean);
       // Navigate to /experiments for tab pages (up to 3 segments: /experiments/ID/tab)
       // For deeper paths, remove last segment to navigate to parent
-      if (pathSegments.length <= 3 && pathSegments[0] === 'experiments') {
+      if (
+        (pathSegments.length <= 3 && pathSegments[0] === 'experiments') ||
+        (pathSegments.length <= 3 && /^\d+$/.test(pathSegments[0]))
+      ) {
         navigate(Routes.experimentsObservatoryRoute);
       } else {
         pathSegments.pop();
