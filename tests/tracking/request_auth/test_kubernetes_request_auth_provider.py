@@ -16,6 +16,7 @@ from mlflow.tracking.request_auth.kubernetes_request_auth_provider import (
     _get_credentials_from_service_account,
     _read_file_if_exists,
 )
+from mlflow.utils.workspace_context import get_request_workspace, set_workspace
 
 # Tests for _read_file_if_exists
 
@@ -441,3 +442,75 @@ def test_provider_get_auth_returns_kubernetes_auth():
     provider = KubernetesRequestAuthProvider()
     auth = provider.get_auth()
     assert isinstance(auth, KubernetesAuth)
+
+
+# Tests for workspace context integration
+
+
+def test_auth_sets_workspace_context(tmp_path):
+    namespace_file = tmp_path / "namespace"
+    namespace_file.write_text("test-namespace")
+    token_file = tmp_path / "token"
+    token_file.write_text("test-token")
+
+    mock_request = mock.MagicMock()
+    mock_request.headers = {}
+
+    with (
+        mock.patch(
+            "mlflow.tracking.request_auth.kubernetes_request_auth_provider."
+            "_SERVICE_ACCOUNT_NAMESPACE_PATH",
+            namespace_file,
+        ),
+        mock.patch(
+            "mlflow.tracking.request_auth.kubernetes_request_auth_provider."
+            "_SERVICE_ACCOUNT_TOKEN_PATH",
+            token_file,
+        ),
+    ):
+        auth = KubernetesAuth()
+        auth(mock_request)
+
+    assert get_request_workspace() == "test-namespace"
+
+
+def test_auth_does_not_override_existing_workspace_context(tmp_path):
+    namespace_file = tmp_path / "namespace"
+    namespace_file.write_text("test-namespace")
+    token_file = tmp_path / "token"
+    token_file.write_text("test-token")
+
+    mock_request = mock.MagicMock()
+    mock_request.headers = {}
+
+    set_workspace("pre-existing-workspace")
+
+    with (
+        mock.patch(
+            "mlflow.tracking.request_auth.kubernetes_request_auth_provider."
+            "_SERVICE_ACCOUNT_NAMESPACE_PATH",
+            namespace_file,
+        ),
+        mock.patch(
+            "mlflow.tracking.request_auth.kubernetes_request_auth_provider."
+            "_SERVICE_ACCOUNT_TOKEN_PATH",
+            token_file,
+        ),
+    ):
+        auth = KubernetesAuth()
+        auth(mock_request)
+
+    assert get_request_workspace() == "pre-existing-workspace"
+
+
+def test_auth_early_return_does_not_set_workspace_context():
+    mock_request = mock.MagicMock()
+    mock_request.headers = {
+        WORKSPACE_HEADER_NAME: "existing-workspace",
+        AUTHORIZATION_HEADER_NAME: "existing-auth",
+    }
+
+    auth = KubernetesAuth()
+    auth(mock_request)
+
+    assert get_request_workspace() is None
