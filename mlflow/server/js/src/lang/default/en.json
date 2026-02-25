@@ -2095,10 +2095,6 @@
     "defaultMessage": "Created Time",
     "description": "Label name for the created time under details tab on the model view page"
   },
-  "AtT85I": {
-    "defaultMessage": "← Use an endpoint instead",
-    "description": "Link to switch from direct model to endpoint selection"
-  },
   "AupQl+": {
     "defaultMessage": "Killed",
     "description": "Run page > Overview > Run status cell > Value for killed state"

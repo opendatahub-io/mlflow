@@ -10,7 +10,9 @@ export enum ModelProvider {
 }
 
 export const getModelProvider = (model: string | undefined): ModelProvider => {
-  if (!model || model.startsWith(GATEWAY_MODEL_PREFIX)) {
+  // RHOAI: default to model provider "other" since
+  // Gateway endpoints are disabled in RHOAI.
+  if (model?.startsWith(GATEWAY_MODEL_PREFIX)) {
     return ModelProvider.GATEWAY;
   }
   return ModelProvider.OTHER;
