@@ -83,20 +83,23 @@ export const ModelSectionRenderer: React.FC<ModelSectionRendererProps> = ({
             />
           )}
         />
-        {!isReadOnly && (
-          <div css={{ marginTop: theme.spacing.sm }}>
-            <Typography.Link
-              componentId={`${COMPONENT_ID_PREFIX}.switch-to-endpoint-link`}
-              onClick={() => handleSwitchProvider(ModelProvider.GATEWAY)}
-              css={{ cursor: 'pointer' }}
-            >
-              <FormattedMessage
-                defaultMessage="← Use an endpoint instead"
-                description="Link to switch from direct model to endpoint selection"
-              />
-            </Typography.Link>
-          </div>
-        )}
+        {
+          /* RHOAI: Gateway endpoints are disabled in this downstream fork */
+          false && !isReadOnly && (
+            <div css={{ marginTop: theme.spacing.sm }}>
+              <Typography.Link
+                componentId={`${COMPONENT_ID_PREFIX}.switch-to-endpoint-link`}
+                onClick={() => handleSwitchProvider(ModelProvider.GATEWAY)}
+                css={{ cursor: 'pointer' }}
+              >
+                <FormattedMessage
+                  defaultMessage="← Use an endpoint instead"
+                  description="Link to switch from direct model to endpoint selection"
+                />
+              </Typography.Link>
+            </div>
+          )
+        }
       </div>
     );
   }
