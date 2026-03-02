@@ -32,8 +32,10 @@ describe('EvaluateTracesSection', () => {
     });
   });
 
+  // RHOAI: Gateway endpoints are disabled so automatic evaluation is always disabled,
+  // meaning Advanced settings / sample rate / filter controls are never shown.
   describe('Filter box for different evaluation scopes', () => {
-    it('should show filter input with session-specific help text when evaluationScope is SESSIONS', async () => {
+    it.skip('should show filter input with session-specific help text when evaluationScope is SESSIONS', async () => {
       render(
         <TestWrapper
           defaultValues={{
@@ -50,7 +52,7 @@ describe('EvaluateTracesSection', () => {
       expect(screen.getByText(/Filter applies to the first trace in each session/i)).toBeInTheDocument();
     });
 
-    it('should show filter input with trace-specific help text when evaluationScope is TRACES', async () => {
+    it.skip('should show filter input with trace-specific help text when evaluationScope is TRACES', async () => {
       render(
         <TestWrapper
           defaultValues={{
@@ -76,7 +78,7 @@ describe('EvaluateTracesSection', () => {
       expect(screen.queryByText(/Filter string/i)).not.toBeInTheDocument();
     });
 
-    it('should show sample rate and filter when sampleRate > 0', async () => {
+    it.skip('should show sample rate and filter when sampleRate > 0', async () => {
       render(
         <TestWrapper
           defaultValues={{
@@ -139,7 +141,7 @@ describe('EvaluateTracesSection', () => {
       expect(screen.queryByText(/Sample rate/i)).not.toBeInTheDocument();
     });
 
-    it('should re-enable automatic evaluation when switching from expectations template to non-expectations template', async () => {
+    it.skip('should re-enable automatic evaluation when switching from expectations template to non-expectations template', async () => {
       const ReenableWrapper = () => {
         const { control, setValue } = useForm({
           defaultValues: {
