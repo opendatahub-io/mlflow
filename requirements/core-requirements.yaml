@@ -83,4 +83,5 @@ huey:
 
 kubernetes:
   pip_release: kubernetes
-  max_major_version: 34
+  minimum: "35"
+  max_major_version: 36
