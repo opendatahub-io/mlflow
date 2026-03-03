@@ -45,7 +45,7 @@ def _run_mlflow_server(tmp_path: Path) -> Generator[str, None, None]:
     port = get_safe_port()
     backend_store_uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
     artifact_root = (tmp_path / "artifacts").as_uri()
-    with subprocess.Popen(
+    server_proc = subprocess.Popen(
         [
             sys.executable,
             "-m",
@@ -63,29 +63,24 @@ def _run_mlflow_server(tmp_path: Path) -> Generator[str, None, None]:
                 "MLFLOW_WEBHOOK_SECRET_ENCRYPTION_KEY": Fernet.generate_key().decode(),
                 "MLFLOW_WEBHOOK_REQUEST_MAX_RETRIES": "3",
                 "MLFLOW_WEBHOOK_REQUEST_TIMEOUT": "10",
-                "MLFLOW_WEBHOOK_CACHE_TTL": "0",  # Disable caching for tests
-                "MLFLOW_WEBHOOK_ALLOW_PRIVATE_IPS": "true",  # Allow localhost in e2e tests
+                "MLFLOW_WEBHOOK_CACHE_TTL": "0",
+                "MLFLOW_WEBHOOK_ALLOW_PRIVATE_IPS": "true",
             }
         ),
         start_new_session=True,
-    ) as prc:
+    )
+    try:
+        url = f"http://localhost:{port}"
+        wait_until_ready(f"{url}/health", max_attempts=25)
+        yield url
+    finally:
         try:
-            url = f"http://localhost:{port}"
-            wait_until_ready(f"{url}/health")
-            yield url
-        finally:
-            # Kill the gunicorn processes spawned by mlflow server
-            try:
-                proc = psutil.Process(prc.pid)
-            except psutil.NoSuchProcess:
-                # Handle case where the process did not start correctly
-                pass
-            else:
-                for child in proc.children(recursive=True):
-                    child.terminate()
-
-            # Kill the mlflow server process
-            prc.terminate()
+            proc = psutil.Process(server_proc.pid)
+            for child in proc.children(recursive=True):
+                child.kill()
+            proc.kill()
+        except psutil.NoSuchProcess:
+            pass
 
 
 class AppClient:
