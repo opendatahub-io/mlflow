@@ -978,10 +978,6 @@
     "defaultMessage": "Viewing version {version}",
     "description": "Title of the prompt details page for a given version"
   },
-  "5YDkeM": {
-    "defaultMessage": "Experiments",
-    "description": "Home page experiments preview title"
-  },
   "5YOBk/": {
     "defaultMessage": "Export as CSV",
     "description": "Experiment page > compare runs tab > chart header > export CSV data option"
@@ -5547,10 +5543,6 @@
     "defaultMessage": "Click into an individual run to see all models associated with it",
     "description": "MLflow experiment detail page > runs table > tooltip on ML \"Models\" column header"
   },
-  "c1it6D": {
-    "defaultMessage": "Select your theme preference between light and dark.",
-    "description": "Description for the theme setting in the settings page"
-  },
   "c1jD8u": {
     "defaultMessage": "Create an evaluation dataset",
     "description": "Evaluation datasets empty state title"
@@ -6563,10 +6555,6 @@
     "defaultMessage": "ID",
     "description": "Label for the ID section"
   },
-  "ioD6Ho": {
-    "defaultMessage": "Dark",
-    "description": "Dark theme label"
-  },
   "iqlzHb": {
     "defaultMessage": "Loading API keys...",
     "description": "Loading message for API keys list"
@@ -6922,10 +6910,6 @@
   "lNO3kK": {
     "defaultMessage": "No parameters to display.",
     "description": "Text shown when there are no parameters to display"
-  },
-  "lNv2QR": {
-    "defaultMessage": "Light",
-    "description": "Light theme label"
   },
   "lPNTq7": {
     "defaultMessage": "Metrics ({length})",
@@ -7314,10 +7298,6 @@
   "o0NwZU": {
     "defaultMessage": "Quality metrics computed by scorers.",
     "description": "Description for the scorer insights section"
-  },
-  "o1dN9r": {
-    "defaultMessage": "Theme preference",
-    "description": "Theme settings title"
   },
   "o21MFS": {
     "defaultMessage": "Invalid log value",
@@ -8595,6 +8575,10 @@
     "defaultMessage": "Chat",
     "description": "Label for chat prompt type in the prompt creation modal"
   },
+  "xNKhsu": {
+    "defaultMessage": "Recent Experiments",
+    "description": "Home page experiments preview title"
+  },
   "xPkIEE": {
     "defaultMessage": "Active",
     "description": "Tab text to view active versions under details tab\n                                on the model view page"
@@ -8722,6 +8706,10 @@
   "yCncIr": {
     "defaultMessage": "Metric",
     "description": "Experiment page > view controls > global settings for line chart view > settings for x-axis > label for setting to use metric axis in all charts"
+  },
+  "yDLCp6": {
+    "defaultMessage": "View all",
+    "description": "Home page experiments view all link"
   },
   "yFl8nB": {
     "defaultMessage": "This model will be deprecated on {date}",

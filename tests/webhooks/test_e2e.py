@@ -67,6 +67,7 @@ def _run_mlflow_server(tmp_path: Path) -> Generator[str, None, None]:
                 "MLFLOW_WEBHOOK_ALLOW_PRIVATE_IPS": "true",  # Allow localhost in e2e tests
             }
         ),
+        start_new_session=True,
     ) as prc:
         try:
             url = f"http://localhost:{port}"

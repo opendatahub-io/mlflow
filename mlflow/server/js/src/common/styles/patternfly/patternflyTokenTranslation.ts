@@ -1,4 +1,4 @@
-import { Theme } from '@emotion/react';
+import type { Theme } from '@emotion/react';
 import { colorList } from './patternflyStyles/patternflyColors';
 import { patternflySpacing } from './patternflyStyles/patternflySpacing';
 import { patternflyGeneral, patternflyShadowVariables } from './patternflyStyles/patternflyGeneral';
