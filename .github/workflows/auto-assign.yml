@@ -6,9 +6,6 @@ on:
     - cron: "0 */3 * * *"
   workflow_dispatch: # Allow manual triggering
   pull_request:
-    paths:
-      - .github/workflows/auto-assign.yml
-      - .github/workflows/auto-assign.js
 
 defaults:
   run:

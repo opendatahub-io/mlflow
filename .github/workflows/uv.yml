@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - master
-    paths:
-      - .github/workflows/uv.yml
-      - .github/workflows/uv.js
   schedule:
     # Run this workflow on Monday and Thursday at 13:00 UTC
     - cron: "0 13 * * 1,4"

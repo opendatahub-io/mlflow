@@ -7,10 +7,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - .github/workflows/uc-oss.yml
-      - mlflow/protos/**
-      - mlflow/store/**
   schedule:
     # Run this workflow daily at 13:00 UTC
     - cron: "0 13 * * *"

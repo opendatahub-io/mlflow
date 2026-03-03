@@ -7,11 +7,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - requirements/core-requirements.yaml
-      - requirements/skinny-requirements.yaml
-      - requirements/gateway-requirements.yaml
-      - .github/workflows/test-requirements.yml
   schedule:
     - cron: "0 13 * * *"
 

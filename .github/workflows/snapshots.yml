@@ -6,9 +6,6 @@ on:
     - cron: "0 0 * * *" # Runs daily at midnight UTC
   workflow_dispatch: # Allows manual triggering
   pull_request: # To test updates
-    paths:
-      - ".github/workflows/snapshots.yml"
-      - ".github/scripts/src/snapshots.ts"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

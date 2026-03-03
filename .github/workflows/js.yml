@@ -2,9 +2,6 @@ name: JS
 
 on:
   push:
-    paths:
-      - mlflow/server/js/**
-      - .github/workflows/js.yml
     branches:
       - master
       - branch-[0-9]+.[0-9]+
@@ -14,9 +11,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - mlflow/server/js/**
-      - .github/workflows/js.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

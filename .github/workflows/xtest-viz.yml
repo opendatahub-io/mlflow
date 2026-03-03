@@ -7,9 +7,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - .github/workflows/xtest-viz.yml
-      - dev/xtest_viz.py
   schedule:
     # Run daily at 16:00 UTC (3 hours after cross-version-tests.yml at 13:00)
     - cron: "0 16 * * *"

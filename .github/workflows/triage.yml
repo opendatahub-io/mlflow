@@ -4,10 +4,6 @@ on:
   issues:
     types: [opened]
   pull_request:
-    paths:
-      - .github/workflows/triage.yml
-      - .github/workflows/triage.py
-      - .github/workflows/triage.md
 
 defaults:
   run:

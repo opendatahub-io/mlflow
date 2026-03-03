@@ -5,15 +5,7 @@ on:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
-    paths:
-      - "dev/dev-env-setup.sh"
-      - "dev/test-dev-env-setup.sh"
-      - ".github/workflows/dev-setup.yml"
   pull_request:
-    paths:
-      - "dev/dev-env-setup.sh"
-      - "dev/test-dev-env-setup.sh"
-      - ".github/workflows/dev-setup.yml"
   schedule:
     - cron: "42 7 * * 0"
   workflow_dispatch:
