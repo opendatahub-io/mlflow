@@ -42,7 +42,6 @@ dependencies = [
   "gunicorn<26; platform_system != 'Windows'",
   "huey<3,>=2.5.4",
   "importlib_metadata<9,>=3.7.0,!=4.7.0",
-  "kubernetes<37,>=35",
   "matplotlib<4",
   "numpy<3",
   "opentelemetry-api<3,>=1.9.0",
@@ -120,6 +119,7 @@ mcp = ["fastmcp<3,>=2.0.0", "click!=8.3.0"]
 sqlserver = ["mlflow-dbstore"]
 aliyun-oss = ["aliyunstoreplugin"]
 jfrog = ["mlflow-jfrog-plugin"]
+kubernetes = ["kubernetes"]
 langchain = ["langchain>=0.3.19,<=1.2.9"]
 auth = ["Flask-WTF<2"]
 

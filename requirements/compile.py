@@ -62,6 +62,8 @@ MULTIARCH_TARGETS = [
         extra_uv_args=[
             "--no-emit-package",
             "mlflow",
+            "--extra",
+            "kubernetes",
             "--prerelease=allow",
         ],
     ),
