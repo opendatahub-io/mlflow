@@ -15,11 +15,10 @@ contentOrigin:
     - ubi.repo
 
 packages:
-  - postgresql-devel
-  - postgresql-libs
-  - gcc
-  - python3.12-devel
   - openblas-threads
+  - postgresql-libs
+  - python3.12
+  - python3.12-pip
 
 context:
   containerfile: ../Dockerfile.konflux

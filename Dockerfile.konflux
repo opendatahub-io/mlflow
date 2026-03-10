@@ -19,9 +19,8 @@ COPY --chown=1001:0 . .
 # fetch from the AIPCC Python package index.
 COPY requirements/konflux-build-aipcc.txt /tmp/konflux-build-aipcc.txt
 COPY requirements/konflux-pypi.txt /tmp/konflux-pypi.txt
-RUN dnf install -y --setopt=tsflags=nodocs postgresql-devel gcc python3.12-devel && \
-    unset PIP_NO_INDEX PIP_FIND_LINKS && \
-    python -m pip install --no-cache-dir \
+RUN unset PIP_NO_INDEX PIP_FIND_LINKS && \
+    python -m pip install --no-cache-dir --require-hashes --no-deps \
         --index-url "$AIPCC_INDEX_URL" \
         -r /tmp/konflux-build-aipcc.txt && \
     rm -f /tmp/konflux-build-aipcc.txt && \
@@ -34,7 +33,7 @@ RUN dnf install -y --setopt=tsflags=nodocs postgresql-devel gcc python3.12-devel
     python -m build --wheel --outdir /tmp/dist . && \
     python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
 
-FROM registry.access.redhat.com/ubi9/python-312:9.7
+FROM registry.access.redhat.com/ubi9/ubi:9.7
 ARG AIPCC_INDEX_URL=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
 ARG MLFLOW_VERSION=3.3.2
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -52,13 +51,13 @@ COPY requirements/konflux-aipcc.txt /tmp/konflux-aipcc.txt
 # fetch from the AIPCC Python package index first, then re-source
 # cachi2.env for the hermetically prefetched extra packages.
 RUN set -eux; \
-    dnf install -y --setopt=tsflags=nodocs postgresql-libs openblas-threads && \
+    dnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
     unset PIP_NO_INDEX PIP_FIND_LINKS && \
-    python -m pip install --no-cache-dir \
+    python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
         --index-url "$AIPCC_INDEX_URL" \
         -r /tmp/konflux-aipcc.txt && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
-    python -m pip install --no-cache-dir --no-deps \
+    python3.12 -m pip install --no-cache-dir --no-deps \
         /tmp/dist/mlflow_tracing-*.whl \
         /tmp/dist/mlflow_skinny-*.whl \
         /tmp/dist/mlflow-*.whl \
@@ -73,7 +72,7 @@ COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build
 
 RUN set -eux; \
     # Copy the UI build into the installed mlflow package
-    py_site=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'); \
+    py_site=$(python3.12 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'); \
     mkdir -p "$py_site/mlflow/server/js/build"; \
     rm -rf "$py_site/mlflow/server/js/build"/* || true; \
     cp -r /tmp/mlflow-ui-build/* "$py_site/mlflow/server/js/build/"; \
@@ -83,4 +82,4 @@ EXPOSE 5000
 
 # Default command. Override in Kubernetes as needed.
 USER 1001
-CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--app-name", "kubernetes-auth", "--enable-workspaces", "--workspace-store-uri", "kubernetes://", "--serve-artifacts"]
+CMD ["python3.12", "-m", "mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--app-name", "kubernetes-auth", "--enable-workspaces", "--workspace-store-uri", "kubernetes://", "--serve-artifacts"]
