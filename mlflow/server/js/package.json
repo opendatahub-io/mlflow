@@ -1,6 +1,7 @@
 {
   "name": "@mlflow/mlflow",
   "version": "0.1.0",
+  "packageManager": "yarn@4.12.0",
   "scripts": {
     "start": "craco start",
     "storybook": "start-storybook -p 6006 -s public",

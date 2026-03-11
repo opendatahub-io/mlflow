@@ -1,32 +1,34 @@
 FROM registry.access.redhat.com/ubi9/nodejs-20:9.7 AS ui-builder
 WORKDIR /opt/app-root/src
 USER 0
-RUN npm install -g yarn
 COPY --chown=1001:0 mlflow/server/js/ .
+# Create a yarn wrapper since corepack is not available in this base image.
+# The bundled Yarn Berry CJS file is shipped in yarn/releases/.
+RUN yarn_cjs=$(ls yarn/releases/yarn-*.cjs | head -1) && \
+    printf '#!/bin/sh\nexec node /opt/app-root/src/%s "$@"\n' "$yarn_cjs" > /usr/local/bin/yarn && \
+    chmod +x /usr/local/bin/yarn
 USER 1001
 ENV MLFLOW_ENABLE_ASSISTANT=false
 ENV MLFLOW_ENABLE_AI_GATEWAY=false
-RUN yarn install --silent \
+RUN if [ -f /cachi2/cachi2.env ]; then \
+        . /cachi2/cachi2.env && \
+        export YARN_ENABLE_GLOBAL_CACHE=true && \
+        export YARN_ENABLE_OFFLINE_MODE=true && \
+        export YARN_ENABLE_NETWORK=false; \
+    fi && \
+    yarn install --immutable \
     && NODE_OPTIONS="--max_old_space_size=3072" yarn build \
     && NODE_OPTIONS="--max_old_space_size=3072" MLFLOW_API_BASE_URL=/mlflow yarn build:federated
 
 FROM registry.access.redhat.com/ubi9/python-312:9.7 AS python-builder
-ARG AIPCC_INDEX_URL=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
 WORKDIR /src
 USER 0
 COPY --chown=1001:0 . .
-# Unset Cachi2 pip overrides (auto-injected by Konflux) so we can
-# fetch from the AIPCC Python package index.
-COPY requirements/konflux-build-aipcc.txt /tmp/konflux-build-aipcc.txt
-COPY requirements/konflux-pypi.txt /tmp/konflux-pypi.txt
-RUN unset PIP_NO_INDEX PIP_FIND_LINKS && \
+RUN if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python -m pip install --no-cache-dir --require-hashes --no-deps \
-        --index-url "$AIPCC_INDEX_URL" \
-        -r /tmp/konflux-build-aipcc.txt && \
-    rm -f /tmp/konflux-build-aipcc.txt && \
+        -r requirements/konflux-build-aipcc.txt && \
     python -m pip wheel --no-cache-dir --no-deps --require-hashes \
-        -r /tmp/konflux-pypi.txt --wheel-dir /tmp/dist && \
-    rm -f /tmp/konflux-pypi.txt && \
+        -r requirements/konflux-pypi.txt --wheel-dir /tmp/dist && \
     cp pyproject.release.toml pyproject.toml && \
     python -m build --wheel --outdir /tmp/dist libs/tracing && \
     python -m build --wheel --outdir /tmp/dist libs/skinny && \
@@ -34,7 +36,6 @@ RUN unset PIP_NO_INDEX PIP_FIND_LINKS && \
     python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
 
 FROM registry.access.redhat.com/ubi9/ubi:9.7
-ARG AIPCC_INDEX_URL=https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
 ARG MLFLOW_VERSION=3.3.2
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -47,16 +48,11 @@ WORKDIR /app
 USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc.txt /tmp/konflux-aipcc.txt
-# Unset Cachi2 pip overrides (auto-injected by Konflux) so we can
-# fetch from the AIPCC Python package index first, then re-source
-# cachi2.env for the hermetically prefetched extra packages.
 RUN set -eux; \
     dnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
-    unset PIP_NO_INDEX PIP_FIND_LINKS && \
-    python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
-        --index-url "$AIPCC_INDEX_URL" \
-        -r /tmp/konflux-aipcc.txt && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
+    python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
+        -r /tmp/konflux-aipcc.txt && \
     python3.12 -m pip install --no-cache-dir --no-deps \
         /tmp/dist/mlflow_tracing-*.whl \
         /tmp/dist/mlflow_skinny-*.whl \

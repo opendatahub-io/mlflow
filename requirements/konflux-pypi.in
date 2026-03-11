@@ -8,10 +8,7 @@
 #
 # To regenerate the lock file (requirements/konflux-pypi.txt), run:
 #
-#   uv pip compile requirements/konflux-pypi.in \
-#     --python-platform linux --python-version 3.12 \
-#     --no-deps --generate-hashes \
-#     -o requirements/konflux-pypi.txt
+#   python requirements/compile.py
 
 psycopg2
 prometheus-flask-exporter
