@@ -19,9 +19,5 @@ def _mock_namespace_watch():
         "kubernetes_workspace_provider.kubernetes_caches.watch.Watch",
         lambda: _FakeWatch(),
     )
-    patcher.setattr(
-        "kubernetes_workspace_provider.provider.watch.Watch",
-        lambda: _FakeWatch(),
-    )
     yield
     patcher.undo()

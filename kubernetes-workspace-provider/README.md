@@ -53,7 +53,7 @@ for every MLflow API request. Each MLflow workspace maps 1:1 to a Kubernetes nam
 - The service account used by the MLflow server must be allowed to list and watch namespaces. If
   per-namespace artifact root overrides are enabled (via the `MLflowConfig` CRD), the service account
   also needs permissions to list and watch `mlflowconfigs.mlflow.kubeflow.org` cluster-wide, and to
-  get the `mlflow-artifact-connection` Secret in namespaces that define an `MLflowConfig`.
+  list and watch the `mlflow-artifact-connection` Secret across namespaces.
 - Users (or service accounts acting on their behalf) need permissions in the `mlflow.kubeflow.org`
   API group that align with the operations they perform (see
   [Kubernetes RBAC requirements](#kubernetes-rbac-requirements)).
@@ -282,10 +282,13 @@ rules:
   - apiGroups: ["mlflow.kubeflow.org"]
     resources: ["mlflowconfigs"]
     verbs: ["list", "watch"]
+  # On Kubernetes 1.27+ (KEP-2441) the API server passes field selectors to
+  # the authorizer, so resourceNames scoping works for list/watch when the
+  # request includes a metadata.name field selector.
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames: ["mlflow-artifact-connection"]
-    verbs: ["get"]
+    verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
