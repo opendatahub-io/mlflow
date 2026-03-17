@@ -4,15 +4,15 @@
 #
 #    python requirements/compile.py
 #
---index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple
+--index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA2/cpu-ubi9/simple
 
 build==1.4.0 \
-    --hash=sha256:c4da2eccaf9886ca6474d0eb00463678f387960bde90a102a8e8af81599e76c5
+    --hash=sha256:e5b2c218c5698ad7a32839b3965b64b1b531c9467236e5fb6e46c94eb85b7612
 packaging==26.0 \
-    --hash=sha256:177aaadb2c87b810edb8624ed43994c07ad0971c9a58e8688a848df12d775b1d
+    --hash=sha256:3d88de7604ff5eef52df30fd9803c8cf1565e6da3bd3c8c3f4e7d7f18c11069c
 pyproject-hooks==1.2.0 \
-    --hash=sha256:1d5a64895dfa6e13038c1fd875a3f29e33865671b6b87cfe06bed1fd0691b075
+    --hash=sha256:23f914be06e835a1cac214a3c08daffbdf4d33f685194c76b38b079d8cf1dc62
 setuptools==80.10.2 \
-    --hash=sha256:af5ef439be5452ad552b446c82b1db06d9093671f21d176f9af0bce72f9f8665
+    --hash=sha256:05ef2ee3d34409715c7d0589a3a0c6064a2b117f8489a5b512aef078173d1faf
 wheel==0.46.3 \
-    --hash=sha256:fbd69fcbc2d60981869f16df8c323bad21fde4b95e01f57cdd4ec89aca3571c2
+    --hash=sha256:70ed432fbcd9b7d938edc4be7ac57478e1f48a6b165494deb7e6e1c81a34a15c

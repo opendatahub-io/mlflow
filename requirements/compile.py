@@ -27,9 +27,7 @@ from pip._internal.network.session import PipSession
 from piptools._compat.pip_compat import parse_requirements
 from piptools.utils import format_requirement, get_hashes_from_ireq
 
-AIPCC_INDEX_URL = (
-    "https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA1/cpu-ubi9-test/simple"
-)
+AIPCC_INDEX_URL = "https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4-EA2/cpu-ubi9/simple"
 
 DEFAULT_DOCKER_IMAGE = "registry.access.redhat.com/ubi9/python-312:9.7"
 
