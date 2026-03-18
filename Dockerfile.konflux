@@ -26,9 +26,9 @@ USER 0
 COPY --chown=1001:0 . .
 RUN if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python -m pip install --no-cache-dir --require-hashes --no-deps \
-        -r requirements/konflux-build-aipcc.txt && \
+        -r requirements/konflux-build-aipcc-requirements.txt && \
     python -m pip wheel --no-cache-dir --no-deps --require-hashes \
-        -r requirements/konflux-pypi.txt --wheel-dir /tmp/dist && \
+        -r requirements/konflux-pypi-requirements.txt --wheel-dir /tmp/dist && \
     cp pyproject.release.toml pyproject.toml && \
     python -m build --wheel --outdir /tmp/dist libs/tracing && \
     python -m build --wheel --outdir /tmp/dist libs/skinny && \
@@ -47,12 +47,12 @@ WORKDIR /app
 
 USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
-COPY requirements/konflux-aipcc.txt /tmp/konflux-aipcc.txt
+COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
 RUN set -eux; \
     microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
-        -r /tmp/konflux-aipcc.txt && \
+        -r /tmp/konflux-aipcc-requirements.txt && \
     python3.12 -m pip install --no-cache-dir --no-deps \
         /tmp/dist/mlflow_tracing-*.whl \
         /tmp/dist/mlflow_skinny-*.whl \
@@ -61,7 +61,7 @@ RUN set -eux; \
         /tmp/dist/prometheus_flask_exporter-*.whl \
         /tmp/dist/psycopg2-*.whl && \
     microdnf clean all && \
-    rm -rf /tmp/dist /tmp/konflux-aipcc.txt
+    rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt
 
 # Copy built UI from builder stage
 COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build

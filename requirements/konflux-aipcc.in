@@ -1,7 +1,7 @@
 # Extra dependencies for the Konflux (RHOAI) container build that are
 # not declared in pyproject.toml.
 #
-# To regenerate the lock file (requirements/konflux-aipcc.txt), run:
+# To regenerate the lock file (requirements/konflux-aipcc-requirements.txt), run:
 #
 #   python requirements/compile.py
 #

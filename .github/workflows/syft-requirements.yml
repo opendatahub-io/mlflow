@@ -1,0 +1,65 @@
+name: Syft Requirements
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - .syft.yaml
+      - .github/scripts/check_syft_requirements_files.py
+      - .github/workflows/syft-requirements.yml
+      - Dockerfile.konflux
+      - requirements/**
+      - mlflow/server/js/yarn.lock
+  push:
+    branches:
+      - master
+      - branch-[0-9]+.[0-9]+
+      - main
+      - rhoai-*
+    paths:
+      - .syft.yaml
+      - .github/scripts/check_syft_requirements_files.py
+      - .github/workflows/syft-requirements.yml
+      - Dockerfile.konflux
+      - requirements/**
+      - mlflow/server/js/yarn.lock
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  syft-requirements:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup-python
+      - name: Install Syft
+        env:
+          SYFT_VERSION: 1.42.2
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sSfL \
+            "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz" \
+            -o syft.tar.gz
+          tar -xzf syft.tar.gz syft
+          install -m 755 syft "$HOME/.local/bin/syft"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Show Syft version
+        run: |
+          syft version
+      - name: Check Syft requirements allowlist
+        run: |
+          python .github/scripts/check_syft_requirements_files.py

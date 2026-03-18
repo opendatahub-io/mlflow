@@ -3,10 +3,10 @@
 # hermetically by Cachi2 during the Konflux pipeline.
 #
 # All transitive dependencies of these packages are already satisfied by
-# the AIPCC Python package index (requirements/konflux-aipcc.txt), so only these two
+# the AIPCC Python package index (requirements/konflux-aipcc-requirements.txt), so only these two
 # packages themselves need to be listed here.
 #
-# To regenerate the lock file (requirements/konflux-pypi.txt), run:
+# To regenerate the lock file (requirements/konflux-pypi-requirements.txt), run:
 #
 #   python requirements/compile.py
 

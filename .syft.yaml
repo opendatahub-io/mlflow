@@ -1,7 +1,22 @@
 # Syft configuration for SBOM generation.
+# Syft only recognizes Python lockfiles whose names include "requirements",
+# so the Konflux lockfiles use that suffix to be discovered from repo root.
+
+default-catalogers:
+  - python-package-cataloger
+  - javascript-lock-cataloger
+
+select-catalogers:
+  - "-file"
+
+file:
+  metadata:
+    selection: none
 
 exclude:
+  - ./.venv/**
   - ./.github/**
+  - ./.claude/**
   - ./docs/**
   - ./examples/**
   - ./tests/**
@@ -10,5 +25,22 @@ exclude:
   - ./docker/**
   - ./docker-compose/**
   - ./changelogs/**
+  - ./artifacts/**
+  - ./libs/**
+  - ./kubernetes-workspace-provider/**
+  - ./uv.lock
+  - ./requirements/*.in
+  - ./requirements/*.yaml
+  - ./requirements/compile.py
+  - ./requirements/constraints.txt
+  - ./requirements/dev-requirements.txt
+  - ./requirements/doc-min-requirements.txt
+  - ./requirements/doc-requirements.txt
+  - ./requirements/extra-ml-requirements.txt
+  - ./requirements/lint-requirements.txt
+  - ./requirements/skinny-test-requirements.txt
+  - ./requirements/test-requirements.txt
+  - ./requirements/ubi.repo
+  - ./mlflow/server/js/custom-eslint-rules/**
   - ./mlflow/server/js/node_modules/**
   - ./mlflow/server/js/build/**

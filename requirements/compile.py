@@ -56,7 +56,7 @@ MULTIARCH_TARGETS = [
     CompileTarget(
         name="konflux-aipcc",
         in_files=["pyproject.toml", "requirements/konflux-aipcc.in"],
-        out_file="requirements/konflux-aipcc.txt",
+        out_file="requirements/konflux-aipcc-requirements.txt",
         index_url=AIPCC_INDEX_URL,
         emit_index_url=True,
         extra_uv_args=[
@@ -70,7 +70,7 @@ MULTIARCH_TARGETS = [
     CompileTarget(
         name="konflux-build-aipcc",
         in_files=["requirements/konflux-build-aipcc.in"],
-        out_file="requirements/konflux-build-aipcc.txt",
+        out_file="requirements/konflux-build-aipcc-requirements.txt",
         index_url=AIPCC_INDEX_URL,
         emit_index_url=True,
         extra_uv_args=["--prerelease=allow"],
@@ -80,7 +80,7 @@ MULTIARCH_TARGETS = [
 PYPI_TARGET = CompileTarget(
     name="konflux-pypi",
     in_files=["requirements/konflux-pypi.in"],
-    out_file="requirements/konflux-pypi.txt",
+    out_file="requirements/konflux-pypi-requirements.txt",
 )
 
 
