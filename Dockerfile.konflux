@@ -35,7 +35,7 @@ RUN if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python -m build --wheel --outdir /tmp/dist . && \
     python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
 
-FROM registry.access.redhat.com/ubi9/ubi:9.7
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7
 ARG MLFLOW_VERSION=3.3.2
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -49,7 +49,7 @@ USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc.txt /tmp/konflux-aipcc.txt
 RUN set -eux; \
-    dnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
+    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
         -r /tmp/konflux-aipcc.txt && \
@@ -60,7 +60,7 @@ RUN set -eux; \
         /tmp/dist/mlflow_kubernetes_workspace_provider-*.whl \
         /tmp/dist/prometheus_flask_exporter-*.whl \
         /tmp/dist/psycopg2-*.whl && \
-    dnf clean all && \
+    microdnf clean all && \
     rm -rf /tmp/dist /tmp/konflux-aipcc.txt
 
 # Copy built UI from builder stage
