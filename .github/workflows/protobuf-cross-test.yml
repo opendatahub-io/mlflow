@@ -14,6 +14,8 @@ on:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
+      - main
+      - rhoai-*
     paths:
       - "mlflow/protos/**"
       - .github/workflows/protobuf-cross-test.yml
