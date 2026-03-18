@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
+      - main
+      - rhoai-*
     paths:
       - "dev/dev-env-setup.sh"
       - "dev/test-dev-env-setup.sh"

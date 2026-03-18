@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - master
+      - main
+      - rhoai-*
     paths:
       - .github/workflows/uv.yml
       - .github/workflows/uv.js
