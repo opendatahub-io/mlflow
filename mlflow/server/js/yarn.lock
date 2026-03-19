@@ -4892,7 +4892,7 @@ __metadata:
     jest-canvas-mock: "npm:^2.2.0"
     jest-localstorage-mock: "npm:^2.3.0"
     js-yaml: "npm:^3.14.0"
-    json-bigint: "npm:^1.0.0"
+    json-bigint: "patch:json-bigint@npm%3A1.0.0#yarn/patches/json-bigint-npm-1.0.0-mlflow.patch"
     knip: "npm:^5.30.2"
     leaflet: "npm:^1.5.1"
     lodash: "npm:^4.17.21"
@@ -23405,12 +23405,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-bigint@npm:^1.0.0":
+"json-bigint@npm:1.0.0":
   version: 1.0.0
   resolution: "json-bigint@npm:1.0.0"
   dependencies:
     bignumber.js: "npm:^9.0.0"
   checksum: 10c0/e3f34e43be3284b573ea150a3890c92f06d54d8ded72894556357946aeed9877fd795f62f37fe16509af189fd314ab1104d0fd0f163746ad231b9f378f5b33f4
+  languageName: node
+  linkType: hard
+
+"json-bigint@patch:json-bigint@npm%3A1.0.0#yarn/patches/json-bigint-npm-1.0.0-mlflow.patch::locator=%40mlflow%2Fmlflow%40workspace%3A.":
+  version: 1.0.0
+  resolution: "json-bigint@patch:json-bigint@npm%3A1.0.0#yarn/patches/json-bigint-npm-1.0.0-mlflow.patch::version=1.0.0&hash=61ac52&locator=%40mlflow%2Fmlflow%40workspace%3A."
+  dependencies:
+    bignumber.js: "npm:^9.0.0"
+  checksum: 10c0/d5f02a7423bf44af46adbe4e604fd295445ee4681249ad485997bb16209475869b44f6fbaec1309ee42b79606f6a3d9a6a787c64993e67cfb6d16fa6012f59cc
   languageName: node
   linkType: hard
 

@@ -136,6 +136,26 @@ describe('FetchUtils', () => {
       await new Promise(setImmediate);
       expect(mockResolve).toHaveBeenCalledWith({ a: '11111111222222223333333344444445555555555' });
     });
+    it('jsonBigIntResponseParser preserves plain object prototypes', async () => {
+      const mockResponse = {
+        text: () => Promise.resolve('{"a": {"b": 1}}'),
+      };
+      jsonBigIntResponseParser({ resolve: mockResolve, response: mockResponse });
+      await new Promise(setImmediate);
+      const parsed = mockResolve.mock.calls[0][0];
+      expect(parsed.hasOwnProperty('a')).toBe(true);
+      expect(parsed.a.hasOwnProperty('b')).toBe(true);
+    });
+    it('jsonBigIntResponseParser preserves high precision floats as numbers', async () => {
+      const mockResponse = {
+        text: () => Promise.resolve('{"a": 0.00011124613492593128}'),
+      };
+      jsonBigIntResponseParser({ resolve: mockResolve, response: mockResponse });
+      await new Promise(setImmediate);
+      const parsed = mockResolve.mock.calls[0][0];
+      expect(typeof parsed.a).toBe('number');
+      expect(parsed.a.toExponential(3)).toBe('1.112e-4');
+    });
     it('yamlResponseParser', async () => {
       const mockResponse = {
         text: () => Promise.resolve('artifact_path: model_signature\nflavors:\n  keras:\n    data: data\n'),

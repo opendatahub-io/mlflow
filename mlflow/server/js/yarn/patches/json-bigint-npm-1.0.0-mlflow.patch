@@ -1,0 +1,49 @@
+diff --git a/lib/parse.js b/lib/parse.js
+index bb4e5eb..39363cd 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -207,19 +207,22 @@ var json_parse = function (options) {
+       } else {
+         if (BigNumber == null) BigNumber = require('bignumber.js');
+         //if (number > 9007199254740992 || number < -9007199254740992)
+-        // Bignumber has stricter check: everything with length > 15 digits disallowed
+-        if (string.length > 15)
+-          return _options.storeAsString
+-            ? string
+-            : _options.useNativeBigInt
+-            ? BigInt(string)
+-            : new BigNumber(string);
+-        else
+-          return !_options.alwaysParseAsBig
+-            ? number
+-            : _options.useNativeBigInt
+-            ? BigInt(number)
+-            : new BigNumber(number);
++        if (_options.storeAsString) {
++          if (number >= Number.MAX_SAFE_INTEGER || number <= Number.MIN_SAFE_INTEGER) {
++            return string;
++          }
++        } else {
++          // Bignumber has stricter check: everything with length > 15 digits disallowed
++          if (string.length > 15)
++            return _options.useNativeBigInt
++              ? BigInt(string)
++              : new BigNumber(string);
++        }
++        return !_options.alwaysParseAsBig
++          ? number
++          : _options.useNativeBigInt
++          ? BigInt(number)
++          : new BigNumber(number);
+       }
+     },
+     string = function () {
+@@ -327,7 +330,7 @@ var json_parse = function (options) {
+       // Parse an object value.
+ 
+       var key,
+-        object = Object.create(null);
++        object = {};
+ 
+       if (ch === '{') {
+         next('{');

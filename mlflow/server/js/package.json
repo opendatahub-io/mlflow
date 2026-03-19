@@ -58,7 +58,7 @@
     "immutable": "3.8.1",
     "invariant": "^2.2.4",
     "js-yaml": "^3.14.0",
-    "json-bigint": "^1.0.0",
+    "json-bigint": "patch:json-bigint@npm%3A1.0.0#yarn/patches/json-bigint-npm-1.0.0-mlflow.patch",
     "leaflet": "^1.5.1",
     "lodash": "^4.17.21",
     "mod-arch-core": "^1.6.0",
