@@ -36,7 +36,8 @@ ARCHES = ["amd64", "arm64", "ppc64le", "s390x"]
 # Packages that are expected to be unavailable on specific architectures
 # (e.g. greenlet has no s390x wheel and is excluded via platform markers).
 ARCH_MISSING_ALLOWLIST: dict[str, set[str]] = {
-    "s390x": {"greenlet"},
+    "ppc64le": {"hf-xet"},
+    "s390x": {"greenlet", "hf-xet"},
 }
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

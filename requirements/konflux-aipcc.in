@@ -24,3 +24,4 @@ prometheus-client
 # Cross-arch constraints: pin packages to versions available on all target
 # architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
 pyarrow<23.0.1
+litellm<2,>=1.0.0
