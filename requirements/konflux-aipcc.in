@@ -11,10 +11,6 @@
 # mlflow is excluded from the output (--no-emit-package) because it is built
 # from source in the Dockerfile using pyproject.release.toml.
 #
-# Note: mlflow-kubernetes-workspace-provider is installed separately from the
-# repo (not from the package index). Its dependencies (mlflow, kubernetes,
-# graphql-core) are satisfied by the packages listed here.
-#
 # Packages not on the AIPCC Python package index (psycopg2, prometheus-flask-exporter)
 # are installed separately in the Dockerfile via Cachi2 prefetch.
 

@@ -32,8 +32,7 @@ RUN if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     cp pyproject.release.toml pyproject.toml && \
     python -m build --wheel --outdir /tmp/dist libs/tracing && \
     python -m build --wheel --outdir /tmp/dist libs/skinny && \
-    python -m build --wheel --outdir /tmp/dist . && \
-    python -m build --wheel --outdir /tmp/dist kubernetes-workspace-provider
+    python -m build --wheel --outdir /tmp/dist .
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.7
 ARG MLFLOW_VERSION=3.3.2
@@ -57,7 +56,7 @@ RUN set -eux; \
         /tmp/dist/mlflow_tracing-*.whl \
         /tmp/dist/mlflow_skinny-*.whl \
         /tmp/dist/mlflow-*.whl \
-        /tmp/dist/mlflow_kubernetes_workspace_provider-*.whl \
+        /tmp/dist/mlflow_kubernetes_plugins-*.whl \
         /tmp/dist/prometheus_flask_exporter-*.whl \
         /tmp/dist/psycopg2-*.whl && \
     microdnf clean all && \

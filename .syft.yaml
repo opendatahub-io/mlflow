@@ -27,7 +27,6 @@ exclude:
   - ./changelogs/**
   - ./artifacts/**
   - ./libs/**
-  - ./kubernetes-workspace-provider/**
   - ./uv.lock
   - ./requirements/*.in
   - ./requirements/*.yaml
