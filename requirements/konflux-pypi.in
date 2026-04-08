@@ -10,6 +10,6 @@
 #
 #   python requirements/compile.py
 
-mlflow-kubernetes-plugins==1.1.0
+mlflow-kubernetes-plugins==1.1.1
 psycopg2
 prometheus-flask-exporter
