@@ -106,6 +106,8 @@ jobs:
             --quiet --requires-ssh --ignore-flavors \
             --ignore=tests/examples \
             --ignore=tests/evaluate \
+            --ignore=tests/optuna \
+            --ignore=tests/pyspark/optuna \
             --ignore=tests/genai \
             --ignore=tests/docker \
             --ignore=tests/sagemaker \
