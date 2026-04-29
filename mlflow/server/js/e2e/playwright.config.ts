@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { BASE_URL } from './utils/mlflowClient';
 
 export default defineConfig({
   testDir: './tests',
@@ -8,16 +9,17 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { outputFolder: './test-report' }]],
-
+  globalSetup: './utils/globalSetup.ts',
+  globalTeardown: './utils/globalTeardown.ts',
+  timeout: 60000,
   use: {
-    baseURL: process.env.MLFLOW_E2E_BASE_URL || 'http://localhost:5001',
+    baseURL: BASE_URL,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
-
   projects: [
     {
-      name: 'default',
+      name: 'e2e',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
