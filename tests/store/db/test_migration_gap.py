@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 import sqlalchemy as sa
 from alembic import command
@@ -511,6 +513,31 @@ def test_fix_migration_gap_command_with_gap(tmp_path):
             assert table in tables
     finally:
         engine.dispose()
+
+
+def test_fix_migration_gap_command_runs_db_upgrade_after_fix(monkeypatch):
+    engine = mock.Mock()
+    call_order = []
+
+    monkeypatch.setattr(
+        "mlflow.store.db.utils.create_sqlalchemy_engine_with_retry",
+        lambda url: engine,
+    )
+    monkeypatch.setattr(
+        "mlflow.store.db.migration_gap.fix_migration_gap_if_needed",
+        lambda actual_engine: call_order.append(("fix", actual_engine)),
+    )
+    monkeypatch.setattr(
+        "mlflow.store.db.utils._upgrade_db",
+        lambda actual_engine: call_order.append(("upgrade", actual_engine)),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(mlflow.db.commands, ["fix-migration-gap", "sqlite:///db.sqlite"])
+
+    assert result.exit_code == 0
+    assert call_order == [("fix", engine), ("upgrade", engine)]
+    engine.dispose.assert_called_once_with()
 
 
 def test_fix_migration_gap_command_uses_env_var(tmp_path, monkeypatch):
