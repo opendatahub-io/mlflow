@@ -21,14 +21,18 @@ import type { KeyValueEntity } from '../common/types';
 import { MLFLOW_PUBLISHED_VERSION } from '../common/mlflow-published-version';
 import { MLFLOW_LOGGED_IMAGE_ARTIFACTS_PATH } from './constants';
 import { ErrorWrapper } from '../common/utils/ErrorWrapper';
+import { getActiveWorkspace } from '../workspaces/utils/WorkspaceUtils';
+
 export const RUNS_SEARCH_MAX_RESULTS = 100;
+
+export const WORKSPACE_CHANGED = 'WORKSPACE_CHANGED';
 
 export const GET_EXPERIMENT_API = 'GET_EXPERIMENT_API';
 export const getExperimentApi = (experimentId: any, id = getUUID()) => {
   return {
     type: GET_EXPERIMENT_API,
     payload: MlflowService.getExperiment({ experiment_id: experimentId }),
-    meta: { id: id },
+    meta: { id: id, workspace: getActiveWorkspace() },
   };
 };
 

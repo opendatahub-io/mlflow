@@ -1,5 +1,6 @@
 import { MLFLOW_PUBLISHED_VERSION } from '../../common/mlflow-published-version';
 import { isIntegrated } from '../../common/utils/embedUtils';
+import { ErrorWrapper } from '../../common/utils/ErrorWrapper';
 import type {
   FormTrackingEventProperties,
   IdentifyEventProperties,
@@ -75,4 +76,14 @@ export const fireIdentifyEvent = (properties: IdentifyEventProperties): void => 
       canCreateProjects: properties.canCreateProjects,
     });
   }
+};
+
+export const getTrackingError = (e: unknown): string => {
+  if (e instanceof ErrorWrapper) {
+    return e.getErrorCode() ?? `http_${e.getStatus()}`;
+  }
+  if (e instanceof Error) {
+    return e.name;
+  }
+  return 'unknown_error';
 };

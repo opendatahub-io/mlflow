@@ -9,6 +9,11 @@ export const TrackingOutcome = {
   cancel: 'cancel',
 } as const;
 
+export const MLflowEventNames = {
+  EXPERIMENT_CREATED: 'MLflow Experiment Created',
+  NEW_RUN_CREATED: 'MLflow New Run Created',
+} as const;
+
 export type BaseFormTrackingEventProperties = {
   outcome: (typeof TrackingOutcome)[keyof typeof TrackingOutcome];
   success?: boolean;

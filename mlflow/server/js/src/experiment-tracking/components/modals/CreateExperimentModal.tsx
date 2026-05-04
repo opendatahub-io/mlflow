@@ -18,6 +18,8 @@ import { getExperimentNameValidator } from '../../../common/forms/validations';
 import { createExperimentApi } from '../../actions';
 import { getExperiments } from '../../reducers/Reducers';
 import { withRouterNext } from '../../../common/utils/withRouterNext';
+import { fireFormTrackingEvent, getTrackingError } from '../../../odh/analytics/segmentUtils';
+import { TrackingOutcome, MLflowEventNames } from '../../../odh/analytics/trackingProperties';
 
 type CreateExperimentModalImplProps = {
   isOpen?: boolean;
@@ -55,18 +57,30 @@ export class CreateExperimentModalImpl extends Component<
     // get values of input fields
     const experimentName = values[EXP_NAME_FIELD];
     const artifactLocation = values[ARTIFACT_LOCATION];
+    try {
+      // createExperimentApi call needs to be fulfilled before redirecting the user to the newly
+      // created experiment page (history.push())
+      const response = await this.props.createExperimentApi(experimentName, artifactLocation);
+      fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_CREATED, {
+        outcome: TrackingOutcome.submit,
+        success: true,
+      });
+      this.props.onExperimentCreated();
 
-    // createExperimentApi call needs to be fulfilled before redirecting the user to the newly
-    // created experiment page (history.push())
-    const response = await this.props.createExperimentApi(experimentName, artifactLocation);
-    this.props.onExperimentCreated();
+      const {
+        value: { experiment_id: newExperimentId },
+      } = response;
 
-    const {
-      value: { experiment_id: newExperimentId },
-    } = response;
-
-    if (newExperimentId) {
-      this.props.navigate(Routes.getExperimentPageRoute(newExperimentId));
+      if (newExperimentId) {
+        this.props.navigate(Routes.getExperimentPageRoute(newExperimentId));
+      }
+    } catch (e: any) {
+      fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_CREATED, {
+        outcome: TrackingOutcome.submit,
+        success: false,
+        error: getTrackingError(e),
+      });
+      throw e;
     }
   };
 
@@ -85,6 +99,11 @@ export class CreateExperimentModalImpl extends Component<
         isOpen={isOpen}
         handleSubmit={this.handleCreateExperiment}
         onClose={this.handleClose}
+        onCancel={() => {
+          fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_CREATED, {
+            outcome: TrackingOutcome.cancel,
+          });
+        }}
         okButtonProps={{ disabled: !experimentName.trim() }}
       >
         <CreateExperimentForm

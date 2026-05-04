@@ -1,0 +1,53 @@
+workspace: 'e2e-test-project'
+
+experimentLifecycle:
+  experimentName: 'e2e-fraud-detection'
+  runs:
+    - name: 'e2e-baseline-model'
+      metrics:
+        precision: 0.78
+        recall: 0.65
+        f1_score: 0.71
+        auc: 0.82
+      params:
+        learning_rate: '0.01'
+        n_estimators: '100'
+        max_depth: '5'
+    - name: 'e2e-tuned-model'
+      metrics:
+        precision: 0.92
+        recall: 0.89
+        f1_score: 0.90
+        auc: 0.96
+      params:
+        learning_rate: '0.005'
+        n_estimators: '500'
+        max_depth: '12'
+  modelName: 'e2e-fraud-detector'
+  modelDescription: 'Fraud detection classifier for transaction monitoring'
+  aliases:
+    primary: 'champion'
+    secondary: 'production'
+
+genaiObservability:
+  experimentName: 'e2e-fraud-alert-agent'
+  experimentKindTag: 'mlflow.experimentKind'
+  experimentKindValue: 'GENAI_DEVELOPMENT'
+  sessionMetadataKey: 'mlflow.trace.session'
+  traces:
+    - input: 'Is transaction #8842 on account 4520-XXXX-7791 for $4,999 fraudulent?'
+      output: 'High risk. Amount near threshold, new device, off-hours timing.'
+    - input: 'What patterns indicate fraud for account 4520-XXXX-7791?'
+      output: 'Velocity spikes, round amounts, and geographic anomalies.'
+      sessionId: 'e2e-fraud-session'
+    - input: 'Explain the risk score breakdown for transaction #8842'
+      output: 'Score 0.92: amount factor 0.3, velocity 0.25, geo 0.22, device 0.15.'
+      sessionId: 'e2e-fraud-session'
+  datasetName: 'e2e-fraud-eval-dataset'
+  tagKey: 'review-priority'
+  tagValue: 'high'
+
+promptVersioning:
+  promptName: 'e2e-fraud-alert-prompt'
+  promptTemplate: 'Analyze transaction {{ txn_id }} for fraud indicators. Amount: {{ amount }}.'
+  promptTemplateV2: 'Review transaction {{ txn_id }} ({{ amount }}) for fraud. Include risk score and recommended action.'

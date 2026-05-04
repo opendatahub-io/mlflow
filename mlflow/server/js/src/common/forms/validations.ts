@@ -11,15 +11,18 @@ export const getExperimentNameValidator = (getExistingExperimentNames: () => str
       // check whether the passed value is part of the list
       callback(`Experiment "${value}" already exists.`);
     } else {
-      // on-demand validation whether experiment already exists in deleted state
+      // on-demand validation: experiment not in Redux cache, so check the server
       MlflowService.getExperimentByName({ experiment_name: value })
-        .then((res) =>
-          callback(`Experiment "${value}" already exists in deleted state.
+        .then((res) => {
+          if (res?.experiment?.lifecycleStage === 'deleted') {
+            return callback(`Experiment "${value}" already exists in deleted state.
                                  You can restore the experiment, or permanently delete the
                                  experiment from the .trash folder (under tracking server's
-                                 root folder) in order to use this experiment name again.`),
-        )
-        .catch((e) => callback(undefined)); // no experiment returned
+                                 root folder) in order to use this experiment name again.`);
+          }
+          return callback(`Experiment "${value}" already exists.`);
+        })
+        .catch((e) => callback(undefined)); // experiment not found — name is available
     }
   };
 };
