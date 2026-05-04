@@ -20,6 +20,7 @@ import {
   DELETE_TAG_API,
   SET_COMPARE_EXPERIMENTS,
   SEARCH_DATASETS_API,
+  WORKSPACE_CHANGED,
 } from '../actions';
 import { Param, RunTag, ExperimentTag } from '../sdk/MlflowMessages';
 import { ArtifactNode } from '../utils/ArtifactUtils';
@@ -43,6 +44,7 @@ import type { ErrorWrapper } from '../../common/utils/ErrorWrapper';
 import { imagesByRunUuid } from './ImageReducer';
 import { colorByRunUuid } from './RunColorReducer';
 import { runInputsOutputsByUuid } from './InputsOutputsReducer';
+import { getActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 
 export type ApisReducerReduxState = Record<
   string,
@@ -69,7 +71,13 @@ export const getExperiment = (id: any, state: any) => {
 
 export const experimentsById = (state = {}, action: any): any => {
   switch (action.type) {
+    case WORKSPACE_CHANGED:
+      return {};
     case fulfilled(GET_EXPERIMENT_API): {
+      const requestWorkspace = action.meta?.workspace;
+      if (requestWorkspace !== undefined && requestWorkspace !== getActiveWorkspace()) {
+        return state;
+      }
       const { experiment } = action.payload;
 
       const existingExperiment = (state as any)[experiment.experimentId] || {};

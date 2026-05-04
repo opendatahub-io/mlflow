@@ -9,6 +9,7 @@ import {
   validateWorkspaceName,
   isGlobalRoute,
   removeWorkspaceQueryParam,
+  onWorkspaceChange,
   WORKSPACE_NAME_MIN_LENGTH,
   WORKSPACE_NAME_MAX_LENGTH,
 } from './WorkspaceUtils';
@@ -439,6 +440,56 @@ describe('WorkspaceUtils', () => {
     it('returns pathname unchanged when no workspace set', () => {
       setActiveWorkspace(null);
       expect(appendWorkspaceSearchParams('/experiments')).toBe('/experiments');
+    });
+  });
+
+  describe('onWorkspaceChange', () => {
+    it('fires listener when workspace changes', () => {
+      const listener = jest.fn();
+      const unsubscribe = onWorkspaceChange(listener);
+
+      setActiveWorkspace('team-a');
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith('team-a');
+
+      setActiveWorkspace('team-b');
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(listener).toHaveBeenCalledWith('team-b');
+      unsubscribe();
+    });
+
+    it('does not fire when workspace is set to the same value', () => {
+      setActiveWorkspace('team-a');
+
+      const listener = jest.fn();
+      const unsubscribe = onWorkspaceChange(listener);
+
+      setActiveWorkspace('team-a');
+      expect(listener).not.toHaveBeenCalled();
+      unsubscribe();
+    });
+
+    it('fires when workspace is cleared to null', () => {
+      setActiveWorkspace('team-a');
+
+      const listener = jest.fn();
+      const unsubscribe = onWorkspaceChange(listener);
+
+      setActiveWorkspace(null);
+      expect(listener).toHaveBeenCalledWith(null);
+      unsubscribe();
+    });
+
+    it('returns an unsubscribe function that removes the listener', () => {
+      const listener = jest.fn();
+      const unsubscribe = onWorkspaceChange(listener);
+
+      setActiveWorkspace('team-a');
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+      setActiveWorkspace('team-b');
+      expect(listener).toHaveBeenCalledTimes(1);
     });
   });
 });

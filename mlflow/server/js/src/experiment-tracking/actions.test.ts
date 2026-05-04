@@ -13,6 +13,7 @@ import {
   fetchMissingParents,
   fetchMissingParentsWithSearchRuns,
   getEvaluationTableArtifact,
+  getExperimentApi,
   getParentRunIdsToFetch,
   getParentRunTagName,
   searchRunsPayload,
@@ -22,6 +23,7 @@ import { ViewType } from './sdk/MlflowEnums';
 import { MlflowService } from './sdk/MlflowService';
 import { RunLoggedArtifactType } from './types';
 import { getUUID } from '@mlflow/mlflow/src/common/utils/ActionUtils';
+import { setActiveWorkspace } from '../workspaces/utils/WorkspaceUtils';
 
 jest.mock('./sdk/EvaluationArtifactService', () => ({
   fetchEvaluationTableArtifact: jest.fn(),
@@ -85,6 +87,24 @@ afterEach(() => {
   (MlflowService.searchRuns as any).mockRestore();
   (MlflowService.getRun as any).mockRestore();
   (MlflowService.createRun as any).mockRestore();
+});
+
+describe('getExperimentApi', () => {
+  it('tags requests with the active workspace', () => {
+    const getExperimentSpy = jest
+      .spyOn(MlflowService, 'getExperiment')
+      .mockImplementation(() => Promise.resolve({}) as any);
+    setActiveWorkspace('team-a');
+
+    try {
+      const action = getExperimentApi('123', 'request-id');
+      expect(action.meta).toEqual({ id: 'request-id', workspace: 'team-a' });
+      expect(getExperimentSpy).toHaveBeenCalledWith({ experiment_id: '123' });
+    } finally {
+      setActiveWorkspace(null);
+      getExperimentSpy.mockRestore();
+    }
+  });
 });
 
 describe('fetchMissingParents', () => {

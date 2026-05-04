@@ -5,12 +5,24 @@ export const WORKSPACE_QUERY_PARAM = 'workspace';
 
 let activeWorkspace: string | null = null;
 
+type WorkspaceChangeListener = (workspace: string | null) => void;
+const workspaceChangeListeners: Set<WorkspaceChangeListener> = new Set();
+
+export const onWorkspaceChange = (listener: WorkspaceChangeListener): (() => void) => {
+  workspaceChangeListeners.add(listener);
+  return () => workspaceChangeListeners.delete(listener);
+};
+
 export const getActiveWorkspace = () => activeWorkspace;
 
 export const setActiveWorkspace = (workspace: string | null) => {
+  const prev = activeWorkspace;
   activeWorkspace = workspace;
   if (workspace) {
     setLastUsedWorkspace(workspace);
+  }
+  if (prev !== workspace) {
+    Array.from(workspaceChangeListeners).forEach((l) => l(workspace));
   }
 };
 
