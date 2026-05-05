@@ -152,7 +152,7 @@ describe('useRunDetailsPageDataLegacy', () => {
     jest.mocked(getExperimentApi).mockImplementation(() => {
       return {
         type: 'get_experiment',
-        meta: { id: 'abc' },
+        meta: { id: 'abc', workspace: null },
         payload: Promise.reject(new Error('experiment_fetch_error')),
       };
     });

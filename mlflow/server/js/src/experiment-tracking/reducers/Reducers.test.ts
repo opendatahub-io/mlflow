@@ -53,6 +53,7 @@ import { deepFreeze } from '../../common/utils/TestUtils';
 import { mockModelVersionDetailed } from '../../model-registry/test-utils';
 import { SEARCH_MODEL_VERSIONS } from '../../model-registry/actions';
 import { Stages, ModelVersionStatus } from '../../model-registry/constants';
+import { setActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 describe('test experimentsById', () => {
   test('should set up initial state correctly', () => {
     expect(experimentsById(undefined, {})).toEqual({});
@@ -103,6 +104,29 @@ describe('test experimentsById', () => {
     });
     const action = { type: WORKSPACE_CHANGED };
     expect(experimentsById(state, action)).toEqual({});
+  });
+
+  test('ignores stale experiment responses from a previous workspace', () => {
+    setActiveWorkspace('team-b');
+    try {
+      const preserved = mockExperiment('experiment03', 'still exists');
+      const staleExperiment = mockExperiment('experiment05', 'stale-exp');
+      const state = deepFreeze({
+        [preserved.experimentId]: preserved,
+      });
+      const action = {
+        type: fulfilled(GET_EXPERIMENT_API),
+        meta: { workspace: 'team-a' },
+        payload: {
+          experiment: staleExperiment,
+        },
+      };
+
+      const new_state = experimentsById(state, action);
+      expect(new_state).toBe(state);
+    } finally {
+      setActiveWorkspace(null);
+    }
   });
 
   test('getExperiment correctly updates tags', () => {

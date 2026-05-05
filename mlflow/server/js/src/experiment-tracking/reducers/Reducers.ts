@@ -44,6 +44,7 @@ import type { ErrorWrapper } from '../../common/utils/ErrorWrapper';
 import { imagesByRunUuid } from './ImageReducer';
 import { colorByRunUuid } from './RunColorReducer';
 import { runInputsOutputsByUuid } from './InputsOutputsReducer';
+import { getActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 
 export type ApisReducerReduxState = Record<
   string,
@@ -73,6 +74,10 @@ export const experimentsById = (state = {}, action: any): any => {
     case WORKSPACE_CHANGED:
       return {};
     case fulfilled(GET_EXPERIMENT_API): {
+      const requestWorkspace = action.meta?.workspace;
+      if (requestWorkspace !== undefined && requestWorkspace !== getActiveWorkspace()) {
+        return state;
+      }
       const { experiment } = action.payload;
 
       const existingExperiment = (state as any)[experiment.experimentId] || {};
