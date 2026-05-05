@@ -46,6 +46,7 @@ import {
   LIST_ARTIFACTS_API,
   SET_EXPERIMENT_TAG_API,
   SEARCH_DATASETS_API,
+  WORKSPACE_CHANGED,
 } from '../actions';
 import { fulfilled, pending, rejected } from '../../common/utils/ActionUtils';
 import { deepFreeze } from '../../common/utils/TestUtils';
@@ -93,6 +94,17 @@ describe('test experimentsById', () => {
       [replacedNew.experimentId]: replacedNew,
     });
   });
+  test('WORKSPACE_CHANGED clears all experiments', () => {
+    const experimentA = mockExperiment('experiment01', 'experimentA');
+    const experimentB = mockExperiment('experiment02', 'experimentB');
+    const state = deepFreeze({
+      [experimentA.experimentId]: experimentA,
+      [experimentB.experimentId]: experimentB,
+    });
+    const action = { type: WORKSPACE_CHANGED };
+    expect(experimentsById(state, action)).toEqual({});
+  });
+
   test('getExperiment correctly updates tags', () => {
     const tag1 = { key: 'key1', value: 'value1' };
     const tag2 = { key: 'key2', value: 'value2' };
