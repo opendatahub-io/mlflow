@@ -1,25 +1,63 @@
 import { test, jest, expect, describe } from '@jest/globals';
 import { getExperimentNameValidator, modelNameValidator } from './validations';
+import { MlflowService } from '../../experiment-tracking/sdk/MlflowService';
 import { Services as ModelRegistryService } from '../../model-registry/services';
 
-test('ExperimentNameValidator works properly', () => {
-  const experimentNames = ['Default', 'Test Experiment'];
-  const value = experimentNames[0];
-  const experimentNameValidator = getExperimentNameValidator(() => experimentNames);
+describe('ExperimentNameValidator', () => {
+  test('rejects name that exists in the cached list', () => {
+    const experimentNames = ['Default', 'Test Experiment'];
+    const value = experimentNames[0];
+    const experimentNameValidator = getExperimentNameValidator(() => experimentNames);
 
-  const mockCallback = jest.fn((err) => err);
+    const mockCallback = jest.fn((err) => err);
 
-  // pass one of the existing experiments as input value
-  experimentNameValidator(undefined, value, mockCallback);
-  expect(mockCallback).toHaveBeenCalledWith(`Experiment "${value}" already exists.`);
+    experimentNameValidator(undefined, value, mockCallback);
+    expect(mockCallback).toHaveBeenCalledWith(`Experiment "${value}" already exists.`);
+  });
 
-  // no input value passed, no error message expected
-  experimentNameValidator(undefined, '', mockCallback);
-  expect(mockCallback).toHaveBeenCalledWith(undefined);
+  test('accepts empty and undefined values without error', () => {
+    const experimentNameValidator = getExperimentNameValidator(() => ['Default']);
+    const mockCallback = jest.fn((err) => err);
 
-  // input value == undefined, no error message expected
-  experimentNameValidator(undefined, undefined, mockCallback);
-  expect(mockCallback).toHaveBeenCalledWith(undefined);
+    experimentNameValidator(undefined, '', mockCallback);
+    expect(mockCallback).toHaveBeenCalledWith(undefined);
+
+    experimentNameValidator(undefined, undefined, mockCallback);
+    expect(mockCallback).toHaveBeenCalledWith(undefined);
+  });
+
+  test('reports "already exists" when server returns an active experiment', async () => {
+    jest
+      .spyOn(MlflowService, 'getExperimentByName')
+      .mockImplementation(() => Promise.resolve({ experiment: { lifecycleStage: 'active' } } as any));
+    const experimentNameValidator = getExperimentNameValidator(() => []);
+    const mockCallback = jest.fn();
+    experimentNameValidator(undefined, 'my-experiment', mockCallback);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(mockCallback).toHaveBeenCalledWith('Experiment "my-experiment" already exists.');
+  });
+
+  test('reports "already exists in deleted state" when server returns a deleted experiment', async () => {
+    jest
+      .spyOn(MlflowService, 'getExperimentByName')
+      .mockImplementation(() => Promise.resolve({ experiment: { lifecycleStage: 'deleted' } } as any));
+    const experimentNameValidator = getExperimentNameValidator(() => []);
+    const mockCallback = jest.fn();
+    experimentNameValidator(undefined, 'my-experiment', mockCallback);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(mockCallback).toHaveBeenCalledWith(expect.stringContaining('already exists in deleted state'));
+  });
+
+  test('accepts name when server returns not-found (rejected promise)', async () => {
+    jest
+      .spyOn(MlflowService, 'getExperimentByName')
+      .mockImplementation(() => Promise.reject(new Error('RESOURCE_DOES_NOT_EXIST')));
+    const experimentNameValidator = getExperimentNameValidator(() => []);
+    const mockCallback = jest.fn();
+    experimentNameValidator(undefined, 'new-experiment', mockCallback);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(mockCallback).toHaveBeenCalledWith(undefined);
+  });
 });
 
 describe('modelNameValidator should work properly', () => {
