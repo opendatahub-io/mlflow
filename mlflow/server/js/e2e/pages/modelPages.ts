@@ -6,7 +6,8 @@ export class ModelRegistryPage {
   constructor(private page: Page) {}
 
   async visit(workspace = E2E_WORKSPACE) {
-    await this.page.goto(`/#/models?workspace=${workspace}`);
+    const qs = new URLSearchParams({ workspace }).toString();
+    await this.page.goto(`/#/models?${qs}`);
     await this.page.evaluate(() => {
       localStorage.setItem('_mlflow_model_registry_promo_modal_dismissed', 'true');
     });
@@ -50,7 +51,7 @@ export class ModelDetailPage {
   }
 
   findDeleteMenuItem(): Locator {
-    return this.page.getByTestId('delete');
+    return this.page.getByRole('menuitem', { name: 'Delete' });
   }
 
   findDeleteConfirmButton(): Locator {

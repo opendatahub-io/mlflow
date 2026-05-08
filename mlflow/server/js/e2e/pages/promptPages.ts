@@ -6,7 +6,8 @@ export class PromptsPage {
   constructor(private page: Page) {}
 
   async visit(workspace = E2E_WORKSPACE) {
-    await this.page.goto(`/#/prompts?workspace=${workspace}`);
+    const qs = new URLSearchParams({ workspace }).toString();
+    await this.page.goto(`/#/prompts?${qs}`);
   }
 
   findCreateButton(): Locator {

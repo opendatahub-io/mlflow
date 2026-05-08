@@ -10,7 +10,8 @@ export class TracesTabPage {
   }
 
   async visit(experimentId: string, workspace = E2E_WORKSPACE) {
-    await this.page.goto(`/#/experiments/${experimentId}/traces?workspace=${workspace}`);
+    const qs = new URLSearchParams({ workspace }).toString();
+    await this.page.goto(`/#/experiments/${experimentId}/traces?${qs}`);
   }
 
   async shouldShowTrace(text: string) {
@@ -125,7 +126,8 @@ export class ScorersTabPage {
   constructor(private page: Page) {}
 
   async visit(experimentId: string, workspace = E2E_WORKSPACE) {
-    await this.page.goto(`/#/experiments/${experimentId}/judges?workspace=${workspace}`);
+    const qs = new URLSearchParams({ workspace }).toString();
+    await this.page.goto(`/#/experiments/${experimentId}/judges?${qs}`);
   }
 
   findScorerCard(name: string): Locator {

@@ -6,7 +6,8 @@ export class ExperimentsListPage {
   constructor(private page: Page) {}
 
   async visit(workspace = E2E_WORKSPACE) {
-    await this.page.goto(`/#/experiments?workspace=${workspace}`);
+    const qs = new URLSearchParams({ workspace }).toString();
+    await this.page.goto(`/#/experiments?${qs}`);
     await this.findCreateButton().waitFor({ state: 'visible', timeout: Timeout.long * 2 });
   }
 
