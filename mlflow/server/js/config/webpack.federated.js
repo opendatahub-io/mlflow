@@ -145,6 +145,9 @@ module.exports = {
     new webpack.ProvidePlugin({ process: require.resolve('process/browser') }),
   ],
   optimization: {
+    // Work around webpack module concatenation issues triggered by react-redux
+    // reexports in the federated production bundle.
+    concatenateModules: false,
     // runtimeChunk: 'single' extracts the webpack runtime into a separate chunk.
     // This is required when using runtime: false in the MF plugin config.
     // See https://github.com/webpack/webpack/issues/18810
