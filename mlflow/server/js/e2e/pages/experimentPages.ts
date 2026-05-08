@@ -123,10 +123,10 @@ export class RunDetailPage {
   constructor(private page: Page) {}
 
   async shouldShowMetric(key: string) {
-    await expect(this.page.getByText(key)).toBeVisible();
+    await expect(this.page.getByText(key, { exact: true })).toBeVisible();
   }
 
   async shouldShowParam(key: string) {
-    await expect(this.page.getByText(key)).toBeVisible();
+    await expect(this.page.getByText(key, { exact: true })).toBeVisible();
   }
 }
