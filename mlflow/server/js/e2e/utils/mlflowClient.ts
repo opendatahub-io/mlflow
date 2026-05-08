@@ -13,7 +13,7 @@ async function apiRequest(method: string, path: string, body: Record<string, unk
       'Content-Type': 'application/json',
       [WORKSPACE_HEADER]: E2E_WORKSPACE,
     },
-    body: JSON.stringify(body),
+    ...(method !== 'GET' ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
     const text = await res.text();
