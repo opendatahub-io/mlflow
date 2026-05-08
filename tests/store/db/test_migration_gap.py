@@ -453,6 +453,7 @@ def test_schema_matches_fresh_install(tmp_path):
     patched_dir.mkdir()
     patched_engine, _ = _simulate_rhoai_33_state(patched_dir)
     fix_migration_gap_if_needed(patched_engine)
+    mlflow.store.db.utils._upgrade_db(patched_engine)
     patched_tables, patched_columns, patched_indexes = _snapshot_schema(patched_engine)
     patched_engine.dispose()
 
