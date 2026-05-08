@@ -12,5 +12,7 @@ export default async function globalTeardown() {
     // best-effort
   }
 
-  await deleteWorkspace(E2E_WORKSPACE).catch(() => {});
+  await deleteWorkspace(E2E_WORKSPACE).catch((e) =>
+    console.warn(`Cleanup: failed to delete workspace ${E2E_WORKSPACE}:`, e.message),
+  );
 }
