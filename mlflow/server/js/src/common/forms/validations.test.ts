@@ -1,9 +1,13 @@
-import { test, jest, expect, describe } from '@jest/globals';
+import { test, jest, expect, describe, afterEach } from '@jest/globals';
 import { getExperimentNameValidator, modelNameValidator } from './validations';
 import { MlflowService } from '../../experiment-tracking/sdk/MlflowService';
 import { Services as ModelRegistryService } from '../../model-registry/services';
 
 describe('ExperimentNameValidator', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('rejects name that exists in the cached list', () => {
     const experimentNames = ['Default', 'Test Experiment'];
     const value = experimentNames[0];

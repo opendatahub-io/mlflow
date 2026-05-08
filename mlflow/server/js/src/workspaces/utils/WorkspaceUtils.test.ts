@@ -446,7 +446,7 @@ describe('WorkspaceUtils', () => {
   describe('onWorkspaceChange', () => {
     it('fires listener when workspace changes', () => {
       const listener = jest.fn();
-      onWorkspaceChange(listener);
+      const unsubscribe = onWorkspaceChange(listener);
 
       setActiveWorkspace('team-a');
       expect(listener).toHaveBeenCalledTimes(1);
@@ -455,26 +455,29 @@ describe('WorkspaceUtils', () => {
       setActiveWorkspace('team-b');
       expect(listener).toHaveBeenCalledTimes(2);
       expect(listener).toHaveBeenCalledWith('team-b');
+      unsubscribe();
     });
 
     it('does not fire when workspace is set to the same value', () => {
       setActiveWorkspace('team-a');
 
       const listener = jest.fn();
-      onWorkspaceChange(listener);
+      const unsubscribe = onWorkspaceChange(listener);
 
       setActiveWorkspace('team-a');
       expect(listener).not.toHaveBeenCalled();
+      unsubscribe();
     });
 
     it('fires when workspace is cleared to null', () => {
       setActiveWorkspace('team-a');
 
       const listener = jest.fn();
-      onWorkspaceChange(listener);
+      const unsubscribe = onWorkspaceChange(listener);
 
       setActiveWorkspace(null);
       expect(listener).toHaveBeenCalledWith(null);
+      unsubscribe();
     });
 
     it('returns an unsubscribe function that removes the listener', () => {

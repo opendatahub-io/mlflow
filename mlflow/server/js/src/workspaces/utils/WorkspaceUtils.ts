@@ -22,7 +22,7 @@ export const setActiveWorkspace = (workspace: string | null) => {
     setLastUsedWorkspace(workspace);
   }
   if (prev !== workspace) {
-    workspaceChangeListeners.forEach((l) => l(workspace));
+    Array.from(workspaceChangeListeners).forEach((l) => l(workspace));
   }
 };
 
