@@ -961,6 +961,7 @@ module.exports = {
   "mlflow.experiment-page.header.back-icon-button": "",
   "mlflow.experiment-page.header.docs-link": "",
   "mlflow.experiment-page.header.docs-link-button": "",
+  "mlflow.experiment-page.side-nav": "",
 
   // -- mlflow.experiment-scorers --
   "mlflow.experiment-scorers.add-variable-button": "",

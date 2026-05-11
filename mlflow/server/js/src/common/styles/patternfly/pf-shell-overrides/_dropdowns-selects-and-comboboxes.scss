@@ -532,6 +532,20 @@
     @include flat-floating-surface;
   }
 
+  /* rc-select renders role=listbox on its inner container (including the empty
+     state), which bleeds in the combobox div[role='listbox'] rule
+     (floating-surface + max-content width). Reset the visual properties so the
+     listbox fills the dropdown without its own shadow. */
+  .du-bois-light-select-dropdown,
+  .du-bois-dark-select-dropdown {
+    div[role='listbox'] {
+      width: 100% !important;
+      background-color: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+  }
+
   .du-bois-light-dropdown-show-arrow,
   .du-bois-dark-dropdown-show-arrow {
     padding-top: 0 !important;

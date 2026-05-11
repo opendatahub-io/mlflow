@@ -47,6 +47,7 @@ export const ExperimentPageSideNav = ({
 
   return (
     <div
+      data-component-id="mlflow.experiment-page.side-nav"
       css={{
         display: 'flex',
         flexDirection: 'column',

@@ -371,6 +371,12 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     }
   }
 
+  /* Experiment page side nav - restore the top spacing via a stable component
+     hook rather than brittle structural selectors. */
+  div[data-component-id='mlflow.experiment-page.side-nav'] {
+    padding-top: var(--pf-t--global--spacer--sm) !important;
+  }
+
   /* Prompt details traces pane - restore the missing left gutter in the split right panel. */
   div:has(> div > [data-component-id='mlflow.prompts.details.mode'])
     + div
