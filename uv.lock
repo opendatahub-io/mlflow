@@ -10,11 +10,12 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-20T11:22:54.774436496Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
 torchvision = false
+mlflow-kubernetes-plugins = false
 torch = false
 
 [manifest]
@@ -4220,7 +4221,6 @@ dependencies = [
     { name = "gunicorn", marker = "sys_platform != 'win32'" },
     { name = "huey" },
     { name = "importlib-metadata" },
-    { name = "kubernetes" },
     { name = "matplotlib" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
