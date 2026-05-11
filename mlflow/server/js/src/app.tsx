@@ -71,11 +71,11 @@ export function MLFlowRoot() {
               <MlflowThemeGlobalStyles />
               <DarkThemeProvider setIsDarkTheme={setIsDarkTheme}>
                 <QueryClientProvider client={queryClient}>
-                  <ServerInfoProvider>
-                    <ModularArchContextProvider config={modularArchConfig}>
+                  <ModularArchContextProvider config={modularArchConfig}>
+                    <ServerInfoProvider>
                       <MlflowRouter />
-                    </ModularArchContextProvider>
-                  </ServerInfoProvider>
+                    </ServerInfoProvider>
+                  </ModularArchContextProvider>
                 </QueryClientProvider>
               </DarkThemeProvider>
             </DesignSystemContainer>

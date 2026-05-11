@@ -196,6 +196,7 @@
     "typescript": "^5.9.3",
     "webpack": "5.105.4",
     "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^4.6.0",
     "whatwg-fetch": "^3.6.17"
   },
   "workspaces": [

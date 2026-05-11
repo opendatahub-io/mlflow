@@ -130,7 +130,12 @@ export const ExperimentsHomeView = ({
   const snappedWidth = columns === 1 ? '100%' : cardWidthPx * columns + cardGapPx * (columns - 1);
 
   return (
-    <section ref={containerRef} css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+    <section
+      ref={containerRef}
+      aria-label="Recent experiments"
+      data-component-id="mlflow.home.experiments-section"
+      css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}
+    >
       <div
         css={{
           display: 'flex',

@@ -521,6 +521,14 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     }
   }
 
+  section[data-component-id='mlflow.home.experiments-section'] {
+    width: 100%;
+
+    > div:nth-child(2) {
+      width: 100%;
+    }
+  }
+
   /* Align the "Add tag" button with the inputs */
   button[data-component-id^='codegen_mlflow_app_src_common_hooks_useeditkeyvaluetagsmodal'] {
     align-self: flex-end !important;

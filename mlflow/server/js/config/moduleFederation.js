@@ -25,7 +25,8 @@ const moduleFederationConfig = {
     './MlflowRunTabsWrapper': './src/odh/runs/MlflowRunTabsWrapper',
   },
   runtime: false,
-  dts: true,
+  // DTS generation is only needed for production builds.
+  dts: process.env.WEBPACK_WATCH !== 'true',
 };
 
 module.exports = {
