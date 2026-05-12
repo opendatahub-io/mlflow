@@ -2727,7 +2727,7 @@ __metadata:
 
 "@databricks/design-system@file:./vendor/design-system::locator=%40mlflow%2Fmlflow%40workspace%3A.":
   version: 1.0.0-b11bd26b
-  resolution: "@databricks/design-system@file:./vendor/design-system#./vendor/design-system::hash=1cd434&locator=%40mlflow%2Fmlflow%40workspace%3A."
+  resolution: "@databricks/design-system@file:./vendor/design-system#./vendor/design-system::hash=a141f9&locator=%40mlflow%2Fmlflow%40workspace%3A."
   dependencies:
     "@ant-design/icons": "npm:^4.7.0"
     "@babel/runtime": "npm:^7.28.4"
@@ -2748,7 +2748,6 @@ __metadata:
     "@radix-ui/react-toast": "npm:1.1.5"
     "@radix-ui/react-toggle": "npm:1.0.3"
     "@radix-ui/react-toolbar": "npm:1.0.4"
-    "@radix-ui/react-tooltip-patch": "patch:@radix-ui/react-tooltip@npm%3A1.0.7#../js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch"
     "@testing-library/dom": "npm:^10.4.0"
     "@testing-library/react": "npm:^16.1.0"
     "@testing-library/user-event": "npm:^14.5.2"
@@ -2772,7 +2771,7 @@ __metadata:
     moment: ^2.25.3
     react: "*"
     react-dom: "*"
-  checksum: 10c0/b31070dca01c61b9bf5a063557e9cda6f71d8be7272c01bb02fb2c0b11f14bf893fb45c21addcb846964e51752dcdb1b2a6000dbb9690cc95b9218f936dcee25
+  checksum: 10c0/f5dec96116e1d06b2c255a19851a0ef2bb0fd64e92b5134423a4c6522dfff8852e856cf86646fa2a09e51f5856d6885ef48bbe4eea81499ce27f1c2fc0055699
   languageName: node
   linkType: hard
 
@@ -4852,6 +4851,7 @@ __metadata:
     "@openshift/dynamic-plugin-sdk": "npm:^8.0.0"
     "@patternfly/patternfly": "npm:^6.4.0"
     "@patternfly/react-tokens": "npm:^6.4.0"
+    "@radix-ui/react-tooltip-patch": "patch:@radix-ui/react-tooltip@npm%3A1.0.7#vendor/js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch"
     "@storybook/addon-actions": "npm:^6.5.5"
     "@storybook/addon-docs": "npm:^6.5.5"
     "@storybook/addon-essentials": "npm:^6.5.5"
@@ -7314,9 +7314,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-tooltip-patch@patch:@radix-ui/react-tooltip@npm%3A1.0.7#../js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch::locator=%40databricks%2Fdesign-system%40file%3A.%2Fvendor%2Fdesign-system%23.%2Fvendor%2Fdesign-system%3A%3Ahash%3D1cd434%26locator%3D%2540mlflow%252Fmlflow%2540workspace%253A.":
+"@radix-ui/react-tooltip-patch@patch:@radix-ui/react-tooltip@npm%3A1.0.7#vendor/js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch::locator=%40mlflow%2Fmlflow%40workspace%3A.":
   version: 1.0.7
-  resolution: "@radix-ui/react-tooltip-patch@patch:@radix-ui/react-tooltip@npm%3A1.0.7#../js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch::version=1.0.7&hash=8486cf&locator=%40databricks%2Fdesign-system%40file%3A.%2Fvendor%2Fdesign-system%23.%2Fvendor%2Fdesign-system%3A%3Ahash%3D1cd434%26locator%3D%2540mlflow%252Fmlflow%2540workspace%253A."
+  resolution: "@radix-ui/react-tooltip-patch@patch:@radix-ui/react-tooltip@npm%3A1.0.7#vendor/js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch::version=1.0.7&hash=8486cf&locator=%40mlflow%2Fmlflow%40workspace%3A."
   dependencies:
     "@babel/runtime": "npm:^7.13.10"
     "@radix-ui/primitive": "npm:1.0.1"

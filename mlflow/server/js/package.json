@@ -37,6 +37,7 @@
     "@openshift/dynamic-plugin-sdk": "^8.0.0",
     "@patternfly/patternfly": "^6.4.0",
     "@patternfly/react-tokens": "^6.4.0",
+    "@radix-ui/react-tooltip-patch": "patch:@radix-ui/react-tooltip@npm%3A1.0.7#vendor/js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch",
     "@tanstack/react-query": "^4.29.17",
     "@tanstack/react-table": "8.21.2",
     "@tanstack/react-virtual": "^3.8.1",
