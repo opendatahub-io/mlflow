@@ -4904,7 +4904,7 @@ __metadata:
     d3-scale: "npm:^2.1.0"
     dateformat: "npm:3.0.3"
     diff: "npm:5.1.0"
-    dompurify: "npm:^2.5.9"
+    dompurify: "npm:^3.4.0"
     enzyme: "npm:^3.11.0"
     eslint: "npm:^8.56.0"
     eslint-config-standard: "npm:10.2.1"
@@ -10979,7 +10979,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/trusted-types@npm:*, @types/trusted-types@npm:^2.0.2":
+"@types/trusted-types@npm:*, @types/trusted-types@npm:^2.0.2, @types/trusted-types@npm:^2.0.7":
   version: 2.0.7
   resolution: "@types/trusted-types@npm:2.0.7"
   checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
@@ -17807,10 +17807,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^2.5.9":
-  version: 2.5.9
-  resolution: "dompurify@npm:2.5.9"
-  checksum: 10c0/91cf3fd8ad07f969a740813a2101d573547954fd87925d729e8cfc592fa93c51fc3f7b298d336bd90c1a5eae1ad65d1ca06254b938fd84af84ef081c9c4b75ee
+"dompurify@npm:^3.4.0":
+  version: 3.4.1
+  resolution: "dompurify@npm:3.4.1"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10c0/440a4246020cb54b82ef2cb66381e4d310a0c470f9994655e61b6122811f0eaa00a2f9665d2bed30ca3f58932ba7bb0d5e26fdfce61c8daf35d21a3f5a799e48
   languageName: node
   linkType: hard
 
