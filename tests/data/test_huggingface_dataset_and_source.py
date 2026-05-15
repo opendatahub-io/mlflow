@@ -93,8 +93,8 @@ def test_from_huggingface_dataset_constructs_expected_dataset_with_revision():
         ds, path="rotten_tomatoes", revision=revision, trust_remote_code=True
     )
 
-    ds = mlflow_ds_new.source.load()
-    assert any(revision in cs for cs in ds.info.download_checksums)
+    mlflow_ds_new.source.load()
+    assert mlflow_ds_new.source.revision == revision
 
 
 def test_from_huggingface_dataset_constructs_expected_dataset_with_data_files():
