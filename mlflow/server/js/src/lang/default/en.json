@@ -8455,6 +8455,10 @@
     "defaultMessage": "Custom code judge",
     "description": "Menu item text to create a new custom code judge"
   },
+  "o7NbW0": {
+    "defaultMessage": "Compare runs page loading",
+    "description": "Compare runs page > Loading state"
+  },
   "o7dzKo": {
     "defaultMessage": "Last Modified",
     "description": "Label name for last modified timestamp metadata in model version page"
@@ -9670,6 +9674,10 @@
   "vqWexj": {
     "defaultMessage": "Back to experiment list",
     "description": "Tooltip for experiments button"
+  },
+  "vqhfw+": {
+    "defaultMessage": "No runs provided for comparison.",
+    "description": "Compare runs page > Empty input state"
   },
   "vwD2zW": {
     "defaultMessage": "Unified APIs",
