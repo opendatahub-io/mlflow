@@ -32,20 +32,20 @@ arches:
     name: openblas
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/p/python3.12-3.12.12-4.el9_7.1.aarch64.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/p/python3.12-3.12.13-2.el9_8.aarch64.rpm
     repoid: ubi-9-for-aarch64-appstream-rpms
-    size: 32556
-    checksum: sha256:0d360b72d46221e6c67bf4911523c7f63ce394e1d10d33d0ed1fe1f584989781
+    size: 33253
+    checksum: sha256:1132db054b33d20b7704844ac7a69402b58f2bea74ffd0104e02ba6e2a609861
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/p/python3.12-libs-3.12.12-4.el9_7.1.aarch64.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/p/python3.12-libs-3.12.13-2.el9_8.aarch64.rpm
     repoid: ubi-9-for-aarch64-appstream-rpms
-    size: 10139241
-    checksum: sha256:79f41e3b0dc48884c4d7de8339ba9462862e645d5a53a2f61f970469c1a70395
+    size: 10134136
+    checksum: sha256:888d030f73b8d0377837eb5ee7d857a0d550793fd0c8c5994676dd6b76a98804
     name: python3.12-libs
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/p/python3.12-pip-23.2.1-5.el9.noarch.rpm
     repoid: ubi-9-for-aarch64-appstream-rpms
     size: 3370313
@@ -67,20 +67,27 @@ arches:
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
     sourcerpm: python3.12-setuptools-68.2.2-5.el9_6.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/e/expat-2.5.0-5.el9_7.1.aarch64.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/os/Packages/s/sqlite-3.34.1-10.el9_8.aarch64.rpm
+    repoid: ubi-9-for-aarch64-appstream-rpms
+    size: 771166
+    checksum: sha256:41b23dbbe0a6d95df7d0b8bd987533716819e5cb8f5e75c31996fae109589a3b
+    name: sqlite
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/e/expat-2.5.0-6.el9.aarch64.rpm
     repoid: ubi-9-for-aarch64-baseos-rpms
-    size: 114334
-    checksum: sha256:1129f05857f5fad3f7755514591fa22cedda810f541476e3a54b6257a4846341
+    size: 114418
+    checksum: sha256:acbb03d5e75b387a4cff967de7db4030a0299103acab30709c3b739082112017
     name: expat
-    evr: 2.5.0-5.el9_7.1
-    sourcerpm: expat-2.5.0-5.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libgfortran-11.5.0-11.el9.aarch64.rpm
+    evr: 2.5.0-6.el9
+    sourcerpm: expat-2.5.0-6.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libgfortran-11.5.0-14.el9.aarch64.rpm
     repoid: ubi-9-for-aarch64-baseos-rpms
-    size: 434762
-    checksum: sha256:9ff2665e6364917eae3894fbfdeef236a7484193ac6818ad59b2cb5ea165f731
+    size: 435007
+    checksum: sha256:dffccd2856eae33a06d19180c60cf3d6944e9e6e08712b54cf83c49d77b21903
     name: libgfortran
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libtirpc-1.3.3-9.el9.aarch64.rpm
     repoid: ubi-9-for-aarch64-baseos-rpms
     size: 98735
@@ -88,6 +95,13 @@ arches:
     name: libtirpc
     evr: 1.3.3-9.el9
     sourcerpm: libtirpc-1.3.3-9.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/s/sqlite-libs-3.34.1-10.el9_8.aarch64.rpm
+    repoid: ubi-9-for-aarch64-baseos-rpms
+    size: 660260
+    checksum: sha256:dda4c59309d47d73d64291c53078cce330b8d5a9d95c903e133d9f37ec0e0a68
+    name: sqlite-libs
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.aarch64.rpm
     repoid: codeready-builder-for-ubi-9-aarch64-rpms
     size: 3825499
@@ -120,12 +134,12 @@ arches:
     checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
     name: openblas
     evr: 0.3.29-1.el9
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/p/python3.12-3.12.12-4.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/p/python3.12-3.12.13-2.el9_8.src.rpm
     repoid: ubi-9-for-aarch64-appstream-source-rpms
-    size: 20878981
-    checksum: sha256:5fa971ae08c44c59bee11855de099a683c81b02bc3c6f94be7b7efae0508a83f
+    size: 20884854
+    checksum: sha256:f3e4be91674b9c6a6bb47bea8c2934e01caa947c5be7ce6c98fdb61296fbc1ee
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
+    evr: 3.12.13-2.el9_8
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/p/python3.12-pip-23.2.1-5.el9.src.rpm
     repoid: ubi-9-for-aarch64-appstream-source-rpms
     size: 9384965
@@ -138,24 +152,30 @@ arches:
     checksum: sha256:8c42914fd3691cee14049a40d523a9ff1ebcd8fbf9e74b801b94f0f422ddb064
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/e/expat-2.5.0-5.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/e/expat-2.5.0-6.el9.src.rpm
     repoid: ubi-9-for-aarch64-baseos-source-rpms
-    size: 8380127
-    checksum: sha256:29a0e23a89d0f1ba640a694688699e1c765c4f5793d9f9c0642a97aa54179664
+    size: 8380129
+    checksum: sha256:770b7a3482856c990fdedb23c930f071743a5f2dbd87af02b86b12471796612a
     name: expat
-    evr: 2.5.0-5.el9_7.1
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/g/gcc-11.5.0-11.el9.src.rpm
+    evr: 2.5.0-6.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/g/gcc-11.5.0-14.el9.src.rpm
     repoid: ubi-9-for-aarch64-baseos-source-rpms
-    size: 81971986
-    checksum: sha256:4ab595dc52e7a66f9cb067e55081e9ba4e2cb577187cf1ac9a2e92e07c295560
+    size: 81978017
+    checksum: sha256:19dec462f2880508570ca42a82c2f76fbd95fcad8d3e3ff812e9ca50cdeb2d8f
     name: gcc
-    evr: 11.5.0-11.el9
+    evr: 11.5.0-14.el9
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/l/libtirpc-1.3.3-9.el9.src.rpm
     repoid: ubi-9-for-aarch64-baseos-source-rpms
     size: 589716
     checksum: sha256:95d684042f4c5f63ac57923639fd1e7d6d278766b4ee99feb24baa5567fe4b7e
     name: libtirpc
     evr: 1.3.3-9.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-10.el9_8.src.rpm
+    repoid: ubi-9-for-aarch64-baseos-source-rpms
+    size: 25116090
+    checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
+    name: sqlite
+    evr: 3.34.1-10.el9_8
   module_metadata: []
 - arch: ppc64le
   packages:
@@ -187,20 +207,20 @@ arches:
     name: openblas
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/p/python3.12-3.12.12-4.el9_7.1.ppc64le.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/p/python3.12-3.12.13-2.el9_8.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-appstream-rpms
-    size: 32611
-    checksum: sha256:bbdb5fd1db7376531291fccbdbc6054e215e7c27c7c1c7be4811a4890ff49b51
+    size: 33306
+    checksum: sha256:edf5c9d6a9ae9c778860b23e765b1ff839bb678363a9d5d2e0d5f465bd6d97fa
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/p/python3.12-libs-3.12.12-4.el9_7.1.ppc64le.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/p/python3.12-libs-3.12.13-2.el9_8.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-appstream-rpms
-    size: 10078807
-    checksum: sha256:818cae0b74e9d7c65f599e42d39241588d50332103be6a1995722b32ad3dce37
+    size: 10087921
+    checksum: sha256:88a1ef8f5123365ad3e6588e24bc34b10243800808bd48572b8708ab19dd49e7
     name: python3.12-libs
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/p/python3.12-pip-23.2.1-5.el9.noarch.rpm
     repoid: ubi-9-for-ppc64le-appstream-rpms
     size: 3370313
@@ -222,27 +242,34 @@ arches:
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
     sourcerpm: python3.12-setuptools-68.2.2-5.el9_6.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/e/expat-2.5.0-5.el9_7.1.ppc64le.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/os/Packages/s/sqlite-3.34.1-10.el9_8.ppc64le.rpm
+    repoid: ubi-9-for-ppc64le-appstream-rpms
+    size: 885961
+    checksum: sha256:4d33c37ab7f719b2b5cfcd38152140cee27e322d4d76cd147da7713f0b3066f9
+    name: sqlite
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/e/expat-2.5.0-6.el9.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-baseos-rpms
-    size: 125279
-    checksum: sha256:7c349066e23424ec2a9bc8add7e7abe91b766c0afa3b7aac751227905385ad5a
+    size: 125321
+    checksum: sha256:b9ae1a0a21a6a7469ce37d3c6823eda4be08f539959f965f27758159c774410d
     name: expat
-    evr: 2.5.0-5.el9_7.1
-    sourcerpm: expat-2.5.0-5.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libgfortran-11.5.0-11.el9.ppc64le.rpm
+    evr: 2.5.0-6.el9
+    sourcerpm: expat-2.5.0-6.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libgfortran-11.5.0-14.el9.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-baseos-rpms
-    size: 517311
-    checksum: sha256:368e063c451f83b0a31767b635c1d45dd1237b83625cce741044c5d9d457ad2f
+    size: 517166
+    checksum: sha256:2a50e5adc5f3c0b9c80c14dc7c90169abd38284a52f8660a5276b8c7e8bd982d
     name: libgfortran
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libquadmath-11.5.0-11.el9.ppc64le.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libquadmath-11.5.0-14.el9.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-baseos-rpms
-    size: 191990
-    checksum: sha256:b8ef124c44bdc85735e314de07753462b13919aebdaa686e0239c5f4b5cfb6a8
+    size: 192305
+    checksum: sha256:5b1425277383dc64753d8e865a2f388ac376f1a97b4a2c25a9b34c0c80a1136f
     name: libquadmath
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libtirpc-1.3.3-9.el9.ppc64le.rpm
     repoid: ubi-9-for-ppc64le-baseos-rpms
     size: 112487
@@ -250,6 +277,13 @@ arches:
     name: libtirpc
     evr: 1.3.3-9.el9
     sourcerpm: libtirpc-1.3.3-9.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/s/sqlite-libs-3.34.1-10.el9_8.ppc64le.rpm
+    repoid: ubi-9-for-ppc64le-baseos-rpms
+    size: 758081
+    checksum: sha256:6eac353037fe537e4639455a4ce8595b6b8c345913f84868b2a3288c6b54000a
+    name: sqlite-libs
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.ppc64le.rpm
     repoid: codeready-builder-for-ubi-9-ppc64le-rpms
     size: 4652547
@@ -282,12 +316,12 @@ arches:
     checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
     name: openblas
     evr: 0.3.29-1.el9
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/p/python3.12-3.12.12-4.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/p/python3.12-3.12.13-2.el9_8.src.rpm
     repoid: ubi-9-for-ppc64le-appstream-source-rpms
-    size: 20878981
-    checksum: sha256:5fa971ae08c44c59bee11855de099a683c81b02bc3c6f94be7b7efae0508a83f
+    size: 20884854
+    checksum: sha256:f3e4be91674b9c6a6bb47bea8c2934e01caa947c5be7ce6c98fdb61296fbc1ee
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
+    evr: 3.12.13-2.el9_8
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/p/python3.12-pip-23.2.1-5.el9.src.rpm
     repoid: ubi-9-for-ppc64le-appstream-source-rpms
     size: 9384965
@@ -300,24 +334,30 @@ arches:
     checksum: sha256:8c42914fd3691cee14049a40d523a9ff1ebcd8fbf9e74b801b94f0f422ddb064
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/e/expat-2.5.0-5.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/e/expat-2.5.0-6.el9.src.rpm
     repoid: ubi-9-for-ppc64le-baseos-source-rpms
-    size: 8380127
-    checksum: sha256:29a0e23a89d0f1ba640a694688699e1c765c4f5793d9f9c0642a97aa54179664
+    size: 8380129
+    checksum: sha256:770b7a3482856c990fdedb23c930f071743a5f2dbd87af02b86b12471796612a
     name: expat
-    evr: 2.5.0-5.el9_7.1
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/g/gcc-11.5.0-11.el9.src.rpm
+    evr: 2.5.0-6.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/g/gcc-11.5.0-14.el9.src.rpm
     repoid: ubi-9-for-ppc64le-baseos-source-rpms
-    size: 81971986
-    checksum: sha256:4ab595dc52e7a66f9cb067e55081e9ba4e2cb577187cf1ac9a2e92e07c295560
+    size: 81978017
+    checksum: sha256:19dec462f2880508570ca42a82c2f76fbd95fcad8d3e3ff812e9ca50cdeb2d8f
     name: gcc
-    evr: 11.5.0-11.el9
+    evr: 11.5.0-14.el9
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/l/libtirpc-1.3.3-9.el9.src.rpm
     repoid: ubi-9-for-ppc64le-baseos-source-rpms
     size: 589716
     checksum: sha256:95d684042f4c5f63ac57923639fd1e7d6d278766b4ee99feb24baa5567fe4b7e
     name: libtirpc
     evr: 1.3.3-9.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-10.el9_8.src.rpm
+    repoid: ubi-9-for-ppc64le-baseos-source-rpms
+    size: 25116090
+    checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
+    name: sqlite
+    evr: 3.34.1-10.el9_8
   module_metadata: []
 - arch: s390x
   packages:
@@ -349,20 +389,20 @@ arches:
     name: openblas
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/p/python3.12-3.12.12-4.el9_7.1.s390x.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/p/python3.12-3.12.13-2.el9_8.s390x.rpm
     repoid: ubi-9-for-s390x-appstream-rpms
-    size: 32416
-    checksum: sha256:0571271237e964c415a1e250b2231a661593ab624634df7bda88b437798015a0
+    size: 33103
+    checksum: sha256:d671a54fd29454af8f897f62eae59fa8e79ef4c898401212a74218cd03e641c4
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/p/python3.12-libs-3.12.12-4.el9_7.1.s390x.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/p/python3.12-libs-3.12.13-2.el9_8.s390x.rpm
     repoid: ubi-9-for-s390x-appstream-rpms
-    size: 9973559
-    checksum: sha256:9ff71df093ae61b010222e30821e0044c42e92c7e8f69c0d6574ac0e30ca21e1
+    size: 9978012
+    checksum: sha256:e688d7a1f32c8fd2054b82dc285f94a6b0536a94eadc7898b272d81c770e6efe
     name: python3.12-libs
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/p/python3.12-pip-23.2.1-5.el9.noarch.rpm
     repoid: ubi-9-for-s390x-appstream-rpms
     size: 3370313
@@ -384,20 +424,27 @@ arches:
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
     sourcerpm: python3.12-setuptools-68.2.2-5.el9_6.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/e/expat-2.5.0-5.el9_7.1.s390x.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/os/Packages/s/sqlite-3.34.1-10.el9_8.s390x.rpm
+    repoid: ubi-9-for-s390x-appstream-rpms
+    size: 761655
+    checksum: sha256:57acf27b45a8620ea765bf4e374b21d44a968b3a7162e5bd1364317229cd0c67
+    name: sqlite
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/e/expat-2.5.0-6.el9.s390x.rpm
     repoid: ubi-9-for-s390x-baseos-rpms
-    size: 116358
-    checksum: sha256:fbef934aa6f4173ad3527b3ec56c86a8e9304b330df49a33cf6c74248b48d124
+    size: 116325
+    checksum: sha256:0fa875cffe13bdca519605d13e913bc3d973ce813d490e424ca390aaf4bffe83
     name: expat
-    evr: 2.5.0-5.el9_7.1
-    sourcerpm: expat-2.5.0-5.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libgfortran-11.5.0-11.el9.s390x.rpm
+    evr: 2.5.0-6.el9
+    sourcerpm: expat-2.5.0-6.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libgfortran-11.5.0-14.el9.s390x.rpm
     repoid: ubi-9-for-s390x-baseos-rpms
-    size: 491896
-    checksum: sha256:1798edc2c23d6c50567eacc37038a23d352ad66a723bc812f069b7ff8ac6d773
+    size: 489372
+    checksum: sha256:840f299bbb969efd46cc6a08f197d5717bb98c30d59704ccd54607d7060e9f49
     name: libgfortran
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libtirpc-1.3.3-9.el9.s390x.rpm
     repoid: ubi-9-for-s390x-baseos-rpms
     size: 96807
@@ -405,6 +452,13 @@ arches:
     name: libtirpc
     evr: 1.3.3-9.el9
     sourcerpm: libtirpc-1.3.3-9.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/s/sqlite-libs-3.34.1-10.el9_8.s390x.rpm
+    repoid: ubi-9-for-s390x-baseos-rpms
+    size: 652115
+    checksum: sha256:d773b3c1eac55a53efd669c87906804b31cf065a8f9885e6370b739c8f213f9d
+    name: sqlite-libs
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.s390x.rpm
     repoid: codeready-builder-for-ubi-9-s390x-rpms
     size: 3638809
@@ -437,12 +491,12 @@ arches:
     checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
     name: openblas
     evr: 0.3.29-1.el9
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/source/SRPMS/Packages/p/python3.12-3.12.12-4.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/source/SRPMS/Packages/p/python3.12-3.12.13-2.el9_8.src.rpm
     repoid: ubi-9-for-s390x-appstream-source-rpms
-    size: 20878981
-    checksum: sha256:5fa971ae08c44c59bee11855de099a683c81b02bc3c6f94be7b7efae0508a83f
+    size: 20884854
+    checksum: sha256:f3e4be91674b9c6a6bb47bea8c2934e01caa947c5be7ce6c98fdb61296fbc1ee
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
+    evr: 3.12.13-2.el9_8
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/source/SRPMS/Packages/p/python3.12-pip-23.2.1-5.el9.src.rpm
     repoid: ubi-9-for-s390x-appstream-source-rpms
     size: 9384965
@@ -455,24 +509,30 @@ arches:
     checksum: sha256:8c42914fd3691cee14049a40d523a9ff1ebcd8fbf9e74b801b94f0f422ddb064
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/e/expat-2.5.0-5.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/e/expat-2.5.0-6.el9.src.rpm
     repoid: ubi-9-for-s390x-baseos-source-rpms
-    size: 8380127
-    checksum: sha256:29a0e23a89d0f1ba640a694688699e1c765c4f5793d9f9c0642a97aa54179664
+    size: 8380129
+    checksum: sha256:770b7a3482856c990fdedb23c930f071743a5f2dbd87af02b86b12471796612a
     name: expat
-    evr: 2.5.0-5.el9_7.1
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/g/gcc-11.5.0-11.el9.src.rpm
+    evr: 2.5.0-6.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/g/gcc-11.5.0-14.el9.src.rpm
     repoid: ubi-9-for-s390x-baseos-source-rpms
-    size: 81971986
-    checksum: sha256:4ab595dc52e7a66f9cb067e55081e9ba4e2cb577187cf1ac9a2e92e07c295560
+    size: 81978017
+    checksum: sha256:19dec462f2880508570ca42a82c2f76fbd95fcad8d3e3ff812e9ca50cdeb2d8f
     name: gcc
-    evr: 11.5.0-11.el9
+    evr: 11.5.0-14.el9
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/l/libtirpc-1.3.3-9.el9.src.rpm
     repoid: ubi-9-for-s390x-baseos-source-rpms
     size: 589716
     checksum: sha256:95d684042f4c5f63ac57923639fd1e7d6d278766b4ee99feb24baa5567fe4b7e
     name: libtirpc
     evr: 1.3.3-9.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-10.el9_8.src.rpm
+    repoid: ubi-9-for-s390x-baseos-source-rpms
+    size: 25116090
+    checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
+    name: sqlite
+    evr: 3.34.1-10.el9_8
   module_metadata: []
 - arch: x86_64
   packages:
@@ -504,20 +564,20 @@ arches:
     name: openblas
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/p/python3.12-3.12.12-4.el9_7.1.x86_64.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/p/python3.12-3.12.13-2.el9_8.x86_64.rpm
     repoid: ubi-9-for-x86_64-appstream-rpms
-    size: 32599
-    checksum: sha256:320e0811e1a64e9ac607c666b41d69fbd9917cf83befd52d88cf55396a2f0f6b
+    size: 33278
+    checksum: sha256:b534b3693ac5571ace6bcbeb0c65e7bf3d9e326bc622c7fac51015d32b45d216
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/p/python3.12-libs-3.12.12-4.el9_7.1.x86_64.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/p/python3.12-libs-3.12.13-2.el9_8.x86_64.rpm
     repoid: ubi-9-for-x86_64-appstream-rpms
-    size: 10214024
-    checksum: sha256:3c63141ada03d7512b5e068309d0a067503601d9dfae060dd06dd69478943b82
+    size: 10217208
+    checksum: sha256:16baa9a7786c1cba3707593a61b12aae9134e4303670e218fc8a94f8d5db08b5
     name: python3.12-libs
-    evr: 3.12.12-4.el9_7.1
-    sourcerpm: python3.12-3.12.12-4.el9_7.1.src.rpm
+    evr: 3.12.13-2.el9_8
+    sourcerpm: python3.12-3.12.13-2.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/p/python3.12-pip-23.2.1-5.el9.noarch.rpm
     repoid: ubi-9-for-x86_64-appstream-rpms
     size: 3370313
@@ -539,27 +599,34 @@ arches:
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
     sourcerpm: python3.12-setuptools-68.2.2-5.el9_6.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/e/expat-2.5.0-5.el9_7.1.x86_64.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/os/Packages/s/sqlite-3.34.1-10.el9_8.x86_64.rpm
+    repoid: ubi-9-for-x86_64-appstream-rpms
+    size: 782720
+    checksum: sha256:4bc99f34fcebb5d9d006f83027c43395c3e3a5d6476ba96d4cf439cea8211fb9
+    name: sqlite
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/e/expat-2.5.0-6.el9.x86_64.rpm
     repoid: ubi-9-for-x86_64-baseos-rpms
-    size: 120241
-    checksum: sha256:e8ce7bfb8667fc6e4d080f4cae71e175a25cc78b5389a41e3e2e05ffe8edeafe
+    size: 120289
+    checksum: sha256:d3db74f301ef2aab029523c80fcd8744bff69aab442a6ee9f71f85934ad910c2
     name: expat
-    evr: 2.5.0-5.el9_7.1
-    sourcerpm: expat-2.5.0-5.el9_7.1.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libgfortran-11.5.0-11.el9.x86_64.rpm
+    evr: 2.5.0-6.el9
+    sourcerpm: expat-2.5.0-6.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libgfortran-11.5.0-14.el9.x86_64.rpm
     repoid: ubi-9-for-x86_64-baseos-rpms
-    size: 813149
-    checksum: sha256:0e7efd7cbcb12a658769269a0f70cfc2b5103375cc9e819b7163c4a6e76d0640
+    size: 813380
+    checksum: sha256:11d2f1c6c2ca35bdf7e866e80615d17d10601bc512905c8ef4f74ff8b0a3015a
     name: libgfortran
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libquadmath-11.5.0-11.el9.x86_64.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libquadmath-11.5.0-14.el9.x86_64.rpm
     repoid: ubi-9-for-x86_64-baseos-rpms
-    size: 188641
-    checksum: sha256:972827dde378d28151b9036709795a1c0e81106c10c9218e42686488acd7365e
+    size: 188925
+    checksum: sha256:6fd5a850dc8e0a5b17c95089a8da0319beb8bf6ba68b633366d509458b332448
     name: libquadmath
-    evr: 11.5.0-11.el9
-    sourcerpm: gcc-11.5.0-11.el9.src.rpm
+    evr: 11.5.0-14.el9
+    sourcerpm: gcc-11.5.0-14.el9.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libtirpc-1.3.3-9.el9.x86_64.rpm
     repoid: ubi-9-for-x86_64-baseos-rpms
     size: 98934
@@ -567,6 +634,13 @@ arches:
     name: libtirpc
     evr: 1.3.3-9.el9
     sourcerpm: libtirpc-1.3.3-9.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/s/sqlite-libs-3.34.1-10.el9_8.x86_64.rpm
+    repoid: ubi-9-for-x86_64-baseos-rpms
+    size: 664960
+    checksum: sha256:7dc2202e08184890c851dcb2218a9abce14da150f12dfb8663ca306416e1d8d4
+    name: sqlite-libs
+    evr: 3.34.1-10.el9_8
+    sourcerpm: sqlite-3.34.1-10.el9_8.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/codeready-builder/os/Packages/o/openblas-threads-0.3.29-1.el9.x86_64.rpm
     repoid: codeready-builder-for-ubi-9-x86_64-rpms
     size: 5526706
@@ -599,12 +673,12 @@ arches:
     checksum: sha256:4a1fd34e0b3bf712dc3810823ec4c57df6806c6110d30d160ffc91face8f80bd
     name: openblas
     evr: 0.3.29-1.el9
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/p/python3.12-3.12.12-4.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/p/python3.12-3.12.13-2.el9_8.src.rpm
     repoid: ubi-9-for-x86_64-appstream-source-rpms
-    size: 20878981
-    checksum: sha256:5fa971ae08c44c59bee11855de099a683c81b02bc3c6f94be7b7efae0508a83f
+    size: 20884854
+    checksum: sha256:f3e4be91674b9c6a6bb47bea8c2934e01caa947c5be7ce6c98fdb61296fbc1ee
     name: python3.12
-    evr: 3.12.12-4.el9_7.1
+    evr: 3.12.13-2.el9_8
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/p/python3.12-pip-23.2.1-5.el9.src.rpm
     repoid: ubi-9-for-x86_64-appstream-source-rpms
     size: 9384965
@@ -617,22 +691,28 @@ arches:
     checksum: sha256:8c42914fd3691cee14049a40d523a9ff1ebcd8fbf9e74b801b94f0f422ddb064
     name: python3.12-setuptools
     evr: 68.2.2-5.el9_6
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/e/expat-2.5.0-5.el9_7.1.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/e/expat-2.5.0-6.el9.src.rpm
     repoid: ubi-9-for-x86_64-baseos-source-rpms
-    size: 8380127
-    checksum: sha256:29a0e23a89d0f1ba640a694688699e1c765c4f5793d9f9c0642a97aa54179664
+    size: 8380129
+    checksum: sha256:770b7a3482856c990fdedb23c930f071743a5f2dbd87af02b86b12471796612a
     name: expat
-    evr: 2.5.0-5.el9_7.1
-  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/g/gcc-11.5.0-11.el9.src.rpm
+    evr: 2.5.0-6.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/g/gcc-11.5.0-14.el9.src.rpm
     repoid: ubi-9-for-x86_64-baseos-source-rpms
-    size: 81971986
-    checksum: sha256:4ab595dc52e7a66f9cb067e55081e9ba4e2cb577187cf1ac9a2e92e07c295560
+    size: 81978017
+    checksum: sha256:19dec462f2880508570ca42a82c2f76fbd95fcad8d3e3ff812e9ca50cdeb2d8f
     name: gcc
-    evr: 11.5.0-11.el9
+    evr: 11.5.0-14.el9
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/l/libtirpc-1.3.3-9.el9.src.rpm
     repoid: ubi-9-for-x86_64-baseos-source-rpms
     size: 589716
     checksum: sha256:95d684042f4c5f63ac57923639fd1e7d6d278766b4ee99feb24baa5567fe4b7e
     name: libtirpc
     evr: 1.3.3-9.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-10.el9_8.src.rpm
+    repoid: ubi-9-for-x86_64-baseos-source-rpms
+    size: 25116090
+    checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
+    name: sqlite
+    evr: 3.34.1-10.el9_8
   module_metadata: []

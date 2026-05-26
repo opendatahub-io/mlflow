@@ -48,7 +48,7 @@ USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
 RUN set -eux; \
-    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads && \
+    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads sqlite && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
         -r /tmp/konflux-aipcc-requirements.txt && \
