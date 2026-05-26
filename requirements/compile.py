@@ -29,7 +29,7 @@ from piptools.utils import format_requirement, get_hashes_from_ireq
 
 AIPCC_INDEX_URL = "https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple"
 
-DEFAULT_DOCKER_IMAGE = "registry.access.redhat.com/ubi9/python-312:9.7"
+DEFAULT_DOCKER_IMAGE = "registry.access.redhat.com/ubi9/python-312:9.8"
 
 ARCHES = ["amd64", "arm64", "ppc64le", "s390x"]
 
