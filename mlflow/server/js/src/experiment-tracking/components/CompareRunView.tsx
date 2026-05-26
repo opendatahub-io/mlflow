@@ -471,7 +471,7 @@ class CompareRunView extends Component<CompareRunViewProps, CompareRunViewState>
 
     return (
       <div className="CompareRunView" ref={this.compareRunViewRef}>
-        <PageHeader title={title} breadcrumbs={breadcrumbs} spacerSize="xs" />
+        {!isEmbedded && <PageHeader title={title} breadcrumbs={breadcrumbs} spacerSize="xs" />}
         <CollapsibleSection
           title={this.props.intl.formatMessage({
             defaultMessage: 'Visualizations',

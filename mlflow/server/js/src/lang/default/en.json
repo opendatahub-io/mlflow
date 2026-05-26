@@ -7391,6 +7391,10 @@
     "defaultMessage": "The model version will be copied to {selectedModel} as a new version.",
     "description": "Model registry > OSS Promote model modal > copy explanatory text"
   },
+  "hxn2QP": {
+    "defaultMessage": "Failed to load runs for comparison.",
+    "description": "Compare runs page > Load error state"
+  },
   "hyHL1n": {
     "defaultMessage": "No metrics match the search filter",
     "description": "Message displayed when no metrics match the search filter in the logged model details metrics table"
