@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Route, useSearchParams } from '../../common/utils/RoutingUtils';
 import { useDispatch, useSelector } from 'react-redux';
 import { ParagraphSkeleton, TitleSkeleton } from '@databricks/design-system';
@@ -28,17 +28,13 @@ const EmbeddedCompareRunView: React.FC = () => {
   const experimentIds = useMemo(() => parseStringArrayParam(searchParams.get('experiments')), [searchParams]);
 
   const dispatch = useDispatch();
+  const [fetchError, setFetchError] = useState(false);
 
-  const isRestrictedCompareRunsLink = useCallback((link: HTMLAnchorElement) => {
-    const href = link.getAttribute('href') ?? '';
-    if (!href || href.startsWith('#')) return false;
-    try {
-      const url = new URL(href, window.location.origin);
-      return !(url.origin === window.location.origin && url.pathname.includes('/compare-runs'));
-    } catch {
-      return true;
-    }
-  }, []);
+  const isRestrictedCompareRunsLink = useCallback(
+    (_link: HTMLAnchorElement, url: URL) =>
+      !(url.origin === window.location.origin && url.pathname.includes('/compare-runs')),
+    [],
+  );
 
   useEmbeddedLinkInterceptor({
     enabled: runUuids.length > 0,
@@ -47,14 +43,29 @@ const EmbeddedCompareRunView: React.FC = () => {
   });
 
   useEffect(() => {
-    if (runUuids.length === 0) return;
+    if (runUuids.length === 0) {
+      setFetchError(false);
+      return;
+    }
 
-    experimentIds.forEach((experimentId) => {
-      (dispatch as any)(getExperimentApi(experimentId)).catch(() => {});
+    let cancelled = false;
+    setFetchError(false);
+
+    const fetchPromises = [
+      ...experimentIds.map((experimentId) => (dispatch as any)(getExperimentApi(experimentId))),
+      ...runUuids.map((runUuid) => (dispatch as any)(getRunApi(runUuid))),
+    ];
+
+    Promise.allSettled(fetchPromises).then((results) => {
+      if (cancelled) return;
+      if (results.some((result) => result.status === 'rejected')) {
+        setFetchError(true);
+      }
     });
-    runUuids.forEach((runUuid) => {
-      (dispatch as any)(getRunApi(runUuid)).catch(() => {});
-    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch, experimentIds, runUuids]);
 
   const allDataLoaded = useSelector(
@@ -70,6 +81,17 @@ const EmbeddedCompareRunView: React.FC = () => {
         <FormattedMessage
           defaultMessage="No runs provided for comparison."
           description="Compare runs page > Empty input state"
+        />
+      </PageContainer>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <PageContainer>
+        <FormattedMessage
+          defaultMessage="Failed to load runs for comparison."
+          description="Compare runs page > Load error state"
         />
       </PageContainer>
     );
