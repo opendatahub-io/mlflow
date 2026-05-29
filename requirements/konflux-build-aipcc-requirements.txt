@@ -6,13 +6,21 @@
 #
 --index-url https://console.redhat.com/api/pypi/public-rhai/rhoai/3.4/cpu-ubi9/simple
 
-build==1.4.2 \
-    --hash=sha256:ef5814e19f805164dd8c5111bd7015bf17da172017ef4a1101f9a1b82cd8b15e
-packaging==26.0 \
-    --hash=sha256:3d88de7604ff5eef52df30fd9803c8cf1565e6da3bd3c8c3f4e7d7f18c11069c
+build==1.5.0 \
+    --hash=sha256:7f948e63f9f6094d01ea6b9354b226d8bf8e7c9b2d56d5f21b904c6a236cc985
+hatchling==1.29.0 \
+    --hash=sha256:9a3792b32617f6e19cff11058e2f2fcf3befcb7220c7cbafccd9eecee1a74c73
+packaging==26.2 \
+    --hash=sha256:31c96589d316a65625213114e0a1c9707c47a620bf0e89c19e6c062c946a760f
+pathspec==1.1.1 \
+    --hash=sha256:19f453436f4bb6c9de7c6b67127dc34afd9f65a9828ad50c36b0417ffbce05bc
+pluggy==1.6.0 \
+    --hash=sha256:984df28329611bee51530a6c39a6b3267a07abc257ea752a83b40146e1923b87
 pyproject-hooks==1.2.0 \
     --hash=sha256:23f914be06e835a1cac214a3c08daffbdf4d33f685194c76b38b079d8cf1dc62
 setuptools==80.10.2 \
     --hash=sha256:05ef2ee3d34409715c7d0589a3a0c6064a2b117f8489a5b512aef078173d1faf
-wheel==0.46.3 \
-    --hash=sha256:70ed432fbcd9b7d938edc4be7ac57478e1f48a6b165494deb7e6e1c81a34a15c
+trove-classifiers==2026.4.28.13 \
+    --hash=sha256:dfb9cb476ea0705e542127c2d995a76942f8410f55d2b93aaa27d161950fda32
+wheel==0.47.0 \
+    --hash=sha256:8593705d08f649098548a620edff8cceee09e57cb953f78a94c1aa3b9c051704

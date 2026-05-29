@@ -6,5 +6,6 @@
 #   python requirements/compile.py
 
 build
+hatchling
 setuptools
 wheel

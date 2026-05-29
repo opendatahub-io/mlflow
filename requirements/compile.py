@@ -2,7 +2,9 @@
 
 For AIPCC requirements (konflux-aipcc, konflux-build-aipcc), runs uv pip compile
 inside Docker containers for each target architecture, then merges the
-per-architecture hashes into a single output file.
+per-architecture hashes into a single output file. Packages explicitly listed
+in requirements/konflux-pypi.in are omitted from the final-image AIPCC output
+so SBOM and CVE tooling see a single source of truth per shipped package.
 
 For PyPI requirements (konflux-pypi), runs a single uv pip compile since these
 packages are built from source and don't need multi-arch hashes.
@@ -20,6 +22,7 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +44,7 @@ ARCH_MISSING_ALLOWLIST: dict[str, set[str]] = {
 }
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+KONFLUX_PYPI_IN = REPO_ROOT / "requirements/konflux-pypi.in"
 
 
 @dataclass
@@ -90,6 +94,14 @@ def log(msg: str) -> None:
 def _canonicalize(name: str) -> str:
     """PEP 503 normalization so we can match the same package across arch outputs."""
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
+@cache
+def read_requirements_names(path: Path) -> frozenset[str]:
+    session = PipSession()
+    return frozenset(
+        _canonicalize(ireq.req.name) for ireq in parse_requirements(str(path), session=session)
+    )
 
 
 def run_uv_compile_in_docker(
@@ -204,7 +216,10 @@ def parse_and_collect_hashes(
             detail = ", ".join(f"{a}: {v}" for a, v in sorted(arch_versions.items()))
             raise SystemExit(
                 f"Version mismatch for {name}: {detail}. "
-                "All architectures must resolve to the same version."
+                "All architectures must resolve to the same version. "
+                "Add an explicit constraint for this package to the relevant "
+                "AIPCC input file (for example `requirements/konflux-aipcc.in`) "
+                "and rerun `python requirements/compile.py`."
             )
 
     return canonical_ireqs, merged_hashes
@@ -214,6 +229,7 @@ def write_multiarch_output(
     target: CompileTarget,
     canonical_ireqs: dict[str, Any],
     merged_hashes: dict[str, set[str]],
+    excluded_names: set[str] | None = None,
 ) -> None:
     out_path = REPO_ROOT / target.out_file
     parts: list[str] = []
@@ -232,6 +248,8 @@ def write_multiarch_output(
         parts.append(f"--index-url {target.index_url}\n\n")
 
     for name in sorted(canonical_ireqs):
+        if excluded_names and name in excluded_names:
+            continue
         ireq = canonical_ireqs[name]
         hashes = merged_hashes[name]
         parts.append(format_requirement(ireq, hashes=hashes) + "\n")
@@ -289,7 +307,12 @@ def compile_multiarch(target: CompileTarget, image: str) -> None:
 
         canonical_ireqs, merged_hashes = parse_and_collect_hashes(arch_outputs)
 
-        write_multiarch_output(target, canonical_ireqs, merged_hashes)
+        excluded_names = (
+            read_requirements_names(KONFLUX_PYPI_IN) if target.name == "konflux-aipcc" else None
+        )
+        write_multiarch_output(
+            target, canonical_ireqs, merged_hashes, excluded_names=excluded_names
+        )
     finally:
         for arch_tag in arch_images.values():
             subprocess.run(["docker", "rmi", arch_tag], capture_output=True)
