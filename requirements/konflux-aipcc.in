@@ -16,6 +16,7 @@
 
 boto3
 prometheus-client
+kubernetes
 
 # Cross-arch constraints: pin packages to versions available on all target
 # architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
