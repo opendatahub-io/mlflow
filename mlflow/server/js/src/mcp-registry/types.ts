@@ -28,6 +28,7 @@ export interface MCPAccessBindingSummary {
   transport_type: MCPRemoteTransportType;
   server_version?: string;
   server_alias?: string;
+  resolved_version?: MCPServerVersion;
 }
 
 export interface MCPServerAlias {
@@ -75,6 +76,7 @@ export interface MCPAccessBinding {
   tools?: MCPTool[];
   server_version?: string;
   server_alias?: string;
+  resolved_version?: MCPServerVersion;
   created_by?: string;
   last_updated_by?: string;
   creation_timestamp?: number;
