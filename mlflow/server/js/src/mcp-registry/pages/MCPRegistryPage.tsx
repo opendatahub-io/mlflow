@@ -28,26 +28,11 @@ import { useSearchParams } from '../../common/utils/RoutingUtils';
 import { ModelSearchInputHelpTooltip } from '../../model-registry/components/model-list/ModelListFilters';
 import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
+import { MCPServerListTable, emptyCenterStyles } from '../components/MCPServerListTable';
 import { useDebounce } from 'use-debounce';
 
 type ViewMode = 'list' | 'grid';
 type ActiveTab = 'servers' | 'bindings';
-
-const emptyCenterStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  minHeight: 400,
-  width: '100%',
-  '& > div': {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-};
 
 const MCPRegistryPage = () => {
   const { theme } = useDesignSystemTheme();
@@ -60,7 +45,15 @@ const MCPRegistryPage = () => {
   const [debouncedSearchFilter] = useDebounce(searchFilter, 500);
   const effectiveFilter = searchFilter ? debouncedSearchFilter : undefined;
 
-  const { data: servers, isLoading, error } = useMCPServersListQuery({ searchFilter: effectiveFilter });
+  const {
+    data: servers,
+    isLoading,
+    error,
+    hasNextPage,
+    hasPreviousPage,
+    onNextPage,
+    onPreviousPage,
+  } = useMCPServersListQuery({ searchFilter: effectiveFilter });
 
   const handleTabChange = useCallback(
     (e: RadioChangeEvent) => {
@@ -192,25 +185,15 @@ const MCPRegistryPage = () => {
                 <MCPServerCardGrid servers={servers} isLoading={isLoading} isFiltered={Boolean(searchFilter)} />
               )
             ) : (
-              <Table scrollable empty={isEmptyState ? serversEmptyState : undefined}>
-                <TableRow isHeader>
-                  <TableHeader componentId="mlflow.mcp_registry.table.header.name">
-                    <FormattedMessage defaultMessage="Name" description="MCP servers table header for name column" />
-                  </TableHeader>
-                  <TableHeader componentId="mlflow.mcp_registry.table.header.description">
-                    <FormattedMessage
-                      defaultMessage="Description"
-                      description="MCP servers table header for description column"
-                    />
-                  </TableHeader>
-                  <TableHeader componentId="mlflow.mcp_registry.table.header.last_modified">
-                    <FormattedMessage
-                      defaultMessage="Last modified"
-                      description="MCP servers table header for last modified column"
-                    />
-                  </TableHeader>
-                </TableRow>
-              </Table>
+              <MCPServerListTable
+                servers={servers}
+                hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
+                isLoading={isLoading}
+                isFiltered={Boolean(searchFilter)}
+                onNextPage={onNextPage}
+                onPreviousPage={onPreviousPage}
+              />
             )}
           </div>
         )}
