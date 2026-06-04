@@ -439,6 +439,10 @@
     "defaultMessage": "Create webhook",
     "description": "Create webhook modal title"
   },
+  "/xcOO2": {
+    "defaultMessage": "Create MCP server",
+    "description": "MCP servers table empty state CTA button"
+  },
   "/y0ZU4": {
     "defaultMessage": "Updated",
     "description": "Secret last updated label"
@@ -1702,6 +1706,10 @@
   "6Q/0BO": {
     "defaultMessage": "The retrieval groundedness LLM judge returns a binary evaluation and written rationale on whether the generated response is factually consistent with the agent's retrieved context.",
     "description": "Evaluation results > known type of evaluation result assessment > description of retrieval groundedness judge."
+  },
+  "6QwDyx": {
+    "defaultMessage": "Name",
+    "description": "Header for the name column in the MCP servers table"
   },
   "6SXoSp": {
     "defaultMessage": "Model definition",
@@ -3611,6 +3619,10 @@
     "defaultMessage": "When enabled, all requests to this endpoint will be logged as traces. This allows you to monitor usage, debug issues, and analyze performance.",
     "description": "Tooltip explaining what usage tracking does"
   },
+  "FZe3Mu": {
+    "defaultMessage": "Last modified",
+    "description": "Header for the last modified column in the MCP servers table"
+  },
   "FZubuU": {
     "defaultMessage": "Input an experiment name",
     "description": "Input placeholder to enter experiment name for create experiment"
@@ -4166,6 +4178,10 @@
   "IV37H1": {
     "defaultMessage": "Description update failed",
     "description": "Partial save status message when experiment description update fails"
+  },
+  "IWF0yU": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for MCP servers table"
   },
   "IWNUE0": {
     "defaultMessage": "Failed to load roles",
@@ -7662,6 +7678,10 @@
   "Zc48NC": {
     "defaultMessage": "(unknown)",
     "description": "Filler text when run's time information is unavailable"
+  },
+  "ZcWNz2": {
+    "defaultMessage": "Description",
+    "description": "Header for the description column in the MCP servers table"
   },
   "ZfsnMj": {
     "defaultMessage": "Not grounded",
@@ -12890,6 +12910,10 @@
   "yDLCp6": {
     "defaultMessage": "View all",
     "description": "Home page experiments view all link"
+  },
+  "yEh+Sb": {
+    "defaultMessage": "Create and manage MCP servers using MLflow.",
+    "description": "Empty state description for MCP servers table"
   },
   "yFl8nB": {
     "defaultMessage": "This model will be deprecated on {date}",

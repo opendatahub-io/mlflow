@@ -1,6 +1,6 @@
 import type { QueryFunctionContext } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MCPRegistryApi } from '../api';
 import type { SearchMCPServersResponse } from '../types';
 
@@ -33,12 +33,16 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
   const previousPageTokens = useRef<(string | undefined)[]>([]);
   const [currentPageToken, setCurrentPageToken] = useState<string | undefined>(undefined);
 
+  useEffect(() => {
+    setCurrentPageToken(undefined);
+    previousPageTokens.current = [];
+  }, [searchFilter]);
+
   const queryResult = useQuery<SearchMCPServersResponse, Error, SearchMCPServersResponse, MCPServersListQueryKey>(
     ['mcp_servers_list', { searchFilter, pageToken: currentPageToken }],
     {
       queryFn,
       retry: false,
-      keepPreviousData: true,
     },
   );
 
@@ -56,7 +60,7 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
     data: queryResult.data?.mcp_servers,
     error: queryResult.error ?? undefined,
     isLoading: queryResult.isLoading,
-    hasNextPage: queryResult.data?.next_page_token !== undefined,
+    hasNextPage: Boolean(queryResult.data?.next_page_token),
     hasPreviousPage: Boolean(currentPageToken),
     onNextPage,
     onPreviousPage,
