@@ -1847,9 +1847,9 @@ module.exports = {
   "mlflow.mcp_registry.empty_state.create_server": "",
   "mlflow.mcp_registry.error": "",
   "mlflow.mcp_registry.search": "",
-  "mlflow.mcp_registry.table.header.description": "",
-  "mlflow.mcp_registry.table.header.last_modified": "",
-  "mlflow.mcp_registry.table.header.name": "",
+  "mlflow.mcp_registry.table.empty_state.create_server": "",
+  "mlflow.mcp_registry.table.header": "",
+  "mlflow.mcp_registry.table.pagination": "",
   "mlflow.mcp_registry.tabs": "",
   "mlflow.mcp_registry.view_toggle": "",
 
