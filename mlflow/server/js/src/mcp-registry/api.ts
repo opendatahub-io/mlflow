@@ -124,7 +124,7 @@ export const MCPRegistryApi = {
   },
 
   getLatestMCPServerVersion: (name: string): Promise<MCPServerVersion> => {
-    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/aliases/latest`)) as Promise<MCPServerVersion>;
+    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/versions/latest`)) as Promise<MCPServerVersion>;
   },
 
   // MCP Access Binding endpoints

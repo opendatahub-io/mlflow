@@ -2167,6 +2167,10 @@
     "defaultMessage": "Choose from a selection of built-in LLM judges or create your own custom code based judge. {learnMore}",
     "description": "Description for the empty state when no judges exist"
   },
+  "9xfwTO": {
+    "defaultMessage": "Loading servers...",
+    "description": "Loading state for MCP servers card grid"
+  },
   "9y+yUQ": {
     "defaultMessage": "File is too large to preview",
     "description": "Label to indicate that the file is too large to preview"
@@ -9410,6 +9414,10 @@
   "npoynr": {
     "defaultMessage": "Prompt Name",
     "description": "Header for prompt name column in linked prompts table on logged model details page"
+  },
+  "nrIEMg": {
+    "defaultMessage": "No servers found",
+    "description": "Empty state when MCP server search returns no results"
   },
   "nugZSE": {
     "defaultMessage": "Show less",
