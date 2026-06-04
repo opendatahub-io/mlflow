@@ -1845,6 +1845,7 @@ module.exports = {
   "mlflow.mcp_registry.bindings.search": "",
   "mlflow.mcp_registry.create_server_button": "",
   "mlflow.mcp_registry.empty_state.create_server": "",
+  "mlflow.mcp_registry.error": "",
   "mlflow.mcp_registry.search": "",
   "mlflow.mcp_registry.table.header.description": "",
   "mlflow.mcp_registry.table.header.last_modified": "",
