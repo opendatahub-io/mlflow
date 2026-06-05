@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
 import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
+import { getAjaxUrl } from '@mlflow/mlflow/src/common/utils/FetchUtils';
+import { rest } from 'msw';
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { setupServer } from '../../common/utils/setup-msw';
 import MCPRegistryPage from './MCPRegistryPage';
@@ -64,6 +66,29 @@ describe('MCPRegistryPage', () => {
     await waitFor(() => {
       expect(screen.getByText('My Server 1')).toBeInTheDocument();
       expect(screen.getByText('My Server 2')).toBeInTheDocument();
+    });
+  });
+
+  it('converts plain text search into a valid name filter', async () => {
+    let capturedFilterString: string | null = null;
+    server.use(
+      rest.get(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers'), (req, res, ctx) => {
+        capturedFilterString = req.url.searchParams.get('filter_string');
+        return res(
+          ctx.json({
+            mcp_servers: [createMockMCPServer({ name: 'io.github.demo/raw-name-only' })],
+            next_page_token: undefined,
+          }),
+        );
+      }),
+    );
+    renderPage();
+
+    const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
+    await userEvent.type(searchInput, 'raw');
+
+    await waitFor(() => {
+      expect(capturedFilterString).toBe("name ILIKE '%raw%'");
     });
   });
 

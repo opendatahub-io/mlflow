@@ -6,10 +6,25 @@ import type { SearchMCPServersResponse } from '../types';
 
 type MCPServersListQueryKey = ['mcp_servers_list', { searchFilter?: string; pageToken?: string }];
 
+const buildSearchFilterClause = (searchFilter?: string): string | undefined => {
+  if (!searchFilter) {
+    return undefined;
+  }
+
+  // Match existing MLflow list UIs: allow explicit filter syntax, otherwise treat
+  // the input as a simple name search.
+  const sqlKeywordPattern = /(\s+(ILIKE|LIKE|IN|IS)\s+)|=|!=|<=|>=|<|>/i;
+  if (sqlKeywordPattern.test(searchFilter)) {
+    return searchFilter;
+  }
+
+  return `name ILIKE '%${searchFilter.replace(/'/g, "''")}%'`;
+};
+
 const queryFn = ({ queryKey }: QueryFunctionContext<MCPServersListQueryKey>) => {
   const [, { searchFilter, pageToken }] = queryKey;
   return MCPRegistryApi.searchMCPServers({
-    filter_string: searchFilter,
+    filter_string: buildSearchFilterClause(searchFilter),
     page_token: pageToken,
   });
 };
