@@ -2,15 +2,23 @@ import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { MCPServerCardGrid } from './MCPServerCardGrid';
 import { createMockMCPServer } from '../test-utils';
 
 const renderGrid = (props: React.ComponentProps<typeof MCPServerCardGrid>) =>
   render(
     <IntlProvider locale="en">
-      <DesignSystemProvider>
-        <MCPServerCardGrid {...props} />
-      </DesignSystemProvider>
+      <TestRouter
+        routes={[
+          testRoute(
+            <DesignSystemProvider>
+              <MCPServerCardGrid {...props} />
+            </DesignSystemProvider>,
+            '/',
+          ),
+        ]}
+      />
     </IntlProvider>,
   );
 
