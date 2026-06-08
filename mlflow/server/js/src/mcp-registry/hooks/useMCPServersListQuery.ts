@@ -1,10 +1,15 @@
 import type { QueryFunctionContext } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocalStorage } from '@databricks/web-shared/hooks';
+import type { CursorPaginationProps } from '@databricks/design-system';
 import { MCPRegistryApi } from '../api';
 import type { SearchMCPServersResponse } from '../types';
 
-type MCPServersListQueryKey = ['mcp_servers_list', { searchFilter?: string; pageToken?: string }];
+const DEFAULT_PAGE_SIZE = 25;
+const STORE_KEY = 'mcp_registry.page_size';
+
+type MCPServersListQueryKey = ['mcp_servers_list', { searchFilter?: string; pageToken?: string; pageSize: number }];
 
 const buildSearchFilterClause = (searchFilter?: string): string | undefined => {
   if (!searchFilter) {
@@ -22,10 +27,11 @@ const buildSearchFilterClause = (searchFilter?: string): string | undefined => {
 };
 
 const queryFn = ({ queryKey }: QueryFunctionContext<MCPServersListQueryKey>) => {
-  const [, { searchFilter, pageToken }] = queryKey;
+  const [, { searchFilter, pageToken, pageSize }] = queryKey;
   return MCPRegistryApi.searchMCPServers({
     filter_string: buildSearchFilterClause(searchFilter),
     page_token: pageToken,
+    max_results: pageSize,
   });
 };
 
@@ -33,16 +39,33 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
   const previousPageTokens = useRef<(string | undefined)[]>([]);
   const [currentPageToken, setCurrentPageToken] = useState<string | undefined>(undefined);
 
+  const [pageSize, setPageSize] = useLocalStorage({
+    key: STORE_KEY,
+    version: 0,
+    initialValue: DEFAULT_PAGE_SIZE,
+  });
+
   useEffect(() => {
     setCurrentPageToken(undefined);
     previousPageTokens.current = [];
   }, [searchFilter]);
 
+  const pageSizeSelect: CursorPaginationProps['pageSizeSelect'] = {
+    options: [10, 25, 50, 100],
+    default: pageSize,
+    onChange(newPageSize) {
+      setPageSize(newPageSize);
+      setCurrentPageToken(undefined);
+      previousPageTokens.current = [];
+    },
+  };
+
   const queryResult = useQuery<SearchMCPServersResponse, Error, SearchMCPServersResponse, MCPServersListQueryKey>(
-    ['mcp_servers_list', { searchFilter, pageToken: currentPageToken }],
+    ['mcp_servers_list', { searchFilter, pageToken: currentPageToken, pageSize }],
     {
       queryFn,
       retry: false,
+      keepPreviousData: true,
     },
   );
 
@@ -64,6 +87,7 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
     hasPreviousPage: Boolean(currentPageToken),
     onNextPage,
     onPreviousPage,
+    pageSizeSelect,
     refetch: queryResult.refetch,
   };
 };

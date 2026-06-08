@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   Button,
+  CursorPagination,
   Empty,
   GridIcon,
   Header,
@@ -53,6 +54,7 @@ const MCPRegistryPage = () => {
     hasPreviousPage,
     onNextPage,
     onPreviousPage,
+    pageSizeSelect,
   } = useMCPServersListQuery({ searchFilter: effectiveFilter });
 
   const handleTabChange = useCallback(
@@ -141,9 +143,15 @@ const MCPRegistryPage = () => {
         </SegmentedControlGroup>
 
         {activeTab === 'servers' && (
-          <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+          <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div
-              css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm, paddingTop: theme.spacing.md }}
+              css={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: theme.spacing.sm,
+                paddingTop: theme.spacing.md,
+                flexShrink: 0,
+              }}
             >
               <div css={{ flex: 1 }}>
                 <TableFilterLayout>
@@ -175,14 +183,36 @@ const MCPRegistryPage = () => {
                 message={error.message}
                 componentId="mlflow.mcp_registry.error"
                 closable={false}
-                css={{ marginTop: theme.spacing.sm }}
+                css={{ marginTop: theme.spacing.sm, flexShrink: 0 }}
               />
             )}
             {viewMode === 'grid' ? (
               isEmptyState ? (
                 serversEmptyState
               ) : (
-                <MCPServerCardGrid servers={servers} isLoading={isLoading} isFiltered={Boolean(searchFilter)} />
+                <div css={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                  <div css={{ flex: '0 1 auto', overflow: 'auto', minHeight: 0 }}>
+                    <MCPServerCardGrid servers={servers} isLoading={isLoading} isFiltered={Boolean(searchFilter)} />
+                  </div>
+                  <div
+                    css={{
+                      flexShrink: 0,
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      paddingTop: theme.spacing.sm,
+                      paddingBottom: theme.spacing.sm,
+                    }}
+                  >
+                    <CursorPagination
+                      hasNextPage={hasNextPage}
+                      hasPreviousPage={hasPreviousPage}
+                      onNextPage={onNextPage}
+                      onPreviousPage={onPreviousPage}
+                      pageSizeSelect={pageSizeSelect}
+                      componentId="mlflow.mcp_registry.grid.pagination"
+                    />
+                  </div>
+                </div>
               )
             ) : (
               <MCPServerListTable
@@ -193,6 +223,7 @@ const MCPRegistryPage = () => {
                 isFiltered={Boolean(searchFilter)}
                 onNextPage={onNextPage}
                 onPreviousPage={onPreviousPage}
+                pageSizeSelect={pageSizeSelect}
               />
             )}
           </div>
