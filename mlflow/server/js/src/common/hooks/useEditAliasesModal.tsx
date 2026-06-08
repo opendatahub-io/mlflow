@@ -20,12 +20,14 @@ export const useEditAliasesModal = ({
   onSave,
   getTitle,
   description,
+  reservedAliases = [],
 }: {
   aliases: AliasMap;
   onSuccess?: () => void;
   onSave: (currentlyEditedVersion: string, existingAliases: string[], draftAliases: string[]) => Promise<any>;
   getTitle: (version: string) => React.ReactNode;
   description?: React.ReactNode;
+  reservedAliases?: string[];
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -113,8 +115,12 @@ export const useEditAliasesModal = ({
   // Indicates if there is any pending change to the alias set
   const isPristine = isEqual(existingAliases.slice().sort(), draftAliases.slice().sort());
   const isExceedingLimit = draftAliases.length > MAX_ALIASES_PER_MODEL_VERSION;
+  const reservedConflicts = draftAliases.filter((alias) =>
+    reservedAliases.some((reserved) => alias.toLowerCase() === reserved.toLowerCase()),
+  );
+  const hasReservedConflict = reservedConflicts.length > 0;
 
-  const isInvalid = isPristine || isExceedingLimit;
+  const isInvalid = isPristine || isExceedingLimit || hasReservedConflict;
 
   const EditAliasesModal = (
     <Modal
@@ -170,6 +176,22 @@ export const useEditAliasesModal = ({
               closable={false}
             />
           )}
+          {reservedConflicts.map((alias) => (
+            <Alert
+              componentId="mlflow.edit-aliases-modal.reserved-alias-alert"
+              role="alert"
+              key={`reserved-${alias}`}
+              message={
+                <FormattedMessage
+                  defaultMessage="''{alias}'' alias name (case insensitive) is reserved."
+                  description="Alias editor > Warning about using a reserved alias name"
+                  values={{ alias }}
+                />
+              }
+              type="error"
+              closable={false}
+            />
+          ))}
           {conflictedAliases.map(({ alias, otherVersion }) => (
             <Alert
               componentId="mlflow.edit-aliases-modal.conflicted-alias-alert"
