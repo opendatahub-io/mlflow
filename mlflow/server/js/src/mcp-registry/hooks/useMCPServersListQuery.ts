@@ -50,7 +50,7 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
     previousPageTokens.current = [];
   }, [searchFilter]);
 
-  const pageSizeSelect: CursorPaginationProps['pageSizeSelect'] = {
+  const pageSizeSelect = useMemo<CursorPaginationProps['pageSizeSelect']>(() => ({
     options: [10, 25, 50, 100],
     default: pageSize,
     onChange(newPageSize) {
@@ -58,7 +58,7 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
       setCurrentPageToken(undefined);
       previousPageTokens.current = [];
     },
-  };
+  }), [pageSize]);
 
   const queryResult = useQuery<SearchMCPServersResponse, Error, SearchMCPServersResponse, MCPServersListQueryKey>(
     ['mcp_servers_list', { searchFilter, pageToken: currentPageToken, pageSize }],
