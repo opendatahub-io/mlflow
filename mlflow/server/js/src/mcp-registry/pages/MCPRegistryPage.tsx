@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   Button,
-  CursorPagination,
   Empty,
   GridIcon,
   Header,
@@ -190,29 +189,16 @@ const MCPRegistryPage = () => {
               isEmptyState ? (
                 serversEmptyState
               ) : (
-                <div css={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-                  <div css={{ flex: '0 1 auto', overflow: 'auto', minHeight: 0 }}>
-                    <MCPServerCardGrid servers={servers} isLoading={isLoading} isFiltered={Boolean(searchFilter)} />
-                  </div>
-                  <div
-                    css={{
-                      flexShrink: 0,
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      paddingTop: theme.spacing.sm,
-                      paddingBottom: theme.spacing.sm,
-                    }}
-                  >
-                    <CursorPagination
-                      hasNextPage={hasNextPage}
-                      hasPreviousPage={hasPreviousPage}
-                      onNextPage={onNextPage}
-                      onPreviousPage={onPreviousPage}
-                      pageSizeSelect={pageSizeSelect}
-                      componentId="mlflow.mcp_registry.grid.pagination"
-                    />
-                  </div>
-                </div>
+                <MCPServerCardGrid
+                  servers={servers}
+                  isLoading={isLoading}
+                  isFiltered={Boolean(searchFilter)}
+                  hasNextPage={hasNextPage}
+                  hasPreviousPage={hasPreviousPage}
+                  onNextPage={onNextPage}
+                  onPreviousPage={onPreviousPage}
+                  pageSizeSelect={pageSizeSelect}
+                />
               )
             ) : (
               <MCPServerListTable

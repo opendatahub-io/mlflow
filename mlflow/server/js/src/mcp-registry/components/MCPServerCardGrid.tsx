@@ -1,4 +1,5 @@
-import { Empty, NoIcon, Spinner, useDesignSystemTheme } from '@databricks/design-system';
+import type { CursorPaginationProps } from '@databricks/design-system';
+import { CursorPagination, Empty, NoIcon, Spinner, useDesignSystemTheme } from '@databricks/design-system';
 import { FormattedMessage } from 'react-intl';
 
 import type { MCPServer } from '../types';
@@ -8,10 +9,20 @@ export const MCPServerCardGrid = ({
   servers,
   isLoading,
   isFiltered,
+  hasNextPage,
+  hasPreviousPage,
+  onNextPage,
+  onPreviousPage,
+  pageSizeSelect,
 }: {
   servers?: MCPServer[];
   isLoading?: boolean;
   isFiltered?: boolean;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  onNextPage: () => void;
+  onPreviousPage: () => void;
+  pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
 }) => {
   const { theme } = useDesignSystemTheme();
 
@@ -55,17 +66,40 @@ export const MCPServerCardGrid = ({
   }
 
   return (
-    <div
-      css={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-      }}
-    >
-      {servers.map((server) => (
-        <MCPServerCard key={server.name} server={server} />
-      ))}
+    <div css={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+      <div
+        css={{
+          flex: '0 1 auto',
+          overflow: 'auto',
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: theme.spacing.md,
+          paddingTop: theme.spacing.md,
+        }}
+      >
+        {servers.map((server) => (
+          <MCPServerCard key={server.name} server={server} />
+        ))}
+      </div>
+      <div
+        css={{
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          paddingTop: theme.spacing.sm,
+          paddingBottom: theme.spacing.sm,
+        }}
+      >
+        <CursorPagination
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onNextPage={onNextPage}
+          onPreviousPage={onPreviousPage}
+          pageSizeSelect={pageSizeSelect}
+          componentId="mlflow.mcp_registry.grid.pagination"
+        />
+      </div>
     </div>
   );
 };
