@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { MCPServerListTable } from './MCPServerListTable';
 import { createMockMCPServer } from '../test-utils';
 
@@ -10,15 +11,22 @@ const noop = () => {};
 const renderTable = (props: Partial<React.ComponentProps<typeof MCPServerListTable>> = {}) =>
   render(
     <IntlProvider locale="en">
-      <DesignSystemProvider>
-        <MCPServerListTable
-          hasNextPage={false}
-          hasPreviousPage={false}
-          onNextPage={noop}
-          onPreviousPage={noop}
-          {...props}
-        />
-      </DesignSystemProvider>
+      <TestRouter
+        routes={[
+          testRoute(
+            <DesignSystemProvider>
+              <MCPServerListTable
+                hasNextPage={false}
+                hasPreviousPage={false}
+                onNextPage={noop}
+                onPreviousPage={noop}
+                {...props}
+              />
+            </DesignSystemProvider>,
+            '/',
+          ),
+        ]}
+      />
     </IntlProvider>,
   );
 

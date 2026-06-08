@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { MCPServerCard } from './MCPServerCard';
 import { createMockMCPServer } from '../test-utils';
 import type { MCPServer } from '../types';
@@ -9,9 +10,16 @@ import type { MCPServer } from '../types';
 const renderCard = (server: MCPServer) =>
   render(
     <IntlProvider locale="en">
-      <DesignSystemProvider>
-        <MCPServerCard server={server} />
-      </DesignSystemProvider>
+      <TestRouter
+        routes={[
+          testRoute(
+            <DesignSystemProvider>
+              <MCPServerCard server={server} />
+            </DesignSystemProvider>,
+            '/',
+          ),
+        ]}
+      />
     </IntlProvider>,
   );
 
