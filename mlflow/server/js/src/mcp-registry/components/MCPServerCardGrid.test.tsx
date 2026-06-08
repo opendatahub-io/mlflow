@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
@@ -6,7 +6,16 @@ import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { MCPServerCardGrid } from './MCPServerCardGrid';
 import { createMockMCPServer } from '../test-utils';
 
-const renderGrid = (props: Partial<React.ComponentProps<typeof MCPServerCardGrid>> = {}) =>
+const noop = () => {};
+
+const defaultPaginationProps = {
+  hasNextPage: false,
+  hasPreviousPage: false,
+  onNextPage: noop,
+  onPreviousPage: noop,
+};
+
+const renderGrid = (props: React.ComponentProps<typeof MCPServerCardGrid>) =>
   render(
     <IntlProvider locale="en">
       <TestRouter
@@ -24,17 +33,17 @@ const renderGrid = (props: Partial<React.ComponentProps<typeof MCPServerCardGrid
 
 describe('MCPServerCardGrid', () => {
   it('renders loading spinner when isLoading is true', () => {
-    renderGrid({ isLoading: true });
+    renderGrid({ ...defaultPaginationProps, isLoading: true });
     expect(screen.getByText('Loading servers...')).toBeInTheDocument();
   });
 
   it('renders "No servers found" when filtered and no results', () => {
-    renderGrid({ servers: [], isFiltered: true });
+    renderGrid({ ...defaultPaginationProps, servers: [], isFiltered: true });
     expect(screen.getByText('No servers found')).toBeInTheDocument();
   });
 
   it('renders nothing when no servers and not filtered', () => {
-    const { container } = renderGrid({ servers: [] });
+    const { container } = renderGrid({ ...defaultPaginationProps, servers: [] });
     expect(container.firstChild).toBeNull();
   });
 
@@ -44,14 +53,29 @@ describe('MCPServerCardGrid', () => {
       createMockMCPServer({ name: 'server-b', display_name: 'Server B' }),
       createMockMCPServer({ name: 'server-c', display_name: 'Server C' }),
     ];
-    renderGrid({ servers });
+    renderGrid({ ...defaultPaginationProps, servers });
     expect(screen.getByText('Server A')).toBeInTheDocument();
     expect(screen.getByText('Server B')).toBeInTheDocument();
     expect(screen.getByText('Server C')).toBeInTheDocument();
   });
 
   it('does not render loading spinner when servers are present', () => {
-    renderGrid({ servers: [createMockMCPServer()], isLoading: false });
+    renderGrid({ ...defaultPaginationProps, servers: [createMockMCPServer()], isLoading: false });
     expect(screen.queryByText('Loading servers...')).not.toBeInTheDocument();
+  });
+
+  it('renders pagination controls when servers are present', () => {
+    const servers = [createMockMCPServer()];
+    renderGrid({ ...defaultPaginationProps, servers, hasNextPage: true });
+    expect(screen.getByText('Next')).toBeInTheDocument();
+    expect(screen.getByText('Previous')).toBeInTheDocument();
+  });
+
+  it('calls onNextPage when Next is clicked', () => {
+    const onNextPage = jest.fn();
+    const servers = [createMockMCPServer()];
+    renderGrid({ ...defaultPaginationProps, servers, hasNextPage: true, onNextPage });
+    screen.getByText('Next').click();
+    expect(onNextPage).toHaveBeenCalledTimes(1);
   });
 });
