@@ -1875,6 +1875,7 @@ module.exports = {
   "mlflow.mcp_registry.detail.website": "",
   "mlflow.mcp_registry.empty_state.create_server": "",
   "mlflow.mcp_registry.error": "",
+  "mlflow.mcp_registry.grid.pagination": "",
   "mlflow.mcp_registry.search": "",
   "mlflow.mcp_registry.table.empty_state.create_server": "",
   "mlflow.mcp_registry.table.header": "",

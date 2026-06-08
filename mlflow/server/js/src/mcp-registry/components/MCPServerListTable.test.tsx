@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
@@ -91,5 +91,21 @@ describe('MCPServerListTable', () => {
     renderTable({ servers, hasNextPage: true });
     expect(screen.getByText('Next')).toBeInTheDocument();
     expect(screen.getByText('Previous')).toBeInTheDocument();
+  });
+
+  it('calls onNextPage when Next is clicked', () => {
+    const onNextPage = jest.fn();
+    const servers = [createMockMCPServer()];
+    renderTable({ servers, hasNextPage: true, onNextPage });
+    screen.getByText('Next').click();
+    expect(onNextPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onPreviousPage when Previous is clicked', () => {
+    const onPreviousPage = jest.fn();
+    const servers = [createMockMCPServer()];
+    renderTable({ servers, hasPreviousPage: true, onPreviousPage });
+    screen.getByText('Previous').click();
+    expect(onPreviousPage).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useReactTable_unverifiedWithReact18 as useReactTable } from '@databricks/web-shared/react-table';
+import type { CursorPaginationProps } from '@databricks/design-system';
 import {
   CursorPagination,
   Empty,
@@ -99,6 +100,7 @@ export const MCPServerListTable = ({
   isFiltered,
   onNextPage,
   onPreviousPage,
+  pageSizeSelect,
 }: {
   servers?: MCPServer[];
   hasNextPage: boolean;
@@ -107,6 +109,7 @@ export const MCPServerListTable = ({
   isFiltered?: boolean;
   onNextPage: () => void;
   onPreviousPage: () => void;
+  pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = useMCPServerTableColumns();
@@ -181,6 +184,7 @@ export const MCPServerListTable = ({
           hasPreviousPage={hasPreviousPage}
           onNextPage={onNextPage}
           onPreviousPage={onPreviousPage}
+          pageSizeSelect={pageSizeSelect}
           componentId="mlflow.mcp_registry.table.pagination"
         />
       }
