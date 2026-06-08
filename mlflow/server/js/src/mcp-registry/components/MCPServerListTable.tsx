@@ -10,7 +10,6 @@ import {
   TableHeader,
   TableRow,
   TableSkeletonRows,
-  Typography,
   useDesignSystemTheme,
   Button,
   PlusIcon,
@@ -20,6 +19,9 @@ import { flexRender, getCoreRowModel } from '@tanstack/react-table';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
+import MCPRegistryRoutes from '../routes';
+import { resolveDisplayName } from '../utils';
+import { Link } from '../../common/utils/RoutingUtils';
 import Utils from '../../common/utils/Utils';
 
 export const emptyCenterStyles = {
@@ -38,13 +40,18 @@ export const emptyCenterStyles = {
   },
 };
 
-const MCPServerNameCell = ({ getValue }: CellContext<MCPServer, unknown>) => {
+const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) => {
   const { theme } = useDesignSystemTheme();
   const value = getValue() as string;
   return (
     <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
       <McpIcon css={{ flexShrink: 0, color: theme.colors.textSecondary }} />
-      <Typography.Text>{value}</Typography.Text>
+      <Link
+        componentId="mlflow.mcp_registry.table.name_link"
+        to={MCPRegistryRoutes.getMCPServerDetailRoute(row.original.name)}
+      >
+        {value}
+      </Link>
     </span>
   );
 };
@@ -58,7 +65,7 @@ const useMCPServerTableColumns = () => {
           defaultMessage: 'Name',
           description: 'Header for the name column in the MCP servers table',
         }),
-        accessorFn: (row) => row.display_name || row.name,
+        accessorFn: (row) => resolveDisplayName(row),
         id: 'name',
         cell: MCPServerNameCell,
       },
