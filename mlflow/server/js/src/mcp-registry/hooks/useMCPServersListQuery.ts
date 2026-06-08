@@ -1,6 +1,6 @@
 import type { QueryFunctionContext } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalStorage } from '@databricks/web-shared/hooks';
 import type { CursorPaginationProps } from '@databricks/design-system';
 import { MCPRegistryApi } from '../api';
@@ -50,15 +50,18 @@ export const useMCPServersListQuery = ({ searchFilter }: { searchFilter?: string
     previousPageTokens.current = [];
   }, [searchFilter]);
 
-  const pageSizeSelect = useMemo<CursorPaginationProps['pageSizeSelect']>(() => ({
-    options: [10, 25, 50, 100],
-    default: pageSize,
-    onChange(newPageSize) {
-      setPageSize(newPageSize);
-      setCurrentPageToken(undefined);
-      previousPageTokens.current = [];
-    },
-  }), [pageSize]);
+  const pageSizeSelect = useMemo<CursorPaginationProps['pageSizeSelect']>(
+    () => ({
+      options: [10, 25, 50, 100],
+      default: pageSize,
+      onChange(newPageSize) {
+        setPageSize(newPageSize);
+        setCurrentPageToken(undefined);
+        previousPageTokens.current = [];
+      },
+    }),
+    [pageSize, setPageSize],
+  );
 
   const queryResult = useQuery<SearchMCPServersResponse, Error, SearchMCPServersResponse, MCPServersListQueryKey>(
     ['mcp_servers_list', { searchFilter, pageToken: currentPageToken, pageSize }],

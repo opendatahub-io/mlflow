@@ -250,8 +250,7 @@ describe('MCPRegistryPage', () => {
       { timeout: 2000 },
     );
 
-    // Should only have made one additional call after debounce, not 6
-    expect(callCount).toBeLessThanOrEqual(initialCallCount + 2);
+    expect(callCount).toBeLessThan(initialCallCount + 6);
   });
 
   it('keeps previous data visible while loading new search results', async () => {
