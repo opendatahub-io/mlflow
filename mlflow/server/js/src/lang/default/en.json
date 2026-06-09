@@ -2155,6 +2155,10 @@
     "defaultMessage": "LLM Connections",
     "description": "Settings content section title: LLM connections"
   },
+  "9m/8+5": {
+    "defaultMessage": "Add tag",
+    "description": "Tooltip for add tag button in create MCP server modal"
+  },
   "9mAGv0": {
     "defaultMessage": "Model name",
     "description": "Text for form title on creating model in the model registry"
@@ -2810,6 +2814,10 @@
   "CyTYL6": {
     "defaultMessage": "Line chart",
     "description": "Experiment tracking > runs charts > add chart menu > line chart"
+  },
+  "CzXzL8": {
+    "defaultMessage": "Tools:",
+    "description": "Label for tools field in create MCP server modal"
   },
   "D+UN8o": {
     "defaultMessage": "No metric charts",
@@ -3919,6 +3927,10 @@
     "defaultMessage": "New status:",
     "description": "MCP server new status label in update modal"
   },
+  "Jr4PZf": {
+    "defaultMessage": "server.json:",
+    "description": "Label for server.json field in create MCP server modal"
+  },
   "Jrri/Y": {
     "defaultMessage": "Temperature",
     "description": "Experiment page > prompt lab > temperature parameter label"
@@ -3970,6 +3982,10 @@
   "K8LdMX": {
     "defaultMessage": "Automatically log traces for CrewAI executions by calling the {code} function. For example:",
     "description": "Description of how to log traces for the CrewAI package using MLflow autologging. This message is followed by a code example."
+  },
+  "K8sPfc": {
+    "defaultMessage": "Create",
+    "description": "Label for the confirm button in the create MCP server version modal"
   },
   "K8ynGW": {
     "defaultMessage": "Search datasets",
@@ -4054,6 +4070,10 @@
   "Ka1jM2": {
     "defaultMessage": "Disabled",
     "description": "Runs charts > line chart > ignore outliers > disabled label"
+  },
+  "Kax91w": {
+    "defaultMessage": "Create MCP server",
+    "description": "Title for the create MCP server version modal"
   },
   "KcGozs": {
     "defaultMessage": "Endpoint:",
@@ -5223,6 +5243,10 @@
     "defaultMessage": "Parallel Coordinates Plot",
     "description": "Tab text for parallel coordinates plot on the model comparison page"
   },
+  "QumV2s": {
+    "defaultMessage": "https://github.com/org/repo",
+    "description": "Placeholder for source in create MCP server modal"
+  },
   "Qv7cZx": {
     "defaultMessage": "Promote model",
     "description": "Button text to promote the model to a different registered model"
@@ -6211,6 +6235,10 @@
     "defaultMessage": "Aliased versions",
     "description": "Column title for aliased versions in the registered model page"
   },
+  "WRPwF9": {
+    "defaultMessage": "Human-readable label for this server",
+    "description": "Placeholder for display name in create MCP server modal"
+  },
   "WVUF2N": {
     "defaultMessage": "Are you sure you want to delete the prompt?",
     "description": "A content for the delete prompt confirmation modal"
@@ -6875,6 +6903,10 @@
     "defaultMessage": "Provider",
     "description": "Summary provider label"
   },
+  "a3Ohkk": {
+    "defaultMessage": "Add tag",
+    "description": "Aria label for add tag button in create MCP server modal"
+  },
   "a6aAez": {
     "defaultMessage": "Cleaning up workspace metadata…",
     "description": "Status line shown in the dataset delete modal while the post-delete propagation poll is running"
@@ -7091,6 +7123,10 @@
     "defaultMessage": "Edit the request body below and click Send request to call the endpoint.",
     "description": "Try it description in starter code modal"
   },
+  "bAx8j3": {
+    "defaultMessage": "Draft",
+    "description": "Draft status option in create MCP server modal"
+  },
   "bCdY2j": {
     "defaultMessage": "Add \"{label}\"",
     "description": "Evaluation review > assessments > add new custom value element"
@@ -7198,6 +7234,10 @@
   "bmBV9A": {
     "defaultMessage": "Average Value",
     "description": "Column header for average value"
+  },
+  "bmH/Ju": {
+    "defaultMessage": "Source:",
+    "description": "Label for source field in create MCP server modal"
   },
   "bmHBO7": {
     "defaultMessage": "Sessions",
@@ -7862,6 +7902,10 @@
   "f6/IBm": {
     "defaultMessage": "Preview",
     "description": "MCP server detail preview tab"
+  },
+  "f6/YpY": {
+    "defaultMessage": "Cancel",
+    "description": "Label for the cancel button in the create MCP server version modal"
   },
   "fBB0xR": {
     "defaultMessage": "Assistant Not Available",
@@ -8907,6 +8951,10 @@
     "defaultMessage": "Operator",
     "description": "Usage overview > filter row > operator column label"
   },
+  "kQpQFQ": {
+    "defaultMessage": "Tags:",
+    "description": "Label for tags field in create MCP server modal"
+  },
   "kQw850": {
     "defaultMessage": "Test succeeded (HTTP {status})",
     "description": "Message informing the user that the webhook test succeeded"
@@ -9243,6 +9291,10 @@
     "defaultMessage": "Change password",
     "description": "Button to open the change password modal"
   },
+  "mLqAKf": {
+    "defaultMessage": "Display name:",
+    "description": "Label for display name field in create MCP server modal"
+  },
   "mLr9U7": {
     "defaultMessage": "Learn more.",
     "description": "Link text for learning more about feedback"
@@ -9399,6 +9451,10 @@
     "defaultMessage": "Yes, save and close",
     "description": "Key-value tag editor modal > Unsaved tag message > Yes, save and close button"
   },
+  "mwR/4I": {
+    "defaultMessage": "Active",
+    "description": "Active status option in create MCP server modal"
+  },
   "mzmlq2": {
     "defaultMessage": "Detects personally identifiable information such as names, emails, and phone numbers.",
     "description": "PII guardrail type description"
@@ -9434,6 +9490,10 @@
   "n7MxV7": {
     "defaultMessage": "Use multiple models for load balancing by splitting traffic with weights",
     "description": "Gateway > Endpoint details > Description for adding more primary models"
+  },
+  "nAJlQl": {
+    "defaultMessage": "Deprecated",
+    "description": "Deprecated status option in create MCP server modal"
   },
   "nAhHpm": {
     "defaultMessage": "Cancel",
@@ -9742,6 +9802,10 @@
   "odkg7W": {
     "defaultMessage": "Compact view",
     "description": "Run page > artifact view > logged table view > compact view toggle button"
+  },
+  "odrnWp": {
+    "defaultMessage": "Status:",
+    "description": "Label for status field in create MCP server modal"
   },
   "ofr72S": {
     "defaultMessage": "Version",
@@ -10943,6 +11007,10 @@
     "defaultMessage": "X axis",
     "description": "Label for X axis in scatter chart configurator in compare runs chart config modal"
   },
+  "vBUTRa": {
+    "defaultMessage": "Enter your MCP server definition",
+    "description": "Placeholder for server.json in create MCP server modal"
+  },
   "vCUglz": {
     "defaultMessage": "Suggested actions",
     "description": "Evaluation review > assessments > suggested actions > title"
@@ -11182,6 +11250,10 @@
   "wcSVYI": {
     "defaultMessage": "Are you sure you want to save and close without adding \"{tag}\"",
     "description": "Key-value tag editor modal > Unsaved tag message"
+  },
+  "wcXwcq": {
+    "defaultMessage": "Type a value",
+    "description": "Placeholder for tag value input in create MCP server modal"
   },
   "wciksY": {
     "defaultMessage": "Here's how to optimize your prompt with your dataset in your Python code:",

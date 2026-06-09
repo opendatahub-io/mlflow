@@ -68,3 +68,13 @@ export const getMockedDeleteMCPServerVersionResponse = () =>
 
 export const getMockedDeleteMCPServerResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedCreateMCPServerVersionResponse = (version?: MCPServerVersion) =>
+  rest.post(getAjaxUrl(`${BASE_URL}/:name/versions`), (_req, res, ctx) =>
+    res(ctx.json(version ?? createMockMCPServerVersion())),
+  );
+
+export const getMockedCreateMCPServerVersionErrorResponse = (status = 400, message = 'Bad request') =>
+  rest.post(getAjaxUrl(`${BASE_URL}/:name/versions`), (_req, res, ctx) =>
+    res(ctx.status(status), ctx.json({ message })),
+  );
