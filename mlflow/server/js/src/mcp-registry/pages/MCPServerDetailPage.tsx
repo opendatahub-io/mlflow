@@ -30,6 +30,7 @@ import {
   useMCPAccessBindingsQuery,
 } from '../hooks/useMCPServerDetailQuery';
 import { useDeleteMCPServer } from '../hooks/useMCPServerVersionMutations';
+import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
 import { resolveDisplayName } from '../utils';
@@ -47,6 +48,7 @@ const MCPServerDetailPage = () => {
   const intl = useIntl();
   const navigate = useNavigate();
   const { serverName = '' } = useParams<{ serverName: string }>();
+  const decodedServerName = decodeURIComponent(serverName);
   const [deleteServerModalVisible, setDeleteServerModalVisible] = useState(false);
   const deleteServerMutation = useDeleteMCPServer();
 
@@ -92,6 +94,16 @@ const MCPServerDetailPage = () => {
   const refetchAll = useCallback(async () => {
     await Promise.all([refetchServer(), refetchVersions()]);
   }, [refetchServer, refetchVersions]);
+
+  const { CreateMCPServerVersionModal, openModal: openCreateVersionModal } =
+    useCreateMCPServerVersionModal({
+      serverName: decodedServerName,
+      latestVersion: currentVersion,
+      onSuccess: async ({ version }) => {
+        await refetchAll();
+        setSelectedVersion(version);
+      },
+    });
 
   const { EditAliasesModal, showEditAliasesModal } = useEditAliasesModal({
     aliases: server?.aliases ?? [],
@@ -195,7 +207,11 @@ const MCPServerDetailPage = () => {
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
-            <Button componentId="mlflow.mcp_registry.detail.create_version" type="primary" disabled>
+            <Button
+              componentId="mlflow.mcp_registry.detail.create_version"
+              type="primary"
+              onClick={openCreateVersionModal}
+            >
               <FormattedMessage
                 defaultMessage="Create MCP server version"
                 description="MCP server detail create version button"
@@ -259,6 +275,7 @@ const MCPServerDetailPage = () => {
         </div>
       </div>
       {EditAliasesModal}
+      {CreateMCPServerVersionModal}
       <ConfirmationModal
         componentId="mlflow.mcp_registry.detail.delete_server_modal"
         title={intl.formatMessage({

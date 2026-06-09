@@ -58,4 +58,5 @@ describe('MCPServerCard', () => {
     const secondaryTexts = container.querySelectorAll('[data-testid]');
     expect(secondaryTexts.length).toBe(0);
   });
+
 });
