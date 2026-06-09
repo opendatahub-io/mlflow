@@ -32,6 +32,7 @@ import {
 import { useDeleteMCPServer } from '../hooks/useMCPServerVersionMutations';
 import { useDeleteAccessBindingMutation } from '../hooks/useAccessBindingMutation';
 import type { MCPAccessBinding } from '../types';
+import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
 import { AccessBindingModal } from '../components/AccessBindingModal';
@@ -95,6 +96,15 @@ const MCPServerDetailPage = () => {
   const refetchAll = useCallback(async () => {
     await Promise.all([refetchServer(), refetchVersions()]);
   }, [refetchServer, refetchVersions]);
+
+  const { CreateMCPServerVersionModal, openModal: openCreateVersionModal } = useCreateMCPServerVersionModal({
+    serverName: decodedServerName,
+    latestVersion: currentVersion,
+    onSuccess: async ({ version }) => {
+      await refetchAll();
+      setSelectedVersion(version);
+    },
+  });
 
   const { EditAliasesModal, showEditAliasesModal } = useEditAliasesModal({
     aliases: server?.aliases ?? [],
@@ -198,7 +208,11 @@ const MCPServerDetailPage = () => {
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
-            <Button componentId="mlflow.mcp_registry.detail.create_version" type="primary" disabled>
+            <Button
+              componentId="mlflow.mcp_registry.detail.create_version"
+              type="primary"
+              onClick={openCreateVersionModal}
+            >
               <FormattedMessage
                 defaultMessage="Create MCP server version"
                 description="MCP server detail create version button"
@@ -288,6 +302,7 @@ const MCPServerDetailPage = () => {
         lockedServer={serverName}
         defaultVersion={currentVersion?.version}
       />
+      {CreateMCPServerVersionModal}
       <ConfirmationModal
         componentId="mlflow.mcp_registry.detail.delete_server_modal"
         title={intl.formatMessage({

@@ -15,6 +15,8 @@ import {
   getMockedSearchMCPServersResponse,
   getMockedSearchMCPServersErrorResponse,
   getMockedSearchMCPAccessBindingsAllResponse,
+  getMockedCreateMCPServerVersionResponse,
+  getMockedUpdateMCPServerResponse,
 } from '../test-utils';
 
 describe('MCPRegistryPage', () => {
@@ -362,5 +364,47 @@ describe('MCPRegistryPage', () => {
       expect(screen.getByText('MCP Registry')).toBeInTheDocument();
     });
     expect(screen.getByPlaceholderText('Search access bindings')).toBeInTheDocument();
+  });
+
+  it('opens create modal when header create button is clicked', async () => {
+    const servers = [createMockMCPServer({ name: 's1', display_name: 'Server 1' })];
+    server.use(
+      getMockedSearchMCPServersResponse(servers),
+      getMockedCreateMCPServerVersionResponse(),
+      getMockedUpdateMCPServerResponse(),
+    );
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Server 1')).toBeInTheDocument();
+    });
+
+    const createButton = screen.getAllByText('Create MCP server')[0];
+    expect(createButton.closest('button')).not.toBeDisabled();
+
+    await userEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Display name:')).toBeInTheDocument();
+      expect(screen.getByText(/server\.json:/)).toBeInTheDocument();
+    });
+  });
+
+  it('opens create modal from empty state button', async () => {
+    server.use(
+      getMockedSearchMCPServersResponse([]),
+      getMockedCreateMCPServerVersionResponse(),
+      getMockedUpdateMCPServerResponse(),
+    );
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Create and manage MCP servers using MLflow.')).toBeInTheDocument();
+    });
+
+    const createButtons = screen.getAllByText('Create MCP server');
+    await userEvent.click(createButtons[createButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Display name:')).toBeInTheDocument();
+    });
   });
 });
