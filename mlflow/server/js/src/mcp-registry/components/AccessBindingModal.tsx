@@ -15,7 +15,7 @@ import type { MCPAccessBinding, MCPRemoteTransportType } from '../types';
 import { useMCPServerQuery, useMCPServerVersionsQuery } from '../hooks/useMCPServerDetailQuery';
 import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
 import { useCreateAccessBindingMutation, useUpdateAccessBindingMutation } from '../hooks/useAccessBindingMutation';
-import { resolveBindingDisplayName } from '../utils';
+import { isValidEndpointUrl, resolveBindingDisplayName } from '../utils';
 import { FieldLabel } from '../../admin/components/FieldLabel';
 
 const ALIAS_PREFIX = 'alias:';
@@ -24,7 +24,7 @@ const VERSION_PREFIX = 'version:';
 function bindingToTarget(binding: MCPAccessBinding): string {
   if (binding.server_alias) return `${ALIAS_PREFIX}${binding.server_alias}`;
   if (binding.server_version) return `${VERSION_PREFIX}${binding.server_version}`;
-  return '';
+  return `${ALIAS_PREFIX}latest`;
 }
 
 export const AccessBindingModal = ({
@@ -80,7 +80,9 @@ export const AccessBindingModal = ({
 
   const aliases = server?.aliases ?? [];
   const isSubmitting = activeMutation.isLoading;
-  const isFormValid = Boolean(selectedServer && endpointUrl.trim() && selectedTarget);
+
+  const isValidUrl = isValidEndpointUrl(endpointUrl);
+  const isFormValid = Boolean(selectedServer && isValidUrl && selectedTarget);
 
   const handleSubmit = () => {
     if (!isFormValid) return;
@@ -167,7 +169,7 @@ export const AccessBindingModal = ({
           <Alert
             componentId="mlflow.mcp_registry.binding_modal.error"
             type="error"
-            message={(activeMutation.error as Error | null)?.message}
+            message={activeMutation.error?.message}
             closable={false}
           />
         )}
@@ -215,7 +217,16 @@ export const AccessBindingModal = ({
               defaultMessage: 'https://mcp.example.com/server',
               description: 'MCP registry binding modal endpoint placeholder',
             })}
+            validationState={endpointUrl.trim() && !isValidUrl ? 'error' : undefined}
           />
+          {endpointUrl.trim() && !isValidUrl && (
+            <Typography.Text color="error" size="sm">
+              <FormattedMessage
+                defaultMessage="Enter a valid HTTP or HTTPS URL"
+                description="MCP registry binding modal endpoint URL validation error"
+              />
+            </Typography.Text>
+          )}
         </div>
 
         <div>

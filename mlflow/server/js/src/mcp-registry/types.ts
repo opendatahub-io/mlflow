@@ -17,7 +17,7 @@ export interface MCPTool {
 
 export interface MCPIcon {
   src: string;
-  sizes?: string;
+  sizes?: string[];
   mimeType?: string;
   theme?: string;
 }

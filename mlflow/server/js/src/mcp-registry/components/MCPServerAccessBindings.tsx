@@ -12,7 +12,9 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPAccessBinding, MCPServer } from '../types';
+import MCPRegistryRoutes from '../routes';
 import { formatTransportType } from '../utils';
+import { useNavigate } from '../../common/utils/RoutingUtils';
 import Utils from '../../common/utils/Utils';
 
 const BindingCard = ({
@@ -28,12 +30,14 @@ const BindingCard = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
+  const navigate = useNavigate();
   const target = binding.server_alias || binding.server_version || '—';
 
   return (
     <Card
       componentId="mlflow.mcp_registry.detail.binding.card"
       width="100%"
+      onClick={() => navigate(MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.binding_id))}
       dangerouslyAppendEmotionCSS={{
         cursor: 'pointer',
         '&:hover': {
@@ -42,35 +46,42 @@ const BindingCard = ({
       }}
     >
       <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
-        <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+        <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
           <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {binding.endpoint_url}
           </Typography.Text>
           <Tag componentId="mlflow.mcp_registry.detail.binding.transport" color="turquoise" css={{ flexShrink: 0 }}>
             {formatTransportType(binding.transport_type)}
           </Tag>
-          <div
-            css={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: theme.spacing.xs, flexShrink: 0 }}
-          >
-            {onEditBinding && (
-              <Typography.Link
-                componentId="mlflow.mcp_registry.detail.binding.edit"
-                onClick={() => onEditBinding(binding)}
-              >
-                <FormattedMessage defaultMessage="Edit" description="Edit access binding link" />
-              </Typography.Link>
-            )}
-            {onDeleteBinding && (
-              <Button
-                componentId="mlflow.mcp_registry.detail.binding.delete"
-                type="tertiary"
-                size="small"
-                icon={<TrashIcon />}
-                danger
-                onClick={() => onDeleteBinding(binding)}
-              />
-            )}
-          </div>
+          {(onEditBinding || onDeleteBinding) && (
+            <div
+              css={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: theme.spacing.xs, flexShrink: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {onEditBinding && (
+                <Typography.Link
+                  componentId="mlflow.mcp_registry.detail.binding.edit"
+                  onClick={() => onEditBinding(binding)}
+                >
+                  <FormattedMessage defaultMessage="Edit" description="Edit access binding link" />
+                </Typography.Link>
+              )}
+              {onDeleteBinding && (
+                <Button
+                  componentId="mlflow.mcp_registry.detail.binding.delete"
+                  type="tertiary"
+                  size="small"
+                  icon={<TrashIcon />}
+                  danger
+                  onClick={() => onDeleteBinding(binding)}
+                  aria-label={intl.formatMessage({
+                    defaultMessage: 'Delete access binding',
+                    description: 'Aria label for delete access binding button',
+                  })}
+                />
+              )}
+            </div>
+          )}
         </div>
         {serverDescription && (
           <Typography.Text

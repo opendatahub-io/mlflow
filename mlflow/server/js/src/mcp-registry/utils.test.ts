@@ -5,6 +5,7 @@ import {
   resolveBindingDisplayName,
   buildSearchFilterClause,
   formatTransportType,
+  isValidEndpointUrl,
   STATUS_TAG_COLOR,
   STATUS_TRANSITIONS,
 } from './utils';
@@ -140,5 +141,45 @@ describe('STATUS_TRANSITIONS', () => {
 
   it('deleted has no transitions', () => {
     expect(STATUS_TRANSITIONS.deleted).toEqual([]);
+  });
+});
+
+describe('isValidEndpointUrl', () => {
+  it('accepts valid HTTPS URLs', () => {
+    expect(isValidEndpointUrl('https://test.com')).toBe(true);
+    expect(isValidEndpointUrl('https://mcp.example.com/server')).toBe(true);
+    expect(isValidEndpointUrl('https://mcp.internal.example.com/filesystem')).toBe(true);
+  });
+
+  it('accepts valid HTTP URLs', () => {
+    expect(isValidEndpointUrl('http://localhost:8080/path')).toBe(true);
+    expect(isValidEndpointUrl('http://192.168.1.1:3000')).toBe(true);
+  });
+
+  it('rejects URLs without double slashes', () => {
+    expect(isValidEndpointUrl('https:test.com')).toBe(false);
+    expect(isValidEndpointUrl('http:localhost')).toBe(false);
+  });
+
+  it('rejects non-HTTP schemes', () => {
+    expect(isValidEndpointUrl('ftp://test.com')).toBe(false);
+    expect(isValidEndpointUrl('ws://test.com')).toBe(false);
+    expect(isValidEndpointUrl('file:///etc/passwd')).toBe(false);
+  });
+
+  it('rejects non-URL strings', () => {
+    expect(isValidEndpointUrl('not-a-url')).toBe(false);
+    expect(isValidEndpointUrl('')).toBe(false);
+    expect(isValidEndpointUrl('   ')).toBe(false);
+    expect(isValidEndpointUrl('://missing-scheme.com')).toBe(false);
+  });
+
+  it('rejects URL with scheme only and no host', () => {
+    expect(isValidEndpointUrl('https://')).toBe(false);
+    expect(isValidEndpointUrl('http://')).toBe(false);
+  });
+
+  it('trims whitespace before validating', () => {
+    expect(isValidEndpointUrl('  https://test.com  ')).toBe(true);
   });
 });

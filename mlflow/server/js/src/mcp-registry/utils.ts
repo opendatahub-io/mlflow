@@ -37,6 +37,7 @@ export const MCP_QUERY_KEYS = {
   SERVER_VERSIONS: 'mcp_server_versions',
   SERVER_BINDINGS: 'mcp_server_bindings',
   BINDINGS_LIST: 'mcp_bindings_list',
+  BINDING_DETAIL: 'mcp_binding_detail',
 } as const;
 
 export const DEFAULT_PAGE_SIZE = 25;
@@ -74,6 +75,16 @@ export const buildSearchFilterClause = (searchFilter: string | undefined, field:
     return searchFilter;
   }
   return `${field} ILIKE '%${searchFilter.replace(/'/g, "''")}%'`;
+};
+
+export const isValidEndpointUrl = (url: string): boolean => {
+  const trimmed = url.trim();
+  if (!/^https?:\/\//.test(trimmed)) return false;
+  try {
+    return Boolean(new URL(trimmed).hostname);
+  } catch {
+    return false;
+  }
 };
 
 export const formatTransportType = (transport: MCPRemoteTransportType): string => {

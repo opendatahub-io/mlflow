@@ -48,14 +48,13 @@ const EndpointCell: ColumnDef<MCPAccessBinding>['cell'] = ({ row: { original } }
           css={{ flexShrink: 0 }}
         />
       </Tooltip>
-      <Typography.Link
+      <Link
         componentId="mlflow.mcp_registry.bindings.table.endpoint_link"
-        href={original.endpoint_url}
-        target="_blank"
+        to={MCPRegistryRoutes.getAccessBindingDetailRoute(original.server_name, original.binding_id)}
         css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
       >
         {original.endpoint_url}
-      </Typography.Link>
+      </Link>
     </span>
   );
 };

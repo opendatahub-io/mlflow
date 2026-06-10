@@ -73,3 +73,14 @@ export const getMockedSearchMCPAccessBindingsAllResponse = (bindings: MCPAccessB
   rest.get(getAjaxUrl(`${BASE_URL}/bindings`), (_req, res, ctx) =>
     res(ctx.json({ mcp_access_bindings: bindings, next_page_token: undefined })),
   );
+
+export const getMockedGetMCPAccessBindingResponse = (binding: MCPAccessBinding) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) => res(ctx.json(binding)));
+
+export const getMockedGetMCPAccessBindingErrorResponse = (status = 404, message = 'Not found') =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) =>
+    res(ctx.status(status), ctx.json({ message })),
+  );
+
+export const getMockedDeleteMCPAccessBindingResponse = () =>
+  rest.delete(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) => res(ctx.json({})));

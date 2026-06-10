@@ -543,6 +543,10 @@
     "defaultMessage": "Copy link to trace",
     "description": "Tooltip for the share trace button"
   },
+  "0qq5zE": {
+    "defaultMessage": "Copy endpoint URL",
+    "description": "Tooltip for copy endpoint URL button on binding detail"
+  },
   "0r2ub6": {
     "defaultMessage": "Overview",
     "description": "Label for the overview tab in the MLflow experiment navbar"
@@ -698,6 +702,10 @@
   "1f72BQ": {
     "defaultMessage": "Version",
     "description": "Column title text for model version in model version table"
+  },
+  "1fkQkn": {
+    "defaultMessage": "Created by:",
+    "description": "Binding detail created by label"
   },
   "1hI96w": {
     "defaultMessage": "Showing only visible runs",
@@ -982,6 +990,10 @@
   "2zy+D5": {
     "defaultMessage": "Add new tag",
     "description": "Experiment tracking > experiment page > runs > add new tag button"
+  },
+  "3/LDru": {
+    "defaultMessage": "Are you sure you want to delete this access binding? This action cannot be undone.",
+    "description": "Access binding delete confirmation message"
   },
   "3253th": {
     "defaultMessage": "Trace archival retention update failed",
@@ -1439,6 +1451,10 @@
     "defaultMessage": "This key will be saved for reuse.",
     "description": "Text indicating API key will be saved for reuse"
   },
+  "5zdBY2": {
+    "defaultMessage": "Delete",
+    "description": "Access binding detail delete action"
+  },
   "60b0vW": {
     "defaultMessage": "Always show spans with exceptions, regardless of filter conditions",
     "description": "Tooltip for a span filter setting that enables showing spans with exceptions"
@@ -1786,6 +1802,10 @@
   "7cd+cQ": {
     "defaultMessage": "Trace Archival Retention",
     "description": "Label for displaying the experiment trace archival retention"
+  },
+  "7eEsbo": {
+    "defaultMessage": "Failed to load access binding",
+    "description": "Access binding detail page error title"
   },
   "7hHw+R": {
     "defaultMessage": "Instructions",
@@ -2379,6 +2399,10 @@
     "defaultMessage": "Error",
     "description": "Error assessment status in the evaluations table."
   },
+  "AXs8UU": {
+    "defaultMessage": "Version:",
+    "description": "Binding detail version label"
+  },
   "AanBxl": {
     "defaultMessage": "my-endpoint",
     "description": "Placeholder for endpoint name input"
@@ -2670,6 +2694,10 @@
   "C+nay+": {
     "defaultMessage": "Evaluation",
     "description": "Label for the evaluation section in the MLflow experiment navbar"
+  },
+  "C18YVq": {
+    "defaultMessage": "Created at:",
+    "description": "Binding detail created at label"
   },
   "C4y1fv": {
     "defaultMessage": "-∞",
@@ -3303,6 +3331,10 @@
     "defaultMessage": "Scorer",
     "description": "Column header for scorer name"
   },
+  "FolS8j": {
+    "defaultMessage": "More actions",
+    "description": "Aria label for access binding detail actions overflow menu"
+  },
   "FpjDSq": {
     "defaultMessage": "Compare",
     "description": "Text for compare button to compare versions under details tab\n                       on the model view page"
@@ -3402,6 +3434,10 @@
   "Gcpe+r": {
     "defaultMessage": "Are you sure you want to delete the webhook \"{name}\"? This action cannot be undone.",
     "description": "Delete webhook confirmation message"
+  },
+  "GcrbK9": {
+    "defaultMessage": "Description:",
+    "description": "Binding detail description label"
   },
   "GdtTc/": {
     "defaultMessage": "Run evaluation",
@@ -3894,6 +3930,10 @@
   "JNv3nr": {
     "defaultMessage": "Moving average over time",
     "description": "Label for assessment score over time chart"
+  },
+  "JOfqZ1": {
+    "defaultMessage": "Approved endpoints that connect MCP servers in the registry to live deployments in your environment.",
+    "description": "Description text for the access bindings tab"
   },
   "JPd7WA": {
     "defaultMessage": "Key must be unique",
@@ -5379,6 +5419,10 @@
     "defaultMessage": "View all",
     "description": "Home page news section view more link"
   },
+  "Rgq23W": {
+    "defaultMessage": "Updated by:",
+    "description": "Binding detail updated by label"
+  },
   "RhQhT4": {
     "defaultMessage": "Model",
     "description": "Label for model name in span details"
@@ -5418,6 +5462,10 @@
   "Rs+SVS": {
     "defaultMessage": "Ready",
     "description": "Label for ready state of a experiment logged model"
+  },
+  "RsCEso": {
+    "defaultMessage": "Enter a valid HTTP or HTTPS URL",
+    "description": "MCP registry binding modal endpoint URL validation error"
   },
   "RsTIRk": {
     "defaultMessage": "Add personal notes about this trace.",
@@ -5462,6 +5510,10 @@
   "S3YY1P": {
     "defaultMessage": "Span: {spanName}",
     "description": "Label for the span name in assessment metadata"
+  },
+  "S4UbbT": {
+    "defaultMessage": "Transport:",
+    "description": "Binding detail transport label"
   },
   "S50iFK": {
     "defaultMessage": "Create endpoint",
@@ -6623,6 +6675,10 @@
     "defaultMessage": "Save",
     "description": "Save-changes button on the dataset record drawer footer"
   },
+  "YOW2R+": {
+    "defaultMessage": "Delete access binding",
+    "description": "Aria label for delete access binding button"
+  },
   "YOp3/x": {
     "defaultMessage": "Unavailable when runs are grouped",
     "description": "Experiment page > view mode switch > evaluation mode disabled tooltip"
@@ -7535,6 +7591,10 @@
     "defaultMessage": "Run",
     "description": "Column title for the column displaying the run names for a metric"
   },
+  "d2Z2Ub": {
+    "defaultMessage": "Last updated:",
+    "description": "Binding detail last updated label"
+  },
   "d2b9xa": {
     "defaultMessage": "Enable Usage Tracking in the Overview tab to configure guardrails",
     "description": "Tooltip shown on disabled Guardrails tab explaining that usage tracking must be enabled first"
@@ -8086,6 +8146,10 @@
   "g++0mY": {
     "defaultMessage": "Does the response follow the provided guidelines?",
     "description": "Hint for Guidelines template"
+  },
+  "g+LzMY": {
+    "defaultMessage": "Edit binding",
+    "description": "Access binding detail edit button"
   },
   "g+YDB/": {
     "defaultMessage": "Group by",
@@ -8711,6 +8775,10 @@
     "defaultMessage": "Cancel",
     "description": "Cancel-button text for the V2 evaluation dataset delete modal on the detail page"
   },
+  "j/2d8u": {
+    "defaultMessage": "Endpoint URL:",
+    "description": "Binding detail endpoint URL label"
+  },
   "j/BF11": {
     "defaultMessage": "Connect to the tracking server",
     "description": "Step 1 title for Python traces onboarding"
@@ -8798,6 +8866,10 @@
   "jPW0Lj": {
     "defaultMessage": "Groundedness assessment is missing. This is likely because your agent is not returning retrieved_context.",
     "description": "Evaluation results > known type of evaluation result assessment > groundedness assessment. Used to indicate if the result is grounded in context of LLMs evaluation. Label displayed if user provided custom value, e.g. \"Groundedness: moderately grounded\""
+  },
+  "jQSwNN": {
+    "defaultMessage": "Client configuration",
+    "description": "Binding detail client config section title"
   },
   "jR08Zd": {
     "defaultMessage": "This judge template is not yet supported for sample judge output",
@@ -9110,6 +9182,10 @@
   "lDQtCN": {
     "defaultMessage": "The conversational guidelines LLM judge evaluates whether the assistant's responses throughout a conversation comply with the provided guidelines.",
     "description": "Evaluation results > known type of evaluation result assessment > conversational guidelines judge."
+  },
+  "lEpsnJ": {
+    "defaultMessage": "Delete access binding",
+    "description": "Access binding delete confirmation modal title"
   },
   "lFnpMi": {
     "defaultMessage": "AutoML",
@@ -9850,6 +9926,10 @@
   "okQ1oB": {
     "defaultMessage": "Please input a new name for the new experiment.",
     "description": "Error message for name requirement in create experiment for MLflow"
+  },
+  "ol+AXD": {
+    "defaultMessage": "MCP server:",
+    "description": "Binding detail MCP server label"
   },
   "olY499": {
     "defaultMessage": "Search datasets",

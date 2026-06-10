@@ -13,6 +13,7 @@ import {
   Spacer,
   TableFilterInput,
   TableFilterLayout,
+  Typography,
   useDesignSystemTheme,
 } from '@databricks/design-system';
 import type { RadioChangeEvent } from '@databricks/design-system';
@@ -284,6 +285,12 @@ const MCPRegistryPage = () => {
                 <SegmentedControlButton value="grid" icon={<GridIcon />} />
               </SegmentedControlGroup>
             </div>
+            <Typography.Text color="secondary" css={{ flexShrink: 0, paddingBottom: theme.spacing.sm }}>
+              <FormattedMessage
+                defaultMessage="Approved endpoints that connect MCP servers in the registry to live deployments in your environment."
+                description="Description text for the access bindings tab"
+              />
+            </Typography.Text>
             {bindingsError?.message && (
               <Alert
                 type="error"

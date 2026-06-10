@@ -1,6 +1,11 @@
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { MCPRegistryApi } from '../api';
-import type { MCPServer, SearchMCPServerVersionsResponse, SearchMCPAccessBindingsResponse } from '../types';
+import type {
+  MCPAccessBinding,
+  MCPServer,
+  SearchMCPServerVersionsResponse,
+  SearchMCPAccessBindingsResponse,
+} from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
 
 export const useMCPServerQuery = (name: string) => {
@@ -22,6 +27,14 @@ export const useMCPServerVersionsQuery = (name: string) => {
     ...queryResult,
     data: queryResult.data?.mcp_server_versions,
   };
+};
+
+export const useMCPAccessBindingQuery = (serverName: string, bindingId: string) => {
+  return useQuery<MCPAccessBinding, Error>([MCP_QUERY_KEYS.BINDING_DETAIL, serverName, bindingId], {
+    queryFn: () => MCPRegistryApi.getMCPAccessBinding(serverName, Number(bindingId)),
+    retry: false,
+    enabled: Boolean(serverName && bindingId),
+  });
 };
 
 export const useMCPAccessBindingsQuery = (name: string) => {

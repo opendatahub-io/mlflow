@@ -1,6 +1,7 @@
 import { Card, ConnectIcon, Typography, useDesignSystemTheme } from '@databricks/design-system';
 
 import type { MCPAccessBinding } from '../types';
+import MCPRegistryRoutes from '../routes';
 import { resolveBindingDisplayName } from '../utils';
 import { CardIconWrapper } from './CardIconWrapper';
 
@@ -15,11 +16,12 @@ export const MCPAccessBindingCard = ({ binding }: { binding: MCPAccessBinding })
     <Card
       componentId="mlflow.mcp_registry.bindings.card"
       width="100%"
+      href={`#${MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.binding_id)}`}
       dangerouslyAppendEmotionCSS={{
         borderLeft: `3px solid ${theme.colors.actionPrimaryBackgroundDefault}`,
         height: '100%',
         '&:hover': {
-          background: theme.colors.actionDefaultBackgroundHover,
+          borderLeft: `3px solid ${theme.colors.actionPrimaryBackgroundDefault}`,
         },
       }}
     >
