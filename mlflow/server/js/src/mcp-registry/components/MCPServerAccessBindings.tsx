@@ -1,32 +1,123 @@
 import {
   Alert,
   Button,
+  Card,
   PlusIcon,
   Spinner,
-  Table,
-  TableCell,
-  TableHeader,
-  TableRow,
+  Tag,
+  TrashIcon,
   Typography,
   useDesignSystemTheme,
 } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
-import type { MCPAccessBinding } from '../types';
+import type { MCPAccessBinding, MCPServer } from '../types';
 import { formatTransportType } from '../utils';
 import Utils from '../../common/utils/Utils';
 
-export const MCPServerAccessBindings = ({
-  bindings,
-  isLoading,
-  error,
+const BindingCard = ({
+  binding,
+  serverDescription,
+  onEditBinding,
+  onDeleteBinding,
 }: {
-  bindings?: MCPAccessBinding[];
-  isLoading?: boolean;
-  error?: Error | null;
+  binding: MCPAccessBinding;
+  serverDescription?: string;
+  onEditBinding?: (binding: MCPAccessBinding) => void;
+  onDeleteBinding?: (binding: MCPAccessBinding) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
+  const target = binding.server_alias || binding.server_version || '—';
+
+  return (
+    <Card
+      componentId="mlflow.mcp_registry.detail.binding.card"
+      width="100%"
+      dangerouslyAppendEmotionCSS={{
+        cursor: 'pointer',
+        '&:hover': {
+          background: theme.colors.actionDefaultBackgroundHover,
+        },
+      }}
+    >
+      <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
+        <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+          <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {binding.endpoint_url}
+          </Typography.Text>
+          <Tag componentId="mlflow.mcp_registry.detail.binding.transport" color="turquoise" css={{ flexShrink: 0 }}>
+            {formatTransportType(binding.transport_type)}
+          </Tag>
+          <div
+            css={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: theme.spacing.xs, flexShrink: 0 }}
+          >
+            {onEditBinding && (
+              <Typography.Link
+                componentId="mlflow.mcp_registry.detail.binding.edit"
+                onClick={() => onEditBinding(binding)}
+              >
+                <FormattedMessage defaultMessage="Edit" description="Edit access binding link" />
+              </Typography.Link>
+            )}
+            {onDeleteBinding && (
+              <Button
+                componentId="mlflow.mcp_registry.detail.binding.delete"
+                type="tertiary"
+                size="small"
+                icon={<TrashIcon />}
+                danger
+                onClick={() => onDeleteBinding(binding)}
+              />
+            )}
+          </div>
+        </div>
+        {serverDescription && (
+          <Typography.Text
+            color="secondary"
+            size="sm"
+            css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {serverDescription}
+          </Typography.Text>
+        )}
+        <div css={{ display: 'flex', gap: theme.spacing.lg }}>
+          <Typography.Text size="sm">
+            <Typography.Text bold size="sm">
+              <FormattedMessage defaultMessage="Target:" description="Binding card target label" />
+            </Typography.Text>{' '}
+            {target}
+          </Typography.Text>
+          <Typography.Text size="sm">
+            <Typography.Text bold size="sm">
+              <FormattedMessage defaultMessage="Updated:" description="Binding card updated label" />
+            </Typography.Text>{' '}
+            {binding.last_updated_timestamp ? Utils.formatTimestamp(binding.last_updated_timestamp, intl) : '—'}
+          </Typography.Text>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export const MCPServerAccessBindings = ({
+  server,
+  bindings,
+  isLoading,
+  error,
+  onAddBinding,
+  onEditBinding,
+  onDeleteBinding,
+}: {
+  server?: MCPServer;
+  bindings?: MCPAccessBinding[];
+  isLoading?: boolean;
+  error?: Error | null;
+  onAddBinding?: () => void;
+  onEditBinding?: (binding: MCPAccessBinding) => void;
+  onDeleteBinding?: (binding: MCPAccessBinding) => void;
+}) => {
+  const { theme } = useDesignSystemTheme();
 
   return (
     <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
@@ -34,7 +125,12 @@ export const MCPServerAccessBindings = ({
         <Typography.Title level={4} withoutMargins>
           <FormattedMessage defaultMessage="Access Bindings" description="MCP server access bindings section title" />
         </Typography.Title>
-        <Button componentId="mlflow.mcp_registry.detail.add_binding" type="tertiary" icon={<PlusIcon />} disabled>
+        <Button
+          componentId="mlflow.mcp_registry.detail.add_binding"
+          icon={<PlusIcon />}
+          onClick={onAddBinding}
+          size="small"
+        >
           <FormattedMessage defaultMessage="Add access binding" description="MCP server add access binding button" />
         </Button>
       </div>
@@ -58,41 +154,17 @@ export const MCPServerAccessBindings = ({
           />
         </Typography.Text>
       ) : (
-        <Table scrollable noMinHeight>
-          <TableRow isHeader>
-            <TableHeader componentId="mlflow.mcp_registry.detail.bindings.endpoint">
-              <FormattedMessage defaultMessage="Endpoint" description="MCP access bindings table header for endpoint" />
-            </TableHeader>
-            <TableHeader componentId="mlflow.mcp_registry.detail.bindings.transport">
-              <FormattedMessage
-                defaultMessage="Transport"
-                description="MCP access bindings table header for transport"
-              />
-            </TableHeader>
-            <TableHeader componentId="mlflow.mcp_registry.detail.bindings.target">
-              <FormattedMessage
-                defaultMessage="Version/Alias"
-                description="MCP access bindings table header for version or alias"
-              />
-            </TableHeader>
-            <TableHeader componentId="mlflow.mcp_registry.detail.bindings.last_updated">
-              <FormattedMessage
-                defaultMessage="Last updated"
-                description="MCP access bindings table header for last updated"
-              />
-            </TableHeader>
-          </TableRow>
+        <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
           {bindings.map((binding) => (
-            <TableRow key={binding.binding_id}>
-              <TableCell>{binding.endpoint_url}</TableCell>
-              <TableCell>{formatTransportType(binding.transport_type)}</TableCell>
-              <TableCell>{binding.server_alias || binding.server_version || '—'}</TableCell>
-              <TableCell>
-                {binding.last_updated_timestamp ? Utils.formatTimestamp(binding.last_updated_timestamp, intl) : '—'}
-              </TableCell>
-            </TableRow>
+            <BindingCard
+              key={binding.binding_id}
+              binding={binding}
+              serverDescription={server?.description}
+              onEditBinding={onEditBinding}
+              onDeleteBinding={onDeleteBinding}
+            />
           ))}
-        </Table>
+        </div>
       )}
     </div>
   );

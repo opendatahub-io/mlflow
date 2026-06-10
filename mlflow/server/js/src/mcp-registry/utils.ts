@@ -31,6 +31,14 @@ export const emptyCenterStyles = {
   },
 };
 
+export const MCP_QUERY_KEYS = {
+  SERVERS_LIST: 'mcp_servers_list',
+  SERVER: 'mcp_server',
+  SERVER_VERSIONS: 'mcp_server_versions',
+  SERVER_BINDINGS: 'mcp_server_bindings',
+  BINDINGS_LIST: 'mcp_bindings_list',
+} as const;
+
 export const DEFAULT_PAGE_SIZE = 25;
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 

@@ -14,12 +14,14 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
   storageKey,
   queryFn,
   extractData,
+  enabled,
 }: {
   queryKeyPrefix: string;
   searchFilter?: string;
   storageKey: string;
   queryFn: (params: { searchFilter?: string; pageToken?: string; pageSize: number }) => Promise<TResponse>;
   extractData: (response: TResponse) => TData | undefined;
+  enabled?: boolean;
 }) => {
   const previousPageTokens = useRef<(string | undefined)[]>([]);
   const [currentPageToken, setCurrentPageToken] = useState<string | undefined>(undefined);
@@ -54,6 +56,7 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
       queryFn: () => queryFn({ searchFilter, pageToken: currentPageToken, pageSize }),
       retry: false,
       keepPreviousData: true,
+      enabled,
     },
   );
 

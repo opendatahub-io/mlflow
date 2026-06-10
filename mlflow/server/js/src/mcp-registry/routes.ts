@@ -22,10 +22,14 @@ class MCPRegistryRoutes {
     return MCPRegistryRoutePaths.mcpRegistryPage;
   }
 
-  static getMCPServerDetailRoute(serverName: string) {
-    return generatePath(MCPRegistryRoutePaths.mcpServerDetailPage, {
+  static getMCPServerDetailRoute(serverName: string, version?: string) {
+    const path = generatePath(MCPRegistryRoutePaths.mcpServerDetailPage, {
       serverName: encodeURIComponent(serverName),
     });
+    if (version) {
+      return `${path}?version=${encodeURIComponent(version)}`;
+    }
+    return path;
   }
 }
 

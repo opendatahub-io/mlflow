@@ -337,6 +337,25 @@ describe('MCPRegistryPage', () => {
     });
   });
 
+  it('disables create binding button when no servers exist', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Register an MCP server before creating access bindings.')).toBeInTheDocument();
+    });
+    const createButton = screen.getByText('Create access binding').closest('button');
+    expect(createButton).toBeDisabled();
+  });
+
+  it('enables create binding button when servers exist', async () => {
+    const servers = [createMockMCPServer({ name: 'io.test/server' })];
+    server.use(getMockedSearchMCPServersResponse(servers), getMockedSearchMCPAccessBindingsAllResponse([]));
+    renderPage();
+    await waitFor(() => {
+      const createButton = screen.getByText('Create access binding').closest('button');
+      expect(createButton).not.toBeDisabled();
+    });
+  });
+
   it('renders view toggle on bindings tab', async () => {
     renderPage();
     await waitFor(() => {

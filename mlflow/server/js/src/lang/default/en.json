@@ -163,6 +163,10 @@
     "defaultMessage": "Max",
     "description": "Column title for the column displaying the maximum metric values for a metric"
   },
+  "+jMswj": {
+    "defaultMessage": "Target:",
+    "description": "Binding card target label"
+  },
   "+kOR9h": {
     "defaultMessage": "Save",
     "description": "Queue settings: save button"
@@ -186,6 +190,10 @@
   "+o0xUA": {
     "defaultMessage": "An error occurred while attempting to fetch trace data (ID: {traceId}). Please ensure that the MLflow tracking server is running, and that the trace data exists. Error details:",
     "description": "An error message explaining that an error occurred while fetching trace data"
+  },
+  "+pqOTO": {
+    "defaultMessage": "Streamable HTTP",
+    "description": "MCP registry streamable HTTP transport option"
   },
   "+tURAJ": {
     "defaultMessage": "Cancel",
@@ -310,6 +318,10 @@
   "/Ni371": {
     "defaultMessage": "Fix the response format schema: {error}",
     "description": "Reason shown when the playground Submit button is disabled because the response format schema is invalid"
+  },
+  "/PBJ8N": {
+    "defaultMessage": "Save",
+    "description": "MCP registry edit access binding modal save button"
   },
   "/Q7stq": {
     "defaultMessage": "Learn more",
@@ -1023,6 +1035,10 @@
     "defaultMessage": "Save prompt to registry",
     "description": "Title of the save-prompt-version modal on the playground page"
   },
+  "2aFhNQ": {
+    "defaultMessage": "Version/Alias:",
+    "description": "MCP registry binding modal version/alias label"
+  },
   "2cshW2": {
     "defaultMessage": "Resolved ({count})",
     "description": "Issue status filter > Resolved button label"
@@ -1202,6 +1218,10 @@
   "3X52Jw": {
     "defaultMessage": "This tab displays all the traces logged to this logged model. MLflow supports automatic tracing for many popular generative AI frameworks. Follow the steps below to log your first trace. For more information about MLflow Tracing, visit the <a>MLflow documentation</a>.",
     "description": "Message that explains the function of the 'Traces' tab in logged model page. This message is followed by a tutorial explaining how to get started with MLflow Tracing."
+  },
+  "3Xy5rr": {
+    "defaultMessage": "Create access binding",
+    "description": "Access bindings card grid empty state CTA button"
   },
   "3YddwH": {
     "defaultMessage": "Traffic split percentages must total 100%",
@@ -1619,6 +1639,10 @@
     "defaultMessage": "Cancel",
     "description": "Evaluation review > assessments > cancel assessment button label"
   },
+  "5fUSTW": {
+    "defaultMessage": "Edit",
+    "description": "Edit access binding link"
+  },
   "5iPi6b": {
     "defaultMessage": "No permissions",
     "description": "Empty-state title for the permissions table"
@@ -1902,6 +1926,10 @@
   "73ydH0": {
     "defaultMessage": "Off",
     "description": "Runs charts > line chart > ignore outliers > off setting label"
+  },
+  "78GhUd": {
+    "defaultMessage": "MCP Server:",
+    "description": "MCP registry binding modal server label"
   },
   "79dD5F": {
     "defaultMessage": "There was an error submitting your note.",
@@ -3175,6 +3203,10 @@
     "defaultMessage": "Switch sides",
     "description": "A label for button used to switch prompt versions when in side-by-side comparison view"
   },
+  "Cbwpjj": {
+    "defaultMessage": "Edit",
+    "description": "Edit access binding link in table"
+  },
   "CbzDeZ": {
     "defaultMessage": "An error occurred while rendering this component.",
     "description": "Description for default error message in Trace V3 page"
@@ -3590,6 +3622,10 @@
   "EtPSl6": {
     "defaultMessage": "Discard unsaved changes?",
     "description": "Title of the prompt shown when leaving the dataset record side panel with unsaved edits"
+  },
+  "EtmCKX": {
+    "defaultMessage": "Copy endpoint URL",
+    "description": "Tooltip for copy endpoint URL button"
   },
   "Eu0gxa": {
     "defaultMessage": "Capture and debug LLM interactions and agent workflows.",
@@ -4035,6 +4071,10 @@
     "defaultMessage": "See detailed trace view",
     "description": "Evaluation review > see detailed trace view button"
   },
+  "HUcFqG": {
+    "defaultMessage": "Create",
+    "description": "MCP registry create access binding modal create button"
+  },
   "HUf9qJ": {
     "defaultMessage": "Are you sure you want to delete {modelName}? This cannot be undone.",
     "description": "Confirmation message for delete model modal on model view page"
@@ -4426,6 +4466,10 @@
   "JKjqGC": {
     "defaultMessage": "Record ID",
     "description": "Header for the dataset record id column"
+  },
+  "JLcT0X": {
+    "defaultMessage": "Versions",
+    "description": "MCP registry binding modal versions group label"
   },
   "JNS471": {
     "defaultMessage": "No results. Try using a different keyword or adjusting your filters.",
@@ -5703,6 +5747,10 @@
     "defaultMessage": "Clear selection",
     "description": "Clear model selection"
   },
+  "PXXPl4": {
+    "defaultMessage": "Transport Type:",
+    "description": "MCP registry binding modal transport label"
+  },
   "PYGkI3": {
     "defaultMessage": "Install the <a>MLflow tracing SDK</a> for TypeScript using npm, then initialize it in your application.",
     "description": "Step 1 description for TypeScript traces onboarding"
@@ -5882,6 +5930,10 @@
   "QPC4hV": {
     "defaultMessage": "Use other parameters or disable run grouping to continue.",
     "description": "Experiment page > compare runs > parallel coordinates chart > unsupported string values warning > description"
+  },
+  "QQyJYV": {
+    "defaultMessage": "https://mcp.example.com/server",
+    "description": "MCP registry binding modal endpoint placeholder"
   },
   "QR5jwv": {
     "defaultMessage": "Add an option",
@@ -6074,6 +6126,10 @@
   "RRvtnM": {
     "defaultMessage": "Did the conversation avoid causing user frustration?",
     "description": "Hint for UserFrustration template"
+  },
+  "RSPGtl": {
+    "defaultMessage": "@latest",
+    "description": "MCP registry latest alias option"
   },
   "RU5Jip": {
     "defaultMessage": "Latency comparison",
@@ -6882,6 +6938,10 @@
   "VDumsF": {
     "defaultMessage": "Failed to update the review queue: {error}",
     "description": "Add to review queue: error toast when adding or removing traces fails"
+  },
+  "VETJ8j": {
+    "defaultMessage": "Server-Sent Events (SSE)",
+    "description": "MCP registry SSE transport option"
   },
   "VEuVfv": {
     "defaultMessage": "{count, plural, one {1 trace selected} other {# traces selected}}",
@@ -9391,6 +9451,10 @@
     "defaultMessage": "Configure chart",
     "description": "Experiment page > compare runs > parallel coordinates chart > configure chart button"
   },
+  "gb0v4d": {
+    "defaultMessage": "Edit access binding",
+    "description": "MCP registry edit access binding modal title"
+  },
   "gc+GrI": {
     "defaultMessage": "Model, input data or prompt have changed since last evaluation of the output",
     "description": "Experiment page > new run modal > dirty output (out of sync with new data)"
@@ -10595,6 +10659,10 @@
     "defaultMessage": "Save",
     "description": "Evaluation review > assessments > save button"
   },
+  "m30WmQ": {
+    "defaultMessage": "Aliases",
+    "description": "MCP registry binding modal aliases group label"
+  },
   "m4159e": {
     "defaultMessage": "Metrics ({length})",
     "description": "Run page > Overview > Metrics table > Section title"
@@ -11163,6 +11231,10 @@
     "defaultMessage": "Rename",
     "description": "Label for the rename run button above the experiment runs table"
   },
+  "oWmpyr": {
+    "defaultMessage": "Select an MCP server",
+    "description": "MCP registry binding modal server placeholder"
+  },
   "oWtdfc": {
     "defaultMessage": "Failed Calls",
     "description": "Label for failed calls statistic"
@@ -11583,6 +11655,10 @@
     "defaultMessage": "Hide run",
     "description": "A tooltip for the visibility icon button in the runs table next to the visible run"
   },
+  "qU/7Y0": {
+    "defaultMessage": "Create access binding",
+    "description": "MCP registry create access binding modal title"
+  },
   "qVQYZH": {
     "defaultMessage": "Show less",
     "description": "Button to close alert description"
@@ -11818,6 +11894,10 @@
   "rPbiUM": {
     "defaultMessage": "Labeling sessions",
     "description": "Label for the labeling sessions tab in the MLflow experiment navbar"
+  },
+  "rQLVyc": {
+    "defaultMessage": "Create access binding",
+    "description": "Button to create a new access binding"
   },
   "rRaThb": {
     "defaultMessage": "Select a provider first",
@@ -12671,6 +12751,10 @@
     "defaultMessage": "Status",
     "description": "Run page > Overview > Run status section label"
   },
+  "vyiOXJ": {
+    "defaultMessage": "Endpoint URL:",
+    "description": "MCP registry binding modal endpoint label"
+  },
   "w+Josc": {
     "defaultMessage": "Enter an expectation name",
     "description": "Placeholder for the expectation name typeahead"
@@ -12778,6 +12862,10 @@
   "wQwgaL": {
     "defaultMessage": "Failed calls",
     "description": "Label for failed calls statistic"
+  },
+  "wROuT1": {
+    "defaultMessage": "Updated:",
+    "description": "Binding card updated label"
   },
   "wT28RL": {
     "defaultMessage": "Owner",

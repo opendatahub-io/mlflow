@@ -54,6 +54,7 @@ export const MCPServerVersionDetail = ({
   bindingsError,
   aliasesByVersion,
   showEditAliasesModal,
+  onAddBinding,
 }: {
   server: MCPServer;
   version?: MCPServerVersion;
@@ -62,6 +63,7 @@ export const MCPServerVersionDetail = ({
   bindingsError?: Error | null;
   aliasesByVersion: Record<string, string[]>;
   showEditAliasesModal?: (versionNumber: string) => void;
+  onAddBinding?: () => void;
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
@@ -249,13 +251,19 @@ export const MCPServerVersionDetail = ({
       {version.server_json && <ServerJSONViewer serverJson={version.server_json} />}
 
       <Spacer shrinks={false} size="lg" />
-      <MCPServerAccessBindings bindings={bindings} isLoading={bindingsLoading} error={bindingsError} />
+      <MCPServerAccessBindings
+        server={server}
+        bindings={bindings}
+        isLoading={bindingsLoading}
+        error={bindingsError}
+        onAddBinding={onAddBinding}
+      />
 
       <UpdateVersionStatusModal
         visible={statusModalVisible}
         currentStatus={version.status}
         isLoading={updateStatusMutation.isLoading}
-        error={updateStatusMutation.error as Error | null}
+        error={updateStatusMutation.error}
         onUpdate={(newStatus) => {
           updateStatusMutation.mutate(
             { version: version.version, status: newStatus },
@@ -283,7 +291,7 @@ export const MCPServerVersionDetail = ({
           />
         }
         isLoading={deleteVersionMutation.isLoading}
-        error={(deleteVersionMutation.error as Error | null)?.message ?? null}
+        error={deleteVersionMutation.error?.message ?? null}
         onConfirm={() => {
           deleteVersionMutation.mutate(version.version, {
             onSuccess: () => setDeleteModalVisible(false),

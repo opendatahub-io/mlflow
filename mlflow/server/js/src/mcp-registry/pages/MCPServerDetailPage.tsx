@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Breadcrumb,
@@ -32,6 +32,8 @@ import {
 import { useDeleteMCPServer } from '../hooks/useMCPServerVersionMutations';
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
+import { AccessBindingModal } from '../components/AccessBindingModal';
+import { useSelectedMCPServerVersion } from '../hooks/useSelectedMCPServerVersion';
 import { resolveDisplayName } from '../utils';
 
 const getAliasesModalTitle = (version: string) => (
@@ -48,6 +50,7 @@ const MCPServerDetailPage = () => {
   const navigate = useNavigate();
   const { serverName = '' } = useParams<{ serverName: string }>();
   const [deleteServerModalVisible, setDeleteServerModalVisible] = useState(false);
+  const [addBindingModalOpen, setAddBindingModalOpen] = useState(false);
   const deleteServerMutation = useDeleteMCPServer();
 
   const {
@@ -64,20 +67,13 @@ const MCPServerDetailPage = () => {
   } = useMCPServerVersionsQuery(serverName);
   const { data: bindings, isLoading: bindingsLoading, error: bindingsError } = useMCPAccessBindingsQuery(serverName);
 
-  const [selectedVersion, setSelectedVersion] = useState<string | undefined>(undefined);
+  const latestVersion = versions?.[0]?.version;
+  const [selectedVersion, setSelectedVersion] = useSelectedMCPServerVersion(latestVersion);
 
-  useEffect(() => {
-    if (!versions?.length) {
-      setSelectedVersion(undefined);
-      return;
-    }
-    const currentStillValid = versions.some((v) => v.version === selectedVersion);
-    if (!currentStillValid) {
-      setSelectedVersion(versions[0].version);
-    }
+  const currentVersion = useMemo(() => {
+    if (!versions?.length) return undefined;
+    return versions.find((v) => v.version === selectedVersion) ?? versions[0];
   }, [versions, selectedVersion]);
-
-  const currentVersion = versions?.find((v) => v.version === selectedVersion);
 
   const aliasesByVersion = useMemo(() => {
     const result: Record<string, string[]> = {};
@@ -266,10 +262,17 @@ const MCPServerDetailPage = () => {
             bindingsError={bindingsError}
             aliasesByVersion={aliasesByVersion}
             showEditAliasesModal={showEditAliasesModal}
+            onAddBinding={() => setAddBindingModalOpen(true)}
           />
         </div>
       </div>
       {EditAliasesModal}
+      <AccessBindingModal
+        visible={addBindingModalOpen}
+        onCancel={() => setAddBindingModalOpen(false)}
+        lockedServer={serverName}
+        defaultVersion={currentVersion?.version}
+      />
       <ConfirmationModal
         componentId="mlflow.mcp_registry.detail.delete_server_modal"
         title={intl.formatMessage({
@@ -284,7 +287,7 @@ const MCPServerDetailPage = () => {
           />
         }
         isLoading={deleteServerMutation.isLoading}
-        error={(deleteServerMutation.error as Error | null)?.message ?? null}
+        error={deleteServerMutation.error?.message ?? null}
         onConfirm={() => {
           deleteServerMutation.mutate(serverName, {
             onSuccess: () => {

@@ -1,10 +1,13 @@
 import { MCPRegistryApi } from '../api';
-import { buildSearchFilterClause } from '../utils';
+import { MCP_QUERY_KEYS, buildSearchFilterClause } from '../utils';
 import { useCursorPaginatedQuery } from './useCursorPaginatedQuery';
 
-export const useMCPAccessBindingsListQuery = ({ searchFilter }: { searchFilter?: string } = {}) => {
+export const useMCPAccessBindingsListQuery = ({
+  searchFilter,
+  enabled,
+}: { searchFilter?: string; enabled?: boolean } = {}) => {
   return useCursorPaginatedQuery({
-    queryKeyPrefix: 'mcp_bindings_list',
+    queryKeyPrefix: MCP_QUERY_KEYS.BINDINGS_LIST,
     searchFilter,
     storageKey: 'mcp_registry.bindings_page_size',
     queryFn: ({ searchFilter: filter, pageToken, pageSize }) =>
@@ -14,5 +17,6 @@ export const useMCPAccessBindingsListQuery = ({ searchFilter }: { searchFilter?:
         max_results: pageSize,
       }),
     extractData: (response) => response.mcp_access_bindings,
+    enabled,
   });
 };

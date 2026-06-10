@@ -216,6 +216,60 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
+  it('pre-selects version from URL query param', async () => {
+    const version2 = createMockMCPServerVersion({
+      name: 'dev.mainline/mcp',
+      version: '2',
+      status: 'draft',
+      server_json: {
+        name: 'dev.mainline/mcp',
+        version: '2.0.0',
+        title: 'Mainline v2',
+        description: 'Updated version.',
+      },
+    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, version2]));
+
+    renderPage(['/mcp-registry/dev.mainline%2Fmcp?version=2']);
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
+      expect(screen.getByText('2.0.0')).toBeInTheDocument();
+    });
+  });
+
+  it('falls back to first version when URL version param is invalid', async () => {
+    renderPage(['/mcp-registry/dev.mainline%2Fmcp?version=nonexistent']);
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+  });
+
+  it('persists selected version across re-renders', async () => {
+    const version2 = createMockMCPServerVersion({
+      name: 'dev.mainline/mcp',
+      version: '2',
+      status: 'draft',
+      server_json: {
+        name: 'dev.mainline/mcp',
+        version: '2.0.0',
+        title: 'Mainline v2',
+        description: 'Updated version.',
+      },
+    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, version2]));
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Version 2'));
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
+      expect(screen.getByText('2.0.0')).toBeInTheDocument();
+    });
+  });
+
   it('shows terminal state warning for deleted version status', async () => {
     const deletedVersion = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
