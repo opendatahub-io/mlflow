@@ -14,6 +14,7 @@ import {
   ZoomMarqueeSelection,
   useDesignSystemTheme,
 } from '@databricks/design-system';
+import type { TagColors } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
@@ -27,17 +28,21 @@ import { MCPRegistryApi } from '../api';
 import {
   useMCPServerQuery,
   useMCPServerVersionsQuery,
+  useLatestMCPServerVersionQuery,
   useMCPAccessBindingsQuery,
 } from '../hooks/useMCPServerDetailQuery';
-import { useDeleteMCPServer } from '../hooks/useMCPServerVersionMutations';
+import { useDeleteMCPServer, useSetLatestVersion } from '../hooks/useMCPServerVersionMutations';
 import { useDeleteAccessBindingMutation } from '../hooks/useAccessBindingMutation';
 import type { MCPAccessBinding } from '../types';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
+import { useUpdateMCPServerVersionMetadataModal } from '../hooks/useUpdateMCPServerVersionMetadataModal';
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
 import { AccessBindingModal } from '../components/AccessBindingModal';
 import { useSelectedMCPServerVersion } from '../hooks/useSelectedMCPServerVersion';
-import { resolveDisplayName } from '../utils';
+import { UpdateVersionDisplayNameModal } from '../components/UpdateVersionDisplayNameModal';
+import { MCPServerTagsBox } from '../components/MCPServerTagsBox';
+import { LATEST_ALIAS, RESERVED_ALIASES, resolveDisplayName } from '../utils';
 
 const getAliasesModalTitle = (version: string) => (
   <FormattedMessage
@@ -57,8 +62,12 @@ const MCPServerDetailPage = () => {
   const [addBindingModalOpen, setAddBindingModalOpen] = useState(false);
   const [editingBinding, setEditingBinding] = useState<MCPAccessBinding | undefined>(undefined);
   const [deletingBinding, setDeletingBinding] = useState<MCPAccessBinding | undefined>(undefined);
+  const [editServerDisplayNameVisible, setEditServerDisplayNameVisible] = useState(false);
+  const [serverDisplayNameSaving, setServerDisplayNameSaving] = useState(false);
+  const [serverDisplayNameError, setServerDisplayNameError] = useState<Error | null>(null);
   const deleteServerMutation = useDeleteMCPServer();
   const deleteBindingMutation = useDeleteAccessBindingMutation();
+  const setLatestMutation = useSetLatestVersion(serverName);
 
   const {
     data: server,
@@ -72,6 +81,7 @@ const MCPServerDetailPage = () => {
     error: versionsError,
     refetch: refetchVersions,
   } = useMCPServerVersionsQuery(serverName);
+  const { data: latestVersion, refetch: refetchLatestVersion } = useLatestMCPServerVersionQuery(serverName);
   const { data: bindings, isLoading: bindingsLoading, error: bindingsError } = useMCPAccessBindingsQuery(serverName);
 
   const latestVersion = versions?.[0]?.version;
@@ -82,6 +92,14 @@ const MCPServerDetailPage = () => {
     return versions.find((v) => v.version === selectedVersion) ?? versions[0];
   }, [versions, selectedVersion]);
 
+  useEffect(() => {
+    setLatestMutation.reset();
+  }, [selectedVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentVersion = versions?.find((v) => v.version === selectedVersion);
+
+  const resolvedLatestVersion = latestVersion?.version;
+
   const aliasesByVersion = useMemo(() => {
     const result: Record<string, string[]> = {};
     server?.aliases?.forEach(({ alias, version }) => {
@@ -90,15 +108,38 @@ const MCPServerDetailPage = () => {
       }
       result[version].push(alias);
     });
+    if (resolvedLatestVersion) {
+      if (!result[resolvedLatestVersion]) {
+        result[resolvedLatestVersion] = [];
+      }
+      if (!result[resolvedLatestVersion].includes(LATEST_ALIAS)) {
+        result[resolvedLatestVersion].unshift(LATEST_ALIAS);
+      }
+    }
     return result;
-  }, [server?.aliases]);
+  }, [server?.aliases, resolvedLatestVersion]);
+
+  const isPinnedLatest = Boolean(server?.latest_version);
+
+  const aliasColors = useMemo<Record<string, TagColors>>(
+    () => ({ [LATEST_ALIAS]: isPinnedLatest ? 'turquoise' : 'brown' }),
+    [isPinnedLatest],
+  );
+
 
   const refetchAll = useCallback(async () => {
-    await Promise.all([refetchServer(), refetchVersions()]);
-  }, [refetchServer, refetchVersions]);
+    await Promise.all([refetchServer(), refetchVersions(), refetchLatestVersion()]);
+  }, [refetchServer, refetchVersions, refetchLatestVersion]);
+
+  const handleSetLatest = useCallback(
+    (version: string | null) => {
+      setLatestMutation.mutate(version);
+    },
+    [setLatestMutation],
+  );
 
   const { CreateMCPServerVersionModal, openModal: openCreateVersionModal } = useCreateMCPServerVersionModal({
-    serverName: decodedServerName,
+    serverName: serverName,
     latestVersion: currentVersion,
     onSuccess: async ({ version }) => {
       await refetchAll();
@@ -126,7 +167,14 @@ const MCPServerDetailPage = () => {
         description="Description for the edit aliases modal on the MCP server detail page"
       />
     ),
-    reservedAliases: ['latest'],
+    reservedAliases: RESERVED_ALIASES,
+    pinnedLatestVersion: resolvedLatestVersion ?? undefined,
+    pinnedAliasColor: aliasColors[LATEST_ALIAS],
+  });
+
+  const { EditMCPServerVersionMetadataModal, showEditMetadataModal } = useUpdateMCPServerVersionMetadataModal({
+    serverName: serverName,
+    onSuccess: refetchAll,
   });
 
   const breadcrumbs = (
@@ -201,6 +249,25 @@ const MCPServerDetailPage = () => {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content>
                 <DropdownMenu.Item
+                  componentId="mlflow.mcp_registry.detail.actions.edit_display_name"
+                  onClick={() => setEditServerDisplayNameVisible(true)}
+                >
+                  <FormattedMessage
+                    defaultMessage="Edit display name"
+                    description="MCP server detail edit server display name action"
+                  />
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  componentId="mlflow.mcp_registry.detail.actions.reset_latest"
+                  disabled={!server.latest_version}
+                  onClick={() => handleSetLatest(null)}
+                >
+                  <FormattedMessage
+                    defaultMessage="Reset latest version"
+                    description="MCP server detail reset pinned latest version action"
+                  />
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
                   componentId="mlflow.mcp_registry.detail.actions.delete"
                   onClick={() => setDeleteServerModalVisible(true)}
                 >
@@ -221,6 +288,7 @@ const MCPServerDetailPage = () => {
           </>
         }
       />
+      <MCPServerTagsBox server={server} onTagsUpdated={refetchAll} />
       <Spacer shrinks={false} />
       <div css={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <div css={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column' }}>
@@ -253,15 +321,17 @@ const MCPServerDetailPage = () => {
               closable={false}
             />
           ) : (
-            <MCPServerVersionList
-              versions={versions}
-              selectedVersion={selectedVersion}
-              onSelectVersion={setSelectedVersion}
-              isLoading={versionsLoading}
-              serverName={serverName}
-              aliasesByVersion={aliasesByVersion}
-              showEditAliasesModal={showEditAliasesModal}
-            />
+              <MCPServerVersionList
+                  versions={versions}
+                  selectedVersion={selectedVersion}
+                  onSelectVersion={setSelectedVersion}
+                  isLoading={versionsLoading}
+                  serverName={serverName}
+                  serverDisplayName={displayName}
+                  aliasesByVersion={aliasesByVersion}
+                  aliasColors={aliasColors}
+                  showEditAliasesModal={showEditAliasesModal}
+              />
           )}
         </div>
         <div
@@ -281,6 +351,8 @@ const MCPServerDetailPage = () => {
             bindingsLoading={bindingsLoading}
             bindingsError={bindingsError}
             aliasesByVersion={aliasesByVersion}
+            aliasColors={aliasColors}
+
             showEditAliasesModal={showEditAliasesModal}
             onAddBinding={() => setAddBindingModalOpen(true)}
             onEditBinding={(binding) => {
@@ -288,6 +360,16 @@ const MCPServerDetailPage = () => {
               setAddBindingModalOpen(true);
             }}
             onDeleteBinding={setDeletingBinding}
+            onEditMetadata={showEditMetadataModal}
+            onSetLatest={handleSetLatest}
+            setLatestLoading={setLatestMutation.isLoading}
+            setLatestError={setLatestMutation.error as Error | null}
+            onClearLatestError={() => setLatestMutation.reset()}
+            resolvedLatestVersion={resolvedLatestVersion}
+            onUpdateDescription={async (description) => {
+              await MCPRegistryApi.updateMCPServer(decodedServerName, { description });
+              await refetchAll();
+            }}
           />
         </div>
       </div>
@@ -302,7 +384,29 @@ const MCPServerDetailPage = () => {
         lockedServer={serverName}
         defaultVersion={currentVersion?.version}
       />
+      {EditMCPServerVersionMetadataModal}
       {CreateMCPServerVersionModal}
+      <UpdateVersionDisplayNameModal
+        visible={editServerDisplayNameVisible}
+        currentDisplayName={server.display_name || ''}
+        isLoading={serverDisplayNameSaving}
+        error={serverDisplayNameError}
+        onUpdate={(newDisplayName) => {
+          setServerDisplayNameSaving(true);
+          setServerDisplayNameError(null);
+          MCPRegistryApi.updateMCPServer(serverName, { display_name: newDisplayName || null })
+            .then(() => {
+              setEditServerDisplayNameVisible(false);
+              refetchAll();
+            })
+            .catch((e: Error) => setServerDisplayNameError(e))
+            .finally(() => setServerDisplayNameSaving(false));
+        }}
+        onCancel={() => {
+          setServerDisplayNameError(null);
+          setEditServerDisplayNameVisible(false);
+        }}
+      />
       <ConfirmationModal
         componentId="mlflow.mcp_registry.detail.delete_server_modal"
         title={intl.formatMessage({
@@ -317,7 +421,7 @@ const MCPServerDetailPage = () => {
           />
         }
         isLoading={deleteServerMutation.isLoading}
-        error={deleteServerMutation.error?.message ?? null}
+        error={(deleteServerMutation.error as Error | null)?.message ?? null}
         onConfirm={() => {
           deleteServerMutation.mutate(serverName, {
             onSuccess: () => {
@@ -362,4 +466,4 @@ const MCPServerDetailPage = () => {
   );
 };
 
-export default withErrorBoundary(ErrorUtils.mlflowServices.EXPERIMENTS, MCPServerDetailPage);
+export default withErrorBoundary(ErrorUtils.mlflowServices.MCP_REGISTRY, MCPServerDetailPage);

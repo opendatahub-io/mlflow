@@ -24,16 +24,21 @@ import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
 import { useNavigate, useSearchParams } from '../../common/utils/RoutingUtils';
 import { ModelSearchInputHelpTooltip } from '../../model-registry/components/model-list/ModelListFilters';
+import { useMutation } from '../../common/utils/reactQueryHooks';
+import { useEditKeyValueTagsModal } from '../../common/hooks/useEditKeyValueTagsModal';
+import { diffCurrentAndNewTags } from '../../common/utils/TagUtils';
 import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
 import { useMCPAccessBindingsListQuery } from '../hooks/useMCPAccessBindingsListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
 import { MCPServerListTable, emptyCenterStyles } from '../components/MCPServerListTable';
+import { MCPRegistryApi } from '../api';
 import MCPRegistryRoutes from '../routes';
 import type { MCPAccessBinding } from '../types';
 import { MCPAccessBindingCardGrid } from '../components/MCPAccessBindingCardGrid';
 import { MCPAccessBindingListTable } from '../components/MCPAccessBindingListTable';
 import { AccessBindingModal } from '../components/AccessBindingModal';
+import type { MCPServer } from '../types';
 import { useDebounce } from 'use-debounce';
 
 type ViewMode = 'list' | 'grid';
@@ -61,6 +66,7 @@ const MCPRegistryPage = () => {
     onNextPage,
     onPreviousPage,
     pageSizeSelect,
+    refetch,
   } = useMCPServersListQuery({
     searchFilter: activeTab === 'servers' ? effectiveFilter : undefined,
   });
@@ -83,6 +89,43 @@ const MCPRegistryPage = () => {
   const { CreateMCPServerVersionModal, openModal } = useCreateMCPServerVersionModal({
     onSuccess: ({ name }) => navigate(MCPRegistryRoutes.getMCPServerDetailRoute(name)),
   });
+
+  type MCPServerTagEntity = { name: string; tags?: { key: string; value: string }[] };
+
+  const updateTagsMutation = useMutation<
+    unknown,
+    Error,
+    { serverName: string; toAdd: { key: string; value: string }[]; toDelete: { key: string }[] }
+  >({
+    mutationFn: async ({ serverName, toAdd, toDelete }) =>
+      Promise.all([
+        ...toAdd.map(({ key, value }) => MCPRegistryApi.setMCPServerTag(serverName, { key, value })),
+        ...toDelete.map(({ key }) => MCPRegistryApi.deleteMCPServerTag(serverName, key)),
+      ]),
+  });
+
+  const { EditTagsModal, showEditTagsModal } = useEditKeyValueTagsModal<MCPServerTagEntity>({
+    valueRequired: true,
+    saveTagsHandler: (entity, currentTags, newTags) => {
+      const { addedOrModifiedTags, deletedTags } = diffCurrentAndNewTags(currentTags, newTags);
+      return new Promise<void>((resolve, reject) => {
+        updateTagsMutation.mutate(
+          { serverName: entity.name, toAdd: addedOrModifiedTags, toDelete: deletedTags },
+          { onSuccess: () => { resolve(); refetch(); }, onError: reject },
+        );
+      });
+    },
+  });
+
+  const handleEditTags = useCallback(
+    (server: MCPServer) => {
+      showEditTagsModal({
+        name: server.name,
+        tags: Object.entries(server.tags).map(([key, value]) => ({ key, value })),
+      });
+    },
+    [showEditTagsModal],
+  );
 
   const handleTabChange = useCallback(
     (e: RadioChangeEvent) => {
@@ -252,6 +295,7 @@ const MCPRegistryPage = () => {
                   onNextPage={onNextPage}
                   onPreviousPage={onPreviousPage}
                   pageSizeSelect={pageSizeSelect}
+                  onEditTags={handleEditTags}
                 />
               )}
             </div>
@@ -416,8 +460,9 @@ const MCPRegistryPage = () => {
         />
       </ScrollablePageWrapper>
       {CreateMCPServerVersionModal}
+      {EditTagsModal}
     </>
   );
 };
 
-export default withErrorBoundary(ErrorUtils.mlflowServices.EXPERIMENTS, MCPRegistryPage);
+export default withErrorBoundary(ErrorUtils.mlflowServices.MCP_REGISTRY, MCPRegistryPage);

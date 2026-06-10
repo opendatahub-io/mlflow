@@ -9,6 +9,7 @@ const useInvalidateServerQueries = () => {
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER, serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_VERSIONS, serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_BINDINGS, serverName]);
+    queryClient.invalidateQueries(['mcp_server_latest_version', serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVERS_LIST]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.BINDINGS_LIST]);
   };
@@ -23,12 +24,41 @@ export const useUpdateMCPServerVersionStatus = (serverName: string) => {
   });
 };
 
+export const useUpdateMCPServerVersionDisplayName = (serverName: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ version, displayName }: { version: string; displayName: string }) =>
+      MCPRegistryApi.updateMCPServerVersion(serverName, version, { display_name: displayName || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['mcp_server', serverName]);
+      queryClient.invalidateQueries(['mcp_server_versions', serverName]);
+      queryClient.invalidateQueries(['mcp_servers_list']);
+    },
+  });
+};
+
 export const useDeleteMCPServerVersion = (serverName: string) => {
   const invalidate = useInvalidateServerQueries();
 
   return useMutation<unknown, Error, string>({
     mutationFn: (version) => MCPRegistryApi.deleteMCPServerVersion(serverName, version),
     onSuccess: () => invalidate(serverName),
+  });
+};
+
+export const useSetLatestVersion = (serverName: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (version: string | null) =>
+      MCPRegistryApi.updateMCPServer(serverName, { latest_version: version }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['mcp_server', serverName]);
+      queryClient.invalidateQueries(['mcp_server_versions', serverName]);
+      queryClient.invalidateQueries(['mcp_server_latest_version', serverName]);
+      queryClient.invalidateQueries(['mcp_servers_list']);
+    },
   });
 };
 

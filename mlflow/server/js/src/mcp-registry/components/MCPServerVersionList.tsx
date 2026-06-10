@@ -16,6 +16,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel } from '@tanstack/react-table';
 import { FormattedMessage, useIntl } from 'react-intl';
 
+import type { TagColors } from '@databricks/design-system';
 import type { MCPServerVersion } from '../types';
 import { STATUS_TAG_COLOR } from '../utils';
 import { ModelVersionTableAliasesCell } from '../../model-registry/components/aliases/ModelVersionTableAliasesCell';
@@ -23,7 +24,9 @@ import Utils from '../../common/utils/Utils';
 
 interface MCPServerVersionListMeta {
   serverName: string;
+  serverDisplayName: string;
   aliasesByVersion: Record<string, string[]>;
+  aliasColors?: Record<string, TagColors>;
   showEditAliasesModal?: (versionNumber: string) => void;
 }
 
@@ -35,15 +38,19 @@ const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
-  const { serverName, aliasesByVersion, showEditAliasesModal } = meta as MCPServerVersionListMeta;
+  const { serverName, serverDisplayName, aliasesByVersion, aliasColors, showEditAliasesModal } =
+    meta as MCPServerVersionListMeta;
   const aliases = aliasesByVersion[original.version] || [];
+
+  const rawDisplayName = original.display_name || original.server_json?.title;
+  const versionDisplayName = rawDisplayName && rawDisplayName !== serverDisplayName ? rawDisplayName : undefined;
 
   return (
     <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
       <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
         <Typography.Text bold>
           <FormattedMessage
-            defaultMessage="Version {version}"
+            defaultMessage="{version}"
             description="MCP server version item label"
             values={{ version: original.version }}
           />
@@ -55,11 +62,22 @@ const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
           modelName={serverName}
           version={original.version}
           aliases={aliases}
+          aliasColors={aliasColors}
           onAddEdit={() => {
             showEditAliasesModal?.(original.version);
           }}
         />
       </div>
+      {versionDisplayName && (
+        <Typography.Text
+          size="sm"
+          color="secondary"
+          css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          title={versionDisplayName}
+        >
+          {versionDisplayName}
+        </Typography.Text>
+      )}
       {original.creation_timestamp && (
         <Typography.Text size="sm" color="secondary">
           {Utils.formatTimestamp(original.creation_timestamp, intl)}
@@ -75,7 +93,9 @@ export const MCPServerVersionList = ({
   onSelectVersion,
   isLoading,
   serverName,
+  serverDisplayName,
   aliasesByVersion,
+  aliasColors,
   showEditAliasesModal,
 }: {
   versions?: MCPServerVersion[];
@@ -83,7 +103,9 @@ export const MCPServerVersionList = ({
   onSelectVersion: (version: string) => void;
   isLoading?: boolean;
   serverName: string;
+  serverDisplayName: string;
   aliasesByVersion: Record<string, string[]>;
+  aliasColors?: Record<string, TagColors>;
   showEditAliasesModal?: (versionNumber: string) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
@@ -109,7 +131,7 @@ export const MCPServerVersionList = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.version,
-    meta: { serverName, aliasesByVersion, showEditAliasesModal },
+    meta: { serverName, serverDisplayName, aliasesByVersion, aliasColors, showEditAliasesModal },
   });
 
   const emptyState =

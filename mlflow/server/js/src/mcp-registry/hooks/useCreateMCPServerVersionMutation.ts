@@ -20,6 +20,7 @@ export const useCreateMCPServerVersionMutation = () => {
       const name = serverJson.name;
       const version = await MCPRegistryApi.createMCPServerVersion(name, {
         server_json: serverJson,
+        display_name: displayName || undefined,
         status,
         source,
         tools,
@@ -36,15 +37,20 @@ export const useCreateMCPServerVersionMutation = () => {
       }
 
       if (tags) {
-        await Promise.all(
-          Object.entries(tags).map(([key, value]) => MCPRegistryApi.setMCPServerTag(name, { key, value })),
-        );
+        const setTag = isNewServer
+          ? (key: string, value: string) => MCPRegistryApi.setMCPServerTag(name, { key, value })
+          : (key: string, value: string) => MCPRegistryApi.setMCPServerVersionTag(name, version.version, { key, value });
+        await Promise.all(Object.entries(tags).map(([key, value]) => setTag(key, value)));
       }
 
       return version;
     },
-    onSuccess: () => {
+    onSuccess: (_data, { serverJson }) => {
+      const name = serverJson.name;
       queryClient.invalidateQueries(['mcp_servers_list']);
+      queryClient.invalidateQueries(['mcp_server', name]);
+      queryClient.invalidateQueries(['mcp_server_versions', name]);
+      queryClient.invalidateQueries(['mcp_server_latest_version', name]);
     },
   });
 };

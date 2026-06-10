@@ -1,5 +1,7 @@
 import { Card, McpIcon, Typography, useDesignSystemTheme } from '@databricks/design-system';
 import { useIntl } from 'react-intl';
+import { McpIcon, Tag, Typography, useDesignSystemTheme } from '@databricks/design-system';
+import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
@@ -28,9 +30,16 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
           <McpIcon />
         </CardIconWrapper>
         <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs, overflow: 'hidden' }}>
-          <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {displayName}
-          </Typography.Text>
+          <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs, overflow: 'hidden' }}>
+            <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {displayName}
+            </Typography.Text>
+            {server.latest_version && (
+              <Tag componentId="mlflow.mcp_registry.card.latest_version" color="charcoal">
+                {server.latest_version}
+              </Tag>
+            )}
+          </div>
           {server.description && (
             <Typography.Text
               color="secondary"

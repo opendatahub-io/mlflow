@@ -3,10 +3,12 @@ import { MCPRegistryApi } from '../api';
 import type {
   MCPAccessBinding,
   MCPServer,
+  MCPServerVersion,
   SearchMCPServerVersionsResponse,
   SearchMCPAccessBindingsResponse,
 } from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
+
 
 export const useMCPServerQuery = (name: string) => {
   return useQuery<MCPServer, Error>([MCP_QUERY_KEYS.SERVER, name], {
@@ -18,7 +20,7 @@ export const useMCPServerQuery = (name: string) => {
 
 export const useMCPServerVersionsQuery = (name: string) => {
   const queryResult = useQuery<SearchMCPServerVersionsResponse, Error>([MCP_QUERY_KEYS.SERVER_VERSIONS, name], {
-    queryFn: () => MCPRegistryApi.searchMCPServerVersions(name),
+    queryFn: () => MCPRegistryApi.searchMCPServerVersions(name, { order_by: ['created_at DESC'] }),
     retry: false,
     enabled: Boolean(name),
   });
@@ -27,6 +29,20 @@ export const useMCPServerVersionsQuery = (name: string) => {
     ...queryResult,
     data: queryResult.data?.mcp_server_versions,
   };
+};
+
+export const useLatestMCPServerVersionQuery = (name: string) => {
+  return useQuery<MCPServerVersion | undefined, Error>(['mcp_server_latest_version', name], {
+    queryFn: async () => {
+      try {
+        return await MCPRegistryApi.getLatestMCPServerVersion(name);
+      } catch {
+        return undefined;
+      }
+    },
+    retry: false,
+    enabled: Boolean(name),
+  });
 };
 
 export const useMCPAccessBindingQuery = (serverName: string, bindingId: string) => {

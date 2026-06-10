@@ -2,6 +2,7 @@ import { isEqual } from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
 
 import { Alert, Button, LegacyForm, Modal, useDesignSystemTheme } from '@databricks/design-system';
+import type { TagColors } from '@databricks/design-system';
 import { Typography } from '@databricks/design-system';
 import { AliasSelect } from '../components/AliasSelect';
 import { FormattedMessage } from 'react-intl';
@@ -21,6 +22,8 @@ export const useEditAliasesModal = ({
   getTitle,
   description,
   reservedAliases = [],
+  pinnedLatestVersion,
+  pinnedAliasColor,
 }: {
   aliases: AliasMap;
   onSuccess?: () => void;
@@ -28,6 +31,8 @@ export const useEditAliasesModal = ({
   getTitle: (version: string) => React.ReactNode;
   description?: React.ReactNode;
   reservedAliases?: string[];
+  pinnedLatestVersion?: string;
+  pinnedAliasColor?: TagColors;
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -158,6 +163,8 @@ export const useEditAliasesModal = ({
             draftAliases={draftAliases}
             existingAliases={existingAliases}
             setDraftAliases={setDraftAliases}
+            pinnedAliases={pinnedLatestVersion === currentlyEditedVersion ? ['latest'] : undefined}
+            pinnedAliasColor={pinnedAliasColor}
           />
         </LegacyForm.Item>
         <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>

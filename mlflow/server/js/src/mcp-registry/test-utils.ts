@@ -95,5 +95,25 @@ export const getMockedCreateMCPServerVersionErrorResponse = (status = 400, messa
     res(ctx.status(status), ctx.json({ message })),
   );
 
+export const getMockedGetLatestMCPServerVersionResponse = (version?: MCPServerVersion) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/aliases/latest`), (_req, res, ctx) =>
+    version ? res(ctx.json(version)) : res(ctx.status(404), ctx.json({ message: 'No eligible latest version' })),
+  );
+
 export const getMockedUpdateMCPServerResponse = (server?: MCPServer) =>
   rest.patch(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.json(server ?? createMockMCPServer())));
+
+export const getMockedUpdateMCPServerErrorResponse = (status = 400, message = 'Bad request') =>
+  rest.patch(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.status(status), ctx.json({ message })));
+
+export const getMockedSetMCPServerTagResponse = () =>
+  rest.post(getAjaxUrl(`${BASE_URL}/:name/tags`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedDeleteMCPServerTagResponse = () =>
+  rest.delete(getAjaxUrl(`${BASE_URL}/:name/tags/:key`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedSetMCPServerAliasResponse = () =>
+  rest.post(getAjaxUrl(`${BASE_URL}/:name/aliases`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedDeleteMCPServerAliasResponse = () =>
+  rest.delete(getAjaxUrl(`${BASE_URL}/:name/aliases/:alias`), (_req, res, ctx) => res(ctx.json({})));

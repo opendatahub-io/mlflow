@@ -9,11 +9,15 @@ export const STATUS_TAG_COLOR: Record<MCPStatus, TagProps['color']> = {
 };
 
 export const STATUS_TRANSITIONS: Record<MCPStatus, MCPStatus[]> = {
-  draft: ['active', 'deleted'],
+  draft: ['active'],
   active: ['draft', 'deprecated'],
-  deprecated: ['active', 'deleted'],
+  deprecated: ['active'],
   deleted: [],
 };
+
+export const LATEST_ALIAS = 'latest';
+
+export const RESERVED_ALIASES = [LATEST_ALIAS];
 
 export const emptyCenterStyles = {
   display: 'flex',

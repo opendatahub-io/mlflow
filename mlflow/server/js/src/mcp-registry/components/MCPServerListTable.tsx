@@ -6,11 +6,14 @@ import {
   Empty,
   McpIcon,
   NoIcon,
+  Overflow,
+  PencilIcon,
   Table,
   TableCell,
   TableHeader,
   TableRow,
   TableSkeletonRows,
+  Typography,
   useDesignSystemTheme,
   Button,
   PlusIcon,
@@ -23,7 +26,28 @@ import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
 import { emptyCenterStyles, resolveDisplayName } from '../utils';
 import { Link } from '../../common/utils/RoutingUtils';
+import { KeyValueTag } from '../../common/components/KeyValueTag';
 import Utils from '../../common/utils/Utils';
+
+interface MCPServerTableMeta {
+  onEditTags?: (server: MCPServer) => void;
+}
+
+export const emptyCenterStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100%',
+  minHeight: 400,
+  width: '100%',
+  '& > div': {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+};
 
 const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) => {
   const { theme } = useDesignSystemTheme();
@@ -38,6 +62,54 @@ const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) =
         {value}
       </Link>
     </span>
+  );
+};
+
+const MCPServerTagsCell = ({
+  row: { original },
+  table: { options: { meta } },
+}: CellContext<MCPServer, unknown>) => {
+  const intl = useIntl();
+  const { theme } = useDesignSystemTheme();
+  const { onEditTags } = (meta as MCPServerTableMeta) || {};
+  const tags = Object.entries(original.tags).map(([key, value]) => ({ key, value }));
+  const containsTags = tags.length > 0;
+
+  return (
+    <div css={{ display: 'flex', alignItems: 'center' }}>
+      {containsTags && (
+        <Overflow noMargin>
+          {tags.map((tag) => (
+            <KeyValueTag key={tag.key} tag={tag} />
+          ))}
+        </Overflow>
+      )}
+      <Button
+        componentId="mlflow.mcp_registry.table.tag.edit"
+        size="small"
+        icon={!containsTags ? undefined : <PencilIcon />}
+        onClick={(e: React.MouseEvent) => {
+          e.stopPropagation();
+          onEditTags?.(original);
+        }}
+        aria-label={intl.formatMessage({
+          defaultMessage: 'Edit tags',
+          description: 'Label for the edit tags button in the MCP servers table',
+        })}
+        css={{
+          flexShrink: 0,
+          marginLeft: containsTags ? theme.spacing.sm : 0,
+          opacity: 0,
+          '[role=row]:hover &': { opacity: 1 },
+          '[role=row]:focus-within &': { opacity: 1 },
+        }}
+        type="tertiary"
+      >
+        {!containsTags ? (
+          <FormattedMessage defaultMessage="Add tags" description="Label for the add tags button in the MCP servers table" />
+        ) : undefined}
+      </Button>
+    </div>
   );
 };
 
@@ -56,20 +128,32 @@ const useMCPServerTableColumns = () => {
       },
       {
         header: intl.formatMessage({
-          defaultMessage: 'Description',
-          description: 'Header for the description column in the MCP servers table',
-        }),
-        accessorKey: 'description',
-        id: 'description',
-      },
-      {
-        header: intl.formatMessage({
           defaultMessage: 'Last modified',
           description: 'Header for the last modified column in the MCP servers table',
         }),
         id: 'lastModified',
         accessorFn: ({ last_updated_timestamp }) =>
           last_updated_timestamp ? Utils.formatTimestamp(last_updated_timestamp, intl) : '',
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Description',
+          description: 'Header for the description column in the MCP servers table',
+        }),
+        accessorKey: 'description',
+        id: 'description',
+        cell: ({ getValue }) => {
+          const value = getValue() as string | undefined;
+          return value ? <Typography.Truncate lines={1}>{value}</Typography.Truncate> : '—';
+        },
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Tags',
+          description: 'Header for the tags column in the MCP servers table',
+        }),
+        id: 'tags',
+        cell: MCPServerTagsCell,
       },
     ];
     return columns;
@@ -85,6 +169,7 @@ export const MCPServerListTable = ({
   onNextPage,
   onPreviousPage,
   pageSizeSelect,
+  onEditTags,
 }: {
   servers?: MCPServer[];
   hasNextPage: boolean;
@@ -94,6 +179,7 @@ export const MCPServerListTable = ({
   onNextPage: () => void;
   onPreviousPage: () => void;
   pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
+  onEditTags?: (server: MCPServer) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = useMCPServerTableColumns();
@@ -103,6 +189,7 @@ export const MCPServerListTable = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row, index) => row.name ?? index.toString(),
+    meta: { onEditTags } as MCPServerTableMeta,
   });
 
   const getEmptyState = () => {

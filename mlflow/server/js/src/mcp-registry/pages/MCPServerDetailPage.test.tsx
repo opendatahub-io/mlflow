@@ -17,6 +17,13 @@ import {
   getMockedSearchMCPAccessBindingsResponse,
   getMockedDeleteMCPServerVersionResponse,
   getMockedDeleteMCPServerResponse,
+  getMockedGetLatestMCPServerVersionResponse,
+  getMockedUpdateMCPServerResponse,
+  getMockedUpdateMCPServerErrorResponse,
+  getMockedSetMCPServerTagResponse,
+  getMockedDeleteMCPServerTagResponse,
+  getMockedSetMCPServerAliasResponse,
+  getMockedDeleteMCPServerAliasResponse,
 } from '../test-utils';
 
 const mockServer = createMockMCPServer({
@@ -37,6 +44,7 @@ const mockVersion = createMockMCPServerVersion({
 });
 
 const defaultHandlers = [
+  getMockedGetLatestMCPServerVersionResponse(mockVersion),
   getMockedGetMCPServerResponse(mockServer),
   getMockedSearchMCPServerVersionsResponse([mockVersion]),
   getMockedSearchMCPAccessBindingsResponse([]),
@@ -81,7 +89,7 @@ describe('MCPServerDetailPage', () => {
   it('renders version list with status badge', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('Version 1')).toBeInTheDocument();
+      expect(screen.getByText('1')).toBeInTheDocument();
     });
     expect(screen.getAllByText('active').length).toBeGreaterThanOrEqual(1);
   });
@@ -92,9 +100,7 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
     expect(screen.getAllByText('dev.mainline/mcp').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Display name:')).toBeInTheDocument();
-    expect(screen.getByText('1.0.0')).toBeInTheDocument();
-    expect(screen.getByText('Gives your AI agent your story map.')).toBeInTheDocument();
+    expect(screen.getByText('A test server')).toBeInTheDocument();
   });
 
   it('renders error state when server not found', async () => {
@@ -124,13 +130,14 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('opens status update modal when Edit is clicked', async () => {
+  it('opens status update modal when edit status button is clicked', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Edit'));
+    const editButton = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.edit_status"]') as HTMLElement;
+    await userEvent.click(editButton);
     await waitFor(() => {
       expect(screen.getByText('Update version status')).toBeInTheDocument();
       expect(screen.getByText('Current status:')).toBeInTheDocument();
@@ -153,14 +160,12 @@ describe('MCPServerDetailPage', () => {
 
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('Version 1')).toBeInTheDocument();
-      expect(screen.getByText('Version 2')).toBeInTheDocument();
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Version 2'));
+    await userEvent.click(screen.getByText('2'));
     await waitFor(() => {
       expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
-      expect(screen.getByText('2.0.0')).toBeInTheDocument();
     });
   });
 
@@ -183,22 +188,12 @@ describe('MCPServerDetailPage', () => {
     });
 
     await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
-    const menuItem = await screen.findByRole('menuitem');
-    await userEvent.click(menuItem);
+    const menuItems = await screen.findAllByRole('menuitem');
+    const deleteItem = menuItems.find((item) => item.textContent === 'Delete');
+    expect(deleteItem).toBeDefined();
+    await userEvent.click(deleteItem!);
     await waitFor(() => {
       expect(screen.getByText(/Are you sure you want to delete this MCP server/)).toBeInTheDocument();
-    });
-  });
-
-  it('opens usage example modal', async () => {
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
-    });
-
-    await userEvent.click(screen.getByRole('button', { name: /Use/ }));
-    await waitFor(() => {
-      expect(screen.getByText('Usage example')).toBeInTheDocument();
     });
   });
 
@@ -288,9 +283,211 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Edit'));
+    const editButton = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.edit_status"]') as HTMLElement;
+    await userEvent.click(editButton);
     await waitFor(() => {
       expect(screen.getByText(/terminal state/)).toBeInTheDocument();
+    });
+  });
+
+  describe('set-as-latest flow', () => {
+    it('shows "Pin as latest" for the resolved latest version when not pinned', async () => {
+      server.use(getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Pin as latest')).toBeInTheDocument();
+    });
+
+    it('shows "Unpin latest" when version is pinned as latest', async () => {
+      const pinnedServer = createMockMCPServer({
+        name: 'dev.mainline/mcp',
+        display_name: 'Mainline',
+        description: 'A test server',
+        latest_version: '1',
+      });
+      server.use(getMockedGetMCPServerResponse(pinnedServer), getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Unpin latest')).toBeInTheDocument();
+    });
+
+    it('shows "Set as latest" for a non-latest version', async () => {
+      const version2 = createMockMCPServerVersion({
+        name: 'dev.mainline/mcp',
+        version: '2',
+        status: 'active',
+        server_json: { name: 'dev.mainline/mcp', version: '2.0.0' },
+      });
+      server.use(
+        getMockedSearchMCPServerVersionsResponse([mockVersion, version2]),
+        getMockedUpdateMCPServerResponse(),
+      );
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      await userEvent.click(screen.getByText('2'));
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Set as latest')).toBeInTheDocument();
+    });
+
+    it('disables set-as-latest for draft versions that are not latest', async () => {
+      const draftVersion = createMockMCPServerVersion({
+        name: 'dev.mainline/mcp',
+        version: '2',
+        status: 'draft',
+        server_json: { name: 'dev.mainline/mcp', version: '2.0.0' },
+      });
+      server.use(
+        getMockedSearchMCPServerVersionsResponse([mockVersion, draftVersion]),
+        getMockedUpdateMCPServerResponse(),
+      );
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      await userEvent.click(screen.getByText('2'));
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
+      });
+
+      const setLatestBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.set_latest"]') as HTMLButtonElement;
+      expect(setLatestBtn).toBeDisabled();
+    });
+  });
+
+  describe('server description editing', () => {
+    it('shows server description and edit button', async () => {
+      server.use(getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('A test server')).toBeInTheDocument();
+      });
+
+      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      expect(editBtn).toBeInTheDocument();
+    });
+
+    it('shows "Add description" when no description exists', async () => {
+      const noDescServer = createMockMCPServer({
+        name: 'dev.mainline/mcp',
+        display_name: 'Mainline',
+      });
+      server.use(getMockedGetMCPServerResponse(noDescServer));
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Add description')).toBeInTheDocument();
+    });
+
+    it('opens description edit modal and saves', async () => {
+      server.use(getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('A test server')).toBeInTheDocument();
+      });
+
+      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      await userEvent.click(editBtn);
+      await waitFor(() => {
+        expect(screen.getByText('Edit description')).toBeInTheDocument();
+      });
+    });
+
+    it('shows error in description modal on save failure', async () => {
+      server.use(getMockedUpdateMCPServerErrorResponse(500, 'Server error'));
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('A test server')).toBeInTheDocument();
+      });
+
+      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      await userEvent.click(editBtn);
+      await waitFor(() => {
+        expect(screen.getByText('Edit description')).toBeInTheDocument();
+      });
+
+      await userEvent.click(screen.getByText('Save'));
+      await waitFor(() => {
+        expect(screen.getByText(/Server error/)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('server display name editing', () => {
+    it('opens edit display name modal from overflow menu', async () => {
+      server.use(getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      const menuItems = await screen.findAllByRole('menuitem');
+      const editItem = menuItems.find((item) => item.textContent === 'Edit display name');
+      expect(editItem).toBeDefined();
+      await userEvent.click(editItem!);
+      await waitFor(() => {
+        expect(screen.getByText('Edit display name')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('server tags', () => {
+    it('shows "Add tags" button when server has no tags', async () => {
+      server.use(getMockedSetMCPServerTagResponse(), getMockedDeleteMCPServerTagResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Add tags')).toBeInTheDocument();
+    });
+
+    it('shows tags when server has tags', async () => {
+      const taggedServer = createMockMCPServer({
+        name: 'dev.mainline/mcp',
+        display_name: 'Mainline',
+        description: 'A test server',
+        tags: { env: 'production', team: 'platform' },
+      });
+      server.use(
+        getMockedGetMCPServerResponse(taggedServer),
+        getMockedSetMCPServerTagResponse(),
+        getMockedDeleteMCPServerTagResponse(),
+      );
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('env')).toBeInTheDocument();
+        expect(screen.getByText('team')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('reset latest version', () => {
+    it('shows reset latest version in overflow menu', async () => {
+      server.use(getMockedUpdateMCPServerResponse());
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      const menuItems = await screen.findAllByRole('menuitem');
+      const resetItem = menuItems.find((item) => item.textContent === 'Reset latest version');
+      expect(resetItem).toBeDefined();
     });
   });
 });
