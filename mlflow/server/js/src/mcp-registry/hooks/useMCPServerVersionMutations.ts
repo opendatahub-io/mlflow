@@ -11,7 +11,9 @@ export const useUpdateMCPServerVersionStatus = (serverName: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries(['mcp_server', serverName]);
       queryClient.invalidateQueries(['mcp_server_versions', serverName]);
+      queryClient.invalidateQueries(['mcp_server_bindings', serverName]);
       queryClient.invalidateQueries(['mcp_servers_list']);
+      queryClient.invalidateQueries(['mcp_bindings_list']);
     },
   });
 };
@@ -24,7 +26,9 @@ export const useDeleteMCPServerVersion = (serverName: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries(['mcp_server', serverName]);
       queryClient.invalidateQueries(['mcp_server_versions', serverName]);
+      queryClient.invalidateQueries(['mcp_server_bindings', serverName]);
       queryClient.invalidateQueries(['mcp_servers_list']);
+      queryClient.invalidateQueries(['mcp_bindings_list']);
     },
   });
 };
@@ -36,6 +40,7 @@ export const useDeleteMCPServer = () => {
     mutationFn: (name: string) => MCPRegistryApi.deleteMCPServer(name),
     onSuccess: () => {
       queryClient.invalidateQueries(['mcp_servers_list']);
+      queryClient.invalidateQueries(['mcp_bindings_list']);
     },
   });
 };

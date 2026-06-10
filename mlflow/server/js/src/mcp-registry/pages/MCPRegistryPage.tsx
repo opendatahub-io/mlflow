@@ -11,9 +11,6 @@ import {
   SegmentedControlGroup,
   WrenchIcon,
   Spacer,
-  Table,
-  TableHeader,
-  TableRow,
   TableFilterInput,
   TableFilterLayout,
   useDesignSystemTheme,
@@ -27,8 +24,12 @@ import ErrorUtils from '../../common/utils/ErrorUtils';
 import { useSearchParams } from '../../common/utils/RoutingUtils';
 import { ModelSearchInputHelpTooltip } from '../../model-registry/components/model-list/ModelListFilters';
 import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
+import { useMCPAccessBindingsListQuery } from '../hooks/useMCPAccessBindingsListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
-import { MCPServerListTable, emptyCenterStyles } from '../components/MCPServerListTable';
+import { MCPServerListTable } from '../components/MCPServerListTable';
+import { emptyCenterStyles } from '../utils';
+import { MCPAccessBindingCardGrid } from '../components/MCPAccessBindingCardGrid';
+import { MCPAccessBindingListTable } from '../components/MCPAccessBindingListTable';
 import { useDebounce } from 'use-debounce';
 
 type ViewMode = 'list' | 'grid';
@@ -39,7 +40,7 @@ const MCPRegistryPage = () => {
   const intl = useIntl();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
-  const activeTab: ActiveTab = tabFromUrl === 'bindings' ? 'bindings' : 'servers';
+  const activeTab: ActiveTab = tabFromUrl === 'servers' ? 'servers' : 'bindings';
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchFilter, setSearchFilter] = useState('');
   const [debouncedSearchFilter] = useDebounce(searchFilter, 500);
@@ -54,14 +55,25 @@ const MCPRegistryPage = () => {
     onNextPage,
     onPreviousPage,
     pageSizeSelect,
-  } = useMCPServersListQuery({ searchFilter: effectiveFilter });
+  } = useMCPServersListQuery({ searchFilter: activeTab === 'servers' ? effectiveFilter : undefined });
+
+  const {
+    data: bindings,
+    isLoading: bindingsLoading,
+    error: bindingsError,
+    hasNextPage: bindingsHasNextPage,
+    hasPreviousPage: bindingsHasPreviousPage,
+    onNextPage: bindingsOnNextPage,
+    onPreviousPage: bindingsOnPreviousPage,
+    pageSizeSelect: bindingsPageSizeSelect,
+  } = useMCPAccessBindingsListQuery({ searchFilter: activeTab === 'bindings' ? effectiveFilter : undefined });
 
   const handleTabChange = useCallback(
     (e: RadioChangeEvent) => {
       const value = e.target.value as ActiveTab;
       setSearchFilter('');
       const next = new URLSearchParams(searchParams);
-      if (value === 'servers') {
+      if (value === 'bindings') {
         next.delete('tab');
       } else {
         next.set('tab', value);
@@ -133,11 +145,11 @@ const MCPRegistryPage = () => {
           onChange={handleTabChange}
           componentId="mlflow.mcp_registry.tabs"
         >
-          <SegmentedControlButton value="servers">
-            <FormattedMessage defaultMessage="Servers" description="MCP Registry servers tab label" />
-          </SegmentedControlButton>
           <SegmentedControlButton value="bindings">
             <FormattedMessage defaultMessage="Access Bindings" description="MCP Registry access bindings tab label" />
+          </SegmentedControlButton>
+          <SegmentedControlButton value="servers">
+            <FormattedMessage defaultMessage="Servers" description="MCP Registry servers tab label" />
           </SegmentedControlButton>
         </SegmentedControlGroup>
 
@@ -216,86 +228,134 @@ const MCPRegistryPage = () => {
         )}
 
         {activeTab === 'bindings' && (
-          <>
-            <div css={{ paddingTop: theme.spacing.md }}>
-              <TableFilterLayout>
-                <TableFilterInput
-                  placeholder={intl.formatMessage({
-                    defaultMessage: 'Search access bindings',
-                    description: 'Placeholder for MCP access bindings search filter input',
-                  })}
-                  componentId="mlflow.mcp_registry.bindings.search"
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  suffix={null}
-                />
-              </TableFilterLayout>
-            </div>
-            <Table
-              scrollable
-              empty={
-                <div css={emptyCenterStyles}>
-                  <Empty
-                    title={
-                      <FormattedMessage
-                        defaultMessage="Create endpoint"
-                        description="Empty state title for MCP access bindings tab"
-                      />
-                    }
-                    description={
-                      <FormattedMessage
-                        defaultMessage="Create and manage direct access endpoints for your MCP servers."
-                        description="Empty state description for MCP access bindings tab"
-                      />
-                    }
-                    button={
-                      <Button
-                        componentId="mlflow.mcp_registry.bindings.empty_state.create"
-                        type="primary"
-                        icon={<PlusIcon />}
-                        disabled
-                      >
-                        <FormattedMessage
-                          defaultMessage="Create endpoint"
-                          description="MCP Registry bindings empty state CTA button"
-                        />
-                      </Button>
-                    }
-                  />
-                </div>
-              }
+          <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div
+              css={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: theme.spacing.sm,
+                paddingTop: theme.spacing.md,
+                flexShrink: 0,
+              }}
             >
-              <TableRow isHeader>
-                <TableHeader componentId="mlflow.mcp_registry.bindings.header.endpoint">
-                  <FormattedMessage defaultMessage="Endpoint" description="Access bindings table header for endpoint" />
-                </TableHeader>
-                <TableHeader componentId="mlflow.mcp_registry.bindings.header.server">
-                  <FormattedMessage
-                    defaultMessage="MCP Server"
-                    description="Access bindings table header for server name"
+              <div css={{ flex: 1 }}>
+                <TableFilterLayout>
+                  <TableFilterInput
+                    placeholder={intl.formatMessage({
+                      defaultMessage: 'Search access bindings',
+                      description: 'Placeholder for MCP access bindings search filter input',
+                    })}
+                    componentId="mlflow.mcp_registry.bindings.search"
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    suffix={null}
                   />
-                </TableHeader>
-                <TableHeader componentId="mlflow.mcp_registry.bindings.header.version">
-                  <FormattedMessage
-                    defaultMessage="Version/Alias"
-                    description="Access bindings table header for version or alias"
-                  />
-                </TableHeader>
-                <TableHeader componentId="mlflow.mcp_registry.bindings.header.transport">
-                  <FormattedMessage
-                    defaultMessage="Transport"
-                    description="Access bindings table header for transport type"
-                  />
-                </TableHeader>
-                <TableHeader componentId="mlflow.mcp_registry.bindings.header.last_updated">
-                  <FormattedMessage
-                    defaultMessage="Last updated"
-                    description="Access bindings table header for last updated"
-                  />
-                </TableHeader>
-              </TableRow>
-            </Table>
-          </>
+                </TableFilterLayout>
+              </div>
+              <SegmentedControlGroup
+                name="mcp-registry-bindings-view-mode"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                componentId="mlflow.mcp_registry.bindings.view_toggle"
+              >
+                <SegmentedControlButton value="list" icon={<ListIcon />} />
+                <SegmentedControlButton value="grid" icon={<GridIcon />} />
+              </SegmentedControlGroup>
+            </div>
+            {bindingsError?.message && (
+              <Alert
+                type="error"
+                message={bindingsError.message}
+                componentId="mlflow.mcp_registry.bindings.error"
+                closable={false}
+                css={{ marginTop: theme.spacing.sm, flexShrink: 0 }}
+              />
+            )}
+            {isEmptyState && viewMode === 'grid' ? (
+              <div css={emptyCenterStyles}>
+                <Empty
+                  title={
+                    <FormattedMessage
+                      defaultMessage="Create MCP server"
+                      description="Empty state title for access bindings tab when no servers exist"
+                    />
+                  }
+                  description={
+                    <FormattedMessage
+                      defaultMessage="Register an MCP server before creating access bindings."
+                      description="Empty state description for access bindings tab when no servers exist"
+                    />
+                  }
+                  button={
+                    <Button
+                      componentId="mlflow.mcp_registry.bindings.empty_state.create_server"
+                      type="primary"
+                      icon={<PlusIcon />}
+                      disabled
+                    >
+                      <FormattedMessage
+                        defaultMessage="Create MCP server"
+                        description="Access bindings empty state create server button"
+                      />
+                    </Button>
+                  }
+                />
+              </div>
+            ) : viewMode === 'grid' ? (
+              <MCPAccessBindingCardGrid
+                bindings={bindings}
+                isLoading={bindingsLoading}
+                isFiltered={Boolean(searchFilter)}
+                hasNextPage={bindingsHasNextPage}
+                hasPreviousPage={bindingsHasPreviousPage}
+                onNextPage={bindingsOnNextPage}
+                onPreviousPage={bindingsOnPreviousPage}
+                pageSizeSelect={bindingsPageSizeSelect}
+              />
+            ) : (
+              <MCPAccessBindingListTable
+                bindings={bindings}
+                hasNextPage={bindingsHasNextPage}
+                hasPreviousPage={bindingsHasPreviousPage}
+                isLoading={bindingsLoading}
+                isFiltered={Boolean(searchFilter)}
+                onNextPage={bindingsOnNextPage}
+                onPreviousPage={bindingsOnPreviousPage}
+                pageSizeSelect={bindingsPageSizeSelect}
+                emptyStateOverride={
+                  isEmptyState ? (
+                    <Empty
+                      title={
+                        <FormattedMessage
+                          defaultMessage="Create MCP server"
+                          description="Empty state title for access bindings list when no servers exist"
+                        />
+                      }
+                      description={
+                        <FormattedMessage
+                          defaultMessage="Register an MCP server before creating access bindings."
+                          description="Empty state description for access bindings list when no servers exist"
+                        />
+                      }
+                      button={
+                        <Button
+                          componentId="mlflow.mcp_registry.bindings.list.empty_state.create_server"
+                          type="primary"
+                          icon={<PlusIcon />}
+                          disabled
+                        >
+                          <FormattedMessage
+                            defaultMessage="Create MCP server"
+                            description="Access bindings list empty state create server button"
+                          />
+                        </Button>
+                      }
+                    />
+                  ) : undefined
+                }
+              />
+            )}
+          </div>
         )}
       </div>
     </ScrollablePageWrapper>

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   PlusIcon,
   Spinner,
@@ -12,14 +13,17 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPAccessBinding } from '../types';
+import { formatTransportType } from '../utils';
 import Utils from '../../common/utils/Utils';
 
 export const MCPServerAccessBindings = ({
   bindings,
   isLoading,
+  error,
 }: {
   bindings?: MCPAccessBinding[];
   isLoading?: boolean;
+  error?: Error | null;
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
@@ -35,7 +39,14 @@ export const MCPServerAccessBindings = ({
         </Button>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <Alert
+          componentId="mlflow.mcp_registry.detail.bindings_error"
+          type="error"
+          message={error.message}
+          closable={false}
+        />
+      ) : isLoading ? (
         <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg }}>
           <Spinner size="small" />
         </div>
@@ -74,7 +85,7 @@ export const MCPServerAccessBindings = ({
           {bindings.map((binding) => (
             <TableRow key={binding.binding_id}>
               <TableCell>{binding.endpoint_url}</TableCell>
-              <TableCell>{binding.transport_type}</TableCell>
+              <TableCell>{formatTransportType(binding.transport_type)}</TableCell>
               <TableCell>{binding.server_alias || binding.server_version || '—'}</TableCell>
               <TableCell>
                 {binding.last_updated_timestamp ? Utils.formatTimestamp(binding.last_updated_timestamp, intl) : '—'}
