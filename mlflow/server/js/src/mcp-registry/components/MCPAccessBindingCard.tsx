@@ -2,6 +2,7 @@ import { Card, ConnectIcon, Typography, useDesignSystemTheme } from '@databricks
 
 import type { MCPAccessBinding } from '../types';
 import { resolveBindingDisplayName } from '../utils';
+import { CardIconWrapper } from './CardIconWrapper';
 
 export const MCPAccessBindingCard = ({ binding }: { binding: MCPAccessBinding }) => {
   const { theme } = useDesignSystemTheme();
@@ -23,8 +24,10 @@ export const MCPAccessBindingCard = ({ binding }: { binding: MCPAccessBinding })
       }}
     >
       <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
-        <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-          <ConnectIcon css={{ flexShrink: 0, color: theme.colors.textSecondary }} />
+        <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
+          <CardIconWrapper>
+            <ConnectIcon />
+          </CardIconWrapper>
           <Typography.Text bold css={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {displayName}
           </Typography.Text>

@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
 import { resolveDisplayName } from '../utils';
+import { CardIconWrapper } from './CardIconWrapper';
 import Utils from '../../common/utils/Utils';
 
 export const MCPServerCard = ({ server }: { server: MCPServer }) => {
@@ -22,8 +23,10 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
       href={`#${MCPRegistryRoutes.getMCPServerDetailRoute(server.name)}`}
       dangerouslyAppendEmotionCSS={{ height: '100%' }}
     >
-      <div css={{ display: 'flex', gap: theme.spacing.sm }}>
-        <McpIcon css={{ flexShrink: 0, color: theme.colors.textSecondary }} />
+      <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
+        <CardIconWrapper>
+          <McpIcon />
+        </CardIconWrapper>
         <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs, overflow: 'hidden' }}>
           <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {displayName}

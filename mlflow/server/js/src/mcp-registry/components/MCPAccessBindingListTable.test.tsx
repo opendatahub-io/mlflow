@@ -105,6 +105,55 @@ describe('MCPAccessBindingListTable', () => {
     expect(screen.getByText('Custom empty')).toBeInTheDocument();
   });
 
+  it('includes version in server detail link when binding has server_version', () => {
+    const bindings = [
+      createMockMCPAccessBinding({
+        binding_id: 1,
+        server_name: 'io.test/server',
+        server_version: '2.0.0',
+      }),
+    ];
+    renderTable({ bindings });
+    const link = screen.getByText('io.test/server').closest('a');
+    expect(link?.getAttribute('href')).toContain('version=2.0.0');
+  });
+
+  it('includes resolved version in server detail link for alias bindings', () => {
+    const bindings = [
+      createMockMCPAccessBinding({
+        binding_id: 1,
+        server_name: 'io.test/server',
+        server_alias: 'production',
+        server_version: undefined,
+        resolved_version: {
+          name: 'io.test/server',
+          version: '3.0.0',
+          server_json: { name: 'io.test/server', version: '3.0.0', title: 'Resolved Server' },
+          status: 'active',
+          aliases: [],
+          tags: {},
+        },
+      }),
+    ];
+    renderTable({ bindings });
+    const link = screen.getByText('Resolved Server').closest('a');
+    expect(link?.getAttribute('href')).toContain('version=3.0.0');
+  });
+
+  it('server detail link has no version param when binding has neither version nor resolved_version', () => {
+    const bindings = [
+      createMockMCPAccessBinding({
+        binding_id: 1,
+        server_name: 'io.test/server',
+        server_version: undefined,
+        server_alias: undefined,
+      }),
+    ];
+    renderTable({ bindings });
+    const link = screen.getByText('io.test/server').closest('a');
+    expect(link?.getAttribute('href')).not.toContain('version=');
+  });
+
   it('renders pagination controls', () => {
     const bindings = [createMockMCPAccessBinding()];
     renderTable({ bindings, hasNextPage: true });

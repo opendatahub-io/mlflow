@@ -27,9 +27,11 @@ import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
 import { useMCPAccessBindingsListQuery } from '../hooks/useMCPAccessBindingsListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
 import { MCPServerListTable } from '../components/MCPServerListTable';
+import type { MCPAccessBinding } from '../types';
 import { emptyCenterStyles } from '../utils';
 import { MCPAccessBindingCardGrid } from '../components/MCPAccessBindingCardGrid';
 import { MCPAccessBindingListTable } from '../components/MCPAccessBindingListTable';
+import { AccessBindingModal } from '../components/AccessBindingModal';
 import { useDebounce } from 'use-debounce';
 
 type ViewMode = 'list' | 'grid';
@@ -43,6 +45,8 @@ const MCPRegistryPage = () => {
   const activeTab: ActiveTab = tabFromUrl === 'servers' ? 'servers' : 'bindings';
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchFilter, setSearchFilter] = useState('');
+  const [bindingModalOpen, setBindingModalOpen] = useState(false);
+  const [editingBinding, setEditingBinding] = useState<MCPAccessBinding | undefined>(undefined);
   const [debouncedSearchFilter] = useDebounce(searchFilter, 500);
   const effectiveFilter = searchFilter ? debouncedSearchFilter : undefined;
 
@@ -55,7 +59,9 @@ const MCPRegistryPage = () => {
     onNextPage,
     onPreviousPage,
     pageSizeSelect,
-  } = useMCPServersListQuery({ searchFilter: activeTab === 'servers' ? effectiveFilter : undefined });
+  } = useMCPServersListQuery({
+    searchFilter: activeTab === 'servers' ? effectiveFilter : undefined,
+  });
 
   const {
     data: bindings,
@@ -66,7 +72,10 @@ const MCPRegistryPage = () => {
     onNextPage: bindingsOnNextPage,
     onPreviousPage: bindingsOnPreviousPage,
     pageSizeSelect: bindingsPageSizeSelect,
-  } = useMCPAccessBindingsListQuery({ searchFilter: activeTab === 'bindings' ? effectiveFilter : undefined });
+  } = useMCPAccessBindingsListQuery({
+    searchFilter: activeTab === 'bindings' ? effectiveFilter : undefined,
+    enabled: activeTab === 'bindings',
+  });
 
   const handleTabChange = useCallback(
     (e: RadioChangeEvent) => {
@@ -83,12 +92,25 @@ const MCPRegistryPage = () => {
     [searchParams, setSearchParams],
   );
 
-  const isEmptyState = !isLoading && !error && !servers?.length && !searchFilter;
-  const createButton = !isEmptyState ? (
-    <Button componentId="mlflow.mcp_registry.create_server_button" type="primary" disabled>
-      <FormattedMessage defaultMessage="Create MCP server" description="Button to create a new MCP server" />
-    </Button>
-  ) : null;
+  const isServersEmpty = !isLoading && !error && !servers?.length && !searchFilter;
+  const createButton =
+    activeTab === 'bindings' ? (
+      <Button
+        componentId="mlflow.mcp_registry.create_binding_button"
+        type="primary"
+        disabled={isServersEmpty}
+        onClick={() => {
+          setEditingBinding(undefined);
+          setBindingModalOpen(true);
+        }}
+      >
+        <FormattedMessage defaultMessage="Create access binding" description="Button to create a new access binding" />
+      </Button>
+    ) : !isServersEmpty ? (
+      <Button componentId="mlflow.mcp_registry.create_server_button" type="primary" disabled>
+        <FormattedMessage defaultMessage="Create MCP server" description="Button to create a new MCP server" />
+      </Button>
+    ) : null;
 
   const serversEmptyState = (
     <div css={emptyCenterStyles}>
@@ -198,7 +220,7 @@ const MCPRegistryPage = () => {
               />
             )}
             {viewMode === 'grid' ? (
-              isEmptyState ? (
+              isServersEmpty ? (
                 serversEmptyState
               ) : (
                 <MCPServerCardGrid
@@ -271,7 +293,7 @@ const MCPRegistryPage = () => {
                 css={{ marginTop: theme.spacing.sm, flexShrink: 0 }}
               />
             )}
-            {isEmptyState && viewMode === 'grid' ? (
+            {isServersEmpty && viewMode === 'grid' ? (
               <div css={emptyCenterStyles}>
                 <Empty
                   title={
@@ -311,6 +333,10 @@ const MCPRegistryPage = () => {
                 onNextPage={bindingsOnNextPage}
                 onPreviousPage={bindingsOnPreviousPage}
                 pageSizeSelect={bindingsPageSizeSelect}
+                onCreateBinding={() => {
+                  setEditingBinding(undefined);
+                  setBindingModalOpen(true);
+                }}
               />
             ) : (
               <MCPAccessBindingListTable
@@ -322,8 +348,16 @@ const MCPRegistryPage = () => {
                 onNextPage={bindingsOnNextPage}
                 onPreviousPage={bindingsOnPreviousPage}
                 pageSizeSelect={bindingsPageSizeSelect}
+                onCreateBinding={() => {
+                  setEditingBinding(undefined);
+                  setBindingModalOpen(true);
+                }}
+                onEditBinding={(binding) => {
+                  setEditingBinding(binding);
+                  setBindingModalOpen(true);
+                }}
                 emptyStateOverride={
-                  isEmptyState ? (
+                  isServersEmpty ? (
                     <Empty
                       title={
                         <FormattedMessage
@@ -358,6 +392,14 @@ const MCPRegistryPage = () => {
           </div>
         )}
       </div>
+      <AccessBindingModal
+        visible={bindingModalOpen}
+        onCancel={() => {
+          setEditingBinding(undefined);
+          setBindingModalOpen(false);
+        }}
+        editBinding={editingBinding}
+      />
     </ScrollablePageWrapper>
   );
 };

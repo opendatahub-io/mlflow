@@ -15,6 +15,7 @@ export const MCPAccessBindingCardGrid = ({
   onNextPage,
   onPreviousPage,
   pageSizeSelect,
+  onCreateBinding,
 }: {
   bindings?: MCPAccessBinding[];
   isLoading?: boolean;
@@ -24,6 +25,7 @@ export const MCPAccessBindingCardGrid = ({
   onNextPage: () => void;
   onPreviousPage: () => void;
   pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
+  onCreateBinding?: () => void;
 }) => (
   <PaginatedCardGrid
     items={bindings}
@@ -65,10 +67,10 @@ export const MCPAccessBindingCardGrid = ({
             componentId="mlflow.mcp_registry.bindings.grid.empty_state.create"
             type="primary"
             icon={<PlusIcon />}
-            disabled
+            onClick={onCreateBinding}
           >
             <FormattedMessage
-              defaultMessage="Create endpoint"
+              defaultMessage="Create access binding"
               description="Access bindings card grid empty state CTA button"
             />
           </Button>

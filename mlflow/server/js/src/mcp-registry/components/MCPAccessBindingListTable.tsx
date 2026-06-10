@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
   TableSkeletonRows,
+  Tooltip,
   Typography,
   useDesignSystemTheme,
   Button,
@@ -24,21 +25,29 @@ import type { MCPAccessBinding } from '../types';
 import MCPRegistryRoutes from '../routes';
 import { emptyCenterStyles, formatTransportType, resolveBindingDisplayName } from '../utils';
 import { Link } from '../../common/utils/RoutingUtils';
-import { CopyButton } from '../../shared/building_blocks/CopyButton';
+import { copyToClipboard } from '../../common/utils/copyToClipboard';
 import Utils from '../../common/utils/Utils';
 
 const EndpointCell: ColumnDef<MCPAccessBinding>['cell'] = ({ row: { original } }) => {
   const { theme } = useDesignSystemTheme();
+  const intl = useIntl();
   return (
     <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
-      <CopyButton
-        componentId="mlflow.mcp_registry.bindings.table.copy_endpoint"
-        copyText={original.endpoint_url}
-        showLabel={false}
-        size="small"
-        type="tertiary"
-        icon={<CopyIcon />}
-      />
+      <Tooltip
+        componentId="mlflow.mcp_registry.bindings.table.copy_tooltip"
+        content={intl.formatMessage({
+          defaultMessage: 'Copy endpoint URL',
+          description: 'Tooltip for copy endpoint URL button',
+        })}
+      >
+        <Button
+          componentId="mlflow.mcp_registry.bindings.table.copy_endpoint"
+          size="small"
+          icon={<CopyIcon />}
+          onClick={() => copyToClipboard(original.endpoint_url)}
+          css={{ flexShrink: 0 }}
+        />
+      </Tooltip>
       <Typography.Link
         componentId="mlflow.mcp_registry.bindings.table.endpoint_link"
         href={original.endpoint_url}
@@ -52,13 +61,29 @@ const EndpointCell: ColumnDef<MCPAccessBinding>['cell'] = ({ row: { original } }
 };
 
 const ServerNameCell: ColumnDef<MCPAccessBinding>['cell'] = ({ row: { original } }) => {
+  const version = original.resolved_version?.version ?? original.server_version;
   return (
     <Link
       componentId="mlflow.mcp_registry.bindings.table.server_link"
-      to={MCPRegistryRoutes.getMCPServerDetailRoute(original.server_name)}
+      to={MCPRegistryRoutes.getMCPServerDetailRoute(original.server_name, version)}
     >
       {resolveBindingDisplayName(original)}
     </Link>
+  );
+};
+
+const EditCell: ColumnDef<MCPAccessBinding>['cell'] = ({
+  row: { original },
+  table: {
+    options: { meta },
+  },
+}) => {
+  const { onEditBinding } = (meta ?? {}) as { onEditBinding?: (binding: MCPAccessBinding) => void };
+  if (!onEditBinding) return null;
+  return (
+    <Typography.Link componentId="mlflow.mcp_registry.bindings.table.edit_link" onClick={() => onEditBinding(original)}>
+      <FormattedMessage defaultMessage="Edit" description="Edit access binding link in table" />
+    </Typography.Link>
   );
 };
 
@@ -73,6 +98,7 @@ const useMCPAccessBindingTableColumns = () => {
         }),
         accessorKey: 'endpoint_url',
         id: 'endpoint',
+        meta: { flex: 2 },
         cell: EndpointCell,
       },
       {
@@ -90,6 +116,7 @@ const useMCPAccessBindingTableColumns = () => {
           description: 'Header for the version or alias column in the access bindings table',
         }),
         id: 'target',
+        meta: { flex: 0.75 },
         accessorFn: (row) => row.server_alias || row.server_version || '—',
       },
       {
@@ -109,6 +136,12 @@ const useMCPAccessBindingTableColumns = () => {
         accessorFn: ({ last_updated_timestamp }) =>
           last_updated_timestamp ? Utils.formatTimestamp(last_updated_timestamp, intl) : '',
       },
+      {
+        header: '',
+        id: 'actions',
+        meta: { flex: 0.5 },
+        cell: EditCell,
+      },
     ];
     return columns;
   }, [intl]);
@@ -124,6 +157,8 @@ export const MCPAccessBindingListTable = ({
   onPreviousPage,
   pageSizeSelect,
   emptyStateOverride,
+  onCreateBinding,
+  onEditBinding,
 }: {
   bindings?: MCPAccessBinding[];
   hasNextPage: boolean;
@@ -134,6 +169,8 @@ export const MCPAccessBindingListTable = ({
   onPreviousPage: () => void;
   pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
   emptyStateOverride?: React.ReactNode;
+  onCreateBinding?: () => void;
+  onEditBinding?: (binding: MCPAccessBinding) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = useMCPAccessBindingTableColumns();
@@ -143,6 +180,7 @@ export const MCPAccessBindingListTable = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row, index) => row.binding_id?.toString() ?? index.toString(),
+    meta: { onEditBinding },
   });
 
   const getEmptyState = () => {
@@ -187,7 +225,7 @@ export const MCPAccessBindingListTable = ({
                 componentId="mlflow.mcp_registry.bindings.table.empty_state.create"
                 type="primary"
                 icon={<PlusIcon />}
-                disabled
+                onClick={onCreateBinding}
               >
                 <FormattedMessage
                   defaultMessage="Create endpoint"
@@ -218,22 +256,32 @@ export const MCPAccessBindingListTable = ({
       empty={getEmptyState()}
     >
       <TableRow isHeader>
-        {table.getLeafHeaders().map((header) => (
-          <TableHeader componentId="mlflow.mcp_registry.bindings.table.header" key={header.id}>
-            {flexRender(header.column.columnDef.header, header.getContext())}
-          </TableHeader>
-        ))}
+        {table.getLeafHeaders().map((header) => {
+          const flex = (header.column.columnDef.meta as { flex?: number } | undefined)?.flex;
+          return (
+            <TableHeader
+              componentId="mlflow.mcp_registry.bindings.table.header"
+              key={header.id}
+              css={flex != null ? { flex } : undefined}
+            >
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </TableHeader>
+          );
+        })}
       </TableRow>
       {isLoading ? (
         <TableSkeletonRows table={table} />
       ) : (
         table.getRowModel().rows.map((row) => (
           <TableRow key={row.id} css={{ height: theme.general.buttonHeight }}>
-            {row.getAllCells().map((cell) => (
-              <TableCell key={cell.id} css={{ alignItems: 'center' }}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
+            {row.getAllCells().map((cell) => {
+              const flex = (cell.column.columnDef.meta as { flex?: number } | undefined)?.flex;
+              return (
+                <TableCell key={cell.id} css={{ alignItems: 'center', ...(flex != null && { flex }) }}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              );
+            })}
           </TableRow>
         ))
       )}
