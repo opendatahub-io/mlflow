@@ -55,6 +55,8 @@ export const MCPServerVersionDetail = ({
   aliasesByVersion,
   showEditAliasesModal,
   onAddBinding,
+  onEditBinding,
+  onDeleteBinding,
 }: {
   server: MCPServer;
   version?: MCPServerVersion;
@@ -64,6 +66,8 @@ export const MCPServerVersionDetail = ({
   aliasesByVersion: Record<string, string[]>;
   showEditAliasesModal?: (versionNumber: string) => void;
   onAddBinding?: () => void;
+  onEditBinding?: (binding: MCPAccessBinding) => void;
+  onDeleteBinding?: (binding: MCPAccessBinding) => void;
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
@@ -257,6 +261,8 @@ export const MCPServerVersionDetail = ({
         isLoading={bindingsLoading}
         error={bindingsError}
         onAddBinding={onAddBinding}
+        onEditBinding={onEditBinding}
+        onDeleteBinding={onDeleteBinding}
       />
 
       <UpdateVersionStatusModal

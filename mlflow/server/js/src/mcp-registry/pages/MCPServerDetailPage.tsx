@@ -30,6 +30,8 @@ import {
   useMCPAccessBindingsQuery,
 } from '../hooks/useMCPServerDetailQuery';
 import { useDeleteMCPServer } from '../hooks/useMCPServerVersionMutations';
+import { useDeleteAccessBindingMutation } from '../hooks/useAccessBindingMutation';
+import type { MCPAccessBinding } from '../types';
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
 import { AccessBindingModal } from '../components/AccessBindingModal';
@@ -48,10 +50,14 @@ const MCPServerDetailPage = () => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
   const navigate = useNavigate();
-  const { serverName = '' } = useParams<{ serverName: string }>();
+  const params = useParams<{ serverName: string }>();
+  const serverName = decodeURIComponent(params.serverName ?? '');
   const [deleteServerModalVisible, setDeleteServerModalVisible] = useState(false);
   const [addBindingModalOpen, setAddBindingModalOpen] = useState(false);
+  const [editingBinding, setEditingBinding] = useState<MCPAccessBinding | undefined>(undefined);
+  const [deletingBinding, setDeletingBinding] = useState<MCPAccessBinding | undefined>(undefined);
   const deleteServerMutation = useDeleteMCPServer();
+  const deleteBindingMutation = useDeleteAccessBindingMutation();
 
   const {
     data: server,
@@ -263,13 +269,22 @@ const MCPServerDetailPage = () => {
             aliasesByVersion={aliasesByVersion}
             showEditAliasesModal={showEditAliasesModal}
             onAddBinding={() => setAddBindingModalOpen(true)}
+            onEditBinding={(binding) => {
+              setEditingBinding(binding);
+              setAddBindingModalOpen(true);
+            }}
+            onDeleteBinding={setDeletingBinding}
           />
         </div>
       </div>
       {EditAliasesModal}
       <AccessBindingModal
         visible={addBindingModalOpen}
-        onCancel={() => setAddBindingModalOpen(false)}
+        onCancel={() => {
+          setEditingBinding(undefined);
+          setAddBindingModalOpen(false);
+        }}
+        editBinding={editingBinding}
         lockedServer={serverName}
         defaultVersion={currentVersion?.version}
       />
@@ -299,6 +314,33 @@ const MCPServerDetailPage = () => {
         onCancel={() => {
           deleteServerMutation.reset();
           setDeleteServerModalVisible(false);
+        }}
+      />
+      <ConfirmationModal
+        componentId="mlflow.mcp_registry.detail.delete_binding_modal"
+        title={intl.formatMessage({
+          defaultMessage: 'Delete access binding',
+          description: 'Access binding delete confirmation modal title',
+        })}
+        visible={Boolean(deletingBinding)}
+        message={
+          <FormattedMessage
+            defaultMessage="Are you sure you want to delete this access binding? This action cannot be undone."
+            description="Access binding delete confirmation message"
+          />
+        }
+        isLoading={deleteBindingMutation.isLoading}
+        error={deleteBindingMutation.error?.message ?? null}
+        onConfirm={() => {
+          if (!deletingBinding) return;
+          deleteBindingMutation.mutate(
+            { serverName: deletingBinding.server_name, bindingId: deletingBinding.binding_id },
+            { onSuccess: () => setDeletingBinding(undefined) },
+          );
+        }}
+        onCancel={() => {
+          deleteBindingMutation.reset();
+          setDeletingBinding(undefined);
         }}
       />
     </ScrollablePageWrapper>

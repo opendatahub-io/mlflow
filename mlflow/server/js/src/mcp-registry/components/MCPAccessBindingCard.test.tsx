@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { MCPAccessBindingCard } from './MCPAccessBindingCard';
 import { createMockMCPAccessBinding } from '../test-utils';
 import type { MCPAccessBinding } from '../types';
@@ -9,9 +10,17 @@ import type { MCPAccessBinding } from '../types';
 const renderCard = (binding: MCPAccessBinding) =>
   render(
     <IntlProvider locale="en">
-      <DesignSystemProvider>
-        <MCPAccessBindingCard binding={binding} />
-      </DesignSystemProvider>
+      <TestRouter
+        routes={[
+          testRoute(
+            <DesignSystemProvider>
+              <MCPAccessBindingCard binding={binding} />
+            </DesignSystemProvider>,
+            '/',
+          ),
+          testRoute(<div />, '*'),
+        ]}
+      />
     </IntlProvider>,
   );
 

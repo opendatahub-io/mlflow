@@ -33,7 +33,7 @@ export const UpdateVersionStatusModal = ({
   const intl = useIntl();
   const allowedTransitions = STATUS_TRANSITIONS[currentStatus] ?? [];
   const isTerminal = allowedTransitions.length === 0;
-  const [selectedStatus, setSelectedStatus] = useState<MCPStatus>(allowedTransitions[0]);
+  const [selectedStatus, setSelectedStatus] = useState<MCPStatus | undefined>(allowedTransitions[0]);
 
   useEffect(() => {
     if (visible) {
@@ -53,7 +53,7 @@ export const UpdateVersionStatusModal = ({
       }
       visible={visible}
       onCancel={onCancel}
-      onOk={() => onUpdate(selectedStatus)}
+      onOk={() => selectedStatus && onUpdate(selectedStatus)}
       okText={intl.formatMessage({
         defaultMessage: 'Update',
         description: 'MCP server update version status modal confirm button',
