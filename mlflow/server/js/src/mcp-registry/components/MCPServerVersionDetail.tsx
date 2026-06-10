@@ -13,7 +13,7 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPAccessBinding, MCPServer, MCPServerVersion } from '../types';
-import { STATUS_TAG_COLOR, resolveDisplayName } from '../utils';
+import { STATUS_TAG_COLOR, resolveDisplayName, resolveVersionDisplayName } from '../utils';
 import { ServerJSONViewer } from './ServerJSONViewer';
 import { MCPServerAccessBindings } from './MCPServerAccessBindings';
 import { UpdateVersionStatusModal } from './UpdateVersionStatusModal';
@@ -51,6 +51,7 @@ export const MCPServerVersionDetail = ({
   version,
   bindings,
   bindingsLoading,
+  bindingsError,
   aliasesByVersion,
   showEditAliasesModal,
 }: {
@@ -58,6 +59,7 @@ export const MCPServerVersionDetail = ({
   version?: MCPServerVersion;
   bindings?: MCPAccessBinding[];
   bindingsLoading?: boolean;
+  bindingsError?: Error | null;
   aliasesByVersion: Record<string, string[]>;
   showEditAliasesModal?: (versionNumber: string) => void;
 }) => {
@@ -158,7 +160,7 @@ export const MCPServerVersionDetail = ({
         <Typography.Text bold>
           <FormattedMessage defaultMessage="Display name:" description="MCP server version detail display name label" />
         </Typography.Text>
-        <Typography.Text>{displayName}</Typography.Text>
+        <Typography.Text>{resolveVersionDisplayName(version, displayName)}</Typography.Text>
 
         <Typography.Text bold>
           <FormattedMessage defaultMessage="Aliases:" description="MCP server version detail aliases label" />
@@ -247,7 +249,7 @@ export const MCPServerVersionDetail = ({
       {version.server_json && <ServerJSONViewer serverJson={version.server_json} />}
 
       <Spacer shrinks={false} size="lg" />
-      <MCPServerAccessBindings bindings={bindings} isLoading={bindingsLoading} />
+      <MCPServerAccessBindings bindings={bindings} isLoading={bindingsLoading} error={bindingsError} />
 
       <UpdateVersionStatusModal
         visible={statusModalVisible}

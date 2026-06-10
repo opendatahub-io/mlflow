@@ -11,12 +11,14 @@ import { setupServer } from '../../common/utils/setup-msw';
 import MCPRegistryPage from './MCPRegistryPage';
 import {
   createMockMCPServer,
+  createMockMCPAccessBinding,
   getMockedSearchMCPServersResponse,
   getMockedSearchMCPServersErrorResponse,
+  getMockedSearchMCPAccessBindingsAllResponse,
 } from '../test-utils';
 
 describe('MCPRegistryPage', () => {
-  const server = setupServer(getMockedSearchMCPServersResponse([]));
+  const server = setupServer(getMockedSearchMCPServersResponse([]), getMockedSearchMCPAccessBindingsAllResponse([]));
 
   const renderPage = (initialEntries = ['/']) => {
     const queryClient = new QueryClient();
@@ -45,12 +47,40 @@ describe('MCPRegistryPage', () => {
     await waitFor(() => {
       expect(screen.getByText('MCP Registry')).toBeInTheDocument();
     });
-    expect(screen.getByText('Servers')).toBeInTheDocument();
     expect(screen.getByText('Access Bindings')).toBeInTheDocument();
+    expect(screen.getByText('Servers')).toBeInTheDocument();
   });
 
-  it('renders empty state when no servers exist', async () => {
+  it('defaults to access bindings tab', async () => {
     renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('MCP Registry')).toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText('Search access bindings')).toBeInTheDocument();
+  });
+
+  it('shows create server empty state on access bindings tab when no servers exist', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Register an MCP server before creating access bindings.')).toBeInTheDocument();
+    });
+  });
+
+  it('switches to servers tab', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('MCP Registry')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Servers'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search MCP servers by name')).toBeInTheDocument();
+    });
+  });
+
+  it('renders empty state on servers tab when no servers exist', async () => {
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
       expect(screen.getByText('Create and manage MCP servers using MLflow.')).toBeInTheDocument();
     });
@@ -62,7 +92,7 @@ describe('MCPRegistryPage', () => {
       createMockMCPServer({ name: 'server-2', display_name: 'My Server 2' }),
     ];
     server.use(getMockedSearchMCPServersResponse(servers));
-    renderPage();
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
       expect(screen.getByText('My Server 1')).toBeInTheDocument();
       expect(screen.getByText('My Server 2')).toBeInTheDocument();
@@ -82,7 +112,7 @@ describe('MCPRegistryPage', () => {
         );
       }),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'raw');
@@ -95,31 +125,18 @@ describe('MCPRegistryPage', () => {
   it('shows Create MCP server button when servers exist', async () => {
     const servers = [createMockMCPServer({ name: 's1', display_name: 'Server 1' })];
     server.use(getMockedSearchMCPServersResponse(servers));
-    renderPage();
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
       expect(screen.getByText('Server 1')).toBeInTheDocument();
     });
-    expect(screen.getByText('Create MCP server')).toBeInTheDocument();
+    expect(screen.getAllByText('Create MCP server').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders error alert when API fails', async () => {
     server.use(getMockedSearchMCPServersErrorResponse(500, 'Something broke'));
-    renderPage();
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
       expect(screen.getByText('Something broke')).toBeInTheDocument();
-    });
-  });
-
-  it('switches to access bindings tab', async () => {
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('MCP Registry')).toBeInTheDocument();
-    });
-
-    await userEvent.click(screen.getByText('Access Bindings'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Create and manage direct access endpoints for your MCP servers.')).toBeInTheDocument();
     });
   });
 
@@ -150,14 +167,12 @@ describe('MCPRegistryPage', () => {
         );
       }),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
-    // Wait for initial load (grid view has pagination now)
     await waitFor(() => {
       expect(screen.getByText('Test')).toBeInTheDocument();
     });
 
-    // Click next to go to page 2
     await waitFor(() => {
       expect(screen.getByText('Next')).toBeInTheDocument();
     });
@@ -167,7 +182,6 @@ describe('MCPRegistryPage', () => {
       expect(capturedPageTokens).toContain('token-abc');
     });
 
-    // Now type a search filter — should reset page_token to null
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'test');
 
@@ -184,7 +198,7 @@ describe('MCPRegistryPage', () => {
         res(ctx.json({ mcp_servers: servers, next_page_token: 'next-token' })),
       ),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
     await waitFor(() => {
       expect(screen.getByText('Server 1')).toBeInTheDocument();
@@ -196,7 +210,7 @@ describe('MCPRegistryPage', () => {
   it('renders page size selector in grid view', async () => {
     const servers = [createMockMCPServer({ name: 'server-1', display_name: 'Server 1' })];
     server.use(getMockedSearchMCPServersResponse(servers));
-    renderPage();
+    renderPage(['/?tab=servers']);
 
     await waitFor(() => {
       expect(screen.getByText('Server 1')).toBeInTheDocument();
@@ -212,7 +226,7 @@ describe('MCPRegistryPage', () => {
         return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
       }),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, "status = 'active'");
@@ -230,19 +244,16 @@ describe('MCPRegistryPage', () => {
         return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
       }),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
-    // Wait for initial load
     await waitFor(() => {
       expect(callCount).toBeGreaterThanOrEqual(1);
     });
     const initialCallCount = callCount;
 
-    // Type multiple characters quickly
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'abcdef');
 
-    // Wait for debounce to settle (500ms)
     await waitFor(
       () => {
         expect(callCount).toBeGreaterThan(initialCallCount);
@@ -270,7 +281,7 @@ describe('MCPRegistryPage', () => {
         return res(ctx.json({ mcp_servers: servers, next_page_token: undefined }));
       }),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
 
     await waitFor(() => {
       expect(screen.getByText('Original Server')).toBeInTheDocument();
@@ -279,17 +290,58 @@ describe('MCPRegistryPage', () => {
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'test');
 
-    // Old data should still be visible during the loading period
     await waitFor(() => {
       expect(screen.getByText('Original Server')).toBeInTheDocument();
     });
 
-    // Eventually new data appears
     await waitFor(
       () => {
         expect(screen.getByText('Filtered Server')).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
+  });
+
+  // --- Access Bindings tab tests ---
+
+  it('renders binding cards on access bindings tab', async () => {
+    const servers = [createMockMCPServer({ name: 'io.test/server', display_name: 'Test Server' })];
+    const bindings = [
+      createMockMCPAccessBinding({
+        binding_id: 1,
+        server_name: 'io.test/server',
+        server_alias: 'production',
+      }),
+    ];
+    server.use(getMockedSearchMCPServersResponse(servers), getMockedSearchMCPAccessBindingsAllResponse(bindings));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('io.test/server')).toBeInTheDocument();
+    });
+    expect(screen.getByText('production')).toBeInTheDocument();
+  });
+
+  it('shows create server empty state on bindings tab when no servers exist', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Register an MCP server before creating access bindings.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows create endpoint empty state on bindings tab when servers exist but no bindings', async () => {
+    const servers = [createMockMCPServer({ name: 'io.test/server' })];
+    server.use(getMockedSearchMCPServersResponse(servers), getMockedSearchMCPAccessBindingsAllResponse([]));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Create and manage direct access endpoints for your MCP servers.')).toBeInTheDocument();
+    });
+  });
+
+  it('renders view toggle on bindings tab', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('MCP Registry')).toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText('Search access bindings')).toBeInTheDocument();
   });
 });

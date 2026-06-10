@@ -21,25 +21,9 @@ import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
-import { resolveDisplayName } from '../utils';
+import { emptyCenterStyles, resolveDisplayName } from '../utils';
 import { Link } from '../../common/utils/RoutingUtils';
 import Utils from '../../common/utils/Utils';
-
-export const emptyCenterStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  minHeight: 400,
-  width: '100%',
-  '& > div': {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-};
 
 const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) => {
   const { theme } = useDesignSystemTheme();

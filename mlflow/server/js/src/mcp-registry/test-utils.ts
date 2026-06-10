@@ -68,3 +68,8 @@ export const getMockedDeleteMCPServerVersionResponse = () =>
 
 export const getMockedDeleteMCPServerResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedSearchMCPAccessBindingsAllResponse = (bindings: MCPAccessBinding[] = []) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/bindings`), (_req, res, ctx) =>
+    res(ctx.json({ mcp_access_bindings: bindings, next_page_token: undefined })),
+  );

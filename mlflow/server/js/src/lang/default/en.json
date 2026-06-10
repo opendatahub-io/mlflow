@@ -39,6 +39,10 @@
     "defaultMessage": "Follow these steps to enable the AI Gateway feature for managing AI provider credentials.",
     "description": "AI Gateway setup guide > Subtitle"
   },
+  "+8D/Xe": {
+    "defaultMessage": "No access bindings found",
+    "description": "Empty state when access binding search returns no results"
+  },
   "+8uMvO": {
     "defaultMessage": "Enter new password",
     "description": "Placeholder for the new-password input"
@@ -511,6 +515,10 @@
     "defaultMessage": "Trace archival retention unit",
     "description": "Label for trace archival retention unit selector"
   },
+  "0mvnEB": {
+    "defaultMessage": "Create endpoint",
+    "description": "Empty state title for access bindings table"
+  },
   "0pY/4R": {
     "defaultMessage": "Usage",
     "description": "Tab label for endpoint usage metrics"
@@ -755,6 +763,10 @@
     "defaultMessage": "Trace archival retention updated",
     "description": "Partial save status message when experiment trace archival retention update succeeds"
   },
+  "271P9S": {
+    "defaultMessage": "Create and manage direct access endpoints for your MCP servers.",
+    "description": "Empty state description for access bindings card grid"
+  },
   "27XMby": {
     "defaultMessage": "Missing",
     "description": "Missing assessment label"
@@ -870,6 +882,10 @@
   "2deqxk": {
     "defaultMessage": "We couldn't find any models matching your search criteria. Try changing your search filters.",
     "description": "Empty state message displayed when all models are filtered out in the logged models list page"
+  },
+  "2edtUe": {
+    "defaultMessage": "Transport",
+    "description": "Header for the transport type column in the access bindings table"
   },
   "2f2qeb": {
     "defaultMessage": "Type",
@@ -1371,10 +1387,6 @@
     "defaultMessage": "Detailed assessments",
     "description": "Evaluation review > assessments > detailed assessments > title"
   },
-  "5lDnPQ": {
-    "defaultMessage": "Create endpoint",
-    "description": "MCP Registry bindings empty state CTA button"
-  },
   "5lsHqm": {
     "defaultMessage": "Cancel",
     "description": "Cancel button for the edit model config modal"
@@ -1547,6 +1559,10 @@
     "defaultMessage": "Total: {total}%",
     "description": "Total weight display"
   },
+  "6hFDDi": {
+    "defaultMessage": "Create endpoint",
+    "description": "Access bindings table empty state CTA button"
+  },
   "6i/EoY": {
     "defaultMessage": "Save",
     "description": "Save button text for edit workspace modal"
@@ -1630,10 +1646,6 @@
   "7AbOaV": {
     "defaultMessage": "A unique name to identify this API key for reuse across endpoints",
     "description": "Hint text explaining API key name field"
-  },
-  "7BNPN4": {
-    "defaultMessage": "MCP Server",
-    "description": "Access bindings table header for server name"
   },
   "7BkVQ9": {
     "defaultMessage": "Run the following code to start an evaluation.",
@@ -2218,6 +2230,10 @@
   "9zZeT2": {
     "defaultMessage": "Delete records",
     "description": "Title for the V2 dataset records bulk-delete confirmation modal"
+  },
+  "9zm5R/": {
+    "defaultMessage": "Register an MCP server before creating access bindings.",
+    "description": "Empty state description for access bindings list when no servers exist"
   },
   "A+5KMV": {
     "defaultMessage": "Model ID",
@@ -2934,6 +2950,10 @@
   "DmQLLV": {
     "defaultMessage": "Download attachment ({contentType})",
     "description": "Download link for trace attachment with unknown content type"
+  },
+  "DrEq7H": {
+    "defaultMessage": "No access bindings found",
+    "description": "Empty state when MCP access binding search returns no results"
   },
   "Dw+Z8L": {
     "defaultMessage": "Budget exceeded",
@@ -4983,10 +5003,6 @@
     "defaultMessage": "Track every version of your model to understand how quality changes over time. {learnMoreLink}",
     "description": "Empty state description displayed when no models are logged in the machine learning logged models list page"
   },
-  "Pbi8zz": {
-    "defaultMessage": "Version/Alias",
-    "description": "Access bindings table header for version or alias"
-  },
   "PdoaF7": {
     "defaultMessage": "Model",
     "description": "Run page > Overview > Model used for issue detection"
@@ -5447,6 +5463,10 @@
     "defaultMessage": "Search parameters",
     "description": "Run page > Overview > Parameters table > Filter input placeholder"
   },
+  "SLYo1F": {
+    "defaultMessage": "Endpoint",
+    "description": "Header for the endpoint column in the access bindings table"
+  },
   "SLjN1/": {
     "defaultMessage": "Description",
     "description": "Row heading in a table that contains the description of a function parameter."
@@ -5570,6 +5590,10 @@
   "T/UYwm": {
     "defaultMessage": "Raw Schema JSON:",
     "description": "Label for the raw schema JSON in the experiment run dataset schema"
+  },
+  "T0GuxG": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for access bindings list when no servers exist"
   },
   "T1sd79": {
     "defaultMessage": "Go to model",
@@ -5962,6 +5986,10 @@
   "VF2V6v": {
     "defaultMessage": "Issues identified from traces will appear here.",
     "description": "Issue detection run details > Issues tab > Empty state description"
+  },
+  "VF3nK2": {
+    "defaultMessage": "Create endpoint",
+    "description": "Access bindings card grid empty state CTA button"
   },
   "VGJhVI": {
     "defaultMessage": "Add New Tag",
@@ -7223,10 +7251,6 @@
     "defaultMessage": "Filter by node",
     "description": "Filter button label"
   },
-  "buaV2N": {
-    "defaultMessage": "Create and manage direct access endpoints for your MCP servers.",
-    "description": "Empty state description for MCP access bindings tab"
-  },
   "buuQsF": {
     "defaultMessage": "A tag value is required",
     "description": "Key-value tag editor modal > Value required error message"
@@ -7491,6 +7515,10 @@
     "defaultMessage": "Toggle session grouping",
     "description": "Tooltip for the group by session button in the traces table toolbar"
   },
+  "d7vMSs": {
+    "defaultMessage": "Loading access bindings...",
+    "description": "Loading state for MCP access bindings card grid"
+  },
   "d8I3cy": {
     "defaultMessage": "Show only visible",
     "description": "Experiment page > compare runs tab > chart header > move down option"
@@ -7554,6 +7582,10 @@
   "dSaI6E": {
     "defaultMessage": "Failed to load audio attachment",
     "description": "Error message when trace audio attachment fails to load"
+  },
+  "dScNPd": {
+    "defaultMessage": "MCP Server",
+    "description": "Header for the server name column in the access bindings table"
   },
   "dTHmzd": {
     "defaultMessage": "Saved API keys can be managed in LLM Connections under Settings.",
@@ -7710,10 +7742,6 @@
   "eQV8Hs": {
     "defaultMessage": "Search runs",
     "description": "Placeholder text for the search input in the runs table on the logged model details page"
-  },
-  "eQaVED": {
-    "defaultMessage": "Last updated",
-    "description": "Access bindings table header for last updated"
   },
   "eQgPEi": {
     "defaultMessage": "{value} (step={step})",
@@ -8078,6 +8106,10 @@
   "gLj8lU": {
     "defaultMessage": "<strong>{length}</strong> matching {length, plural, =0 {runs} =1 {run} other {runs}}",
     "description": "Message for displaying how many runs match search criteria on experiment page"
+  },
+  "gNdiXX": {
+    "defaultMessage": "Create endpoint",
+    "description": "Empty state title for access bindings card grid"
   },
   "gOH/XL": {
     "defaultMessage": "No additional metadata is available for this dataset.",
@@ -9203,6 +9235,10 @@
     "defaultMessage": "Metrics ({length})",
     "description": "Run page > Overview > Metrics table > Section title"
   },
+  "m5qURv": {
+    "defaultMessage": "Last updated",
+    "description": "Header for the last updated column in the access bindings table"
+  },
   "m8ztHR": {
     "defaultMessage": "Edited {timeSince} by {source}.",
     "description": "Evaluation review > assessments > tooltip > edited by human"
@@ -9543,9 +9579,9 @@
     "defaultMessage": "Show all parent spans",
     "description": "Checkbox label for a setting that enables showing all parent spans in the trace explorer regardless of filter conditions."
   },
-  "na79Zq": {
-    "defaultMessage": "Endpoint",
-    "description": "Access bindings table header for endpoint"
+  "nZjAlt": {
+    "defaultMessage": "Register an MCP server before creating access bindings.",
+    "description": "Empty state description for access bindings tab when no servers exist"
   },
   "naivho": {
     "defaultMessage": "of",
@@ -9802,6 +9838,10 @@
   "owr9l2": {
     "defaultMessage": "No group by columns selected",
     "description": "Experiment page > artifact compare view > empty state for no group by columns selected > title"
+  },
+  "ox4hKu": {
+    "defaultMessage": "Create MCP server",
+    "description": "Access bindings list empty state create server button"
   },
   "oy2LTl": {
     "defaultMessage": "Filter",
@@ -10111,13 +10151,13 @@
     "defaultMessage": "Copied to clipboard",
     "description": "Success message after copying trace link"
   },
-  "qgCEF1": {
-    "defaultMessage": "Create endpoint",
-    "description": "Empty state title for MCP access bindings tab"
-  },
   "qhOwHa": {
     "defaultMessage": "Endpoints",
     "description": "Sidebar link for gateway endpoints"
+  },
+  "qhnfB3": {
+    "defaultMessage": "Create MCP server",
+    "description": "Access bindings empty state create server button"
   },
   "qkRBUr": {
     "defaultMessage": "Line smoothing",
@@ -10302,6 +10342,10 @@
   "rRhMQt": {
     "defaultMessage": "Execution time (ms)",
     "description": "Column label for execution time with the unit suffix"
+  },
+  "rXwa8+": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for access bindings tab when no servers exist"
   },
   "rY00Iw": {
     "defaultMessage": "Add filter",
@@ -10606,6 +10650,10 @@
   "t0oYFv": {
     "defaultMessage": "Last updated by",
     "description": "Column selector label for the last-updated-by column"
+  },
+  "t12Gxp": {
+    "defaultMessage": "Version/Alias",
+    "description": "Header for the version or alias column in the access bindings table"
   },
   "t3mHNt": {
     "defaultMessage": "Errors",
@@ -11199,10 +11247,6 @@
     "defaultMessage": "Columns",
     "description": "Evaluation review > evaluations list > filter dropdown button"
   },
-  "wmEHaX": {
-    "defaultMessage": "Transport",
-    "description": "Access bindings table header for transport type"
-  },
   "womPSY": {
     "defaultMessage": "Session",
     "description": "Column label for session"
@@ -11374,6 +11418,10 @@
   "xZ/PkV": {
     "defaultMessage": "Search prompts",
     "description": "Placeholder text for the search input in the prompts table on the logged model details page"
+  },
+  "xaiZn5": {
+    "defaultMessage": "Create and manage direct access endpoints for your MCP servers.",
+    "description": "Empty state description for access bindings table"
   },
   "xbfKJS": {
     "defaultMessage": "JSON body for the OpenAI-compatible Chat Completions API. Include \"model\" (endpoint name) and \"messages\".",

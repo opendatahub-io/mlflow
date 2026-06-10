@@ -59,9 +59,10 @@ const MCPServerDetailPage = () => {
   const {
     data: versions,
     isLoading: versionsLoading,
+    error: versionsError,
     refetch: refetchVersions,
   } = useMCPServerVersionsQuery(serverName);
-  const { data: bindings, isLoading: bindingsLoading } = useMCPAccessBindingsQuery(serverName);
+  const { data: bindings, isLoading: bindingsLoading, error: bindingsError } = useMCPAccessBindingsQuery(serverName);
 
   const [selectedVersion, setSelectedVersion] = useState<string | undefined>(undefined);
 
@@ -228,15 +229,24 @@ const MCPServerDetailPage = () => {
             </SegmentedControlGroup>
           </div>
           <Spacer shrinks={false} size="sm" />
-          <MCPServerVersionList
-            versions={versions}
-            selectedVersion={selectedVersion}
-            onSelectVersion={setSelectedVersion}
-            isLoading={versionsLoading}
-            serverName={serverName}
-            aliasesByVersion={aliasesByVersion}
-            showEditAliasesModal={showEditAliasesModal}
-          />
+          {versionsError ? (
+            <Alert
+              componentId="mlflow.mcp_registry.detail.versions_error"
+              type="error"
+              message={versionsError.message}
+              closable={false}
+            />
+          ) : (
+            <MCPServerVersionList
+              versions={versions}
+              selectedVersion={selectedVersion}
+              onSelectVersion={setSelectedVersion}
+              isLoading={versionsLoading}
+              serverName={serverName}
+              aliasesByVersion={aliasesByVersion}
+              showEditAliasesModal={showEditAliasesModal}
+            />
+          )}
         </div>
         <div
           css={{
@@ -253,6 +263,7 @@ const MCPServerDetailPage = () => {
             version={currentVersion}
             bindings={bindings}
             bindingsLoading={bindingsLoading}
+            bindingsError={bindingsError}
             aliasesByVersion={aliasesByVersion}
             showEditAliasesModal={showEditAliasesModal}
           />
