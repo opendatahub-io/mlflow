@@ -2,19 +2,24 @@ import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
+import { setupServer } from '../../common/utils/setup-msw';
 import { MCPServerCard } from './MCPServerCard';
-import { createMockMCPServer } from '../test-utils';
+import { createMockMCPServer, getMockedGetLatestMCPServerVersionResponse } from '../test-utils';
 import type { MCPServer } from '../types';
 
-const renderCard = (server: MCPServer) =>
-  render(
+const renderCard = (server: MCPServer) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
     <IntlProvider locale="en">
       <TestRouter
         routes={[
           testRoute(
             <DesignSystemProvider>
-              <MCPServerCard server={server} />
+              <QueryClientProvider client={queryClient}>
+                <MCPServerCard server={server} />
+              </QueryClientProvider>
             </DesignSystemProvider>,
             '/',
           ),
@@ -22,8 +27,11 @@ const renderCard = (server: MCPServer) =>
       />
     </IntlProvider>,
   );
+};
 
 describe('MCPServerCard', () => {
+  setupServer(getMockedGetLatestMCPServerVersionResponse());
+
   it('renders server name when no display_name is set', () => {
     renderCard(createMockMCPServer({ name: 'io.github.test/my-server' }));
     expect(screen.getByText('io.github.test/my-server')).toBeInTheDocument();

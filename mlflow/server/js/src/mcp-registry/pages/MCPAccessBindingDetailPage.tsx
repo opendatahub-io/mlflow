@@ -220,7 +220,7 @@ const MCPAccessBindingDetailPage = () => {
         </Link>
 
         <Typography.Text bold>
-          <FormattedMessage defaultMessage="Version:" description="Binding detail version label" />
+          <FormattedMessage defaultMessage="Version/Alias:" description="Binding detail version or alias label" />
         </Typography.Text>
         <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
           <Typography.Text>{target}</Typography.Text>

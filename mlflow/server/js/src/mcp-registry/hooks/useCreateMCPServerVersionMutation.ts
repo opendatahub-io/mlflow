@@ -39,7 +39,8 @@ export const useCreateMCPServerVersionMutation = () => {
       if (tags) {
         const setTag = isNewServer
           ? (key: string, value: string) => MCPRegistryApi.setMCPServerTag(name, { key, value })
-          : (key: string, value: string) => MCPRegistryApi.setMCPServerVersionTag(name, version.version, { key, value });
+          : (key: string, value: string) =>
+              MCPRegistryApi.setMCPServerVersionTag(name, version.version, { key, value });
         await Promise.all(Object.entries(tags).map(([key, value]) => setTag(key, value)));
       }
 

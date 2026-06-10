@@ -25,6 +25,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
 import { emptyCenterStyles, resolveDisplayName } from '../utils';
+import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { Link } from '../../common/utils/RoutingUtils';
 import { KeyValueTag } from '../../common/components/KeyValueTag';
 import Utils from '../../common/utils/Utils';
@@ -32,22 +33,6 @@ import Utils from '../../common/utils/Utils';
 interface MCPServerTableMeta {
   onEditTags?: (server: MCPServer) => void;
 }
-
-export const emptyCenterStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  minHeight: 400,
-  width: '100%',
-  '& > div': {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-};
 
 const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) => {
   const { theme } = useDesignSystemTheme();
@@ -67,7 +52,9 @@ const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) =
 
 const MCPServerTagsCell = ({
   row: { original },
-  table: { options: { meta } },
+  table: {
+    options: { meta },
+  },
 }: CellContext<MCPServer, unknown>) => {
   const intl = useIntl();
   const { theme } = useDesignSystemTheme();
@@ -106,11 +93,19 @@ const MCPServerTagsCell = ({
         type="tertiary"
       >
         {!containsTags ? (
-          <FormattedMessage defaultMessage="Add tags" description="Label for the add tags button in the MCP servers table" />
+          <FormattedMessage
+            defaultMessage="Add tags"
+            description="Label for the add tags button in the MCP servers table"
+          />
         ) : undefined}
       </Button>
     </div>
   );
+};
+
+const MCPServerLatestVersionCell = ({ row: { original } }: CellContext<MCPServer, unknown>) => {
+  const { data: latestVersion } = useLatestMCPServerVersionQuery(original.name);
+  return original.latest_version || latestVersion?.version || '—';
 };
 
 const useMCPServerTableColumns = () => {
@@ -125,6 +120,14 @@ const useMCPServerTableColumns = () => {
         accessorFn: (row) => resolveDisplayName(row),
         id: 'name',
         cell: MCPServerNameCell,
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Latest version',
+          description: 'Header for the latest version column in the MCP servers table',
+        }),
+        id: 'latestVersion',
+        cell: MCPServerLatestVersionCell,
       },
       {
         header: intl.formatMessage({

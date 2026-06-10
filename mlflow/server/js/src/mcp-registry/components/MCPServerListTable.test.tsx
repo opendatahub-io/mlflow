@@ -2,26 +2,31 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
+import { setupServer } from '../../common/utils/setup-msw';
 import { MCPServerListTable } from './MCPServerListTable';
-import { createMockMCPServer } from '../test-utils';
+import { createMockMCPServer, getMockedGetLatestMCPServerVersionResponse } from '../test-utils';
 
 const noop = () => {};
 
-const renderTable = (props: Partial<React.ComponentProps<typeof MCPServerListTable>> = {}) =>
-  render(
+const renderTable = (props: Partial<React.ComponentProps<typeof MCPServerListTable>> = {}) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
     <IntlProvider locale="en">
       <TestRouter
         routes={[
           testRoute(
             <DesignSystemProvider>
-              <MCPServerListTable
-                hasNextPage={false}
-                hasPreviousPage={false}
-                onNextPage={noop}
-                onPreviousPage={noop}
-                {...props}
-              />
+              <QueryClientProvider client={queryClient}>
+                <MCPServerListTable
+                  hasNextPage={false}
+                  hasPreviousPage={false}
+                  onNextPage={noop}
+                  onPreviousPage={noop}
+                  {...props}
+                />
+              </QueryClientProvider>
             </DesignSystemProvider>,
             '/',
           ),
@@ -29,8 +34,10 @@ const renderTable = (props: Partial<React.ComponentProps<typeof MCPServerListTab
       />
     </IntlProvider>,
   );
+};
 
 describe('MCPServerListTable', () => {
+  setupServer(getMockedGetLatestMCPServerVersionResponse());
   it('renders column headers', () => {
     renderTable();
     expect(screen.getByText('Name')).toBeInTheDocument();

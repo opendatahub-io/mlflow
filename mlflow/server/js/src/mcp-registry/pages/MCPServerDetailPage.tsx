@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Breadcrumb,
@@ -39,9 +39,10 @@ import { useUpdateMCPServerVersionMetadataModal } from '../hooks/useUpdateMCPSer
 import { MCPServerVersionList } from '../components/MCPServerVersionList';
 import { MCPServerVersionDetail } from '../components/MCPServerVersionDetail';
 import { AccessBindingModal } from '../components/AccessBindingModal';
-import { useSelectedMCPServerVersion } from '../hooks/useSelectedMCPServerVersion';
+import { MCPServerVersionCompare } from '../components/MCPServerVersionCompare';
 import { UpdateVersionDisplayNameModal } from '../components/UpdateVersionDisplayNameModal';
 import { MCPServerTagsBox } from '../components/MCPServerTagsBox';
+import { useMCPServerDetailViewState, MCPServerDetailViewMode } from '../hooks/useMCPServerDetailViewState';
 import { LATEST_ALIAS, RESERVED_ALIASES, resolveDisplayName } from '../utils';
 
 const getAliasesModalTitle = (version: string) => (
@@ -84,13 +85,31 @@ const MCPServerDetailPage = () => {
   const { data: latestVersion, refetch: refetchLatestVersion } = useLatestMCPServerVersionQuery(serverName);
   const { data: bindings, isLoading: bindingsLoading, error: bindingsError } = useMCPAccessBindingsQuery(serverName);
 
-  const latestVersion = versions?.[0]?.version;
-  const [selectedVersion, setSelectedVersion] = useSelectedMCPServerVersion(latestVersion);
+  const {
+    viewState,
+    selectedVersion,
+    setSelectedVersion,
+    setPreviewMode,
+    setCompareMode,
+    setComparedVersion,
+    switchSides,
+  } = useMCPServerDetailViewState(versions);
 
-  const currentVersion = useMemo(() => {
-    if (!versions?.length) return undefined;
-    return versions.find((v) => v.version === selectedVersion) ?? versions[0];
-  }, [versions, selectedVersion]);
+  useEffect(() => {
+    if (!versions?.length) {
+      setSelectedVersion(undefined);
+      return;
+    }
+    const currentStillValid = versions.some((v) => v.version === selectedVersion);
+    if (!currentStillValid) {
+      setSelectedVersion(versions[0].version);
+    }
+    if (viewState.comparedVersion && !versions.some((v) => v.version === viewState.comparedVersion)) {
+      setComparedVersion(
+        versions[0]?.version === selectedVersion ? (versions[1]?.version ?? '') : (versions[0]?.version ?? ''),
+      );
+    }
+  }, [versions, selectedVersion, viewState.comparedVersion, setComparedVersion, setSelectedVersion]);
 
   useEffect(() => {
     setLatestMutation.reset();
@@ -99,6 +118,11 @@ const MCPServerDetailPage = () => {
   const currentVersion = versions?.find((v) => v.version === selectedVersion);
 
   const resolvedLatestVersion = latestVersion?.version;
+
+  const comparedVersionEntity = useMemo(
+    () => versions?.find((v) => v.version === viewState.comparedVersion),
+    [versions, viewState.comparedVersion],
+  );
 
   const aliasesByVersion = useMemo(() => {
     const result: Record<string, string[]> = {};
@@ -119,13 +143,21 @@ const MCPServerDetailPage = () => {
     return result;
   }, [server?.aliases, resolvedLatestVersion]);
 
+  const versionBindings = useMemo(() => {
+    if (!currentVersion || !bindings) return [];
+    return bindings.filter(
+      (b) =>
+        b.server_version === currentVersion.version ||
+        (b.server_alias && aliasesByVersion[currentVersion.version]?.includes(b.server_alias)),
+    );
+  }, [bindings, currentVersion, aliasesByVersion]);
+
   const isPinnedLatest = Boolean(server?.latest_version);
 
   const aliasColors = useMemo<Record<string, TagColors>>(
     () => ({ [LATEST_ALIAS]: isPinnedLatest ? 'turquoise' : 'brown' }),
     [isPinnedLatest],
   );
-
 
   const refetchAll = useCallback(async () => {
     await Promise.all([refetchServer(), refetchVersions(), refetchLatestVersion()]);
@@ -295,16 +327,20 @@ const MCPServerDetailPage = () => {
           <div css={{ display: 'flex', gap: theme.spacing.sm }}>
             <SegmentedControlGroup
               name="mcp-server-detail-view"
-              value="preview"
+              value={viewState.mode}
               componentId="mlflow.mcp_registry.detail.view_toggle"
             >
-              <SegmentedControlButton value="preview">
+              <SegmentedControlButton value={MCPServerDetailViewMode.PREVIEW} onClick={setPreviewMode}>
                 <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
                   <ZoomMarqueeSelection />
                   <FormattedMessage defaultMessage="Preview" description="MCP server detail preview tab" />
                 </div>
               </SegmentedControlButton>
-              <SegmentedControlButton value="compare" disabled>
+              <SegmentedControlButton
+                value={MCPServerDetailViewMode.COMPARE}
+                onClick={setCompareMode}
+                disabled={!versions?.length || versions.length < 2}
+              >
                 <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
                   <ColumnsIcon />
                   <FormattedMessage defaultMessage="Compare" description="MCP server detail compare tab" />
@@ -321,17 +357,20 @@ const MCPServerDetailPage = () => {
               closable={false}
             />
           ) : (
-              <MCPServerVersionList
-                  versions={versions}
-                  selectedVersion={selectedVersion}
-                  onSelectVersion={setSelectedVersion}
-                  isLoading={versionsLoading}
-                  serverName={serverName}
-                  serverDisplayName={displayName}
-                  aliasesByVersion={aliasesByVersion}
-                  aliasColors={aliasColors}
-                  showEditAliasesModal={showEditAliasesModal}
-              />
+            <MCPServerVersionList
+              versions={versions}
+              selectedVersion={selectedVersion}
+              comparedVersion={viewState.comparedVersion}
+              mode={viewState.mode}
+              onSelectVersion={setSelectedVersion}
+              onSelectComparedVersion={setComparedVersion}
+              isLoading={versionsLoading}
+              serverName={serverName}
+              serverDisplayName={displayName}
+              aliasesByVersion={aliasesByVersion}
+              aliasColors={aliasColors}
+              showEditAliasesModal={showEditAliasesModal}
+            />
           )}
         </div>
         <div
@@ -344,33 +383,43 @@ const MCPServerDetailPage = () => {
             overflow: 'hidden',
           }}
         >
-          <MCPServerVersionDetail
-            server={server}
-            version={currentVersion}
-            bindings={bindings}
-            bindingsLoading={bindingsLoading}
-            bindingsError={bindingsError}
-            aliasesByVersion={aliasesByVersion}
-            aliasColors={aliasColors}
-
-            showEditAliasesModal={showEditAliasesModal}
-            onAddBinding={() => setAddBindingModalOpen(true)}
-            onEditBinding={(binding) => {
-              setEditingBinding(binding);
-              setAddBindingModalOpen(true);
-            }}
-            onDeleteBinding={setDeletingBinding}
-            onEditMetadata={showEditMetadataModal}
-            onSetLatest={handleSetLatest}
-            setLatestLoading={setLatestMutation.isLoading}
-            setLatestError={setLatestMutation.error as Error | null}
-            onClearLatestError={() => setLatestMutation.reset()}
-            resolvedLatestVersion={resolvedLatestVersion}
-            onUpdateDescription={async (description) => {
-              await MCPRegistryApi.updateMCPServer(decodedServerName, { description });
-              await refetchAll();
-            }}
-          />
+          {viewState.mode === MCPServerDetailViewMode.COMPARE ? (
+            <MCPServerVersionCompare
+              baselineVersion={currentVersion}
+              comparedVersion={comparedVersionEntity}
+              serverName={serverName}
+              aliasesByVersion={aliasesByVersion}
+              aliasColors={aliasColors}
+              onSwitchSides={switchSides}
+            />
+          ) : (
+            <MCPServerVersionDetail
+              server={server}
+              version={currentVersion}
+              bindings={versionBindings}
+              bindingsLoading={bindingsLoading}
+              bindingsError={bindingsError}
+              aliasesByVersion={aliasesByVersion}
+              aliasColors={aliasColors}
+              showEditAliasesModal={showEditAliasesModal}
+              onAddBinding={() => setAddBindingModalOpen(true)}
+              onEditBinding={(binding) => {
+                setEditingBinding(binding);
+                setAddBindingModalOpen(true);
+              }}
+              onDeleteBinding={setDeletingBinding}
+              onEditMetadata={showEditMetadataModal}
+              onSetLatest={handleSetLatest}
+              setLatestLoading={setLatestMutation.isLoading}
+              setLatestError={setLatestMutation.error as Error | null}
+              onClearLatestError={() => setLatestMutation.reset()}
+              resolvedLatestVersion={resolvedLatestVersion}
+              onUpdateDescription={async (description) => {
+                await MCPRegistryApi.updateMCPServer(serverName, { description });
+                await refetchAll();
+              }}
+            />
+          )}
         </div>
       </div>
       {EditAliasesModal}

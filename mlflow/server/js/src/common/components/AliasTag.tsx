@@ -11,7 +11,14 @@ const COMPACT_MODE_MAX_WIDTH = 160;
 const REGULAR_MAX_WIDTH = 300;
 const TAG_SYMBOL = '@';
 
-export const AliasTag = ({ value, closable, onClose, className, compact = false, color }: ModelVersionAliasTagProps) => {
+export const AliasTag = ({
+  value,
+  closable,
+  onClose,
+  className,
+  compact = false,
+  color,
+}: ModelVersionAliasTagProps) => {
   const { theme } = useDesignSystemTheme();
   return (
     <Tag

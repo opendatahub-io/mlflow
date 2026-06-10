@@ -1,19 +1,20 @@
 import { Card, McpIcon, Typography, useDesignSystemTheme } from '@databricks/design-system';
-import { useIntl } from 'react-intl';
-import { McpIcon, Tag, Typography, useDesignSystemTheme } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
 import { resolveDisplayName } from '../utils';
+import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { CardIconWrapper } from './CardIconWrapper';
 import Utils from '../../common/utils/Utils';
 
 export const MCPServerCard = ({ server }: { server: MCPServer }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
+  const { data: latestVersion } = useLatestMCPServerVersionQuery(server.name);
 
   const displayName = resolveDisplayName(server);
+  const latestVersionDisplay = server.latest_version || latestVersion?.version;
   const timestamp = server.last_updated_timestamp
     ? Utils.formatTimestamp(server.last_updated_timestamp, intl)
     : undefined;
@@ -34,10 +35,10 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
             <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </Typography.Text>
-            {server.latest_version && (
-              <Tag componentId="mlflow.mcp_registry.card.latest_version" color="charcoal">
-                {server.latest_version}
-              </Tag>
+            {latestVersionDisplay && (
+              <Typography.Text color="secondary" size="sm" css={{ flexShrink: 0 }}>
+                {latestVersionDisplay}
+              </Typography.Text>
             )}
           </div>
           {server.description && (

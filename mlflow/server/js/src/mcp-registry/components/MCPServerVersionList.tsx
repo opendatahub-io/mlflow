@@ -19,6 +19,8 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import type { TagColors } from '@databricks/design-system';
 import type { MCPServerVersion } from '../types';
 import { STATUS_TAG_COLOR } from '../utils';
+import { MCPServerDetailViewMode } from '../hooks/useMCPServerDetailViewState';
+import { MCPServerVersionDiffSelectorButton } from './MCPServerVersionDiffSelectorButton';
 import { ModelVersionTableAliasesCell } from '../../model-registry/components/aliases/ModelVersionTableAliasesCell';
 import Utils from '../../common/utils/Utils';
 
@@ -90,7 +92,10 @@ const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
 export const MCPServerVersionList = ({
   versions,
   selectedVersion,
+  comparedVersion,
+  mode,
   onSelectVersion,
+  onSelectComparedVersion,
   isLoading,
   serverName,
   serverDisplayName,
@@ -100,7 +105,10 @@ export const MCPServerVersionList = ({
 }: {
   versions?: MCPServerVersion[];
   selectedVersion?: string;
+  comparedVersion?: string;
+  mode: MCPServerDetailViewMode;
   onSelectVersion: (version: string) => void;
+  onSelectComparedVersion?: (version: string) => void;
   isLoading?: boolean;
   serverName: string;
   serverDisplayName: string;
@@ -110,6 +118,7 @@ export const MCPServerVersionList = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
+  const isCompareMode = mode === MCPServerDetailViewMode.COMPARE;
 
   const columns = useMemo<ColumnDef<MCPServerVersion>[]>(
     () => [
@@ -158,32 +167,48 @@ export const MCPServerVersionList = ({
           <TableSkeletonRows table={table} />
         ) : (
           table.getRowModel().rows.map((row) => {
-            const isSelected = selectedVersion === row.original.version;
+            const version = row.original.version;
+            const isSelected = selectedVersion === version;
+            const isCompared = comparedVersion === version;
             return (
               <TableRow
                 key={row.id}
                 css={{
-                  backgroundColor: isSelected ? theme.colors.actionDefaultBackgroundPress : 'transparent',
-                  cursor: 'pointer',
+                  backgroundColor:
+                    isCompareMode && (isSelected || isCompared)
+                      ? theme.colors.actionDefaultBackgroundHover
+                      : !isCompareMode && isSelected
+                        ? theme.colors.actionDefaultBackgroundPress
+                        : 'transparent',
+                  cursor: isCompareMode ? 'default' : 'pointer',
                 }}
-                onClick={() => onSelectVersion(row.original.version)}
+                onClick={isCompareMode ? undefined : () => onSelectVersion(version)}
               >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} css={{ alignItems: 'center' }}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
-                {isSelected && (
-                  <div
-                    css={{
-                      width: theme.spacing.md * 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      paddingRight: theme.spacing.sm,
-                    }}
-                  >
-                    <ChevronRightIcon />
-                  </div>
+                {isCompareMode ? (
+                  <MCPServerVersionDiffSelectorButton
+                    isSelectedBaseline={isSelected}
+                    isSelectedCompared={isCompared}
+                    onSelectBaseline={() => onSelectVersion(version)}
+                    onSelectCompared={() => onSelectComparedVersion?.(version)}
+                  />
+                ) : (
+                  isSelected && (
+                    <div
+                      css={{
+                        width: theme.spacing.md * 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        paddingRight: theme.spacing.sm,
+                      }}
+                    >
+                      <ChevronRightIcon />
+                    </div>
+                  )
                 )}
               </TableRow>
             );

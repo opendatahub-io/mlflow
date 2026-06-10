@@ -370,21 +370,19 @@ describe('MCPRegistryPage', () => {
     const servers = [createMockMCPServer({ name: 's1', display_name: 'Server 1' })];
     server.use(
       getMockedSearchMCPServersResponse(servers),
+      getMockedSearchMCPAccessBindingsAllResponse([]),
       getMockedCreateMCPServerVersionResponse(),
       getMockedUpdateMCPServerResponse(),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
-      expect(screen.getByText('Server 1')).toBeInTheDocument();
+      expect(screen.getByText('MCP Registry')).toBeInTheDocument();
     });
 
     const createButton = screen.getAllByText('Create MCP server')[0];
-    expect(createButton.closest('button')).not.toBeDisabled();
-
     await userEvent.click(createButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Display name:')).toBeInTheDocument();
       expect(screen.getByText(/server\.json:/)).toBeInTheDocument();
     });
   });
@@ -392,10 +390,11 @@ describe('MCPRegistryPage', () => {
   it('opens create modal from empty state button', async () => {
     server.use(
       getMockedSearchMCPServersResponse([]),
+      getMockedSearchMCPAccessBindingsAllResponse([]),
       getMockedCreateMCPServerVersionResponse(),
       getMockedUpdateMCPServerResponse(),
     );
-    renderPage();
+    renderPage(['/?tab=servers']);
     await waitFor(() => {
       expect(screen.getByText('Create and manage MCP servers using MLflow.')).toBeInTheDocument();
     });

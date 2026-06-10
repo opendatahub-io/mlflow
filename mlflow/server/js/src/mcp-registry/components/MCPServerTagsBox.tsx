@@ -19,13 +19,7 @@ type UpdateTagsPayload = {
 const tagsRecordToArray = (tags: Record<string, string>) =>
   Object.entries(tags).map(([key, value]) => ({ key, value }));
 
-export const MCPServerTagsBox = ({
-  server,
-  onTagsUpdated,
-}: {
-  server?: MCPServer;
-  onTagsUpdated?: () => void;
-}) => {
+export const MCPServerTagsBox = ({ server, onTagsUpdated }: { server?: MCPServer; onTagsUpdated?: () => void }) => {
   const intl = useIntl();
   const { theme } = useDesignSystemTheme();
 
@@ -46,7 +40,13 @@ export const MCPServerTagsBox = ({
         if (!entity.name) return reject();
         updateMutation.mutate(
           { serverName: entity.name, toAdd: addedOrModifiedTags, toDelete: deletedTags },
-          { onSuccess: () => { resolve(); onTagsUpdated?.(); }, onError: reject },
+          {
+            onSuccess: () => {
+              resolve();
+              onTagsUpdated?.();
+            },
+            onError: reject,
+          },
         );
       });
     },

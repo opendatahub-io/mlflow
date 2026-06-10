@@ -9,7 +9,6 @@ import type {
 } from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
 
-
 export const useMCPServerQuery = (name: string) => {
   return useQuery<MCPServer, Error>([MCP_QUERY_KEYS.SERVER, name], {
     queryFn: () => MCPRegistryApi.getMCPServer(name),

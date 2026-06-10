@@ -87,7 +87,7 @@ describe('MCPAccessBindingDetailPage', () => {
     expect(screen.getByText('Transport:')).toBeInTheDocument();
     expect(screen.getByText('MCP server:')).toBeInTheDocument();
     expect(screen.getAllByText('io.test/server').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Version:')).toBeInTheDocument();
+    expect(screen.getByText('Version/Alias:')).toBeInTheDocument();
     expect(screen.getByText('Last updated:')).toBeInTheDocument();
     expect(screen.getByText('Created at:')).toBeInTheDocument();
   });

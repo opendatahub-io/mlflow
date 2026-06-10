@@ -129,16 +129,16 @@ describe('STATUS_TAG_COLOR', () => {
 });
 
 describe('STATUS_TRANSITIONS', () => {
-  it('draft can transition to active and deleted', () => {
-    expect(STATUS_TRANSITIONS.draft).toEqual(['active', 'deleted']);
+  it('draft can transition to active', () => {
+    expect(STATUS_TRANSITIONS.draft).toEqual(['active']);
   });
 
   it('active can transition to draft and deprecated', () => {
     expect(STATUS_TRANSITIONS.active).toEqual(['draft', 'deprecated']);
   });
 
-  it('deprecated can transition to active and deleted', () => {
-    expect(STATUS_TRANSITIONS.deprecated).toEqual(['active', 'deleted']);
+  it('deprecated can transition to active', () => {
+    expect(STATUS_TRANSITIONS.deprecated).toEqual(['active']);
   });
 
   it('deleted has no transitions', () => {

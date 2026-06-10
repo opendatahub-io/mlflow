@@ -181,35 +181,41 @@ export const MCPServerVersionDetail = ({
                   setDescriptionModalVisible(true);
                 }}
               >
-                <FormattedMessage defaultMessage="Add description" description="MCP server version add description button" />
+                <FormattedMessage
+                  defaultMessage="Add description"
+                  description="MCP server version add description button"
+                />
               </Button>
             );
           })()}
         </div>
         <div css={{ display: 'flex', gap: theme.spacing.sm, flexShrink: 0 }}>
-          {onSetLatest && (() => {
-            const button = (
-              <Button
-                componentId="mlflow.mcp_registry.detail.set_latest"
-                disabled={setLatestDisabled}
-                loading={setLatestLoading}
-                onClick={setLatestOnClick}
-              >
-                {setLatestLabel}
-              </Button>
-            );
-            return setLatestDisabled ? (
-              <Tooltip
-                componentId="mlflow.mcp_registry.detail.set_latest.tooltip"
-                content={intl.formatMessage({
-                  defaultMessage: 'Draft versions cannot be set as latest',
-                  description: 'Tooltip explaining why set as latest is disabled for draft versions',
-                })}
-              >
-                {button}
-              </Tooltip>
-            ) : button;
-          })()}
+          {onSetLatest &&
+            (() => {
+              const button = (
+                <Button
+                  componentId="mlflow.mcp_registry.detail.set_latest"
+                  disabled={setLatestDisabled}
+                  loading={setLatestLoading}
+                  onClick={setLatestOnClick}
+                >
+                  {setLatestLabel}
+                </Button>
+              );
+              return setLatestDisabled ? (
+                <Tooltip
+                  componentId="mlflow.mcp_registry.detail.set_latest.tooltip"
+                  content={intl.formatMessage({
+                    defaultMessage: 'Draft versions cannot be set as latest',
+                    description: 'Tooltip explaining why set as latest is disabled for draft versions',
+                  })}
+                >
+                  {button}
+                </Tooltip>
+              ) : (
+                button
+              );
+            })()}
           <Button
             componentId="mlflow.mcp_registry.detail.delete_version"
             icon={<TrashIcon />}
@@ -292,14 +298,6 @@ export const MCPServerVersionDetail = ({
           />
         </span>
 
-        <Typography.Text bold>
-          <FormattedMessage
-            defaultMessage="Server version:"
-            description="MCP server version detail server version label"
-          />
-        </Typography.Text>
-        <Typography.Text>{version.server_json?.version || version.version}</Typography.Text>
-
         {version.server_json?.websiteUrl && (
           <>
             <Typography.Text bold>
@@ -331,10 +329,7 @@ export const MCPServerVersionDetail = ({
         )}
 
         <Typography.Text bold>
-          <FormattedMessage
-            defaultMessage="Registered at:"
-            description="MCP server version detail registered at label"
-          />
+          <FormattedMessage defaultMessage="Created:" description="MCP server version detail registered at label" />
         </Typography.Text>
         <Typography.Text>
           {version.creation_timestamp ? Utils.formatTimestamp(version.creation_timestamp, intl) : '—'}
@@ -345,13 +340,11 @@ export const MCPServerVersionDetail = ({
         </Typography.Text>
         <div>
           <div css={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing.xs, alignItems: 'center' }}>
-            {Object.keys(version.tags).length > 0 ? (
-              Object.entries(version.tags).map(([key, value]) => (
-                <KeyValueTag css={{ margin: 0 }} key={key} tag={{ key, value }} />
-              ))
-            ) : (
-              !onEditMetadata && <Typography.Hint>—</Typography.Hint>
-            )}
+            {Object.keys(version.tags).length > 0
+              ? Object.entries(version.tags).map(([key, value]) => (
+                  <KeyValueTag css={{ margin: 0 }} key={key} tag={{ key, value }} />
+                ))
+              : !onEditMetadata && <Typography.Hint>—</Typography.Hint>}
             {onEditMetadata &&
               (Object.keys(version.tags).length > 0 ? (
                 <Button

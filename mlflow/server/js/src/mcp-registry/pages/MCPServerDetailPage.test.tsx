@@ -136,7 +136,9 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    const editButton = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.edit_status"]') as HTMLElement;
+    const editButton = document.querySelector(
+      '[data-component-id="mlflow.mcp_registry.detail.edit_status"]',
+    ) as HTMLElement;
     await userEvent.click(editButton);
     await waitFor(() => {
       expect(screen.getByText('Update version status')).toBeInTheDocument();
@@ -211,7 +213,7 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('pre-selects version from URL query param', async () => {
+  it('selects first version by default when multiple exist', async () => {
     const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
@@ -225,10 +227,9 @@ describe('MCPServerDetailPage', () => {
     });
     server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, version2]));
 
-    renderPage(['/mcp-registry/dev.mainline%2Fmcp?version=2']);
+    renderPage();
     await waitFor(() => {
-      expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
-      expect(screen.getByText('2.0.0')).toBeInTheDocument();
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
   });
 
@@ -239,7 +240,7 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('persists selected version across re-renders', async () => {
+  it('persists selected version across clicks', async () => {
     const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
@@ -258,10 +259,9 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Version 2'));
+    await userEvent.click(screen.getByText('2'));
     await waitFor(() => {
       expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
-      expect(screen.getByText('2.0.0')).toBeInTheDocument();
     });
   });
 
@@ -283,7 +283,9 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    const editButton = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.edit_status"]') as HTMLElement;
+    const editButton = document.querySelector(
+      '[data-component-id="mlflow.mcp_registry.detail.edit_status"]',
+    ) as HTMLElement;
     await userEvent.click(editButton);
     await waitFor(() => {
       expect(screen.getByText(/terminal state/)).toBeInTheDocument();
@@ -324,10 +326,7 @@ describe('MCPServerDetailPage', () => {
         status: 'active',
         server_json: { name: 'dev.mainline/mcp', version: '2.0.0' },
       });
-      server.use(
-        getMockedSearchMCPServerVersionsResponse([mockVersion, version2]),
-        getMockedUpdateMCPServerResponse(),
-      );
+      server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, version2]), getMockedUpdateMCPServerResponse());
       renderPage();
       await waitFor(() => {
         expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
@@ -361,7 +360,9 @@ describe('MCPServerDetailPage', () => {
         expect(screen.getByText('Viewing version 2')).toBeInTheDocument();
       });
 
-      const setLatestBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.set_latest"]') as HTMLButtonElement;
+      const setLatestBtn = document.querySelector(
+        '[data-component-id="mlflow.mcp_registry.detail.set_latest"]',
+      ) as HTMLButtonElement;
       expect(setLatestBtn).toBeDisabled();
     });
   });
@@ -374,7 +375,9 @@ describe('MCPServerDetailPage', () => {
         expect(screen.getByText('A test server')).toBeInTheDocument();
       });
 
-      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      const editBtn = document.querySelector(
+        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
+      ) as HTMLElement;
       expect(editBtn).toBeInTheDocument();
     });
 
@@ -399,7 +402,9 @@ describe('MCPServerDetailPage', () => {
         expect(screen.getByText('A test server')).toBeInTheDocument();
       });
 
-      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      const editBtn = document.querySelector(
+        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
+      ) as HTMLElement;
       await userEvent.click(editBtn);
       await waitFor(() => {
         expect(screen.getByText('Edit description')).toBeInTheDocument();
@@ -413,7 +418,9 @@ describe('MCPServerDetailPage', () => {
         expect(screen.getByText('A test server')).toBeInTheDocument();
       });
 
-      const editBtn = document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]') as HTMLElement;
+      const editBtn = document.querySelector(
+        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
+      ) as HTMLElement;
       await userEvent.click(editBtn);
       await waitFor(() => {
         expect(screen.getByText('Edit description')).toBeInTheDocument();
@@ -489,5 +496,96 @@ describe('MCPServerDetailPage', () => {
       const resetItem = menuItems.find((item) => item.textContent === 'Reset latest version');
       expect(resetItem).toBeDefined();
     });
+  });
+
+  it('Compare toggle is disabled with a single version', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    // SegmentedControlButton renders as a radio input; find the one associated with "Compare"
+    const compareLabel = screen.getByText('Compare').closest('label');
+    const compareInput = compareLabel?.querySelector('input');
+    expect(compareInput).toBeDisabled();
+  });
+
+  it('Compare toggle is enabled with multiple versions', async () => {
+    const mockVersion2 = createMockMCPServerVersion({
+      name: 'dev.mainline/mcp',
+      version: '2',
+      status: 'draft',
+      server_json: {
+        name: 'dev.mainline/mcp',
+        version: '2.0.0',
+        title: 'Mainline v2',
+        description: 'Updated version.',
+      },
+    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    const compareLabel = screen.getByText('Compare').closest('label');
+    const compareInput = compareLabel?.querySelector('input');
+    expect(compareInput).not.toBeDisabled();
+  });
+
+  it('clicking Compare shows compare view', async () => {
+    const mockVersion2 = createMockMCPServerVersion({
+      name: 'dev.mainline/mcp',
+      version: '2',
+      status: 'draft',
+      server_json: {
+        name: 'dev.mainline/mcp',
+        version: '2.0.0',
+        title: 'Mainline v2',
+        description: 'Updated version.',
+      },
+    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Compare'));
+    await waitFor(() => {
+      expect(screen.getByText(/Comparing version .+ with version/)).toBeInTheDocument();
+    });
+  });
+
+  it('switching back to Preview restores version detail', async () => {
+    const mockVersion2 = createMockMCPServerVersion({
+      name: 'dev.mainline/mcp',
+      version: '2',
+      status: 'draft',
+      server_json: {
+        name: 'dev.mainline/mcp',
+        version: '2.0.0',
+        title: 'Mainline v2',
+        description: 'Updated version.',
+      },
+    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Compare'));
+    await waitFor(() => {
+      expect(screen.getByText(/Comparing version .+ with version/)).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Preview'));
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Viewing version/)).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
   });
 });

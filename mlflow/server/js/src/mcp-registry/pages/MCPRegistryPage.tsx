@@ -31,7 +31,8 @@ import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
 import { useMCPAccessBindingsListQuery } from '../hooks/useMCPAccessBindingsListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
-import { MCPServerListTable, emptyCenterStyles } from '../components/MCPServerListTable';
+import { MCPServerListTable } from '../components/MCPServerListTable';
+import { emptyCenterStyles } from '../utils';
 import { MCPRegistryApi } from '../api';
 import MCPRegistryRoutes from '../routes';
 import type { MCPAccessBinding } from '../types';
@@ -111,7 +112,13 @@ const MCPRegistryPage = () => {
       return new Promise<void>((resolve, reject) => {
         updateTagsMutation.mutate(
           { serverName: entity.name, toAdd: addedOrModifiedTags, toDelete: deletedTags },
-          { onSuccess: () => { resolve(); refetch(); }, onError: reject },
+          {
+            onSuccess: () => {
+              resolve();
+              refetch();
+            },
+            onError: reject,
+          },
         );
       });
     },

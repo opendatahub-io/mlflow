@@ -51,8 +51,7 @@ export const useSetLatestVersion = (serverName: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (version: string | null) =>
-      MCPRegistryApi.updateMCPServer(serverName, { latest_version: version }),
+    mutationFn: (version: string | null) => MCPRegistryApi.updateMCPServer(serverName, { latest_version: version }),
     onSuccess: () => {
       queryClient.invalidateQueries(['mcp_server', serverName]);
       queryClient.invalidateQueries(['mcp_server_versions', serverName]);

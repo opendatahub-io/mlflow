@@ -108,11 +108,7 @@ export const UpdateVersionStatusModal = ({
                 {(['draft', 'active', 'deprecated'] as MCPStatus[])
                   .filter((status) => status !== currentStatus)
                   .map((status) => (
-                    <SimpleSelectOption
-                      key={status}
-                      value={status}
-                      disabled={!allowedTransitions.includes(status)}
-                    >
+                    <SimpleSelectOption key={status} value={status} disabled={!allowedTransitions.includes(status)}>
                       {capitalize(status)}
                     </SimpleSelectOption>
                   ))}

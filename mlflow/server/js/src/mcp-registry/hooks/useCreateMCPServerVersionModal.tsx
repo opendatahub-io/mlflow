@@ -267,7 +267,14 @@ export const useCreateMCPServerVersionModal = ({
       />
       <Spacer />
       <FormUI.Label>
-        <FormattedMessage defaultMessage="Metadata:" description="Label for metadata field in create MCP server modal" />
+        {isVersionMode ? (
+          <FormattedMessage
+            defaultMessage="Metadata:"
+            description="Label for metadata field in create MCP server version modal"
+          />
+        ) : (
+          <FormattedMessage defaultMessage="Tags:" description="Label for tags field in create MCP server modal" />
+        )}
       </FormUI.Label>
       <form
         onSubmit={tagForm.handleSubmit(handleAddTag)}
