@@ -311,4 +311,4 @@ const MCPAccessBindingDetailPage = () => {
   );
 };
 
-export default withErrorBoundary(ErrorUtils.mlflowServices.EXPERIMENTS, MCPAccessBindingDetailPage);
+export default withErrorBoundary(ErrorUtils.mlflowServices.MCP_REGISTRY, MCPAccessBindingDetailPage);

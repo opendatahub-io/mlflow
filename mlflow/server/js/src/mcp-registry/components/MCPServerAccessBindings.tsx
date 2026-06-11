@@ -119,6 +119,7 @@ export const MCPServerAccessBindings = ({
   onAddBinding,
   onEditBinding,
   onDeleteBinding,
+  hideTitle,
 }: {
   server?: MCPServer;
   bindings?: MCPAccessBinding[];
@@ -127,24 +128,40 @@ export const MCPServerAccessBindings = ({
   onAddBinding?: () => void;
   onEditBinding?: (binding: MCPAccessBinding) => void;
   onDeleteBinding?: (binding: MCPAccessBinding) => void;
+  hideTitle?: boolean;
 }) => {
   const { theme } = useDesignSystemTheme();
 
   return (
     <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-      <div css={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={4} withoutMargins>
-          <FormattedMessage defaultMessage="Access Bindings" description="MCP server access bindings section title" />
-        </Typography.Title>
-        <Button
-          componentId="mlflow.mcp_registry.detail.add_binding"
-          icon={<PlusIcon />}
-          onClick={onAddBinding}
-          size="small"
-        >
-          <FormattedMessage defaultMessage="Add access binding" description="MCP server add access binding button" />
-        </Button>
-      </div>
+      {!hideTitle ? (
+        <div css={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography.Title level={4} withoutMargins>
+            <FormattedMessage defaultMessage="Access Bindings" description="MCP server access bindings section title" />
+          </Typography.Title>
+          {onAddBinding && (
+            <Button
+              componentId="mlflow.mcp_registry.detail.add_binding"
+              icon={<PlusIcon />}
+              onClick={onAddBinding}
+              size="small"
+            >
+              <FormattedMessage defaultMessage="Add access binding" description="MCP server add access binding button" />
+            </Button>
+          )}
+        </div>
+      ) : onAddBinding ? (
+        <div css={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            componentId="mlflow.mcp_registry.detail.add_binding"
+            icon={<PlusIcon />}
+            onClick={onAddBinding}
+            size="small"
+          >
+            <FormattedMessage defaultMessage="Add access binding" description="MCP server add access binding button" />
+          </Button>
+        </div>
+      ) : null}
 
       {error ? (
         <Alert

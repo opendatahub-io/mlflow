@@ -34,6 +34,8 @@ export const AccessBindingModal = ({
   editBinding,
   lockedServer,
   defaultVersion,
+  filterToVersion,
+  filterAliases,
 }: {
   visible: boolean;
   onCancel: () => void;
@@ -41,6 +43,8 @@ export const AccessBindingModal = ({
   editBinding?: MCPAccessBinding;
   lockedServer?: string;
   defaultVersion?: string;
+  filterToVersion?: string;
+  filterAliases?: string[];
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
@@ -73,6 +77,7 @@ export const AccessBindingModal = ({
         setSelectedTarget(defaultVersion ? `${VERSION_PREFIX}${defaultVersion}` : `${ALIAS_PREFIX}latest`);
         setTransportType('streamable-http');
       }
+      setUrlTouched(false);
       createMutation.reset();
       updateMutation.reset();
     }
@@ -80,8 +85,10 @@ export const AccessBindingModal = ({
 
   const aliases = server?.aliases ?? [];
   const isSubmitting = activeMutation.isLoading;
+  const [urlTouched, setUrlTouched] = useState(false);
 
   const isValidUrl = isValidEndpointUrl(endpointUrl);
+  const showUrlError = urlTouched && endpointUrl.trim() && !isValidUrl;
   const isFormValid = Boolean(selectedServer && isValidUrl && selectedTarget);
 
   const handleSubmit = () => {
@@ -212,14 +219,15 @@ export const AccessBindingModal = ({
             componentId="mlflow.mcp_registry.binding_modal.endpoint"
             value={endpointUrl}
             onChange={(e) => setEndpointUrl(e.target.value)}
+            onBlur={() => setUrlTouched(true)}
             disabled={isSubmitting}
             placeholder={intl.formatMessage({
               defaultMessage: 'https://mcp.example.com/server',
               description: 'MCP registry binding modal endpoint placeholder',
             })}
-            validationState={endpointUrl.trim() && !isValidUrl ? 'error' : undefined}
+            validationState={showUrlError ? 'error' : undefined}
           />
-          {endpointUrl.trim() && !isValidUrl && (
+          {showUrlError && (
             <Typography.Text color="error" size="sm">
               <FormattedMessage
                 defaultMessage="Enter a valid HTTP or HTTPS URL"
@@ -243,35 +251,53 @@ export const AccessBindingModal = ({
             onChange={({ target }) => setSelectedTarget(target.value)}
             disabled={!selectedServer || isSubmitting}
           >
-            <SimpleSelectOptionGroup
-              label={intl.formatMessage({
-                defaultMessage: 'Aliases',
-                description: 'MCP registry binding modal aliases group label',
-              })}
-            >
-              <SimpleSelectOption value={`${ALIAS_PREFIX}latest`}>
-                <FormattedMessage defaultMessage="@latest" description="MCP registry latest alias option" />
-              </SimpleSelectOption>
-              {aliases.map((a) => (
-                <SimpleSelectOption key={a.alias} value={`${ALIAS_PREFIX}${a.alias}`}>
-                  @{a.alias}
-                </SimpleSelectOption>
-              ))}
-            </SimpleSelectOptionGroup>
-            {versions && versions.length > 0 && (
-              <SimpleSelectOptionGroup
-                label={intl.formatMessage({
-                  defaultMessage: 'Versions',
-                  description: 'MCP registry binding modal versions group label',
-                })}
-              >
-                {versions.map((v) => (
-                  <SimpleSelectOption key={v.version} value={`${VERSION_PREFIX}${v.version}`}>
-                    {v.version}
-                  </SimpleSelectOption>
-                ))}
-              </SimpleSelectOptionGroup>
-            )}
+            {(() => {
+              const filteredAliases = filterToVersion
+                ? aliases.filter((a) => a.version === filterToVersion)
+                : filterAliases
+                  ? aliases.filter((a) => filterAliases.includes(a.alias))
+                  : aliases;
+              const filteredVersions = filterToVersion
+                ? versions?.filter((v) => v.version === filterToVersion)
+                : versions;
+              const showLatest = filterAliases ? filterAliases.includes('latest') : true;
+
+              return (
+                <>
+                  <SimpleSelectOptionGroup
+                    label={intl.formatMessage({
+                      defaultMessage: 'Aliases',
+                      description: 'MCP registry binding modal aliases group label',
+                    })}
+                  >
+                    {showLatest && (
+                      <SimpleSelectOption value={`${ALIAS_PREFIX}latest`}>
+                        <FormattedMessage defaultMessage="@latest" description="MCP registry latest alias option" />
+                      </SimpleSelectOption>
+                    )}
+                    {filteredAliases.map((a) => (
+                      <SimpleSelectOption key={a.alias} value={`${ALIAS_PREFIX}${a.alias}`}>
+                        @{a.alias}
+                      </SimpleSelectOption>
+                    ))}
+                  </SimpleSelectOptionGroup>
+                  {filteredVersions && filteredVersions.length > 0 && (
+                    <SimpleSelectOptionGroup
+                      label={intl.formatMessage({
+                        defaultMessage: 'Versions',
+                        description: 'MCP registry binding modal versions group label',
+                      })}
+                    >
+                      {filteredVersions.map((v) => (
+                        <SimpleSelectOption key={v.version} value={`${VERSION_PREFIX}${v.version}`}>
+                          {v.version}
+                        </SimpleSelectOption>
+                      ))}
+                    </SimpleSelectOptionGroup>
+                  )}
+                </>
+              );
+            })()}
           </SimpleSelect>
         </div>
 

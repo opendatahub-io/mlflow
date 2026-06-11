@@ -30,17 +30,20 @@ export const useMCPServerVersionsQuery = (name: string) => {
   };
 };
 
-export const useLatestMCPServerVersionQuery = (name: string) => {
-  return useQuery<MCPServerVersion | undefined, Error>(['mcp_server_latest_version', name], {
+export const useLatestMCPServerVersionQuery = (name: string, enabled = true) => {
+  return useQuery<MCPServerVersion | undefined, Error>([MCP_QUERY_KEYS.SERVER_LATEST_VERSION, name], {
     queryFn: async () => {
       try {
         return await MCPRegistryApi.getLatestMCPServerVersion(name);
-      } catch {
-        return undefined;
+      } catch (e: unknown) {
+        if (e instanceof Error && (e.message.includes('404') || e.message.includes('RESOURCE_DOES_NOT_EXIST'))) {
+          return undefined;
+        }
+        throw e;
       }
     },
     retry: false,
-    enabled: Boolean(name),
+    enabled: Boolean(name) && enabled,
   });
 };
 

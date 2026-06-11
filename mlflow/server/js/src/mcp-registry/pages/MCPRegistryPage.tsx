@@ -24,16 +24,13 @@ import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
 import { useNavigate, useSearchParams } from '../../common/utils/RoutingUtils';
 import { ModelSearchInputHelpTooltip } from '../../model-registry/components/model-list/ModelListFilters';
-import { useMutation } from '../../common/utils/reactQueryHooks';
-import { useEditKeyValueTagsModal } from '../../common/hooks/useEditKeyValueTagsModal';
-import { diffCurrentAndNewTags } from '../../common/utils/TagUtils';
 import { useMCPServersListQuery } from '../hooks/useMCPServersListQuery';
+import { useUpdateMCPServerTags } from '../hooks/useUpdateMCPServerTags';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
 import { useMCPAccessBindingsListQuery } from '../hooks/useMCPAccessBindingsListQuery';
 import { MCPServerCardGrid } from '../components/MCPServerCardGrid';
 import { MCPServerListTable } from '../components/MCPServerListTable';
 import { emptyCenterStyles } from '../utils';
-import { MCPRegistryApi } from '../api';
 import MCPRegistryRoutes from '../routes';
 import type { MCPAccessBinding } from '../types';
 import { MCPAccessBindingCardGrid } from '../components/MCPAccessBindingCardGrid';
@@ -91,48 +88,9 @@ const MCPRegistryPage = () => {
     onSuccess: ({ name }) => navigate(MCPRegistryRoutes.getMCPServerDetailRoute(name)),
   });
 
-  type MCPServerTagEntity = { name: string; tags?: { key: string; value: string }[] };
-
-  const updateTagsMutation = useMutation<
-    unknown,
-    Error,
-    { serverName: string; toAdd: { key: string; value: string }[]; toDelete: { key: string }[] }
-  >({
-    mutationFn: async ({ serverName, toAdd, toDelete }) =>
-      Promise.all([
-        ...toAdd.map(({ key, value }) => MCPRegistryApi.setMCPServerTag(serverName, { key, value })),
-        ...toDelete.map(({ key }) => MCPRegistryApi.deleteMCPServerTag(serverName, key)),
-      ]),
+  const { EditTagsModal, showEditServerTagsModal: handleEditTags } = useUpdateMCPServerTags({
+    onSuccess: refetch,
   });
-
-  const { EditTagsModal, showEditTagsModal } = useEditKeyValueTagsModal<MCPServerTagEntity>({
-    valueRequired: true,
-    saveTagsHandler: (entity, currentTags, newTags) => {
-      const { addedOrModifiedTags, deletedTags } = diffCurrentAndNewTags(currentTags, newTags);
-      return new Promise<void>((resolve, reject) => {
-        updateTagsMutation.mutate(
-          { serverName: entity.name, toAdd: addedOrModifiedTags, toDelete: deletedTags },
-          {
-            onSuccess: () => {
-              resolve();
-              refetch();
-            },
-            onError: reject,
-          },
-        );
-      });
-    },
-  });
-
-  const handleEditTags = useCallback(
-    (server: MCPServer) => {
-      showEditTagsModal({
-        name: server.name,
-        tags: Object.entries(server.tags).map(([key, value]) => ({ key, value })),
-      });
-    },
-    [showEditTagsModal],
-  );
 
   const handleTabChange = useCallback(
     (e: RadioChangeEvent) => {

@@ -80,23 +80,24 @@ describe('buildSearchFilterClause', () => {
     expect(buildSearchFilterClause('', 'name')).toBeUndefined();
   });
 
-  it('wraps plain text in ILIKE clause', () => {
-    expect(buildSearchFilterClause('test', 'name')).toBe("name ILIKE '%test%'");
+  it('wraps plain text in LIKE clause', () => {
+    expect(buildSearchFilterClause('test', 'name')).toBe("name LIKE '%test%'");
   });
 
   it('uses the specified field name', () => {
-    expect(buildSearchFilterClause('test', 'server_name')).toBe("server_name ILIKE '%test%'");
+    expect(buildSearchFilterClause('test', 'server_name')).toBe("server_name LIKE '%test%'");
   });
 
   it('escapes single quotes in the search term', () => {
-    expect(buildSearchFilterClause("it's", 'name')).toBe("name ILIKE '%it''s%'");
+    expect(buildSearchFilterClause("it's", 'name')).toBe("name LIKE '%it''s%'");
   });
 
   it('passes through explicit SQL filter syntax', () => {
     expect(buildSearchFilterClause("status = 'active'", 'name')).toBe("status = 'active'");
   });
 
-  it('passes through ILIKE expressions', () => {
+  it('passes through LIKE and ILIKE expressions', () => {
+    expect(buildSearchFilterClause("name LIKE '%foo%'", 'name')).toBe("name LIKE '%foo%'");
     expect(buildSearchFilterClause("name ILIKE '%foo%'", 'name')).toBe("name ILIKE '%foo%'");
   });
 
@@ -115,7 +116,8 @@ describe('formatTransportType', () => {
   });
 
   it('returns raw value for unknown types', () => {
-    expect(formatTransportType('unknown' as any)).toBe('unknown');
+    // @ts-expect-error testing unknown transport type
+    expect(formatTransportType('unknown')).toBe('unknown');
   });
 });
 

@@ -12,7 +12,7 @@ export const useMCPServersListQuery = ({
     storageKey: 'mcp_registry.page_size',
     queryFn: ({ searchFilter: filter, pageToken, pageSize }) =>
       MCPRegistryApi.searchMCPServers({
-        filter_string: buildSearchFilterClause(filter, 'name'),
+        filter_string: buildSearchFilterClause(filter, 'display_name'),
         page_token: pageToken,
         max_results: pageSize,
       }),

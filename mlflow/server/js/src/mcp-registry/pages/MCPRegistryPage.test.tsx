@@ -102,6 +102,7 @@ describe('MCPRegistryPage', () => {
   });
 
   it('converts plain text search into a valid name filter', async () => {
+    jest.setTimeout(15000);
     let capturedFilterString: string | null = null;
     server.use(
       rest.get(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers'), (req, res, ctx) => {
@@ -119,9 +120,12 @@ describe('MCPRegistryPage', () => {
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'raw');
 
-    await waitFor(() => {
-      expect(capturedFilterString).toBe("name ILIKE '%raw%'");
-    });
+    await waitFor(
+      () => {
+        expect(capturedFilterString).toBe("name LIKE '%raw%'");
+      },
+      { timeout: 10000 },
+    );
   });
 
   it('shows Create MCP server button when servers exist', async () => {

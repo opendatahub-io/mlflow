@@ -18,7 +18,7 @@ import type { TagColors } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
-import { Link, useNavigate, useParams } from '../../common/utils/RoutingUtils';
+import { Link, useNavigate, useParams, useSearchParams } from '../../common/utils/RoutingUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
 import { ConfirmationModal } from '../../admin/ConfirmationModal';
@@ -31,7 +31,10 @@ import {
   useLatestMCPServerVersionQuery,
   useMCPAccessBindingsQuery,
 } from '../hooks/useMCPServerDetailQuery';
-import { useDeleteMCPServer, useSetLatestVersion } from '../hooks/useMCPServerVersionMutations';
+import {
+  useDeleteMCPServer,
+  useUpdateMCPServerDisplayName,
+} from '../hooks/useMCPServerVersionMutations';
 import { useDeleteAccessBindingMutation } from '../hooks/useAccessBindingMutation';
 import type { MCPAccessBinding } from '../types';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';
@@ -58,18 +61,17 @@ const MCPServerDetailPage = () => {
   const intl = useIntl();
   const navigate = useNavigate();
   const params = useParams<{ serverName: string }>();
+  const [searchParams] = useSearchParams();
+  const versionFromUrl = searchParams.get('version') ?? undefined;
   const serverName = decodeURIComponent(params.serverName ?? '');
   const [deleteServerModalVisible, setDeleteServerModalVisible] = useState(false);
   const [addBindingModalOpen, setAddBindingModalOpen] = useState(false);
   const [editingBinding, setEditingBinding] = useState<MCPAccessBinding | undefined>(undefined);
   const [deletingBinding, setDeletingBinding] = useState<MCPAccessBinding | undefined>(undefined);
   const [editServerDisplayNameVisible, setEditServerDisplayNameVisible] = useState(false);
-  const [serverDisplayNameSaving, setServerDisplayNameSaving] = useState(false);
-  const [serverDisplayNameError, setServerDisplayNameError] = useState<Error | null>(null);
   const deleteServerMutation = useDeleteMCPServer();
+  const updateDisplayNameMutation = useUpdateMCPServerDisplayName(serverName);
   const deleteBindingMutation = useDeleteAccessBindingMutation();
-  const setLatestMutation = useSetLatestVersion(serverName);
-
   const {
     data: server,
     isLoading: serverLoading,
@@ -102,18 +104,27 @@ const MCPServerDetailPage = () => {
     }
     const currentStillValid = versions.some((v) => v.version === selectedVersion);
     if (!currentStillValid) {
-      setSelectedVersion(versions[0].version);
+      const urlVersion =
+        versionFromUrl && versions.some((v) => v.version === versionFromUrl) ? versionFromUrl : undefined;
+      setSelectedVersion(urlVersion ?? versions[0].version);
     }
-    if (viewState.comparedVersion && !versions.some((v) => v.version === viewState.comparedVersion)) {
+    if (viewState.mode === MCPServerDetailViewMode.COMPARE && versions.length < 2) {
+      setPreviewMode();
+    } else if (viewState.comparedVersion && !versions.some((v) => v.version === viewState.comparedVersion)) {
       setComparedVersion(
         versions[0]?.version === selectedVersion ? (versions[1]?.version ?? '') : (versions[0]?.version ?? ''),
       );
     }
-  }, [versions, selectedVersion, viewState.comparedVersion, setComparedVersion, setSelectedVersion]);
-
-  useEffect(() => {
-    setLatestMutation.reset();
-  }, [selectedVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    versions,
+    selectedVersion,
+    versionFromUrl,
+    viewState.comparedVersion,
+    viewState.mode,
+    setComparedVersion,
+    setSelectedVersion,
+    setPreviewMode,
+  ]);
 
   const currentVersion = versions?.find((v) => v.version === selectedVersion);
 
@@ -162,13 +173,6 @@ const MCPServerDetailPage = () => {
   const refetchAll = useCallback(async () => {
     await Promise.all([refetchServer(), refetchVersions(), refetchLatestVersion()]);
   }, [refetchServer, refetchVersions, refetchLatestVersion]);
-
-  const handleSetLatest = useCallback(
-    (version: string | null) => {
-      setLatestMutation.mutate(version);
-    },
-    [setLatestMutation],
-  );
 
   const { CreateMCPServerVersionModal, openModal: openCreateVersionModal } = useCreateMCPServerVersionModal({
     serverName: serverName,
@@ -290,16 +294,6 @@ const MCPServerDetailPage = () => {
                   />
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  componentId="mlflow.mcp_registry.detail.actions.reset_latest"
-                  disabled={!server.latest_version}
-                  onClick={() => handleSetLatest(null)}
-                >
-                  <FormattedMessage
-                    defaultMessage="Reset latest version"
-                    description="MCP server detail reset pinned latest version action"
-                  />
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
                   componentId="mlflow.mcp_registry.detail.actions.delete"
                   onClick={() => setDeleteServerModalVisible(true)}
                 >
@@ -409,15 +403,7 @@ const MCPServerDetailPage = () => {
               }}
               onDeleteBinding={setDeletingBinding}
               onEditMetadata={showEditMetadataModal}
-              onSetLatest={handleSetLatest}
-              setLatestLoading={setLatestMutation.isLoading}
-              setLatestError={setLatestMutation.error as Error | null}
-              onClearLatestError={() => setLatestMutation.reset()}
               resolvedLatestVersion={resolvedLatestVersion}
-              onUpdateDescription={async (description) => {
-                await MCPRegistryApi.updateMCPServer(serverName, { description });
-                await refetchAll();
-              }}
             />
           )}
         </div>
@@ -432,27 +418,23 @@ const MCPServerDetailPage = () => {
         editBinding={editingBinding}
         lockedServer={serverName}
         defaultVersion={currentVersion?.version}
+        filterToVersion={currentVersion?.version}
+        filterAliases={currentVersion ? aliasesByVersion[currentVersion.version] : undefined}
       />
       {EditMCPServerVersionMetadataModal}
       {CreateMCPServerVersionModal}
       <UpdateVersionDisplayNameModal
         visible={editServerDisplayNameVisible}
         currentDisplayName={server.display_name || ''}
-        isLoading={serverDisplayNameSaving}
-        error={serverDisplayNameError}
+        isLoading={updateDisplayNameMutation.isLoading}
+        error={updateDisplayNameMutation.error as Error | null}
         onUpdate={(newDisplayName) => {
-          setServerDisplayNameSaving(true);
-          setServerDisplayNameError(null);
-          MCPRegistryApi.updateMCPServer(serverName, { display_name: newDisplayName || null })
-            .then(() => {
-              setEditServerDisplayNameVisible(false);
-              refetchAll();
-            })
-            .catch((e: Error) => setServerDisplayNameError(e))
-            .finally(() => setServerDisplayNameSaving(false));
+          updateDisplayNameMutation.mutate(newDisplayName || null, {
+            onSuccess: () => setEditServerDisplayNameVisible(false),
+          });
         }}
         onCancel={() => {
-          setServerDisplayNameError(null);
+          updateDisplayNameMutation.reset();
           setEditServerDisplayNameVisible(false);
         }}
       />

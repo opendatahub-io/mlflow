@@ -18,7 +18,14 @@ export const MCPServerVersionDiffSelectorButton = ({
     <div
       css={{ width: theme.general.buttonHeight, display: 'flex', alignItems: 'center', paddingRight: theme.spacing.sm }}
     >
-      <div css={{ display: 'flex', height: theme.general.buttonInnerHeight + theme.spacing.xs, gap: 0, flex: 1 }}>
+      <div
+        role="radiogroup"
+        aria-label={intl.formatMessage({
+          defaultMessage: 'Select version for comparison',
+          description: 'Aria label for the version comparison radio group',
+        })}
+        css={{ display: 'flex', height: theme.general.buttonInnerHeight + theme.spacing.xs, gap: 0, flex: 1 }}
+      >
         <Tooltip
           componentId="mlflow.mcp_registry.detail.select_baseline.tooltip"
           content={

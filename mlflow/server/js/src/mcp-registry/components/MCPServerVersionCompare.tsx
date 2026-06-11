@@ -20,12 +20,10 @@ import Utils from '../../common/utils/Utils';
 
 const VersionMetadataGrid = ({
   version,
-  serverName,
   aliasesByVersion,
   aliasColors,
 }: {
   version?: MCPServerVersion;
-  serverName: string;
   aliasesByVersion: Record<string, string[]>;
   aliasColors?: Record<string, TagColors>;
 }) => {
@@ -38,7 +36,7 @@ const VersionMetadataGrid = ({
     <div
       css={{
         display: 'grid',
-        gridTemplateColumns: '100px 1fr',
+        gridTemplateColumns: '120px 1fr',
         gridAutoRows: `minmax(${theme.typography.lineHeightLg}, auto)`,
         alignItems: 'flex-start',
         rowGap: theme.spacing.xs,
@@ -74,13 +72,13 @@ const VersionMetadataGrid = ({
         {version.creation_timestamp ? Utils.formatTimestamp(version.creation_timestamp, intl) : '—'}
       </Typography.Text>
 
-      {Object.keys(version.tags).length > 0 && (
+      {Object.keys(version.tags ?? {}).length > 0 && (
         <>
           <Typography.Text bold>
             <FormattedMessage defaultMessage="Metadata:" description="MCP compare metadata tags label" />
           </Typography.Text>
           <div css={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing.xs }}>
-            {Object.entries(version.tags).map(([key, value]) => (
+            {Object.entries(version.tags ?? {}).map(([key, value]) => (
               <KeyValueTag css={{ margin: 0 }} key={key} tag={{ key, value }} />
             ))}
           </div>
@@ -110,11 +108,11 @@ export const MCPServerVersionCompare = ({
 
   const baselineJson = useMemo(
     () => (baselineVersion?.server_json ? JSON.stringify(baselineVersion.server_json, null, 2) : ''),
-    [baselineVersion],
+    [baselineVersion?.server_json],
   );
   const comparedJson = useMemo(
     () => (comparedVersion?.server_json ? JSON.stringify(comparedVersion.server_json, null, 2) : ''),
-    [comparedVersion],
+    [comparedVersion?.server_json],
   );
 
   const diff = useMemo(() => diffWords(baselineJson, comparedJson) ?? [], [baselineJson, comparedJson]);
@@ -123,6 +121,21 @@ export const MCPServerVersionCompare = ({
     () => ({
       addedBackground: theme.isDarkMode ? theme.colors.green700 : theme.colors.green300,
       removedBackground: theme.isDarkMode ? theme.colors.red700 : theme.colors.red300,
+    }),
+    [theme],
+  );
+
+  const jsonPanelStyles = useMemo(
+    () => ({
+      flex: 1,
+      margin: 0,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.backgroundSecondary,
+      borderRadius: theme.borders.borderRadiusSm,
+      overflow: 'auto' as const,
+      fontSize: theme.typography.fontSizeSm,
+      whiteSpace: 'pre-wrap' as const,
+      wordBreak: 'break-word' as const,
     }),
     [theme],
   );
@@ -153,7 +166,6 @@ export const MCPServerVersionCompare = ({
         <div css={{ flex: 1 }}>
           <VersionMetadataGrid
             version={baselineVersion}
-            serverName={serverName}
             aliasesByVersion={aliasesByVersion}
             aliasColors={aliasColors}
           />
@@ -164,7 +176,6 @@ export const MCPServerVersionCompare = ({
         <div css={{ flex: 1 }}>
           <VersionMetadataGrid
             version={comparedVersion}
-            serverName={serverName}
             aliasesByVersion={aliasesByVersion}
             aliasColors={aliasColors}
           />
@@ -174,20 +185,14 @@ export const MCPServerVersionCompare = ({
       <Spacer shrinks={false} />
 
       <div css={{ display: 'flex', flex: 1, overflow: 'auto', alignItems: 'flex-start' }}>
-        <pre
-          css={{
-            flex: 1,
-            margin: 0,
-            padding: theme.spacing.md,
-            backgroundColor: theme.colors.backgroundSecondary,
-            borderRadius: theme.borders.borderRadiusSm,
-            overflow: 'auto',
-            fontSize: theme.typography.fontSizeSm,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
-          <code>{baselineJson || 'Empty'}</code>
+        <pre css={jsonPanelStyles}>
+          <code>
+            {baselineJson ||
+              intl.formatMessage({
+                defaultMessage: 'Empty',
+                description: 'Fallback for empty server JSON in compare view',
+              })}
+          </code>
         </pre>
 
         <div css={{ paddingLeft: theme.spacing.sm, paddingRight: theme.spacing.sm }}>
@@ -213,19 +218,7 @@ export const MCPServerVersionCompare = ({
           </Tooltip>
         </div>
 
-        <pre
-          css={{
-            flex: 1,
-            margin: 0,
-            padding: theme.spacing.md,
-            backgroundColor: theme.colors.backgroundSecondary,
-            borderRadius: theme.borders.borderRadiusSm,
-            overflow: 'auto',
-            fontSize: theme.typography.fontSizeSm,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
+        <pre css={jsonPanelStyles}>
           <code>
             {diff.map((part, index) => (
               <span

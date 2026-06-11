@@ -32,8 +32,14 @@ const viewStateReducer = (state: State, action: ViewAction): State => {
         comparedVersion: action.comparedVersion,
       };
     case 'setComparedVersion':
+      if (action.comparedVersion === state.selectedVersion) {
+        return { ...state, comparedVersion: action.comparedVersion, selectedVersion: state.comparedVersion };
+      }
       return { ...state, comparedVersion: action.comparedVersion };
     case 'setSelectedVersion':
+      if (action.version === state.comparedVersion) {
+        return { ...state, selectedVersion: action.version, comparedVersion: state.selectedVersion };
+      }
       return { ...state, selectedVersion: action.version };
     case 'switchSides':
       return { ...state, selectedVersion: state.comparedVersion, comparedVersion: state.selectedVersion };

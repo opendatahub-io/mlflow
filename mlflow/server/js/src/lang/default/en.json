@@ -447,6 +447,10 @@
     "defaultMessage": "{totalTokens} total tokens",
     "description": "Experiment page > artifact compare view > results table > total number of evaluated tokens"
   },
+  "/pGvl1": {
+    "defaultMessage": "Edit status",
+    "description": "Aria label for edit status button"
+  },
   "/pO3oR": {
     "defaultMessage": "Failed to save question: {error}",
     "description": "Review question modal: error toast shown when saving a question fails"
@@ -726,6 +730,10 @@
   "13vJft": {
     "defaultMessage": "View Examples",
     "description": "Experiment page > new run modal > prompt examples button"
+  },
+  "147Q2W": {
+    "defaultMessage": "Edit description",
+    "description": "Aria label for edit description button"
   },
   "16BvfJ": {
     "defaultMessage": "{timeSince, plural, =1 {1 year} other {# years}} ago",
@@ -1362,6 +1370,10 @@
   "46xd2Z": {
     "defaultMessage": "Compare",
     "description": "Runs charts > components > config > RunsChartsConfigureDifferenceChart > Compare config section"
+  },
+  "47HcTC": {
+    "defaultMessage": "Empty",
+    "description": "Fallback for empty server JSON in compare view"
   },
   "47JmSp": {
     "defaultMessage": "Configure new model",
@@ -4459,6 +4471,10 @@
     "defaultMessage": "Edit",
     "description": "Text for the edit button next to the description section title on\n             the model version view page"
   },
+  "IkH/5t": {
+    "defaultMessage": "Edit metadata",
+    "description": "Aria label for edit metadata button"
+  },
   "Ikj6rr": {
     "defaultMessage": "Quick start",
     "description": "Gateway > Endpoints > Compact quick start section label"
@@ -7526,6 +7542,10 @@
   "WybkD9": {
     "defaultMessage": "Review",
     "description": "Label for the review tab in the MLflow experiment navbar"
+  },
+  "X+11OS": {
+    "defaultMessage": "Edit display name",
+    "description": "Aria label for edit display name button"
   },
   "X+boXI": {
     "defaultMessage": "Copied",
@@ -12410,6 +12430,10 @@
   "sYKPid": {
     "defaultMessage": "Description",
     "description": "Roles table description header"
+  },
+  "sYN+/j": {
+    "defaultMessage": "Edit server description",
+    "description": "MCP server edit server-level description modal title"
   },
   "sYkXR1": {
     "defaultMessage": "JSON body for the MLflow Invocations API. Use \"messages\" for chat or \"input\" for embeddings.",

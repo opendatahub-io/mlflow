@@ -24,7 +24,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
-import { emptyCenterStyles, resolveDisplayName } from '../utils';
+import { emptyCenterStyles, resolveDisplayName, tagsRecordToArray } from '../utils';
 import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { Link } from '../../common/utils/RoutingUtils';
 import { KeyValueTag } from '../../common/components/KeyValueTag';
@@ -59,7 +59,7 @@ const MCPServerTagsCell = ({
   const intl = useIntl();
   const { theme } = useDesignSystemTheme();
   const { onEditTags } = (meta as MCPServerTableMeta) || {};
-  const tags = Object.entries(original.tags).map(([key, value]) => ({ key, value }));
+  const tags = tagsRecordToArray(original.tags);
   const containsTags = tags.length > 0;
 
   return (
@@ -104,7 +104,7 @@ const MCPServerTagsCell = ({
 };
 
 const MCPServerLatestVersionCell = ({ row: { original } }: CellContext<MCPServer, unknown>) => {
-  const { data: latestVersion } = useLatestMCPServerVersionQuery(original.name);
+  const { data: latestVersion } = useLatestMCPServerVersionQuery(original.name, !original.latest_version);
   return original.latest_version || latestVersion?.version || '—';
 };
 

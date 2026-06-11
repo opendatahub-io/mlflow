@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { MCPRegistryApi } from '../api';
-import type { MCPStatus } from '../types';
+import type { MCPStatus, MCPTool } from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
 
 const useInvalidateServerQueries = () => {
@@ -9,32 +9,54 @@ const useInvalidateServerQueries = () => {
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER, serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_VERSIONS, serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_BINDINGS, serverName]);
-    queryClient.invalidateQueries(['mcp_server_latest_version', serverName]);
+    queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_LATEST_VERSION, serverName]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVERS_LIST]);
     queryClient.invalidateQueries([MCP_QUERY_KEYS.BINDINGS_LIST]);
   };
 };
 
-export const useUpdateMCPServerVersionStatus = (serverName: string) => {
-  const invalidate = useInvalidateServerQueries();
-
-  return useMutation<unknown, Error, { version: string; status: MCPStatus }>({
-    mutationFn: ({ version, status }) => MCPRegistryApi.updateMCPServerVersion(serverName, version, { status }),
-    onSuccess: () => invalidate(serverName),
-  });
+type UpdateMCPServerVersionPayload = {
+  version: string;
+  displayName?: string;
+  status?: MCPStatus;
+  tools?: MCPTool[] | null;
+  aliases?: { add: string[]; remove: string[] };
 };
 
-export const useUpdateMCPServerVersionDisplayName = (serverName: string) => {
-  const queryClient = useQueryClient();
+export const useUpdateMCPServerVersion = (serverName: string) => {
+  const invalidate = useInvalidateServerQueries();
 
-  return useMutation({
-    mutationFn: ({ version, displayName }: { version: string; displayName: string }) =>
-      MCPRegistryApi.updateMCPServerVersion(serverName, version, { display_name: displayName || null }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['mcp_server', serverName]);
-      queryClient.invalidateQueries(['mcp_server_versions', serverName]);
-      queryClient.invalidateQueries(['mcp_servers_list']);
+  return useMutation<unknown, Error, UpdateMCPServerVersionPayload>({
+    mutationFn: async ({ version, displayName, status, tools, aliases }) => {
+      const versionUpdate: Record<string, unknown> = {};
+      if (displayName !== undefined) {
+        versionUpdate['display_name'] = displayName || null;
+      }
+      if (status !== undefined) {
+        versionUpdate['status'] = status;
+      }
+      if (tools !== undefined) {
+        versionUpdate['tools'] = tools;
+      }
+
+      const promises: Promise<unknown>[] = [];
+
+      if (Object.keys(versionUpdate).length > 0) {
+        promises.push(MCPRegistryApi.updateMCPServerVersion(serverName, version, versionUpdate));
+      }
+
+      if (aliases) {
+        promises.push(
+          ...aliases.add.map((alias) =>
+            MCPRegistryApi.setMCPServerAlias(serverName, { alias, version }),
+          ),
+          ...aliases.remove.map((alias) => MCPRegistryApi.deleteMCPServerAlias(serverName, alias)),
+        );
+      }
+
+      await Promise.all(promises);
     },
+    onSuccess: () => invalidate(serverName),
   });
 };
 
@@ -47,17 +69,13 @@ export const useDeleteMCPServerVersion = (serverName: string) => {
   });
 };
 
-export const useSetLatestVersion = (serverName: string) => {
-  const queryClient = useQueryClient();
+export const useUpdateMCPServerDisplayName = (serverName: string) => {
+  const invalidate = useInvalidateServerQueries();
 
   return useMutation({
-    mutationFn: (version: string | null) => MCPRegistryApi.updateMCPServer(serverName, { latest_version: version }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['mcp_server', serverName]);
-      queryClient.invalidateQueries(['mcp_server_versions', serverName]);
-      queryClient.invalidateQueries(['mcp_server_latest_version', serverName]);
-      queryClient.invalidateQueries(['mcp_servers_list']);
-    },
+    mutationFn: (displayName: string | null) =>
+      MCPRegistryApi.updateMCPServer(serverName, { display_name: displayName }),
+    onSuccess: () => invalidate(serverName),
   });
 };
 

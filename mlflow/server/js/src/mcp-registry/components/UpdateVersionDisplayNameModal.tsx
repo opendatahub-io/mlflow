@@ -58,6 +58,10 @@ export const UpdateVersionDisplayNameModal = ({
           componentId="mlflow.mcp_registry.detail.display_name_input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          aria-label={intl.formatMessage({
+            defaultMessage: 'Display name',
+            description: 'Aria label for display name input',
+          })}
           placeholder={intl.formatMessage({
             defaultMessage: 'Enter display name',
             description: 'Placeholder for version display name input',

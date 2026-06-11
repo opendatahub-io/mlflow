@@ -107,19 +107,21 @@ export const AliasSelect = ({
       open={dropdownVisible}
       value={[...(pinnedAliases ?? []), ...(draftAliases || [])]}
     >
-      {existingAliases.map((alias) => (
-        <LegacySelect.Option key={alias} value={alias} data-testid="model-alias-option">
-          <div key={alias} css={{ display: 'flex', marginRight: theme.spacing.xs }}>
-            <div css={{ flex: 1 }}>{alias}</div>
-            <div>
-              <FormattedMessage
-                defaultMessage="This version"
-                description="Model registry > model version alias select > Indicator for alias of selected version"
-              />
+      {existingAliases
+        .filter((alias) => !pinnedAliases?.includes(alias))
+        .map((alias) => (
+          <LegacySelect.Option key={alias} value={alias} data-testid="model-alias-option">
+            <div key={alias} css={{ display: 'flex', marginRight: theme.spacing.xs }}>
+              <div css={{ flex: 1 }}>{alias}</div>
+              <div>
+                <FormattedMessage
+                  defaultMessage="This version"
+                  description="Model registry > model version alias select > Indicator for alias of selected version"
+                />
+              </div>
             </div>
-          </div>
-        </LegacySelect.Option>
-      ))}
+          </LegacySelect.Option>
+        ))}
       {Object.entries(aliasToVersionMap)
         .filter(([, otherVersion]) => otherVersion !== version)
         .map(([alias, aliasedVersion]) => (

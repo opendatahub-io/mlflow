@@ -11,7 +11,7 @@ import Utils from '../../common/utils/Utils';
 export const MCPServerCard = ({ server }: { server: MCPServer }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
-  const { data: latestVersion } = useLatestMCPServerVersionQuery(server.name);
+  const { data: latestVersion } = useLatestMCPServerVersionQuery(server.name, !server.latest_version);
 
   const displayName = resolveDisplayName(server);
   const latestVersionDisplay = server.latest_version || latestVersion?.version;
@@ -30,13 +30,13 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
         <CardIconWrapper>
           <McpIcon />
         </CardIconWrapper>
-        <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs, overflow: 'hidden' }}>
-          <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs, overflow: 'hidden' }}>
+        <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs, overflow: 'hidden', flex: 1 }}>
+          <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
             <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </Typography.Text>
             {latestVersionDisplay && (
-              <Typography.Text color="secondary" size="sm" css={{ flexShrink: 0 }}>
+              <Typography.Text color="secondary" size="sm" css={{ marginLeft: 'auto', flexShrink: 0 }}>
                 {latestVersionDisplay}
               </Typography.Text>
             )}
