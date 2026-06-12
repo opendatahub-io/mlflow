@@ -18,9 +18,9 @@ import {
 import type { TagColors } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
-import type { MCPAccessBinding, MCPServer, MCPServerVersion } from '../types';
-import { STATUS_TAG_COLOR, STATUS_TRANSITIONS, resolveDisplayName } from '../utils';
-import type { MCPStatus } from '../types';
+import type { MCPAccessBinding, MCPServer, MCPServerVersion, MCPStatus } from '../types';
+import { STATUS_TAG_COLOR, STATUS_TRANSITIONS, resolveIconSrc, resolveDisplayName } from '../utils';
+import { MCPServerIcon } from './MCPServerIcon';
 import { MCPServerAccessBindings } from './MCPServerAccessBindings';
 import { ServerJSONSection, ToolsSection } from './ServerJSONSection';
 import { ConfirmationModal } from '../../admin/ConfirmationModal';
@@ -152,7 +152,7 @@ export const MCPServerVersionDetail = ({
 
       <Spacer shrinks={false} />
       <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-        <McpIcon css={{ flexShrink: 0, color: theme.colors.textSecondary }} />
+        <MCPServerIcon iconSrc={resolveIconSrc(version?.server_json?.icons) || resolveIconSrc(server.icons)} />
         <div css={{ display: 'flex', flexDirection: 'column' }}>
           <Typography.Text bold>{displayName}</Typography.Text>
           <Typography.Text color="secondary" size="sm">

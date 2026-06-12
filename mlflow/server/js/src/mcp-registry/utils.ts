@@ -1,5 +1,5 @@
 import type { TagProps } from '@databricks/design-system';
-import type { MCPRemoteTransportType, MCPStatus, MCPTool, ServerJSONPayload } from './types';
+import type { MCPIcon, MCPRemoteTransportType, MCPStatus, MCPTool, ServerJSONPayload } from './types';
 
 export const STATUS_TAG_COLOR: Record<MCPStatus, TagProps['color']> = {
   draft: 'charcoal',
@@ -83,6 +83,10 @@ export const buildSearchFilterClause = (searchFilter: string | undefined, field:
     return searchFilter;
   }
   return `${field} LIKE '%${searchFilter.replace(/'/g, "''")}%'`;
+};
+
+export const resolveIconSrc = (icons: MCPIcon[] | undefined): string | undefined => {
+  return icons?.[0]?.src;
 };
 
 export const isValidEndpointUrl = (url: string): boolean => {
