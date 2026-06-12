@@ -9,6 +9,7 @@ import re
 import tempfile
 import threading
 import time
+import unicodedata
 import urllib
 from functools import partial, wraps
 from typing import Any, Callable
@@ -18,6 +19,7 @@ from cachetools import TTLCache
 from flask import Request, Response, current_app, jsonify, request, send_file
 from google.protobuf import descriptor
 from google.protobuf.json_format import ParseError
+from werkzeug.http import quote_header_value
 
 import mlflow
 from mlflow.entities import (
@@ -1004,25 +1006,77 @@ def _get_validated_flask_request_json(
     return request_json
 
 
+def _content_disposition_attachment(filename: str) -> str:
+    """
+    Build an RFC 6266 / RFC 5987 ``Content-Disposition`` value for an attachment.
+
+    HTTP headers must be ASCII-encodable; ASGI adapters such as starlette's
+    ``WSGIMiddleware`` raise ``UnicodeEncodeError`` on raw non-ASCII bytes. For
+    filenames containing non-ASCII characters, emit an ASCII ``filename=``
+    fallback alongside a percent-encoded ``filename*=UTF-8''…`` parameter.
+    """
+    try:
+        filename.encode("ascii")
+    except UnicodeEncodeError:
+        # ``or "download"`` ensures a well-formed ``filename=<value>`` parameter
+        # even when normalization strips every character (e.g. ``日本語`` with no
+        # extension). Clients that ignore ``filename*`` still get a usable name.
+        ascii_fallback = (
+            unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode("ascii")
+            or "download"
+        )
+        # safe = RFC 5987 attr-char
+        quoted = urllib.parse.quote(filename, safe="!#$&+-.^_`|~")
+        quoted_ascii_fallback = quote_header_value(ascii_fallback, allow_token=True)
+        return f"attachment; filename={quoted_ascii_fallback}; filename*=UTF-8''{quoted}"
+    quoted_filename = quote_header_value(filename, allow_token=True)
+    return f"attachment; filename={quoted_filename}"
+
+
 def _response_with_file_attachment_headers(file_path, response):
     mime_type = _guess_mime_type(file_path)
     filename = pathlib.Path(file_path).name
     response.mimetype = mime_type
     content_disposition_header_name = "Content-Disposition"
     if content_disposition_header_name not in response.headers:
-        response.headers[content_disposition_header_name] = f"attachment; filename={filename}"
+        response.headers[content_disposition_header_name] = _content_disposition_attachment(
+            filename
+        )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Content-Type"] = mime_type
     return response
 
 
+def _create_artifact_file_response(file_path: str, artifact_name: str) -> Response:
+    """Serve a local file while preserving the logical artifact name for downloads."""
+    if os.path.isdir(file_path):
+        raise MlflowException.invalid_parameter_value(
+            f"Artifact path refers to a directory, not a file: '{artifact_name}'"
+        )
+    file_sender_response = send_file(file_path, mimetype=_guess_mime_type(file_path))
+    file_sender_response.headers["Content-Disposition"] = _content_disposition_attachment(
+        pathlib.Path(artifact_name).name
+    )
+    return _response_with_file_attachment_headers(file_path, file_sender_response)
+
+
 def _send_artifact(artifact_repository, path):
-    file_path = os.path.abspath(artifact_repository.download_artifacts(path))
     # Always send artifacts as attachments to prevent the browser from displaying them on our web
     # server's domain, which might enable XSS.
-    mime_type = _guess_mime_type(file_path)
-    file_sender_response = send_file(file_path, mimetype=mime_type, as_attachment=True)
-    return _response_with_file_attachment_headers(file_path, file_sender_response)
+    if (local_path := artifact_repository.get_local_path(path)) is not None:
+        return _create_artifact_file_response(os.path.abspath(local_path), path)
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    try:
+        file_path = os.path.abspath(
+            artifact_repository.download_artifacts(path, dst_path=tmp_dir.name)
+        )
+        response = _create_artifact_file_response(file_path, path)
+        response.call_on_close(tmp_dir.cleanup)
+        return response
+    except Exception:
+        tmp_dir.cleanup()
+        raise
 
 
 def catch_mlflow_exception(func):
@@ -3286,12 +3340,20 @@ def _download_artifact(artifact_path):
     """
     artifact_path = validate_path_is_safe(artifact_path)
     artifact_path = _get_workspace_scoped_repo_path_if_enabled(artifact_path)
-    tmp_dir = tempfile.TemporaryDirectory()
     artifact_repo = _get_artifact_repo_mlflow_artifacts()
-    dst = artifact_repo.download_artifacts(artifact_path, tmp_dir.name)
 
-    # Ref: https://stackoverflow.com/a/24613980/6943581
-    file_handle = open(dst, "rb")  # noqa: SIM115
+    if (local_path := artifact_repo.get_local_path(artifact_path)) is not None:
+        return _create_artifact_file_response(os.path.abspath(local_path), artifact_path)
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    try:
+        dst = os.path.abspath(artifact_repo.download_artifacts(artifact_path, tmp_dir.name))
+
+        # Ref: https://stackoverflow.com/a/24613980/6943581
+        file_handle = open(dst, "rb")  # noqa: SIM115
+    except Exception:
+        tmp_dir.cleanup()
+        raise
 
     def stream_and_remove_file():
         while chunk := file_handle.read(ARTIFACT_STREAM_CHUNK_SIZE):

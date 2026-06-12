@@ -98,6 +98,23 @@ def test_download_artifacts_does_not_copy(local_artifact_repo):
         )
 
 
+def test_get_local_path_returns_absolute_path(local_artifact_repo):
+    artifact_rel_path = "test.txt"
+    artifact_text = "hello world!"
+    with TempDir(chdr=True) as local_dir:
+        artifact_src_path = local_dir.path(artifact_rel_path)
+        with open(artifact_src_path, "w") as f:
+            f.write(artifact_text)
+        local_artifact_repo.log_artifact(artifact_src_path)
+
+        local_path = local_artifact_repo.get_local_path(artifact_rel_path)
+
+    assert os.path.abspath(local_path) == local_path
+    assert local_path.startswith(local_artifact_repo.artifact_dir)
+    with open(local_path) as f:
+        assert f.read() == artifact_text
+
+
 def test_download_artifacts_returns_absolute_paths(local_artifact_repo):
     artifact_rel_path = "test.txt"
     artifact_text = "hello world!"
@@ -257,6 +274,8 @@ def external_secret_dir(tmp_path):
 def _execute_operation(local_artifact_repo, operation, access_path, tmp_path):
     if operation == "download_artifacts":
         local_artifact_repo.download_artifacts(access_path)
+    elif operation == "get_local_path":
+        local_artifact_repo.get_local_path(access_path)
     elif operation == "list_artifacts":
         local_artifact_repo.list_artifacts(access_path)
     elif operation == "_download_file":
@@ -268,6 +287,7 @@ def _execute_operation(local_artifact_repo, operation, access_path, tmp_path):
     ("symlink_name", "access_path", "operation"),
     [
         ("leak", "leak/secret.txt", "download_artifacts"),
+        ("leak", "leak/secret.txt", "get_local_path"),
         ("leak", "leak", "list_artifacts"),
         ("leak", "leak/secret.txt", "_download_file"),
         ("parent_link", "parent_link/secret.txt", "download_artifacts"),
@@ -337,11 +357,15 @@ def test_list_artifacts_on_file_returns_empty(local_artifact_repo, local_artifac
     assert local_artifact_repo.list_artifacts("file.txt") == []
 
 
-@pytest.mark.parametrize("dst_path_provided", [True, False])
-def test_download_artifacts_nonexistent_raises_resource_does_not_exist(
-    local_artifact_repo, tmp_path, dst_path_provided
+def test_download_artifacts_nonexistent_without_dst_path_raises_resource_does_not_exist(
+    local_artifact_repo,
 ):
-    dst = str(tmp_path) if dst_path_provided else None
     with pytest.raises(MlflowException, match="No such artifact") as exc_info:
-        local_artifact_repo.download_artifacts("nonexistent.txt", dst_path=dst)
+        local_artifact_repo.download_artifacts("nonexistent.txt")
+    assert exc_info.value.error_code == "RESOURCE_DOES_NOT_EXIST"
+
+
+def test_get_local_path_nonexistent_raises_resource_does_not_exist(local_artifact_repo):
+    with pytest.raises(MlflowException, match="No such artifact") as exc_info:
+        local_artifact_repo.get_local_path("nonexistent.txt")
     assert exc_info.value.error_code == "RESOURCE_DOES_NOT_EXIST"
