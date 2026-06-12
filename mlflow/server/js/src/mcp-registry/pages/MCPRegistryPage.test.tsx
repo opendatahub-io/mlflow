@@ -102,7 +102,6 @@ describe('MCPRegistryPage', () => {
   });
 
   it('converts plain text search into a valid name filter', async () => {
-    jest.setTimeout(15000);
     let capturedFilterString: string | null = null;
     server.use(
       rest.get(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers'), (req, res, ctx) => {
@@ -117,16 +116,21 @@ describe('MCPRegistryPage', () => {
     );
     renderPage(['/?tab=servers']);
 
+    await waitFor(() => {
+      expect(screen.getByText('io.github.demo/raw-name-only')).toBeInTheDocument();
+    });
+
+    capturedFilterString = null;
     const searchInput = screen.getByPlaceholderText('Search MCP servers by name');
     await userEvent.type(searchInput, 'raw');
 
     await waitFor(
       () => {
-        expect(capturedFilterString).toBe("name LIKE '%raw%'");
+        expect(capturedFilterString).toBe("display_name LIKE '%raw%'");
       },
       { timeout: 10000 },
     );
-  });
+  }, 15000);
 
   it('shows Create MCP server button when servers exist', async () => {
     const servers = [createMockMCPServer({ name: 's1', display_name: 'Server 1' })];

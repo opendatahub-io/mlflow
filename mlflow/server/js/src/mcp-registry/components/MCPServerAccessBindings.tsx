@@ -146,7 +146,10 @@ export const MCPServerAccessBindings = ({
               onClick={onAddBinding}
               size="small"
             >
-              <FormattedMessage defaultMessage="Add access binding" description="MCP server add access binding button" />
+              <FormattedMessage
+                defaultMessage="Add access binding"
+                description="MCP server add access binding button"
+              />
             </Button>
           )}
         </div>

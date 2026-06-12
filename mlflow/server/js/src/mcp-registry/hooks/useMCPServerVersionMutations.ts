@@ -47,9 +47,7 @@ export const useUpdateMCPServerVersion = (serverName: string) => {
 
       if (aliases) {
         promises.push(
-          ...aliases.add.map((alias) =>
-            MCPRegistryApi.setMCPServerAlias(serverName, { alias, version }),
-          ),
+          ...aliases.add.map((alias) => MCPRegistryApi.setMCPServerAlias(serverName, { alias, version })),
           ...aliases.remove.map((alias) => MCPRegistryApi.deleteMCPServerAlias(serverName, alias)),
         );
       }

@@ -171,9 +171,17 @@
     "defaultMessage": "Max",
     "description": "Column title for the column displaying the maximum metric values for a metric"
   },
+  "+itf/D": {
+    "defaultMessage": "Save",
+    "description": "Save button"
+  },
   "+jMswj": {
     "defaultMessage": "Target:",
     "description": "Binding card target label"
+  },
+  "+jTk/P": {
+    "defaultMessage": "Show less",
+    "description": "MCP server package show less env vars button"
   },
   "+kOR9h": {
     "defaultMessage": "Save",
@@ -262,6 +270,10 @@
   "/8w8Ea": {
     "defaultMessage": "Pass / Fail",
     "description": "Review question input type: pass/fail"
+  },
+  "/Adc0h": {
+    "defaultMessage": "Copy identifier",
+    "description": "Tooltip for copy package identifier button"
   },
   "/Aup8Q": {
     "defaultMessage": "Request time",
@@ -895,6 +907,10 @@
     "defaultMessage": "MCP Registry",
     "description": "Sidebar link for MCP Registry page"
   },
+  "1oaTIy": {
+    "defaultMessage": "secret",
+    "description": "Header secret badge"
+  },
   "1oofcq": {
     "defaultMessage": "Show less",
     "description": "Link that collapses an expanded list when clicked"
@@ -1034,6 +1050,10 @@
   "2Rybee": {
     "defaultMessage": "Reviewers",
     "description": "Create review queue: reviewers field label"
+  },
+  "2ScZy5": {
+    "defaultMessage": "Transport:",
+    "description": "MCP server package transport label"
   },
   "2Us2jl": {
     "defaultMessage": "X axis",
@@ -1463,6 +1483,10 @@
     "defaultMessage": "Add a message to send to the endpoint.",
     "description": "Empty-state hint for the playground messages panel"
   },
+  "4QTnoO": {
+    "defaultMessage": "View raw server.json",
+    "description": "MCP server version detail view raw JSON button"
+  },
   "4Qft47": {
     "defaultMessage": "{nodeCount, plural, =0 {} one {# node} other {# nodes}}",
     "description": "Count of selected nodes displayed in the node level metric charts node selector"
@@ -1599,6 +1623,10 @@
     "defaultMessage": "Click to pin the run",
     "description": "A tooltip for the pin icon button in the runs chart tooltip next to the not pinned run"
   },
+  "59sogb": {
+    "defaultMessage": "Enter tools JSON array",
+    "description": "Placeholder for version tools input"
+  },
   "5AiU0Q": {
     "defaultMessage": "Create your first prompt",
     "description": "Title for the empty state on the prompts list page"
@@ -1606,6 +1634,10 @@
   "5B5dhT": {
     "defaultMessage": "Validate the model before deployment",
     "description": "Heading text for validating the model before deploying it for serving"
+  },
+  "5F/eep": {
+    "defaultMessage": "Tools",
+    "description": "Version edit tools label"
   },
   "5GCYzy": {
     "defaultMessage": "Experiment Runs - Databricks",
@@ -2263,6 +2295,10 @@
     "defaultMessage": "Type a key",
     "description": "Key-value tag editor modal > Tag dropdown > Tag input placeholder"
   },
+  "8CXWXX": {
+    "defaultMessage": "Tools ({count})",
+    "description": "MCP server version detail tools subsection heading"
+  },
   "8DoNdT": {
     "defaultMessage": "Save",
     "description": "Save button text for edit endpoint name modal"
@@ -2366,6 +2402,10 @@
   "8mP5Mz": {
     "defaultMessage": "Enable Usage Tracking in the Overview tab to view logs",
     "description": "Tooltip shown on disabled Logs tab explaining that usage tracking must be enabled first"
+  },
+  "8mdDKH": {
+    "defaultMessage": "Copy URL",
+    "description": "Tooltip for copy remote URL button"
   },
   "8oh0iW": {
     "defaultMessage": "Clear filters",
@@ -2682,6 +2722,10 @@
   "9ygCGK": {
     "defaultMessage": "Reset period",
     "description": "Budget reset period label"
+  },
+  "9yiunK": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy raw server.json button"
   },
   "9zZeT2": {
     "defaultMessage": "Delete records",
@@ -3211,6 +3255,10 @@
     "defaultMessage": "System Metrics",
     "description": "Experiment tracking > runs charts > cards > RunsChartsDifferenceChartCard > system metrics heading"
   },
+  "CHdcpF": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server version detail show more packages button"
+  },
   "CKwhUr": {
     "defaultMessage": "Move to Todo",
     "description": "Review focused view: send a completed/declined trace back to the to-do list"
@@ -3583,6 +3631,10 @@
     "defaultMessage": "{count} selected",
     "description": "Label for item selector showing count of selected items"
   },
+  "ED/0qk": {
+    "defaultMessage": "Packages ({count})",
+    "description": "MCP server version detail packages subsection heading"
+  },
   "ED1+Xu": {
     "defaultMessage": "Prompts & versions",
     "description": "Label for the versions section in the MLflow experiment navbar"
@@ -3683,9 +3735,17 @@
     "defaultMessage": "Clear conversation",
     "description": "Label for the button that resets the playground conversation to an empty user message"
   },
+  "Ehnbx0": {
+    "defaultMessage": "Environment Variables ({count})",
+    "description": "MCP server package environment variables heading with count"
+  },
   "EiFPFP": {
     "defaultMessage": "Custom Guardrail",
     "description": "Custom guardrail type name"
+  },
+  "EiV1ml": {
+    "defaultMessage": "Edit version details",
+    "description": "MCP server version edit details modal title"
   },
   "EjPmMR": {
     "defaultMessage": "Workspace Manager",
@@ -4035,6 +4095,10 @@
     "defaultMessage": "Run evaluation",
     "description": "Home page quick action title for running evaluations"
   },
+  "GeC7uZ": {
+    "defaultMessage": "Show less",
+    "description": "MCP server version detail show less tools button"
+  },
   "GfFwBD": {
     "defaultMessage": "Declined",
     "description": "Review queue status: declined"
@@ -4106,6 +4170,10 @@
   "H2UIIZ": {
     "defaultMessage": "null",
     "description": "Null value in the evaluations table."
+  },
+  "H3W2Hz": {
+    "defaultMessage": "URL Variables",
+    "description": "MCP server remote URL variables heading"
   },
   "H7JwOl": {
     "defaultMessage": "Delete version",
@@ -4667,6 +4735,10 @@
     "defaultMessage": "STRING",
     "description": "Header label for string assessment type"
   },
+  "Je8178": {
+    "defaultMessage": "Hide raw server.json",
+    "description": "MCP server version detail hide raw JSON button"
+  },
   "JfFfzy": {
     "defaultMessage": "Sample rate:",
     "description": "Sample rate label for scorer"
@@ -4758,6 +4830,10 @@
   "K7sH7k": {
     "defaultMessage": "Experiment renamed",
     "description": "Partial save status message when experiment rename succeeds"
+  },
+  "K8AByX": {
+    "defaultMessage": "Output Schema",
+    "description": "MCP tool output schema toggle"
   },
   "K8JcAN": {
     "defaultMessage": "Datasets",
@@ -5655,6 +5731,10 @@
     "defaultMessage": "Expectations",
     "description": "Column selector label for the expectations column"
   },
+  "OHUKmu": {
+    "defaultMessage": "Add/Edit Metadata",
+    "description": "Title for a modal that allows the user to add or edit metadata tags on MCP server versions."
+  },
   "OLZyxe": {
     "defaultMessage": "{errorCount, plural, one {# error} other {# errors}}",
     "description": "Error count in tooltip"
@@ -5943,6 +6023,10 @@
     "defaultMessage": "GenAI apps & agents",
     "description": "Label for experiments focused on generative AI model development"
   },
+  "Pgl9HJ": {
+    "defaultMessage": "Hide raw JSON",
+    "description": "MCP server version detail hide raw tools JSON button"
+  },
   "Pgxfhl": {
     "defaultMessage": "Role",
     "description": "Roles table column header for the role name"
@@ -6078,6 +6162,10 @@
   "QK/Qyx": {
     "defaultMessage": "Total",
     "description": "Label for total token usage"
+  },
+  "QL5BPA": {
+    "defaultMessage": "{action} tool {name}",
+    "description": "Aria label for expanding/collapsing a tool row"
   },
   "QLRaAz": {
     "defaultMessage": "Select all rows on this page",
@@ -6811,6 +6899,10 @@
     "defaultMessage": "Inputs",
     "description": "Table section name for schema inputs in the model comparison page"
   },
+  "Tj7qTS": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy JSON button"
+  },
   "Tl63jz": {
     "defaultMessage": "All runs are filtered",
     "description": "Empty state title text for experiment runs page when all runs have been filtered out"
@@ -7331,6 +7423,10 @@
     "defaultMessage": "Search chat sessions by input",
     "description": "Placeholder text for the search input in the chat sessions table"
   },
+  "W7JOu2": {
+    "defaultMessage": "required",
+    "description": "Header required badge"
+  },
   "W7x1CI": {
     "defaultMessage": "e.g. 0.0",
     "description": "Placeholder for the presence-penalty input on the playground parameters panel"
@@ -7666,6 +7762,10 @@
   "XREd2h": {
     "defaultMessage": "Learn more",
     "description": "Link text in column header tooltip that opens documentation in a new tab"
+  },
+  "XWtgGm": {
+    "defaultMessage": "Status",
+    "description": "Version edit status label"
   },
   "XX8+x1": {
     "defaultMessage": "View prompt template",
@@ -8551,6 +8651,10 @@
     "defaultMessage": "Run ID:",
     "description": "Text for run ID header in the main table in the model comparison page"
   },
+  "bjH2oX": {
+    "defaultMessage": "Display name",
+    "description": "Aria label for display name input"
+  },
   "bjoGjg": {
     "defaultMessage": "Last hour",
     "description": "Option for the start select dropdown to filter runs from the last hour"
@@ -8618,6 +8722,10 @@
   "by+x8N": {
     "defaultMessage": "Type",
     "description": "Run page > Overview > Experiment ID section label"
+  },
+  "by0DzI": {
+    "defaultMessage": "JSON content",
+    "description": "Aria label for JSON code block"
   },
   "byhyEj": {
     "defaultMessage": "Re-Run judge",
@@ -8783,6 +8891,10 @@
     "defaultMessage": "Something went wrong",
     "description": "Generic title used when a dataset action surfaces an unexpected error"
   },
+  "cTwsmx": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy raw tools JSON button"
+  },
   "cXhWaG": {
     "defaultMessage": "Select Model",
     "description": "Header for the model selection step in issue detection modal"
@@ -8879,6 +8991,10 @@
     "defaultMessage": "Last updated:",
     "description": "Binding detail last updated label"
   },
+  "d2ZU/7": {
+    "defaultMessage": "secret",
+    "description": "MCP server package env var secret badge"
+  },
   "d2b9xa": {
     "defaultMessage": "Enable Usage Tracking in the Overview tab to configure guardrails",
     "description": "Tooltip shown on disabled Guardrails tab explaining that usage tracking must be enabled first"
@@ -8930,6 +9046,10 @@
   "dDbfnY": {
     "defaultMessage": "{count} {count, plural, one {hour} other {hours}}",
     "description": "Formatted trace archival retention in hours"
+  },
+  "dDbtkI": {
+    "defaultMessage": "Tools ({count})",
+    "description": "MCP server version detail tools tab"
   },
   "dEGUt+": {
     "defaultMessage": "Use this button to automatically detect quality issues in your traces using AI. This feature helps you identify problems like correctness, latency, and other quality concerns in your agent.",
@@ -9042,6 +9162,10 @@
   "dqfOjO": {
     "defaultMessage": "You cannot select rows when comparing runs",
     "description": "Tooltip message for the select button when comparing runs"
+  },
+  "dsPent": {
+    "defaultMessage": "Headers ({count})",
+    "description": "MCP server remote headers heading with count"
   },
   "dt3hj5": {
     "defaultMessage": "Add tags",
@@ -10159,6 +10283,10 @@
     "defaultMessage": "My webhook",
     "description": "Webhook name placeholder"
   },
+  "iWh6qQ": {
+    "defaultMessage": "Version:",
+    "description": "MCP server package version label"
+  },
   "iX9mZm": {
     "defaultMessage": "Saved {name} v{version} to the registry",
     "description": "Success toast shown on the playground after saving the current messages as a new prompt version"
@@ -10210,6 +10338,10 @@
   "ijHH2H": {
     "defaultMessage": "Failed to duplicate some endpoints. Please try again.",
     "description": "Gateway > Endpoints list > Duplicate error message"
+  },
+  "ik/j6P": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server package show more env vars button"
   },
   "imKpxw": {
     "defaultMessage": "ID",
@@ -10403,6 +10535,10 @@
     "defaultMessage": "All runs are hidden. Select at least one run to view charts.",
     "description": "Experiment tracking > runs charts > indication displayed when no runs are selected for comparison"
   },
+  "jZVaFN": {
+    "defaultMessage": "Input Schema",
+    "description": "MCP tool input schema toggle"
+  },
   "jcGdSy": {
     "defaultMessage": "Queue",
     "description": "Review queue sidebar: queue-name column"
@@ -10447,6 +10583,10 @@
     "defaultMessage": "Pending",
     "description": "Label for pending state of a experiment logged model"
   },
+  "joZkJS": {
+    "defaultMessage": "Remotes ({count})",
+    "description": "MCP server version detail remotes subsection heading"
+  },
   "joh88n": {
     "defaultMessage": "{numValue} for run \"{runName}\"",
     "description": "Error/null assessment tooltip"
@@ -10454,6 +10594,10 @@
   "jp0HKC": {
     "defaultMessage": "Tokens per trace",
     "description": "Title for the token stats chart"
+  },
+  "jp25Wv": {
+    "defaultMessage": "Save metadata",
+    "description": "Button label for saving metadata in the MCP server version metadata modal"
   },
   "jpvRrY": {
     "defaultMessage": "Pre-LLM Guardrails",
@@ -10955,6 +11099,10 @@
     "defaultMessage": "Last modified",
     "description": "Last modified column header"
   },
+  "mDb6cp": {
+    "defaultMessage": "{action} remote {url}",
+    "description": "Aria label for expanding/collapsing a remote row"
+  },
   "mEV+mz": {
     "defaultMessage": "New prompt",
     "description": "Option to save the playground messages as a brand-new prompt in the save modal"
@@ -11219,6 +11367,10 @@
     "defaultMessage": "Pass",
     "description": "The label for a passing asseessment above a bar-chart in the summary stats."
   },
+  "nE+gTQ": {
+    "defaultMessage": "Show less",
+    "description": "MCP server version detail show less packages button"
+  },
   "nEnDEu": {
     "defaultMessage": "Cancel",
     "description": "Cancel create evaluation dataset button text"
@@ -11230,6 +11382,10 @@
   "nF10K1": {
     "defaultMessage": "Machine learning",
     "description": "Label for custom experiments focused on machine learning"
+  },
+  "nGF/Tf": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server version detail show more tools button"
   },
   "nIk08y": {
     "defaultMessage": "Trace view",
@@ -11459,6 +11615,10 @@
     "defaultMessage": "Description",
     "description": "Title text for the description section under details tab on the model\n                   view page"
   },
+  "oHglm6": {
+    "defaultMessage": "Configuration",
+    "description": "MCP server version detail configuration tab"
+  },
   "oJg/Kk": {
     "defaultMessage": "— model must call a tool.",
     "description": "Description of the Required tool choice in the Tools info popover"
@@ -11562,6 +11722,10 @@
   "ogHYBU": {
     "defaultMessage": "PII Detection",
     "description": "PII guardrail type name"
+  },
+  "oj/VFA": {
+    "defaultMessage": "Display name",
+    "description": "Version edit display name label"
   },
   "ojLGIx": {
     "defaultMessage": "Enter a feedback name",
@@ -12507,6 +12671,10 @@
     "defaultMessage": "Dataset metadata",
     "description": "Title for the V2 evaluation dataset metadata modal"
   },
+  "t+UhZI": {
+    "defaultMessage": "required",
+    "description": "MCP server package env var required badge"
+  },
   "t+aG6y": {
     "defaultMessage": "User",
     "description": "Display text for the 'user' role in a GenAI chat message."
@@ -13095,6 +13263,10 @@
     "defaultMessage": "Use a custom model name",
     "description": "Label for custom model input section"
   },
+  "w5RsIq": {
+    "defaultMessage": "{action} package {identifier}",
+    "description": "Aria label for expanding/collapsing a package row"
+  },
   "w80phd": {
     "defaultMessage": "Error",
     "description": "Title for error fallback component in experiment evaluation runs UI"
@@ -13214,6 +13386,10 @@
   "wciksY": {
     "defaultMessage": "Here's how to optimize your prompt with your dataset in your Python code:",
     "description": "Description of how to optimize a prompt with a dataset in Python"
+  },
+  "wdBU9n": {
+    "defaultMessage": "View raw JSON",
+    "description": "MCP server version detail view raw tools JSON button"
   },
   "weYjQS": {
     "defaultMessage": "Constrain how the model formats its output:",
@@ -13406,6 +13582,10 @@
   "xRM/Eb": {
     "defaultMessage": "Latency (AVG)",
     "description": "Column header for average latency"
+  },
+  "xRb5P+": {
+    "defaultMessage": "Edit",
+    "description": "MCP server edit version button"
   },
   "xRw7H2": {
     "defaultMessage": "Created by",
@@ -13727,6 +13907,10 @@
     "defaultMessage": "Source run",
     "description": "Label for the column indicating a run being the source of the logged model's metric (i.e. source run). Displayed in the logged model details metrics table."
   },
+  "z4Cxm8": {
+    "defaultMessage": "Select version for comparison",
+    "description": "Aria label for the version comparison radio group"
+  },
   "z4aclU": {
     "defaultMessage": "Discard",
     "description": "Confirm-button text for the discard-unsaved-changes prompt"
@@ -13907,6 +14091,10 @@
     "defaultMessage": "Adherence",
     "description": "Issue category title for adherence"
   },
+  "znbl+r": {
+    "defaultMessage": "Access Bindings",
+    "description": "MCP server version detail access bindings tab"
+  },
   "zp4MBw": {
     "defaultMessage": "Token count",
     "description": "Label for the token count section"
@@ -13938,6 +14126,10 @@
   "zyPq2R": {
     "defaultMessage": "An error occurred while attempting to delete traces. Please refresh the page and try again.",
     "description": "Experiment page > traces view controls > Delete traces modal > Error message"
+  },
+  "zznpND": {
+    "defaultMessage": "Aliases",
+    "description": "Version edit aliases label"
   },
   "zzuzri": {
     "defaultMessage": "Description",

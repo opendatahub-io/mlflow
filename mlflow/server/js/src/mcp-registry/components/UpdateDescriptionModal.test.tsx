@@ -76,12 +76,7 @@ describe('UpdateDescriptionModal', () => {
     rerender(
       <IntlProvider locale="en">
         <DesignSystemProvider>
-          <UpdateDescriptionModal
-            visible
-            currentDescription="Second"
-            onUpdate={jest.fn()}
-            onCancel={jest.fn()}
-          />
+          <UpdateDescriptionModal visible currentDescription="Second" onUpdate={jest.fn()} onCancel={jest.fn()} />
         </DesignSystemProvider>
       </IntlProvider>,
     );

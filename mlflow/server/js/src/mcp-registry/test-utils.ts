@@ -111,5 +111,3 @@ export const getMockedSetMCPServerTagResponse = () =>
 
 export const getMockedDeleteMCPServerTagResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name/tags/:key`), (_req, res, ctx) => res(ctx.json({})));
-
-

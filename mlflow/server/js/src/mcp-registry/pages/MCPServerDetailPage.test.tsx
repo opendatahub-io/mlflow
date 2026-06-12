@@ -38,6 +38,25 @@ const mockVersion = createMockMCPServerVersion({
     version: '1.0.0',
     title: 'Mainline',
     description: 'Gives your AI agent your story map.',
+    packages: [
+      {
+        registryType: 'npm',
+        identifier: '@mainline/mcp-server',
+        version: '1.0.0',
+        runtimeHint: 'npx',
+        transport: { type: 'stdio' },
+        environmentVariables: [
+          { name: 'API_KEY', description: 'API key for authentication', isRequired: true, isSecret: true },
+          { name: 'LOG_LEVEL', description: 'Logging verbosity' },
+        ],
+      },
+      {
+        registryType: 'pypi',
+        identifier: 'mainline-mcp-server',
+        transport: { type: 'stdio' },
+      },
+    ],
+    remotes: [{ type: 'streamable-http', url: 'https://api.mainline.dev/mcp' }],
   },
 });
 
@@ -109,15 +128,73 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('expands configuration section', async () => {
+  it('shows packages in version detail', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Configuration'));
+    await waitFor(() => {
+      expect(screen.getByText('Packages (2)')).toBeInTheDocument();
+    });
+    expect(screen.getByText('npm')).toBeInTheDocument();
+    expect(screen.getByText('pypi')).toBeInTheDocument();
+  });
+
+  it('shows remotes in version detail', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Remotes (1)')).toBeInTheDocument();
+    });
+    expect(screen.getByText('streamable-http')).toBeInTheDocument();
+    expect(screen.getByText('https://api.mainline.dev/mcp')).toBeInTheDocument();
+  });
+
+  it('expands a package row to show environment variables', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('npm')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /Expand package @mainline\/mcp-server/ }));
+    await waitFor(() => {
+      expect(screen.getByText('Environment Variables (2)')).toBeInTheDocument();
+    });
+    expect(screen.getAllByText('@mainline/mcp-server').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('API_KEY')).toBeInTheDocument();
+    expect(screen.getByText('required')).toBeInTheDocument();
+    expect(screen.getByText('secret')).toBeInTheDocument();
+    expect(screen.getByText('API key for authentication')).toBeInTheDocument();
+    expect(screen.getByText('LOG_LEVEL')).toBeInTheDocument();
+  });
+
+  it('toggles raw server.json view', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('View raw server.json')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('View raw server.json'));
     await waitFor(() => {
       expect(screen.getByText(/"name": "dev.mainline\/mcp"/)).toBeInTheDocument();
+    });
+    expect(screen.getByText('Hide raw server.json')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Hide raw server.json'));
+    await waitFor(() => {
+      expect(screen.queryByText(/"name": "dev.mainline\/mcp"/)).not.toBeInTheDocument();
     });
   });
 
@@ -301,80 +378,15 @@ describe('MCPServerDetailPage', () => {
     expect(screen.getByText('Status')).toBeInTheDocument();
   });
 
-  describe('server description editing', () => {
-    it('shows server description and edit button', async () => {
-      server.use(getMockedUpdateMCPServerResponse());
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getByText('Gives your AI agent your story map.')).toBeInTheDocument();
-      });
-
-      const editBtn = document.querySelector(
-        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
-      ) as HTMLElement;
-      expect(editBtn).toBeInTheDocument();
+  it('displays server description as read-only', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('Gives your AI agent your story map.')).toBeInTheDocument();
     });
 
-    it('shows "Add description" when no description exists', async () => {
-      const noDescServer = createMockMCPServer({
-        name: 'dev.mainline/mcp',
-        display_name: 'Mainline',
-      });
-      const noDescVersion = createMockMCPServerVersion({
-        name: 'dev.mainline/mcp',
-        version: '1',
-        status: 'active',
-        server_json: { name: 'dev.mainline/mcp', version: '1.0.0', title: 'Mainline' },
-      });
-      server.use(
-        getMockedGetMCPServerResponse(noDescServer),
-        getMockedSearchMCPServerVersionsResponse([noDescVersion]),
-        getMockedGetLatestMCPServerVersionResponse(noDescVersion),
-      );
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('Add description')).toBeInTheDocument();
-    });
-
-    it('opens description edit modal and saves', async () => {
-      server.use(getMockedUpdateMCPServerResponse());
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getByText('Gives your AI agent your story map.')).toBeInTheDocument();
-      });
-
-      const editBtn = document.querySelector(
-        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
-      ) as HTMLElement;
-      await userEvent.click(editBtn);
-      await waitFor(() => {
-        expect(screen.getByText('Edit server description')).toBeInTheDocument();
-      });
-    });
-
-    it('shows error in description modal on save failure', async () => {
-      server.use(getMockedUpdateMCPServerErrorResponse(500, 'Server error'));
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getByText('Gives your AI agent your story map.')).toBeInTheDocument();
-      });
-
-      const editBtn = document.querySelector(
-        '[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]',
-      ) as HTMLElement;
-      await userEvent.click(editBtn);
-      await waitFor(() => {
-        expect(screen.getByText('Edit server description')).toBeInTheDocument();
-      });
-
-      await userEvent.click(screen.getByText('Save'));
-      await waitFor(() => {
-        expect(screen.getByText(/Server error/)).toBeInTheDocument();
-      });
-    });
+    expect(
+      document.querySelector('[data-component-id="mlflow.mcp_registry.detail.version.edit_description"]'),
+    ).not.toBeInTheDocument();
   });
 
   describe('server display name editing', () => {

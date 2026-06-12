@@ -7,6 +7,7 @@ import {
   Modal,
   PencilIcon,
   Spacer,
+  Tabs,
   Tag,
   SimpleSelect,
   SimpleSelectOption,
@@ -20,14 +21,11 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import type { MCPAccessBinding, MCPServer, MCPServerVersion } from '../types';
 import { STATUS_TAG_COLOR, STATUS_TRANSITIONS, resolveDisplayName } from '../utils';
 import type { MCPStatus } from '../types';
-import { CollapsibleSection } from '../../common/components/CollapsibleSection';
 import { MCPServerAccessBindings } from './MCPServerAccessBindings';
+import { ServerJSONSection, ToolsSection } from './ServerJSONSection';
 import { ConfirmationModal } from '../../admin/ConfirmationModal';
 import { ModelVersionTableAliasesCell } from '../../model-registry/components/aliases/ModelVersionTableAliasesCell';
-import {
-  useUpdateMCPServerVersion,
-  useDeleteMCPServerVersion,
-} from '../hooks/useMCPServerVersionMutations';
+import { useUpdateMCPServerVersion, useDeleteMCPServerVersion } from '../hooks/useMCPServerVersionMutations';
 import { KeyValueTag } from '../../common/components/KeyValueTag';
 import { AliasSelect } from '../../common/components/AliasSelect';
 import { LATEST_ALIAS, RESERVED_ALIASES, validateToolsJson } from '../utils';
@@ -73,7 +71,6 @@ export const MCPServerVersionDetail = ({
   const [editVersionToolsText, setEditVersionToolsText] = useState('');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [toolsValidationError, setToolsValidationError] = useState<string | null>(null);
-
   const updateVersionMutation = useUpdateMCPServerVersion(server.name);
   const deleteVersionMutation = useDeleteMCPServerVersion(server.name);
 
@@ -123,9 +120,7 @@ export const MCPServerVersionDetail = ({
             </Typography.Text>
           )}
           {version.server_json?.description && (
-            <Typography.Hint css={{ marginTop: theme.spacing.xs }}>
-              {version.server_json.description}
-            </Typography.Hint>
+            <Typography.Hint css={{ marginTop: theme.spacing.xs }}>{version.server_json.description}</Typography.Hint>
           )}
         </div>
         <div css={{ display: 'flex', gap: theme.spacing.sm, flexShrink: 0 }}>
@@ -280,122 +275,47 @@ export const MCPServerVersionDetail = ({
         </div>
       </div>
 
-      <div css={{ '& svg': { width: 14, height: 14 } }}>
-        {version.server_json && (
-          <CollapsibleSection
-            title={
-              <span
-                css={{ fontWeight: theme.typography.typographyBoldFontWeight, fontSize: theme.typography.fontSizeBase }}
-              >
-                <FormattedMessage
-                  defaultMessage="Configuration"
-                  description="MCP server version detail configuration section heading"
-                />
-              </span>
-            }
-            defaultCollapsed
-            componentId="mlflow.mcp_registry.detail.configuration_section"
-          >
-            <pre
-              css={{
-                margin: 0,
-                padding: theme.spacing.md,
-                backgroundColor: theme.colors.backgroundSecondary,
-                borderRadius: theme.borders.borderRadiusSm,
-                overflow: 'auto',
-                fontSize: theme.typography.fontSizeSm,
-              }}
-            >
-              <code>{JSON.stringify(version.server_json, null, 2)}</code>
-            </pre>
-          </CollapsibleSection>
-        )}
-        {version.tools && version.tools.length > 0 && (
-          <CollapsibleSection
-            title={
-              <span
-                css={{ fontWeight: theme.typography.typographyBoldFontWeight, fontSize: theme.typography.fontSizeBase }}
-              >
-                <FormattedMessage
-                  defaultMessage="Tools <light>({count})</light>"
-                  description="MCP server version detail tools section heading"
-                  values={{
-                    count: version.tools.length,
-                    light: (chunks: React.ReactNode) => <span css={{ fontWeight: 'normal' }}>{chunks}</span>,
-                  }}
-                />
-              </span>
-            }
-            defaultCollapsed
-            componentId="mlflow.mcp_registry.detail.tools_section"
-          >
-            <Typography.Hint css={{ marginBottom: theme.spacing.sm }}>
+      <Tabs.Root
+        componentId="mlflow.mcp_registry.detail.version_tabs"
+        valueHasNoPii
+        defaultValue="configuration"
+        css={{ marginTop: theme.spacing.md, '& svg': { width: 14, height: 14 } }}
+      >
+        <Tabs.List>
+          <Tabs.Trigger value="configuration">
+            <FormattedMessage
+              defaultMessage="Configuration"
+              description="MCP server version detail configuration tab"
+            />
+          </Tabs.Trigger>
+          {version.tools && version.tools.length > 0 && (
+            <Tabs.Trigger value="tools">
               <FormattedMessage
-                defaultMessage="Tools are observed from the live endpoint and may change between snapshots."
-                description="MCP server version detail tools disclaimer"
+                defaultMessage="Tools ({count})"
+                description="MCP server version detail tools tab"
+                values={{ count: version.tools.length }}
               />
-            </Typography.Hint>
-            <div
-              css={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: theme.spacing.sm,
-              }}
-            >
-              {version.tools.map((tool) => (
-                <div
-                  key={tool.name}
-                  css={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: theme.spacing.sm,
-                    padding: `${theme.spacing.sm}px ${theme.spacing.md}px`,
-                    border: `1px solid ${theme.colors.borderDecorative}`,
-                    borderRadius: theme.borders.borderRadiusMd,
-                  }}
-                >
-                  <Tag
-                    componentId="mlflow.mcp_registry.detail.tool_name_tag"
-                    color="turquoise"
-                    css={{
-                      minWidth: 120,
-                      textAlign: 'center',
-                      flexShrink: 0,
-                      display: 'inline-flex',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {tool.name}
-                  </Tag>
-                  {tool.description && (
-                    <Typography.Text
-                      color="secondary"
-                      size="sm"
-                      css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {tool.description}
-                    </Typography.Text>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CollapsibleSection>
+            </Tabs.Trigger>
+          )}
+          <Tabs.Trigger value="access-bindings">
+            <FormattedMessage
+              defaultMessage="Access Bindings"
+              description="MCP server version detail access bindings tab"
+            />
+          </Tabs.Trigger>
+        </Tabs.List>
+
+        <Tabs.Content value="configuration" css={{ paddingTop: theme.spacing.md }}>
+          {version.server_json && <ServerJSONSection serverJson={version.server_json} />}
+        </Tabs.Content>
+
+        {version.tools && version.tools.length > 0 && (
+          <Tabs.Content value="tools" css={{ paddingTop: theme.spacing.md }}>
+            <ToolsSection tools={version.tools} />
+          </Tabs.Content>
         )}
 
-        <CollapsibleSection
-          title={
-            <span
-              css={{ fontWeight: theme.typography.typographyBoldFontWeight, fontSize: theme.typography.fontSizeBase }}
-            >
-              <FormattedMessage
-                defaultMessage="Access Bindings"
-                description="MCP server version detail access bindings section heading"
-              />
-            </span>
-          }
-          defaultCollapsed
-          componentId="mlflow.mcp_registry.detail.bindings_section"
-        >
+        <Tabs.Content value="access-bindings" css={{ paddingTop: theme.spacing.md }}>
           <MCPServerAccessBindings
             server={server}
             bindings={bindings}
@@ -406,8 +326,8 @@ export const MCPServerVersionDetail = ({
             onDeleteBinding={onDeleteBinding}
             hideTitle
           />
-        </CollapsibleSection>
-      </div>
+        </Tabs.Content>
+      </Tabs.Root>
 
       <Modal
         componentId="mlflow.mcp_registry.detail.version.edit_version_modal"
@@ -469,7 +389,11 @@ export const MCPServerVersionDetail = ({
             type="error"
             closable
             onClose={() => updateVersionMutation.reset()}
-            message={(updateVersionMutation.error as Error).message}
+            message={
+              updateVersionMutation.error instanceof Error
+                ? updateVersionMutation.error.message
+                : String(updateVersionMutation.error)
+            }
             css={{ marginBottom: theme.spacing.sm }}
           />
         )}
@@ -583,7 +507,6 @@ export const MCPServerVersionDetail = ({
           setDeleteModalVisible(false);
         }}
       />
-
     </div>
   );
 };

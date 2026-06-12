@@ -107,6 +107,7 @@ export interface ServerJSONPackage {
   registryBaseUrl?: string;
   version?: string;
   environmentVariables?: ServerJSONEnvironmentVariable[];
+  runtimeHint?: string;
   [key: string]: unknown;
 }
 

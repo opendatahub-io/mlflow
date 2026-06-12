@@ -41,9 +41,7 @@ export const UpdateDescriptionModal = ({
       visible={visible}
       destroyOnClose
       confirmLoading={isLoading}
-      okText={
-        <FormattedMessage defaultMessage="Save" description="MCP server version edit description save button" />
-      }
+      okText={<FormattedMessage defaultMessage="Save" description="MCP server version edit description save button" />}
       cancelText={
         <FormattedMessage defaultMessage="Cancel" description="MCP server version edit description cancel button" />
       }

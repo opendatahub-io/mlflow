@@ -31,10 +31,7 @@ import {
   useLatestMCPServerVersionQuery,
   useMCPAccessBindingsQuery,
 } from '../hooks/useMCPServerDetailQuery';
-import {
-  useDeleteMCPServer,
-  useUpdateMCPServerDisplayName,
-} from '../hooks/useMCPServerVersionMutations';
+import { useDeleteMCPServer, useUpdateMCPServerDisplayName } from '../hooks/useMCPServerVersionMutations';
 import { useDeleteAccessBindingMutation } from '../hooks/useAccessBindingMutation';
 import type { MCPAccessBinding } from '../types';
 import { useCreateMCPServerVersionModal } from '../hooks/useCreateMCPServerVersionModal';

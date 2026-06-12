@@ -83,6 +83,7 @@ describe('AccessBindingModal', () => {
     renderModal();
     const input = screen.getByPlaceholderText('https://mcp.example.com/server');
     await userEvent.type(input, 'not-a-url');
+    await userEvent.tab();
     await waitFor(() => {
       expect(screen.getByText('Enter a valid HTTP or HTTPS URL')).toBeInTheDocument();
     });
