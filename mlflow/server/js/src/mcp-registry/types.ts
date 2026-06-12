@@ -8,10 +8,10 @@ export interface MCPTool {
   name: string;
   title?: string;
   description?: string;
+  icons?: MCPIcon[];
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   annotations?: Record<string, unknown>;
-  icons?: MCPIcon[];
   execution?: Record<string, unknown>;
 }
 
@@ -124,6 +124,7 @@ export interface ServerJSONPayload {
   version: string;
   title?: string;
   description?: string;
+  icons?: MCPIcon[];
   packages?: ServerJSONPackage[];
   remotes?: ServerJSONTransport[];
   repository?: ServerJSONRepository;

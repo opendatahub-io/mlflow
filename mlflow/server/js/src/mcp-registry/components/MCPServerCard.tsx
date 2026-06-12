@@ -3,9 +3,10 @@ import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
-import { resolveDisplayName } from '../utils';
+import { resolveDisplayName, resolveIconSrc } from '../utils';
 import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { CardIconWrapper } from './CardIconWrapper';
+import { MCPServerIcon } from './MCPServerIcon';
 import Utils from '../../common/utils/Utils';
 
 export const MCPServerCard = ({ server }: { server: MCPServer }) => {
@@ -28,7 +29,7 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
     >
       <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
         <CardIconWrapper>
-          <McpIcon />
+          <MCPServerIcon iconSrc={resolveIconSrc(server.icons) || resolveIconSrc(latestVersion?.server_json?.icons)} />
         </CardIconWrapper>
         <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs, overflow: 'hidden', flex: 1 }}>
           <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>

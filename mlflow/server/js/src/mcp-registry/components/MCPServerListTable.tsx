@@ -4,7 +4,6 @@ import type { CursorPaginationProps } from '@databricks/design-system';
 import {
   CursorPagination,
   Empty,
-  McpIcon,
   NoIcon,
   Overflow,
   PencilIcon,
@@ -24,10 +23,11 @@ import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
-import { emptyCenterStyles, resolveDisplayName, tagsRecordToArray } from '../utils';
+import { emptyCenterStyles, resolveDisplayName, tagsRecordToArray, resolveIconSrc } from '../utils';
 import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { Link } from '../../common/utils/RoutingUtils';
 import { KeyValueTag } from '../../common/components/KeyValueTag';
+import { MCPServerIcon } from './MCPServerIcon';
 import Utils from '../../common/utils/Utils';
 
 interface MCPServerTableMeta {
@@ -36,10 +36,13 @@ interface MCPServerTableMeta {
 
 const MCPServerNameCell = ({ getValue, row }: CellContext<MCPServer, unknown>) => {
   const { theme } = useDesignSystemTheme();
+  const { data: latestVersion } = useLatestMCPServerVersionQuery(row.original.name);
   const value = getValue() as string;
   return (
     <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
-      <McpIcon css={{ flexShrink: 0, color: theme.colors.textSecondary }} />
+      <MCPServerIcon
+        iconSrc={resolveIconSrc(row.original.icons) || resolveIconSrc(latestVersion?.server_json?.icons)}
+      />
       <Link
         componentId="mlflow.mcp_registry.table.name_link"
         to={MCPRegistryRoutes.getMCPServerDetailRoute(row.original.name)}

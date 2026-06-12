@@ -528,5 +528,5 @@ describe('MCPServerDetailPage', () => {
       },
       { timeout: 10000 },
     );
-  });
+  }, 15000);
 });

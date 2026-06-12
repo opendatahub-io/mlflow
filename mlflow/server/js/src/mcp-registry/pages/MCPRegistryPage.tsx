@@ -9,7 +9,7 @@ import {
   PlusIcon,
   SegmentedControlButton,
   SegmentedControlGroup,
-  WrenchIcon,
+  McpIcon,
   Spacer,
   TableFilterInput,
   TableFilterLayout,
@@ -36,7 +36,6 @@ import type { MCPAccessBinding } from '../types';
 import { MCPAccessBindingCardGrid } from '../components/MCPAccessBindingCardGrid';
 import { MCPAccessBindingListTable } from '../components/MCPAccessBindingListTable';
 import { AccessBindingModal } from '../components/AccessBindingModal';
-import type { MCPServer } from '../types';
 import { useDebounce } from 'use-debounce';
 
 type ViewMode = 'list' | 'grid';
@@ -168,7 +167,7 @@ const MCPRegistryPage = () => {
                   padding: theme.spacing.sm,
                 }}
               >
-                <WrenchIcon />
+                <McpIcon />
               </span>
               <FormattedMessage defaultMessage="MCP Registry" description="MCP Registry page title" />
             </span>

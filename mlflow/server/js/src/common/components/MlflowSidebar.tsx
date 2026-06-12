@@ -20,7 +20,7 @@ import {
   InfoBookIcon,
   Tooltip,
   NewWindowIcon,
-  WrenchIcon,
+  McpIcon,
 } from '@databricks/design-system';
 import { useQueryClient } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import type { Location } from '../utils/RoutingUtils';
@@ -243,7 +243,7 @@ export function MlflowSidebar({
         ? [
             {
               key: 'mcp-registry',
-              icon: <WrenchIcon />,
+              icon: <McpIcon />,
               linkProps: {
                 to: MCPRegistryRoutes.mcpRegistryPageRoute,
                 isActive: isMCPRegistryActive,
