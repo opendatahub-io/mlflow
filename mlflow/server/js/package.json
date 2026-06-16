@@ -26,7 +26,11 @@
     "graphql-codegen:base": "graphql-codegen --config ./src/graphql/graphql-codegen.ts",
     "graphql-codegen:clean": "find . -path '**/__generated__/*.ts' | xargs rm",
     "build:federated": "DEPLOYMENT_MODE=federated webpack --config config/webpack.federated.js",
-    "start:federated": "DEPLOYMENT_MODE=federated WEBPACK_WATCH=true webpack serve --config config/webpack.federated.js"
+    "start:federated": "DEPLOYMENT_MODE=federated WEBPACK_WATCH=true webpack serve --config config/webpack.federated.js",
+    "audit:css-overrides": "node scripts/audit-css-overrides.js",
+    "audit:css-overrides:update": "node scripts/audit-css-overrides.js --update-baseline",
+    "audit:rebase": "node scripts/audit-rebase.js",
+    "audit:rebase:update-versions": "node scripts/audit-rebase.js --update-versions"
   },
   "dependencies": {
     "@ag-grid-community/client-side-row-model": "^27.2.1",

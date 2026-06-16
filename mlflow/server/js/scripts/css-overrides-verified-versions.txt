@@ -1,0 +1,7 @@
+# Last visually verified package versions for CSS override compatibility.
+# Update with: yarn audit:rebase --update-versions
+# After: verifying that all CSS overrides look correct in the browser.
+
+@databricks/design-system=1.0.0-b11bd26b
+@patternfly/patternfly=6.4.0
+@patternfly/react-tokens=6.4.0

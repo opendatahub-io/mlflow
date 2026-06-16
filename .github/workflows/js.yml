@@ -65,6 +65,9 @@ jobs:
       - name: Install dependencies
         run: |
           yarn install --immutable
+      - name: Audit CSS override selectors
+        run: |
+          yarn audit:css-overrides
       - name: Run lint
         run: |
           yarn lint
