@@ -3,15 +3,7 @@ name: Tracing Benchmark
 on:
   push:
     branches: [master]
-    paths:
-      - ".github/workflows/tracing-benchmark.yml"
-      - "dev/benchmarks/tracing/**"
-      - "mlflow/**"
-      - "!mlflow/server/js/**"
   pull_request:
-    paths:
-      - ".github/workflows/tracing-benchmark.yml"
-      - "dev/benchmarks/tracing/**"
   workflow_dispatch:
 
 concurrency:

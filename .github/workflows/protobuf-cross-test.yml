@@ -6,18 +6,12 @@ on:
       - opened
       - synchronize
       - reopened
-    paths:
-      - "mlflow/protos/**"
-      - .github/workflows/protobuf-cross-test.yml
   push:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
       - main
       - rhoai-*
-    paths:
-      - "mlflow/protos/**"
-      - .github/workflows/protobuf-cross-test.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

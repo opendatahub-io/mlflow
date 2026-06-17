@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - mlflow/server/js/**
-      - .github/workflows/ui-preview.yml
-      - .github/ui-preview/**
   pull_request_target:
     types:
       - opened

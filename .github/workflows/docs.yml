@@ -2,13 +2,6 @@ name: docs
 
 on:
   push:
-    paths:
-      - pyproject.toml
-      - uv.lock
-      - mlflow/**
-      - docs/**
-      - .github/workflows/docs.yml
-      - .github/actions/setup-node/**
     branches:
       - master
       - main
@@ -18,13 +11,6 @@ on:
       - opened
       - synchronize
       - reopened
-    paths:
-      - pyproject.toml
-      - uv.lock
-      - mlflow/**
-      - docs/**
-      - .github/workflows/docs.yml
-      - .github/actions/setup-node/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
