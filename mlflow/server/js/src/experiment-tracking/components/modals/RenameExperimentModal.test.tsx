@@ -55,7 +55,7 @@ describe('RenameExperimentModal', () => {
 
   test('should render with minimal props without exploding', async () => {
     renderTestComponent();
-    expect(screen.getByText('Rename Experiment')).toBeInTheDocument();
+    expect(screen.getByText('Rename experiment')).toBeInTheDocument();
   });
 
   test('form submission should result in updateExperimentApi and getExperimentApi calls', async () => {

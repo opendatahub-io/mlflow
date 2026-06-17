@@ -58,7 +58,7 @@ export const ModelConfigForm = () => {
       <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs, marginBottom: theme.spacing.sm }}>
         <Typography.Title level={4} css={{ marginBottom: 0 }}>
           <FormattedMessage
-            defaultMessage="Model Configuration"
+            defaultMessage="Model configuration"
             description="Section header for model configuration in prompt creation"
           />
         </Typography.Title>
@@ -137,7 +137,7 @@ export const ModelConfigForm = () => {
         <div>
           <FormUI.Label htmlFor="mlflow.prompts.model_config.modelName">
             <FormattedMessage
-              defaultMessage="Model Name"
+              defaultMessage="Model name"
               description="Label for model name input in model config form"
             />
           </FormUI.Label>
@@ -149,7 +149,7 @@ export const ModelConfigForm = () => {
                 <DialogCombobox
                   componentId="mlflow.prompts.model_config.modelName"
                   label={intl.formatMessage({
-                    defaultMessage: 'Model Name',
+                    defaultMessage: 'Model name',
                     description: 'Label for model name input in model config form',
                   })}
                   modal={false}
@@ -212,7 +212,7 @@ export const ModelConfigForm = () => {
           {/* Max Tokens */}
           <div>
             <FormUI.Label htmlFor="mlflow.prompts.model_config.maxTokens">
-              <FormattedMessage defaultMessage="Max Tokens" description="Label for max tokens input" />
+              <FormattedMessage defaultMessage="Max tokens" description="Label for max tokens input" />
             </FormUI.Label>
             <RHFControlledComponents.Input
               control={control}
@@ -257,7 +257,7 @@ export const ModelConfigForm = () => {
           {/* Frequency Penalty */}
           <div>
             <FormUI.Label htmlFor="mlflow.prompts.model_config.frequencyPenalty">
-              <FormattedMessage defaultMessage="Frequency Penalty" description="Label for frequency penalty input" />
+              <FormattedMessage defaultMessage="Frequency penalty" description="Label for frequency penalty input" />
             </FormUI.Label>
             <RHFControlledComponents.Input
               control={control}
@@ -274,7 +274,7 @@ export const ModelConfigForm = () => {
           {/* Presence Penalty */}
           <div>
             <FormUI.Label htmlFor="mlflow.prompts.model_config.presencePenalty">
-              <FormattedMessage defaultMessage="Presence Penalty" description="Label for presence penalty input" />
+              <FormattedMessage defaultMessage="Presence penalty" description="Label for presence penalty input" />
             </FormUI.Label>
             <RHFControlledComponents.Input
               control={control}
@@ -293,7 +293,7 @@ export const ModelConfigForm = () => {
         <div>
           <FormUI.Label htmlFor="mlflow.prompts.model_config.stopSequences">
             <FormattedMessage
-              defaultMessage="Stop Sequences (comma-separated)"
+              defaultMessage="Stop sequences (comma-separated)"
               description="Label for stop sequences input"
             />
           </FormUI.Label>

@@ -69,7 +69,7 @@ export const ToolLatencyChart: React.FC = () => {
           icon={<LightningIcon />}
           title={
             <FormattedMessage
-              defaultMessage="Latency Comparison"
+              defaultMessage="Latency comparison"
               description="Title for the tool latency comparison chart"
             />
           }

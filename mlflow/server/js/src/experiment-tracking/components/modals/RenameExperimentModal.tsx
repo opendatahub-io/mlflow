@@ -53,7 +53,7 @@ class RenameExperimentModalImpl extends Component<RenameExperimentModalImplProps
     const formRef = React.createRef();
     return (
       <GenericInputModal
-        title="Rename Experiment"
+        title="Rename experiment"
         okText="Save"
         isOpen={isOpen}
         handleSubmit={this.handleRenameExperiment}

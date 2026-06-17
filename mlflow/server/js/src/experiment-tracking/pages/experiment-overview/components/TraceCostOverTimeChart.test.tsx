@@ -97,7 +97,7 @@ describe('TraceCostOverTimeChart', () => {
       renderComponent();
 
       // Check that actual chart content is not rendered during loading
-      expect(screen.queryByText('Cost Over Time')).not.toBeInTheDocument();
+      expect(screen.queryByText('Cost over time')).not.toBeInTheDocument();
     });
   });
 
@@ -142,7 +142,7 @@ describe('TraceCostOverTimeChart', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Cost Over Time')).toBeInTheDocument();
+        expect(screen.getByText('Cost over time')).toBeInTheDocument();
       });
     });
 
@@ -152,7 +152,7 @@ describe('TraceCostOverTimeChart', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Total Cost')).toBeInTheDocument();
+        expect(screen.getByText('Total cost')).toBeInTheDocument();
       });
     });
 

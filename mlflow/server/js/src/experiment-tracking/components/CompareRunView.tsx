@@ -192,7 +192,7 @@ class CompareRunView extends Component<CompareRunViewProps, CompareRunViewState>
   getCompareExperimentsPageLinkText(numExperiments: any) {
     return (
       <FormattedMessage
-        defaultMessage="Displaying Runs from {numExperiments} Experiments"
+        defaultMessage="Displaying runs from {numExperiments} experiments"
         description="Breadcrumb nav item to link to compare-experiments page on compare runs page"
         values={{ numExperiments }}
       />
@@ -232,7 +232,7 @@ class CompareRunView extends Component<CompareRunViewProps, CompareRunViewState>
   getTitle() {
     return this.hasMultipleExperiments() ? (
       <FormattedMessage
-        defaultMessage="Comparing {numRuns} Runs from {numExperiments} Experiments"
+        defaultMessage="Comparing {numRuns} runs from {numExperiments} experiments"
         description="Breadcrumb title for compare runs page with multiple experiments"
         values={{
           numRuns: this.props.runInfos.length,
@@ -241,7 +241,7 @@ class CompareRunView extends Component<CompareRunViewProps, CompareRunViewState>
       />
     ) : (
       <FormattedMessage
-        defaultMessage="Comparing {numRuns} Runs from 1 Experiment"
+        defaultMessage="Comparing {numRuns} runs from 1 experiment"
         description="Breadcrumb title for compare runs page with single experiment"
         values={{
           numRuns: this.props.runInfos.length,

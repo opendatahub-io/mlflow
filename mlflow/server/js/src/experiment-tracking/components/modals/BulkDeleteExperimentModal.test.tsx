@@ -49,7 +49,7 @@ describe('RenameExperimentModal', () => {
 
   test('should render with minimal props without exploding', async () => {
     renderTestComponent();
-    expect(screen.getByText(/Delete \d+ Experiment/)).toBeInTheDocument();
+    expect(screen.getByText(/Delete \d+ experiment/)).toBeInTheDocument();
   });
 
   test('form submission should result in deleteExperimentApi calls', async () => {

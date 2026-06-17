@@ -30,7 +30,7 @@ describe('OptimizeModal', () => {
       onCancel,
     });
 
-    expect(screen.getByText('Optimize Prompt')).toBeInTheDocument();
+    expect(screen.getByText('Optimize prompt')).toBeInTheDocument();
     expect(
       screen.getByText("Here's how to optimize your prompt with your dataset in your Python code:"),
     ).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe('OptimizeModal', () => {
       onCancel,
     });
 
-    expect(screen.queryByText('Optimize Prompt')).not.toBeInTheDocument();
+    expect(screen.queryByText('Optimize prompt')).not.toBeInTheDocument();
   });
 
   it('displays pip install command', () => {

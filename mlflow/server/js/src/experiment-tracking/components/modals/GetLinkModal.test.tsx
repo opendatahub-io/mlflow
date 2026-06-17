@@ -17,6 +17,6 @@ describe('GetLinkModal', () => {
         <GetLinkModal {...minimalProps} />
       </DesignSystemProvider>,
     );
-    expect(screen.getByText('Get Link')).toBeInTheDocument();
+    expect(screen.getByText('Get link')).toBeInTheDocument();
   });
 });

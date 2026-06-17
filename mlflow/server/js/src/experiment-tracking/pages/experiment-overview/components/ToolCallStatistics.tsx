@@ -36,7 +36,7 @@ export const ToolCallStatistics: React.FC = () => {
         iconBgColor={`${theme.colors.blue500}1A`}
         value={formatCount(totalCalls)}
         label={
-          <FormattedMessage defaultMessage="Total Tool Calls" description="Label for total tool calls statistic" />
+          <FormattedMessage defaultMessage="Total tool calls" description="Label for total tool calls statistic" />
         }
         isLoading={isLoading}
       />
@@ -45,7 +45,7 @@ export const ToolCallStatistics: React.FC = () => {
         iconColor={theme.colors.yellow500}
         iconBgColor={`${theme.colors.yellow500}1A`}
         value={formatLatency(avgLatency)}
-        label={<FormattedMessage defaultMessage="Avg Latency" description="Label for average latency statistic" />}
+        label={<FormattedMessage defaultMessage="Avg latency" description="Label for average latency statistic" />}
         isLoading={isLoading}
       />
       <StatCard
@@ -53,7 +53,7 @@ export const ToolCallStatistics: React.FC = () => {
         iconColor={theme.colors.green500}
         iconBgColor={`${theme.colors.green500}1A`}
         value={`${successRate.toFixed(2)}%`}
-        label={<FormattedMessage defaultMessage="Success Rate" description="Label for success rate statistic" />}
+        label={<FormattedMessage defaultMessage="Success rate" description="Label for success rate statistic" />}
         isLoading={isLoading}
       />
       <StatCard
@@ -61,7 +61,7 @@ export const ToolCallStatistics: React.FC = () => {
         iconColor={theme.colors.red500}
         iconBgColor={`${theme.colors.red500}1A`}
         value={formatCount(failedCalls)}
-        label={<FormattedMessage defaultMessage="Failed Calls" description="Label for failed calls statistic" />}
+        label={<FormattedMessage defaultMessage="Failed calls" description="Label for failed calls statistic" />}
         isLoading={isLoading}
       />
     </div>
