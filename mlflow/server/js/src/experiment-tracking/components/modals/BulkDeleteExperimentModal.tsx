@@ -55,7 +55,7 @@ export const BulkDeleteExperimentModal = ({ isOpen, onClose, experiments, onExpe
       handleSubmit={handleSubmit}
       title={
         <FormattedMessage
-          defaultMessage="Delete {count, plural, one {# Experiment} other {# Experiments}}"
+          defaultMessage="Delete {count, plural, one {# experiment} other {# experiments}}"
           description="Experiments page list, delete bulk experiments modal title"
           values={{
             count: experiments.length,

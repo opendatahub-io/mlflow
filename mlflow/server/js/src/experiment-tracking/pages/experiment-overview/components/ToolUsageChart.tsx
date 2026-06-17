@@ -68,7 +68,7 @@ export const ToolUsageChart: React.FC = () => {
         <OverviewChartHeader
           icon={<ChartLineIcon />}
           title={
-            <FormattedMessage defaultMessage="Tool Usage Over Time" description="Title for the tool usage chart" />
+            <FormattedMessage defaultMessage="Tool usage over time" description="Title for the tool usage chart" />
           }
         />
         {hasData && (

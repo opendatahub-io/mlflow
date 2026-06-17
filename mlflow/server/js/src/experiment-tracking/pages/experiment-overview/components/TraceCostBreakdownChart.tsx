@@ -181,10 +181,10 @@ export const TraceCostBreakdownChart: React.FC = () => {
       <div css={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <OverviewChartHeader
           icon={<PieChartIcon />}
-          title={<FormattedMessage defaultMessage="Cost Breakdown" description="Title for the cost breakdown chart" />}
+          title={<FormattedMessage defaultMessage="Cost breakdown" description="Title for the cost breakdown chart" />}
           value={formatCostUSD(totalCost)}
           subtitle={
-            <FormattedMessage defaultMessage="Total Cost" description="Subtitle for the cost breakdown chart total" />
+            <FormattedMessage defaultMessage="Total cost" description="Subtitle for the cost breakdown chart total" />
           }
         />
         <div css={{ flexShrink: 0 }}>

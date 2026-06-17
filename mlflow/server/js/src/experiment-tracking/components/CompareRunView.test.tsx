@@ -39,7 +39,7 @@ describe('CompareRunView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Comparing 2 Runs/)).toBeInTheDocument();
+      expect(screen.getByText(/Comparing 2 runs/)).toBeInTheDocument();
     });
   });
 
@@ -67,7 +67,7 @@ describe('CompareRunView', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Comparing 0 Runs/)).toBeInTheDocument();
+      expect(screen.getByText(/Comparing 0 runs/)).toBeInTheDocument();
     });
   });
 

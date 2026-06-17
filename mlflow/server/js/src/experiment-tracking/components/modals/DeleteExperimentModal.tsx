@@ -83,7 +83,7 @@ export class DeleteExperimentModalImpl extends Component<Props> {
         onClose={this.props.onClose}
         onCancel={this.handleCancel}
         handleSubmit={this.handleSubmit}
-        title={`Delete Experiment "${this.props.experimentName}"`}
+        title={`Delete experiment "${this.props.experimentName}"`}
         helpText={
           <div>
             <p>

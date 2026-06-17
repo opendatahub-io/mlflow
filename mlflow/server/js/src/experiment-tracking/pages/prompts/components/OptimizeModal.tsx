@@ -78,7 +78,7 @@ print(f"The new prompt URI: {result.optimized_prompts[0].uri}")`;
   return (
     <Modal
       componentId="mlflow.experiment.prompt.optimize-modal"
-      title={<FormattedMessage defaultMessage="Optimize Prompt" description="Title of the optimize prompt modal" />}
+      title={<FormattedMessage defaultMessage="Optimize prompt" description="Title of the optimize prompt modal" />}
       footer={null}
       visible={visible}
       onCancel={onCancel}

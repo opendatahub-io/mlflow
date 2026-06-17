@@ -158,7 +158,7 @@ describe('ToolLatencyChart', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Latency Comparison')).toBeInTheDocument();
+        expect(screen.getByText('Latency comparison')).toBeInTheDocument();
       });
     });
   });

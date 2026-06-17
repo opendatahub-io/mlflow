@@ -91,7 +91,7 @@ describe('ToolUsageChart', () => {
       renderComponent();
 
       // Check that actual chart content is not rendered during loading
-      expect(screen.queryByText('Tool Usage Over Time')).not.toBeInTheDocument();
+      expect(screen.queryByText('Tool usage over time')).not.toBeInTheDocument();
     });
   });
 
@@ -159,7 +159,7 @@ describe('ToolUsageChart', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Tool Usage Over Time')).toBeInTheDocument();
+        expect(screen.getByText('Tool usage over time')).toBeInTheDocument();
       });
     });
   });
