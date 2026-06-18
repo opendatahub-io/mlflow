@@ -38,6 +38,8 @@ When upstream cuts a new release, we need to reapply our changes on top of it. T
 | 6. Documentation  | Update FORK_HISTORY.md                                 | ~10 min       |
 | 7. CI validation  | Push, create PR, wait for ~70 CI jobs, fix failures    | ~2 hours      |
 | 8. Real PR        | Create the actual merge PR, get reviews                | ~1 day        |
+| 9. Downstream     | Sync downstream repo, notify release engineering       | ~30 min       |
+| 10. Operator      | Bump operator version to match new MLflow release      | ~15 min       |
 
 **You will need:** Push access to `opendatahub-io/mlflow` and the following remotes:
 
@@ -498,11 +500,82 @@ Product security prohibits force pushing. Use the `merge -s ours` strategy:
 
 31. **Get reviews**, then merge. The `merge -s ours` commit ensures the PR diff is clean.
 
-32. **Sync downstream** — after merging, notify the team to sync `red-hat-data-services/mlflow` from midstream before any code freeze deadlines.
-
-33. **Cleanup** after merge:
+32. **Cleanup** midstream:
     - Delete `ci-check-rebase-$UPSTREAM_TAG` branch from upstream
     - Keep `rebase-$UPSTREAM_TAG` and `master-MM-DD` for reference
+
+---
+
+## Phase 9: Downstream Sync
+
+**Goal:** Sync the downstream productization repo (`red-hat-data-services/mlflow`) from midstream, then get the release branch updated.
+
+33. **Create a sync branch from midstream master and merge downstream main into it:**
+
+    ```bash
+    git remote add downstream https://github.com/red-hat-data-services/mlflow.git 2>/dev/null || true
+    git fetch downstream main
+    git checkout -b sync-odh-$UPSTREAM_TAG upstream/master
+    git merge downstream/main --no-edit
+    ```
+
+34. **Resolve conflicts.** The downstream repo has its own deployment configs. Follow this rule:
+
+    | File                    | Take from      | Why                                                                                    |
+    | ----------------------- | -------------- | -------------------------------------------------------------------------------------- |
+    | `.tekton/*`             | **Downstream** | Auto-synced from `konflux-central`; downstream version matches the RHDS Konflux tenant |
+    | `Dockerfile.konflux`    | **Downstream** | May have RHDS-specific build steps                                                     |
+    | `.github/renovate.json` | **Downstream** | RHDS-specific renovate config                                                          |
+    | `pyproject.toml`        | **Midstream**  | Take upstream's `required-version` and ODH config                                      |
+    | Everything else         | **Midstream**  | That's the whole point of the sync                                                     |
+
+    Git usually auto-merges correctly (downstream for deployment configs, midstream for code). Verify with:
+
+    ```bash
+    git diff downstream/main -- .tekton/ Dockerfile.konflux .github/renovate.json  # should be 0
+    git diff upstream/master -- mlflow/ FORK_HISTORY.md                             # should be 0
+    ```
+
+35. **Run prettier** on any auto-merged files that might need formatting:
+
+    ```bash
+    uv run pre-commit run prettier --files .github/renovate.json
+    ```
+
+36. **Push and create PR** targeting `main` on the downstream repo. Use **"Create a merge commit"** when merging (not squash or rebase):
+
+    ```bash
+    git push downstream sync-odh-$UPSTREAM_TAG
+    gh pr create --repo red-hat-data-services/mlflow --base main \
+      --head sync-odh-$UPSTREAM_TAG \
+      --title "ODH Sync: MLflow $UPSTREAM_TAG rebase"
+    ```
+
+    Expected CI: `Build and Push Image` will fail on PRs (no quay.io credentials for branches — works after merge). `CodeQL` may flag pre-existing upstream patterns. Both are safe to ignore — previous sync PRs were merged with the same failures.
+
+37. **After the sync PR merges to `main`**, notify the release engineering team to merge `main` into the active release branch (e.g., `rhoai-3.5-ea.2`). They do this via direct push (`git merge main`), not PRs. The Tekton automation from `konflux-central` will auto-sync the `.tekton/` files to the release branch afterward.
+
+---
+
+## Phase 10: Operator Version Bump
+
+**Goal:** Update the MLflow operator to expect the new MLflow version. Without this, the migration job fails with "unexpected MLflow version."
+
+38. **Submit a PR to `opendatahub-io/mlflow-operator`** updating version references. These files must be updated on **every** version bump:
+
+    | File                                       | What to change                                     |
+    | ------------------------------------------ | -------------------------------------------------- |
+    | `config/component_metadata.yaml`           | `version: v3.X.0` — the source of truth            |
+    | `.github/workflows/upgrade-validation.yml` | `jsonpath={.status.version}=3.X.0` in kubectl wait |
+
+    ```bash
+    # Quick way to find all references to the old version:
+    grep -rn 'OLD_VERSION' config/ .github/workflows/upgrade-validation.yml
+    ```
+
+    Note: `mlflow-tests/tests/upgrade/` also contains version strings in test fixtures, but they test version parsing logic, not the actual deployed version. Updating them is optional.
+
+39. **After the operator PR merges**, notify Matt to sync it to `red-hat-data-services/mlflow-operator` (he owns all operator sync PRs).
 
 ---
 
@@ -598,4 +671,14 @@ Run through this before creating the real PR:
 - [ ] CI validation PR passes (NOT a draft PR)
 - [ ] All fixes committed on clean `rebase-$UPSTREAM_TAG` branch (not only on ci-check)
 - [ ] Real PR includes required template sections (Upstream/Downstream Impact, Testing)
-- [ ] Team notified to sync `red-hat-data-services/mlflow` after merge
+
+**Downstream sync:**
+
+- [ ] Downstream sync PR merged (downstream deployment configs kept, midstream code synced)
+- [ ] Release engineering notified to merge `main` into active release branch
+
+**Operator version bump:**
+
+- [ ] `config/component_metadata.yaml` updated
+- [ ] `.github/workflows/upgrade-validation.yml` updated
+- [ ] Operator PR merged, synced to `red-hat-data-services/mlflow-operator`
