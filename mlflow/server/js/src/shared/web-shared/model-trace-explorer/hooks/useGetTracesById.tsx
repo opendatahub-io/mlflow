@@ -36,10 +36,14 @@ export const useGetTracesById = (traceIds: string[], params: UseGetTracesByIdPro
   const data = useArrayMemo(compact(queries.map((query) => query.data)));
   const isFetching = queries.some((query) => query.isFetching);
   const isLoading = queries.some((query) => query.isLoading);
+  const isError = queries.some((query) => query.isError);
+  const error = queries.find((query) => query.error)?.error;
 
   return {
     data,
     isFetching,
     isLoading,
+    isError,
+    error,
   };
 };

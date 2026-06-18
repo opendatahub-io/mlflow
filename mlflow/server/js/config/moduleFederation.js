@@ -24,6 +24,7 @@ const moduleFederationConfig = {
     './MlflowPromptsWrapper': './src/odh/prompts/MlflowPromptsWrapper',
     './MlflowRunTabsWrapper': './src/odh/runs/MlflowRunTabsWrapper',
     './MlflowCompareRunsWrapper': './src/odh/runs/MlflowCompareRunsWrapper',
+    './MlflowTraceDetailWrapper': './src/odh/traces/MlflowTraceDetailWrapper',
   },
   runtime: false,
   // DTS generation is only needed for production builds.
