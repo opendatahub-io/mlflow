@@ -4928,7 +4928,7 @@ __metadata:
     invariant: "npm:^2.2.4"
     jest-canvas-mock: "npm:^2.2.0"
     jest-localstorage-mock: "npm:^2.3.0"
-    js-yaml: "npm:^3.14.0"
+    js-yaml: "npm:^3.15.0"
     knip: "npm:^6.1.0"
     leaflet: "npm:^1.5.1"
     lodash: "npm:^4.17.21"
@@ -24663,7 +24663,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:^3.13.1, js-yaml@npm:^3.14.0":
+"js-yaml@npm:^3.13.1":
   version: 3.14.1
   resolution: "js-yaml@npm:3.14.1"
   dependencies:
@@ -24672,6 +24672,18 @@ __metadata:
   bin:
     js-yaml: bin/js-yaml.js
   checksum: 10c0/6746baaaeac312c4db8e75fa22331d9a04cccb7792d126ed8ce6a0bbcfef0cedaddd0c5098fade53db067c09fe00aa1c957674b4765610a8b06a5a189e46433b
+  languageName: node
+  linkType: hard
+
+"js-yaml@npm:^3.15.0":
+  version: 3.15.0
+  resolution: "js-yaml@npm:3.15.0"
+  dependencies:
+    argparse: "npm:^1.0.7"
+    esprima: "npm:^4.0.0"
+  bin:
+    js-yaml: bin/js-yaml.js
+  checksum: 10c0/ca966bd354ac5b1b7a4694ebdba46526796aa3a6a99529fa540af2abf85918bd155a50ccc0166b413130a00622999973754458ec01e7095bc902177bfdbd5b64
   languageName: node
   linkType: hard
 
