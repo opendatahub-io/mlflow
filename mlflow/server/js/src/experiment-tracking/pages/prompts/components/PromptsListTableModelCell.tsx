@@ -1,4 +1,4 @@
-import { Tooltip, Typography, useDesignSystemTheme } from '@databricks/design-system';
+import { Tooltip, Typography } from '@databricks/design-system';
 import type { ColumnDef } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
 import { first } from 'lodash';
@@ -8,7 +8,6 @@ import { getModelConfigFromTags } from '../utils';
 const MAX_MODEL_NAME_WIDTH = 200;
 
 export const PromptsListTableModelCell: ColumnDef<RegisteredPrompt>['cell'] = ({ row: { original } }) => {
-  const { theme } = useDesignSystemTheme();
   const latestVersion = first(original.latest_versions);
   const modelConfig = getModelConfigFromTags(latestVersion?.tags);
   const modelName = modelConfig?.model_name;
