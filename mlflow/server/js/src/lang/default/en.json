@@ -3155,6 +3155,10 @@
     "defaultMessage": "Last modified",
     "description": "Column title for last modified timestamp for a model in the registered model page"
   },
+  "Gv0D2y": {
+    "defaultMessage": "Not specified",
+    "description": "Fallback text shown in the Associated Model column when a prompt has no model configuration"
+  },
   "GyGCX5": {
     "defaultMessage": "Create experiment",
     "description": "Home page experiments empty state CTA"
@@ -6966,6 +6970,10 @@
   "dHAuWp": {
     "defaultMessage": "You need to provide a prompt template",
     "description": "Experiment page > new run modal > invalid state - no prompt template provided"
+  },
+  "dJPVU+": {
+    "defaultMessage": "Associated Model",
+    "description": "Header for the associated model column in the registered prompts table"
   },
   "dJaboT": {
     "defaultMessage": "Fetching traces failed",

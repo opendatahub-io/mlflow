@@ -1,6 +1,10 @@
 import { jest } from '@jest/globals';
 import { rest } from 'msw';
-import { REGISTERED_PROMPT_CONTENT_TAG_KEY, REGISTERED_PROMPT_SOURCE_RUN_ID } from './utils';
+import {
+  REGISTERED_PROMPT_CONTENT_TAG_KEY,
+  REGISTERED_PROMPT_SOURCE_RUN_ID,
+  PROMPT_MODEL_CONFIG_TAG_KEY,
+} from './utils';
 import type { ModelAliasMap } from '../../types';
 import type { KeyValueEntity } from '../../../common/types';
 import { getAjaxUrl } from '@mlflow/mlflow/src/common/utils/FetchUtils';
@@ -62,7 +66,17 @@ export const getMockedRegisteredPromptsResponse = (n = 3) =>
             name: 'prompt1',
             last_updated_timestamp: 1620000000000,
             tags: [{ key: 'some_tag', value: 'abc' }],
-            latest_versions: [{ version: 3 }],
+            latest_versions: [
+              {
+                version: 3,
+                tags: [
+                  {
+                    key: PROMPT_MODEL_CONFIG_TAG_KEY,
+                    value: JSON.stringify({ provider: 'openai', model_name: 'gpt-4' }),
+                  },
+                ],
+              },
+            ],
           },
           {
             name: 'prompt2',
@@ -74,7 +88,17 @@ export const getMockedRegisteredPromptsResponse = (n = 3) =>
             name: 'prompt3',
             last_updated_timestamp: 1620000000000,
             tags: [{ key: 'another_tag', value: 'xyz' }],
-            latest_versions: [{ version: 7 }],
+            latest_versions: [
+              {
+                version: 7,
+                tags: [
+                  {
+                    key: PROMPT_MODEL_CONFIG_TAG_KEY,
+                    value: JSON.stringify({ provider: 'anthropic', model_name: 'claude-3' }),
+                  },
+                ],
+              },
+            ],
           },
         ].slice(0, n),
       }),

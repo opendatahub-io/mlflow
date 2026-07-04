@@ -13,16 +13,18 @@ import {
   PlusIcon,
   Typography,
 } from '@databricks/design-system';
-import type { ColumnDef } from '@tanstack/react-table';
-import { flexRender, getCoreRowModel } from '@tanstack/react-table';
-import { useMemo } from 'react';
+import type { ColumnDef, SortDirection, SortingState } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
 import { PromptsListTableTagsCell } from './PromptsListTableTagsCell';
 import { PromptsListTableNameCell } from './PromptsListTableNameCell';
+import { PromptsListTableModelCell } from './PromptsListTableModelCell';
 import Utils from '../../../../common/utils/Utils';
 import { PromptsListTableVersionCell } from './PromptsListTableVersionCell';
 import type { PromptsTableMetadata } from '../utils';
+import { getModelConfigFromTags } from '../utils';
 import { first, isEmpty } from 'lodash';
 
 const coreRowModel = getCoreRowModel<RegisteredPrompt>();
@@ -51,6 +53,20 @@ const usePromptsTableColumns = () => {
         cell: PromptsListTableVersionCell,
         accessorFn: ({ latest_versions }) => first(latest_versions)?.version,
         id: 'latestVersion',
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Associated Model',
+          description: 'Header for the associated model column in the registered prompts table',
+        }),
+        id: 'associatedModel',
+        accessorFn: ({ latest_versions }) => {
+          const config = getModelConfigFromTags(first(latest_versions)?.tags);
+          return config?.model_name ?? '';
+        },
+        cell: PromptsListTableModelCell,
+        enableSorting: true,
+        sortingFn: 'alphanumeric',
       },
       {
         header: intl.formatMessage({
@@ -103,12 +119,17 @@ export const PromptsListTable = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = usePromptsTableColumns();
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // prettier-ignore
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/pages/prompts/components/PromptsListTable.tsx', {
     data: prompts ?? EMPTY_DATA,
     columns,
     getCoreRowModel: coreRowModel,
+    getSortedRowModel: getSortedRowModel(),
+    enableSorting: true,
+    onSortingChange: setSorting,
+    state: { sorting },
     getRowId: (row, index) => row.name ?? index.toString(),
     meta: { onEditTags, experimentId } satisfies PromptsTableMetadata,
   });
@@ -193,7 +214,15 @@ export const PromptsListTable = ({
     >
       <TableRow isHeader>
         {table.getLeafHeaders().map((header) => (
-          <TableHeader componentId={`${componentId}.table.header`} key={header.id}>
+          <TableHeader
+            componentId={`${componentId}.table.header`}
+            key={header.id}
+            sortable={header.column.getCanSort()}
+            sortDirection={header.column.getIsSorted() as SortDirection}
+            onToggleSort={header.column.getToggleSortingHandler()}
+            header={header}
+            column={header.column}
+          >
             {flexRender(header.column.columnDef.header, header.getContext())}
           </TableHeader>
         ))}

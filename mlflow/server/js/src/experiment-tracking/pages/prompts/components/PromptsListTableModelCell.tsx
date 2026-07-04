@@ -1,0 +1,40 @@
+import { Tooltip, Typography, useDesignSystemTheme } from '@databricks/design-system';
+import type { ColumnDef } from '@tanstack/react-table';
+import { FormattedMessage } from 'react-intl';
+import type { RegisteredPrompt } from '../types';
+import { getModelConfigFromTags } from '../utils';
+import { first } from 'lodash';
+
+export const PromptsListTableModelCell: ColumnDef<RegisteredPrompt>['cell'] = ({ row: { original } }) => {
+  const { theme } = useDesignSystemTheme();
+  const latestVersion = first(original.latest_versions);
+  const modelConfig = getModelConfigFromTags(latestVersion?.tags);
+  const modelName = modelConfig?.model_name;
+
+  if (!modelName) {
+    return (
+      <Typography.Text color="secondary">
+        <FormattedMessage
+          defaultMessage="Not specified"
+          description="Fallback text shown in the Associated Model column when a prompt has no model configuration"
+        />
+      </Typography.Text>
+    );
+  }
+
+  return (
+    <Tooltip content={modelName} componentId="mlflow.prompts.list.model.tooltip">
+      <Typography.Text
+        css={{
+          maxWidth: 200,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'block',
+        }}
+      >
+        {modelName}
+      </Typography.Text>
+    </Tooltip>
+  );
+};
