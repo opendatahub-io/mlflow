@@ -13,19 +13,22 @@ import {
   PlusIcon,
   Typography,
 } from '@databricks/design-system';
-import type { ColumnDef } from '@tanstack/react-table';
-import { flexRender, getCoreRowModel } from '@tanstack/react-table';
-import { useMemo } from 'react';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
 import { PromptsListTableTagsCell } from './PromptsListTableTagsCell';
 import { PromptsListTableNameCell } from './PromptsListTableNameCell';
+import { PromptsListTableModelCell } from './PromptsListTableModelCell';
 import Utils from '../../../../common/utils/Utils';
 import { PromptsListTableVersionCell } from './PromptsListTableVersionCell';
 import type { PromptsTableMetadata } from '../utils';
+import { getModelConfigFromTags } from '../utils';
 import { first, isEmpty } from 'lodash';
 
 const coreRowModel = getCoreRowModel<RegisteredPrompt>();
+const sortedRowModel = getSortedRowModel<RegisteredPrompt>();
 const EMPTY_DATA: RegisteredPrompt[] = [];
 
 type PromptsTableColumnDef = ColumnDef<RegisteredPrompt>;
@@ -42,6 +45,7 @@ const usePromptsTableColumns = () => {
         accessorKey: 'name',
         id: 'name',
         cell: PromptsListTableNameCell,
+        enableSorting: true,
       },
       {
         header: intl.formatMessage({
@@ -51,6 +55,17 @@ const usePromptsTableColumns = () => {
         cell: PromptsListTableVersionCell,
         accessorFn: ({ latest_versions }) => first(latest_versions)?.version,
         id: 'latestVersion',
+        enableSorting: false,
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Associated Model',
+          description: 'Header for the associated model column in the registered prompts table',
+        }),
+        accessorFn: ({ latest_versions }) => getModelConfigFromTags(first(latest_versions)?.tags)?.model_name ?? '',
+        id: 'associatedModel',
+        cell: PromptsListTableModelCell,
+        enableSorting: true,
       },
       {
         header: intl.formatMessage({
@@ -59,6 +74,7 @@ const usePromptsTableColumns = () => {
         }),
         id: 'lastModified',
         accessorFn: ({ last_updated_timestamp }) => Utils.formatTimestamp(last_updated_timestamp, intl),
+        enableSorting: true,
       },
       {
         header: intl.formatMessage({
@@ -68,6 +84,7 @@ const usePromptsTableColumns = () => {
         accessorKey: 'tags',
         id: 'tags',
         cell: PromptsListTableTagsCell,
+        enableSorting: false,
       },
     ];
 
@@ -103,12 +120,16 @@ export const PromptsListTable = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = usePromptsTableColumns();
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // prettier-ignore
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/pages/prompts/components/PromptsListTable.tsx', {
     data: prompts ?? EMPTY_DATA,
     columns,
     getCoreRowModel: coreRowModel,
+    getSortedRowModel: sortedRowModel,
+    onSortingChange: setSorting,
+    state: { sorting },
     getRowId: (row, index) => row.name ?? index.toString(),
     meta: { onEditTags, experimentId } satisfies PromptsTableMetadata,
   });
@@ -193,7 +214,13 @@ export const PromptsListTable = ({
     >
       <TableRow isHeader>
         {table.getLeafHeaders().map((header) => (
-          <TableHeader componentId={`${componentId}.table.header`} key={header.id}>
+          <TableHeader
+            componentId={`${componentId}.table.header`}
+            key={header.id}
+            sortable={header.column.getCanSort()}
+            sortDirection={header.column.getIsSorted() || 'none'}
+            onToggleSort={header.column.getToggleSortingHandler()}
+          >
             {flexRender(header.column.columnDef.header, header.getContext())}
           </TableHeader>
         ))}

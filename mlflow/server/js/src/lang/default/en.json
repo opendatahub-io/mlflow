@@ -5723,6 +5723,10 @@
     "defaultMessage": "Cost: {input} in / {output} out",
     "description": "Model cost per token"
   },
+  "WFyKwI": {
+    "defaultMessage": "Not specified",
+    "description": "Placeholder text shown when a prompt has no associated model in the prompt registry table"
+  },
   "WGN2f3": {
     "defaultMessage": "Register model",
     "description": "Run page > Header > Register model dropdown > Button label when some models are not registered"
@@ -6966,6 +6970,10 @@
   "dHAuWp": {
     "defaultMessage": "You need to provide a prompt template",
     "description": "Experiment page > new run modal > invalid state - no prompt template provided"
+  },
+  "dJPVU+": {
+    "defaultMessage": "Associated Model",
+    "description": "Header for the associated model column in the registered prompts table"
   },
   "dJaboT": {
     "defaultMessage": "Fetching traces failed",

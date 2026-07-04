@@ -58,6 +58,10 @@ describe('PromptsPage', () => {
     expect(screen.getByRole('cell', { name: 'Version 3' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Version 5' })).toBeInTheDocument();
 
+    expect(screen.getByText('Associated Model')).toBeInTheDocument();
+    expect(screen.getByText('gpt-4')).toBeInTheDocument();
+    expect(screen.getByText('claude-3-sonnet')).toBeInTheDocument();
+
     expect(screen.getByRole('status', { name: 'some_tag' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'another_tag' })).toBeInTheDocument();
   });
