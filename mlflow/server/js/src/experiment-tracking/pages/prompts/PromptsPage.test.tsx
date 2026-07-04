@@ -62,6 +62,19 @@ describe('PromptsPage', () => {
     expect(screen.getByRole('status', { name: 'another_tag' })).toBeInTheDocument();
   });
 
+  it('should render Associated Model column with model name and Not specified', async () => {
+    renderTestComponent();
+    await waitFor(() => {
+      expect(screen.getByText('Associated Model')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('gpt-4')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Not specified')).toBeInTheDocument();
+  });
+
   it('should edit tags', async () => {
     const setTagMock = jest.fn();
     server.use(getMockedRegisteredPromptsResponse(1), getMockedRegisteredPromptSetTagsResponse(setTagMock));
