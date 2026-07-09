@@ -2,14 +2,10 @@ import { Tooltip, Typography, useDesignSystemTheme } from '@databricks/design-sy
 import type { ColumnDef } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
-import { getModelConfigFromTags } from '../utils';
-import { first } from 'lodash';
 
-export const PromptsListTableModelCell: ColumnDef<RegisteredPrompt>['cell'] = ({ row: { original } }) => {
+export const PromptsListTableModelCell: ColumnDef<RegisteredPrompt>['cell'] = ({ getValue }) => {
   const { theme } = useDesignSystemTheme();
-  const latestVersion = first(original.latest_versions);
-  const modelConfig = getModelConfigFromTags(latestVersion?.tags);
-  const modelName = modelConfig?.model_name;
+  const modelName = getValue<string>();
 
   if (!modelName) {
     return (

@@ -26,6 +26,7 @@ import { getModelConfigFromTags } from '../utils';
 import { first, isEmpty } from 'lodash';
 
 const coreRowModel = getCoreRowModel<RegisteredPrompt>();
+const sortedRowModel = getSortedRowModel<RegisteredPrompt>();
 const EMPTY_DATA: RegisteredPrompt[] = [];
 
 type PromptsTableColumnDef = ColumnDef<RegisteredPrompt>;
@@ -42,6 +43,7 @@ const usePromptsTableColumns = () => {
         accessorKey: 'name',
         id: 'name',
         cell: PromptsListTableNameCell,
+        enableSorting: false,
       },
       {
         header: intl.formatMessage({
@@ -51,6 +53,7 @@ const usePromptsTableColumns = () => {
         cell: PromptsListTableVersionCell,
         accessorFn: ({ latest_versions }) => first(latest_versions)?.version,
         id: 'latestVersion',
+        enableSorting: false,
       },
       {
         header: intl.formatMessage({
@@ -60,11 +63,12 @@ const usePromptsTableColumns = () => {
         id: 'associatedModel',
         accessorFn: ({ latest_versions }) => {
           const config = getModelConfigFromTags(first(latest_versions)?.tags);
-          return config?.model_name ?? '';
+          return config?.model_name;
         },
         cell: PromptsListTableModelCell,
         enableSorting: true,
         sortingFn: 'alphanumeric',
+        sortUndefined: 'last',
       },
       {
         header: intl.formatMessage({
@@ -73,6 +77,7 @@ const usePromptsTableColumns = () => {
         }),
         id: 'lastModified',
         accessorFn: ({ last_updated_timestamp }) => Utils.formatTimestamp(last_updated_timestamp, intl),
+        enableSorting: false,
       },
       {
         header: intl.formatMessage({
@@ -82,6 +87,7 @@ const usePromptsTableColumns = () => {
         accessorKey: 'tags',
         id: 'tags',
         cell: PromptsListTableTagsCell,
+        enableSorting: false,
       },
     ];
 
@@ -124,8 +130,7 @@ export const PromptsListTable = ({
     data: prompts ?? EMPTY_DATA,
     columns,
     getCoreRowModel: coreRowModel,
-    getSortedRowModel: getSortedRowModel(),
-    enableSorting: true,
+    getSortedRowModel: sortedRowModel,
     onSortingChange: setSorting,
     state: { sorting },
     getRowId: (row, index) => row.name ?? index.toString(),
@@ -177,10 +182,8 @@ export const PromptsListTable = ({
             componentId={`${componentId}.table.header`}
             key={header.id}
             sortable={header.column.getCanSort()}
-            sortDirection={header.column.getIsSorted() as SortDirection}
+            sortDirection={header.column.getIsSorted() || 'none'}
             onToggleSort={header.column.getToggleSortingHandler()}
-            header={header}
-            column={header.column}
           >
             {flexRender(header.column.columnDef.header, header.getContext())}
           </TableHeader>
