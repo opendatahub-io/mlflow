@@ -110,6 +110,7 @@ jest.mock('../../../../pages/experiment-evaluation-datasets/components/ExportTra
 
 jest.mock('../../../../hooks/useServerInfo', () => ({
   getWorkspacesEnabledSync: () => false,
+  useWorkspacesEnabled: () => ({ workspacesEnabled: false, loading: false }),
 }));
 
 const renderComponent = (props = {}) => {

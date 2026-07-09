@@ -209,16 +209,16 @@ describe('PromptsPage', () => {
 
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Name:'), 'my-prompt');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'my-prompt');
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Prompt:'), 'hello');
+    await userEvent.type(screen.getByLabelText('Prompt:*'), 'hello');
     expect(createButton).toBeEnabled();
 
-    await userEvent.clear(screen.getByLabelText('Name:'));
+    await userEvent.clear(screen.getByLabelText('Name:*'));
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Name:'), '   ');
+    await userEvent.type(screen.getByLabelText('Name:*'), '   ');
     expect(createButton).toBeDisabled();
   });
 
@@ -234,7 +234,7 @@ describe('PromptsPage', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByLabelText('Name:'), 'my-chat-prompt');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'my-chat-prompt');
     await userEvent.click(screen.getByRole('radio', { name: 'Chat' }));
 
     const createButton = screen.getByRole('button', { name: 'Create' });

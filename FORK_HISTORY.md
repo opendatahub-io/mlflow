@@ -31,15 +31,15 @@ These break CI after every rebase. Fix them proactively before pushing.
 
 ### Dropped commits (already in v3.14.0)
 
-| Original hash | Subject | Upstream equivalent |
-| ------------- | ------- | ------------------- |
-| `06cedb957` | drop: Optimize local artifact uploads with atomic rename (#23794) | `20f567a96` |
-| `6497fb3ef` | drop: Cherry-pick upstream test fixes for CI stability | Multiple |
-| `e01db8f08` | drop: Skip copying local artifacts to temp directories for artifact serving | `20f567a96` |
-| `697f12f8a` | drop: Fix HuggingFace revision test broken by datasets >= 4.8.5 | In v3.14.0 |
-| `4707d29bf` | drop: Skip guardrails-ai while package is unavailable on PyPI | `4cdfed1c5` |
-| `55be94684` | backport: Include workspace in webhook delivery envelopes (#22873) | `0ba31551a` |
-| `fae51223a` | drop: Pin langchain-community<0.4.2 in genai CI job (#23697) | `b20ae2163` |
+| Original hash | Subject                                                                     | Upstream equivalent |
+| ------------- | --------------------------------------------------------------------------- | ------------------- |
+| `06cedb957`   | drop: Optimize local artifact uploads with atomic rename (#23794)           | `20f567a96`         |
+| `6497fb3ef`   | drop: Cherry-pick upstream test fixes for CI stability                      | Multiple            |
+| `e01db8f08`   | drop: Skip copying local artifacts to temp directories for artifact serving | `20f567a96`         |
+| `697f12f8a`   | drop: Fix HuggingFace revision test broken by datasets >= 4.8.5             | In v3.14.0          |
+| `4707d29bf`   | drop: Skip guardrails-ai while package is unavailable on PyPI               | `4cdfed1c5`         |
+| `55be94684`   | backport: Include workspace in webhook delivery envelopes (#22873)          | `0ba31551a`         |
+| `fae51223a`   | drop: Pin langchain-community<0.4.2 in genai CI job (#23697)                | `b20ae2163`         |
 
 ### Squashed commits
 
