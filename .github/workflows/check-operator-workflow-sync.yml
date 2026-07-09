@@ -2,8 +2,6 @@ name: Check Operator Workflow Sync
 
 on:
   pull_request:
-    paths:
-      - .github/workflows/operator-integration-tests.yml
 
 permissions: {}
 

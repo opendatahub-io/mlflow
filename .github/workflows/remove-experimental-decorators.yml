@@ -6,9 +6,6 @@ on:
     - cron: "0 0 1 * *"
   workflow_dispatch: # Allow manual triggering
   pull_request:
-    paths:
-      - .github/workflows/remove-experimental-decorators.yml
-      - dev/remove_experimental_decorators.py
 
 defaults:
   run:

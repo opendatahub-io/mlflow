@@ -7,26 +7,12 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - .syft.yaml
-      - .github/scripts/check_syft_requirements_files.py
-      - .github/workflows/syft-requirements.yml
-      - Dockerfile.konflux
-      - requirements/**
-      - mlflow/server/js/yarn.lock
   push:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
       - main
       - rhoai-*
-    paths:
-      - .syft.yaml
-      - .github/scripts/check_syft_requirements_files.py
-      - .github/workflows/syft-requirements.yml
-      - Dockerfile.konflux
-      - requirements/**
-      - mlflow/server/js/yarn.lock
 
 permissions: {}
 

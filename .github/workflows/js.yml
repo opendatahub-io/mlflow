@@ -3,10 +3,6 @@ name: JS
 on:
   workflow_dispatch:
   push:
-    paths:
-      - mlflow/server/js/**
-      - .github/actions/check-component-ids/**
-      - .github/workflows/js.yml
     branches:
       - master
       - branch-[0-9]+.[0-9]+
@@ -17,10 +13,6 @@ on:
       - opened
       - synchronize
       - reopened
-    paths:
-      - mlflow/server/js/**
-      - .github/actions/check-component-ids/**
-      - .github/workflows/js.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
