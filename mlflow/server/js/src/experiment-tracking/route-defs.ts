@@ -1,6 +1,7 @@
 import type { RouteHandle } from '../common/utils/RoutingUtils';
 import { createLazyRouteElement, DEFAULT_ASSISTANT_PROMPTS } from '../common/utils/RoutingUtils';
 
+import { shouldEnableAIGateway } from '../common/utils/FeatureUtils';
 import { PageId, RoutePaths } from './routes';
 
 const getPromptPagesRouteDefs = () => {
@@ -212,14 +213,19 @@ const getExperimentPageRouteDefs = () => {
             ],
           } satisfies RouteHandle,
         },
-        {
-          path: RoutePaths.experimentPageTabPlayground,
-          pageId: PageId.experimentPageTabPlayground,
-          element: createLazyRouteElement(() => import('./pages/playground/PlaygroundPage')),
-          handle: {
-            getPageTitle: (params) => `Playground - Experiment ${params['experimentId']}`,
-          } satisfies RouteHandle,
-        },
+        ...(shouldEnableAIGateway()
+          ? [
+              {
+                path: RoutePaths.experimentPageTabPlayground,
+                pageId: PageId.experimentPageTabPlayground,
+                element: createLazyRouteElement(() => import('./pages/playground/PlaygroundPage')),
+                handle: {
+                  getPageTitle: (params: Record<string, string | undefined>) =>
+                    `Playground - Experiment ${params['experimentId']}`,
+                } satisfies RouteHandle,
+              },
+            ]
+          : []),
         {
           path: RoutePaths.experimentPageTabPrompts,
           pageId: PageId.experimentPageTabPrompts,

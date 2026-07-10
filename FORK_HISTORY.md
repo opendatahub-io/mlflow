@@ -113,6 +113,8 @@ Dropped as empty by git — `uv.lock` and `pyproject.toml` changes were already 
 - Updated CSS override verified versions
 - Updated rebase skill with step 10b (dropped-file detection)
 
+- Gated Playground tab and route behind `shouldEnableAIGateway()` — Playground requires the AI Gateway backend (`gateway/mlflow/v1/chat/completions`), so it should be hidden when `MLFLOW_ENABLE_AI_GATEWAY=false`
+
 ### Known upstream test failures (not fixed on upstream master)
 
 7 suites fail on v3.14.0 with no fix available on upstream `master`:
