@@ -9,7 +9,7 @@ from alembic import op
 from sqlalchemy.dialects import mssql
 
 revision = "a8b9c0d1e2f3"
-down_revision = "89d3d66ed43f"
+down_revision = "b7e4c1a90f23"
 branch_labels = None
 depends_on = None
 
