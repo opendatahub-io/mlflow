@@ -209,6 +209,44 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     }
   }
 
+  // Radix Tabs — the Emotion layer sets all triggers to bold and draws
+  // a brand-colored underline on the active one. De-emphasize inactive
+  // triggers so the active one stands out.
+  [role='tablist'] button[role='tab'] {
+    font-weight: var(--pf-t--global--font--weight--body--default) !important;
+
+    &[data-state='active'] {
+      font-weight: var(--pf-t--global--font--weight--body--bold) !important;
+      color: var(--pf-t--global--text--color--regular) !important;
+    }
+  }
+
+  // MCP Registry detail grids — vertically center labels with tags,
+  // links, and buttons of varying height. The grid is identified as
+  // the div whose direct children include both a bold typography label
+  // and a version-status or compare-status tag.
+  div:has(> [data-component-id='mlflow.mcp_registry.detail.version_status']),
+  div:has(> span > [data-component-id='mlflow.mcp_registry.detail.version_status']),
+  div:has(> span > [data-component-id='mlflow.mcp_registry.compare.status']),
+  div:has(> span > [data-component-id='mlflow.mcp_registry.binding_detail.copy_endpoint']) {
+    align-items: center !important;
+  }
+
+  // MCP Registry version list — restore selected/hover row backgrounds
+  // stripped by the generic table-row hover rule at line ~126. Mirrors
+  // the prompt versions table carve-out above.
+  div[role='table']:has([data-component-id='mlflow.mcp_registry.detail.versions.header']) {
+    div[role='row']:not(.table-isHeader) {
+      &:has(> div:not([role]) > span[role='img']):hover {
+        background-color: color-mix(in srgb, var(--pf-t--global--color--brand--default) 16%, transparent) !important;
+      }
+
+      &:not(:has(> div:not([role]) > span[role='img'])):hover {
+        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      }
+    }
+  }
+
   .mlflow-compare-table,
   .mlflow-compare-run-table {
     th.head-value,
