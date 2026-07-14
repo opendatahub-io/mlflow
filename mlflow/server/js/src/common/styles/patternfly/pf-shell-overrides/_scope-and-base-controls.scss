@@ -189,7 +189,9 @@
   }
 
   button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled:not(.du-bois-dark-btn-sm):not(.du-bois-dark-btn-dangerous),
-  button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled:not(.du-bois-light-btn-sm):not(.du-bois-light-btn-dangerous) {
+  button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled:not(.du-bois-light-btn-sm):not(
+      .du-bois-light-btn-dangerous
+    ) {
     background-color: transparent !important;
     color: var(--pf-t--global--text--color--brand--default) !important;
     padding-block-start: var(--pf-t--global--spacer--sm) !important;

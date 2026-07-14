@@ -230,9 +230,9 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
       align-self: stretch !important;
       border: var(--pf-t--global--border--width--action--plain--hover) solid transparent !important;
       border-bottom: none !important;
-      border-radius: var(--pf-t--global--border--radius--small) var(--pf-t--global--border--radius--small)
-        0 0 !important;
-      transition: background-color var(--pf-t--global--motion--duration--fade--default)
+      border-radius: var(--pf-t--global--border--radius--small) var(--pf-t--global--border--radius--small) 0 0 !important;
+      transition:
+        background-color var(--pf-t--global--motion--duration--fade--default)
           var(--pf-t--global--motion--timing-function--default),
         box-shadow var(--pf-t--global--motion--duration--fade--default)
           var(--pf-t--global--motion--timing-function--default) !important;
