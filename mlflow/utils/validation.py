@@ -78,6 +78,8 @@ MAX_INPUT_TAG_VALUE_SIZE = 500
 MAX_REGISTERED_MODEL_ALIAS_LENGTH = 255
 MAX_TRACE_TAG_KEY_LENGTH = 250
 MAX_TRACE_TAG_VAL_LENGTH = 8000
+_MAX_MCP_ICONS_PER_LIST = 100
+_MAX_MCP_TOOLS_PER_LIST = 1000
 MAX_TRACE_ARCHIVAL_RETENTION_LENGTH = 32
 _TRACE_ARCHIVAL_RETENTION_REGEX = re.compile(r"^[1-9][0-9]*[mhd]$")
 
@@ -970,3 +972,191 @@ def _resolve_experiment_ids_and_locations(
         )
 
     return locations
+
+
+def _validate_public_https_url(
+    url: str,
+    field_name: str = "URL",
+    allowed_schemes: list[str] | tuple[str, ...] | set[str] = ("https",),
+    allow_private_ips: bool = False,
+) -> None:
+    if not isinstance(url, str):
+        raise MlflowException.invalid_parameter_value(
+            f"{field_name} must be a string, got {type(url).__name__!r}"
+        )
+
+    if not url.strip():
+        raise MlflowException.invalid_parameter_value(
+            f"{field_name} cannot be empty or just whitespace: {url!r}"
+        )
+
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+    except ValueError as e:
+        raise MlflowException.invalid_parameter_value(f"Invalid {field_name} {url!r}: {e!r}") from e
+
+    normalized_allowed_schemes = {scheme.lower() for scheme in allowed_schemes}
+    if parsed_url.scheme not in normalized_allowed_schemes:
+        scheme_list = ", ".join(f"{scheme!r}" for scheme in sorted(normalized_allowed_schemes))
+        raise MlflowException.invalid_parameter_value(
+            f"Invalid {field_name} scheme: {parsed_url.scheme!r}. Allowed schemes are: "
+            f"{scheme_list}."
+        )
+
+    if parsed_url.username or parsed_url.password:
+        raise MlflowException.invalid_parameter_value(
+            f"{field_name} must not include embedded credentials: {url!r}"
+        )
+
+    hostname = parsed_url.hostname
+    if not hostname:
+        raise MlflowException.invalid_parameter_value(
+            f"{field_name} must include a hostname: {url!r}"
+        )
+
+    if not allow_private_ips:
+        _validate_hostname_resolves_to_public_ips(hostname, field_name)
+
+def _validate_mcp_icon_mime_type(mime_type: str | None) -> None:
+    if mime_type is None:
+        return
+
+    if not isinstance(mime_type, str):
+        raise MlflowException.invalid_parameter_value(
+            f"Invalid icon mimeType {mime_type!r}. Allowed values must use the 'image/*' media "
+            "type."
+        )
+
+    normalized = mime_type.strip().lower()
+    if not normalized.startswith("image/") or normalized == "image/":
+        raise MlflowException.invalid_parameter_value(
+            f"Invalid icon mimeType {mime_type!r}. Allowed values must use the 'image/*' "
+            "media type."
+        )
+
+
+def _validate_mcp_list_max_length(items: list[Any], field_name: str, max_length: int) -> None:
+    if len(items) > max_length:
+        raise MlflowException.invalid_parameter_value(
+            f"Invalid {field_name}. It must contain at most {max_length} items."
+        )
+
+
+def _validate_mcp_initial_status(status: Any, field_name: str = "status") -> None:
+    normalized_status = getattr(status, "value", status)
+    if normalized_status not in {"draft", "active"}:
+        raise MlflowException.invalid_parameter_value(
+            f"Initial MCP server registration {field_name} must be 'draft' or 'active'."
+        )
+
+
+def _validate_mcp_icon_payloads(icons: Any, field_name: str = "icons") -> None:
+    if icons is None:
+        return
+
+    if not isinstance(icons, list):
+        raise MlflowException.invalid_parameter_value(f"Invalid {field_name}. Expected a list.")
+
+    _validate_mcp_list_max_length(icons, field_name, _MAX_MCP_ICONS_PER_LIST)
+
+    for idx, icon in enumerate(icons):
+        icon_field_name = f"{field_name}[{idx}]"
+        if not isinstance(icon, dict):
+            raise MlflowException.invalid_parameter_value(
+                f"Invalid {icon_field_name}. Expected an object."
+            )
+        if "src" not in icon:
+            raise MlflowException.invalid_parameter_value(
+                f"Invalid {icon_field_name}. Missing required key 'src'."
+            )
+
+        _validate_mcp_icon_url(icon["src"])
+        _validate_mcp_icon_mime_type(icon.get("mimeType"))
+
+
+def _validate_mcp_tool_payloads(tools: Any, field_name: str = "tools") -> None:
+    if tools is None:
+        return
+
+    if not isinstance(tools, list):
+        raise MlflowException.invalid_parameter_value(f"Invalid {field_name}. Expected a list.")
+
+    _validate_mcp_list_max_length(tools, field_name, _MAX_MCP_TOOLS_PER_LIST)
+
+
+def _validate_webhook_url(url: str) -> None:
+    if not isinstance(url, str):
+        raise MlflowException.invalid_parameter_value(
+            f"Webhook URL must be a string, got {type(url).__name__!r}"
+        )
+
+    if not url.strip():
+        raise MlflowException.invalid_parameter_value(
+            f"Webhook URL cannot be empty or just whitespace: {url!r}"
+        )
+
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+    except ValueError as e:
+        raise MlflowException.invalid_parameter_value(f"Invalid webhook URL {url!r}: {e!r}") from e
+    schemes = _MLFLOW_WEBHOOK_ALLOWED_SCHEMES.get()
+    if parsed_url.scheme not in schemes:
+        raise MlflowException.invalid_parameter_value(
+            f"Invalid webhook URL scheme: {parsed_url.scheme!r}. "
+            f"Allowed schemes are: {', '.join(schemes)}."
+        )
+
+    hostname = parsed_url.hostname
+    if not hostname:
+        raise MlflowException.invalid_parameter_value(
+            f"Webhook URL must include a hostname: {url!r}"
+        )
+
+    if not _MLFLOW_WEBHOOK_ALLOW_PRIVATE_IPS.get():
+        _validate_hostname_resolves_to_public_ips(hostname, "Webhook URL")
+
+
+def _validate_webhook_events(events: list[WebhookEvent]) -> None:
+    if (
+        not events
+        or not isinstance(events, list)
+        or not all(isinstance(e, WebhookEvent) for e in events)
+    ):
+        raise MlflowException.invalid_parameter_value(
+            f"Webhook events must be a non-empty list of WebhookEvent objects: {events}."
+        )
+
+
+def _resolve_experiment_ids_and_locations(
+    experiment_ids: list[str] | None, locations: list[str] | None
+) -> list[str]:
+    if experiment_ids:
+        if locations:
+            raise MlflowException.invalid_parameter_value(
+                "`experiment_ids` is deprecated, use `locations` instead."
+            )
+        else:
+            locations = experiment_ids
+    if not locations:
+        return locations
+
+    if invalid_experiment_ids := [location for location in locations if "." in location]:
+        invalid_exp_ids_str = ", ".join(invalid_experiment_ids)
+        if len(invalid_exp_ids_str) > 20:
+            invalid_exp_ids_str = invalid_exp_ids_str[:20] + "..."
+        raise MlflowException.invalid_parameter_value(
+            "Locations must be a list of experiment IDs. "
+            f"Found invalid experiment IDs: {invalid_exp_ids_str}."
+        )
+
+    return locations
+
+
+def _validate_mcp_icon_url(url: str) -> None:
+    if not url or not isinstance(url, str):
+        raise MlflowException.invalid_parameter_value("Icon URL must be a non-empty string")
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https", "data"):
+        raise MlflowException.invalid_parameter_value(
+            f"Icon URL must use http, https, or data scheme, got {parsed.scheme!r}"
+        )

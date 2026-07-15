@@ -16,7 +16,7 @@ export const useMCPAccessBindingsListQuery = ({
         page_token: pageToken,
         max_results: pageSize,
       }),
-    extractData: (response) => response.mcp_access_bindings,
+    extractData: (response) => response.mcp_access_endpoints,
     enabled,
   });
 };

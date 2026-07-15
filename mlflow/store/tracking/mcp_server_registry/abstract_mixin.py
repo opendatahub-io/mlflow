@@ -4,7 +4,7 @@ from typing import Any, TypedDict
 
 from typing_extensions import NotRequired
 
-from mlflow.entities.mcp_access_binding import MCPAccessBinding
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.mcp_server import MCPRemoteTransportType, MCPServer, MCPStatus, MCPTool
 from mlflow.entities.mcp_server_version import MCPServerVersion
 from mlflow.store.entities.paged_list import PagedList
@@ -26,7 +26,7 @@ class MCPServerRegistryMixin:
     """Mixin class providing MCP Server Registry interface for tracking stores.
 
     This mixin adds MCP server management to tracking stores, enabling
-    registration, versioning, aliasing, tagging, and access binding
+    registration, versioning, aliasing, tagging, and access endpoint
     management for MCP servers.
 
     All methods raise NotImplementedError rather than using @abstractmethod,
@@ -41,6 +41,7 @@ class MCPServerRegistryMixin:
         name: str,
         description: str | None = None,
         icons: list[MCPIcon] | None = None,
+        created_by: str | None = None,
     ) -> MCPServer:
         """Create a new MCP server entry.
 
@@ -48,6 +49,7 @@ class MCPServerRegistryMixin:
             name: Unique server name (e.g., "io.github.org/server").
             description: Human-readable description.
             icons: Sized icon variants (src, sizes, mimeType, theme).
+            created_by: Authenticated username of the creator.
 
         Returns:
             The created MCPServer entity.
@@ -61,7 +63,7 @@ class MCPServerRegistryMixin:
             name: Server name.
 
         Returns:
-            The MCPServer entity with tags, aliases, and bindings populated.
+            The MCPServer entity with tags, aliases, and endpoints populated.
         """
         raise NotImplementedError(self.__class__.__name__)
 
@@ -91,7 +93,7 @@ class MCPServerRegistryMixin:
         description: str | None = NOT_SET,
         display_name: str | None = NOT_SET,
         icons: list[MCPIcon] | None = NOT_SET,
-        latest_version: str | None = NOT_SET,
+        last_updated_by: str | None = None,
     ) -> MCPServer:
         """Update an existing MCP server's metadata.
 
@@ -100,8 +102,7 @@ class MCPServerRegistryMixin:
             description: New description. Omit to leave unchanged; pass None to set null.
             display_name: New display name. Omit to leave unchanged; pass None to set null.
             icons: New icon variants. Omit to leave unchanged; pass None to set null.
-            latest_version: New pinned latest version. Omit to leave unchanged; pass None to
-                set null.
+            last_updated_by: Authenticated username of the updater.
 
         Returns:
             The updated MCPServer entity.
@@ -125,6 +126,7 @@ class MCPServerRegistryMixin:
         source: str | None = None,
         status: MCPStatus | None = None,
         tools: list[MCPTool] | None = None,
+        created_by: str | None = None,
     ) -> MCPServerVersion:
         """Create a new version of an MCP server.
 
@@ -137,6 +139,7 @@ class MCPServerRegistryMixin:
             source: Origin URL or identifier for this version.
             status: Initial status (defaults to DRAFT).
             tools: List of MCPTool definitions.
+            created_by: Authenticated username of the creator.
 
         Returns:
             The created MCPServerVersion entity.
@@ -170,12 +173,10 @@ class MCPServerRegistryMixin:
     def get_latest_mcp_server_version(self, name: str) -> MCPServerVersion:
         """Retrieve the latest version of an MCP server.
 
-        If latest_version is explicitly pinned, resolves to that version only.
-        A stale pin (version no longer exists or is deleted) raises
-        RESOURCE_DOES_NOT_EXIST rather than silently falling back.
-
-        If latest_version is unset, falls back to the most recently created
-        non-draft, non-deleted version.
+        Resolves using the shared latest-resolution rule: highest semantic
+        version among ACTIVE versions if one exists, otherwise highest semantic
+        version among non-DELETED non-ACTIVE versions. If no version resolves,
+        implementations should raise RESOURCE_DOES_NOT_EXIST.
 
         Args:
             name: Server name.
@@ -184,8 +185,7 @@ class MCPServerRegistryMixin:
             The latest MCPServerVersion entity.
 
         Raises:
-            MlflowException: If the pinned version is stale or no eligible
-                version exists.
+            MlflowException: If no version resolves.
         """
         raise NotImplementedError(self.__class__.__name__)
 
@@ -218,6 +218,7 @@ class MCPServerRegistryMixin:
         display_name: str | None = NOT_SET,
         status: MCPStatus | None = NOT_SET,
         tools: list[MCPTool] | None = NOT_SET,
+        last_updated_by: str | None = None,
     ) -> MCPServerVersion:
         """Update a version's metadata or status.
 
@@ -228,6 +229,7 @@ class MCPServerRegistryMixin:
             status: New status. Omit to leave unchanged; non-null values update the status.
                 Non-null values are validated against transition rules.
             tools: New tool definitions. Omit to leave unchanged; pass None to set null.
+            last_updated_by: Authenticated username of the updater.
 
         Returns:
             The updated MCPServerVersion entity.
@@ -243,45 +245,47 @@ class MCPServerRegistryMixin:
         """
         raise NotImplementedError(self.__class__.__name__)
 
-    # --- MCPAccessBinding operations ---
+    # --- MCPAccessEndpoint operations ---
 
-    def create_mcp_access_binding(
+    def create_mcp_access_endpoint(
         self,
         server_name: str,
-        endpoint_url: str,
+        url: str,
         transport_type: MCPRemoteTransportType = MCPRemoteTransportType.STREAMABLE_HTTP,
         server_version: str | None = None,
         server_alias: str | None = None,
-    ) -> MCPAccessBinding:
-        """Create a direct-access binding for an MCP server.
+        created_by: str | None = None,
+    ) -> MCPAccessEndpoint:
+        """Create a direct-access endpoint for an MCP server.
 
         Exactly one of server_version or server_alias must be set.
 
         Args:
             server_name: Server name.
-            endpoint_url: URL of the remote MCP endpoint.
+            url: URL of the remote MCP endpoint.
             transport_type: Transport protocol.
             server_version: Pin to a specific version.
             server_alias: Pin to an alias.
+            created_by: Authenticated username of the creator.
 
         Returns:
-            The created MCPAccessBinding entity.
+            The created MCPAccessEndpoint entity.
         """
         raise NotImplementedError(self.__class__.__name__)
 
-    def get_mcp_access_binding(self, server_name: str, binding_id: int) -> MCPAccessBinding:
-        """Retrieve a specific access binding.
+    def get_mcp_access_endpoint(self, server_name: str, endpoint_id: str) -> MCPAccessEndpoint:
+        """Retrieve a specific access endpoint.
 
         Args:
             server_name: Server name.
-            binding_id: Binding ID.
+            endpoint_id: Endpoint ID.
 
         Returns:
-            The MCPAccessBinding entity.
+            The MCPAccessEndpoint entity.
         """
         raise NotImplementedError(self.__class__.__name__)
 
-    def search_mcp_access_bindings(
+    def search_mcp_access_endpoints(
         self,
         server_name: str | None = None,
         server_version: str | None = None,
@@ -290,56 +294,58 @@ class MCPServerRegistryMixin:
         max_results: int = SEARCH_MAX_RESULTS_DEFAULT,
         order_by: list[str] | None = None,
         page_token: str | None = None,
-    ) -> PagedList[MCPAccessBinding]:
-        """Search access bindings, optionally scoped to a server.
+    ) -> PagedList[MCPAccessEndpoint]:
+        """Search access endpoints, optionally scoped to a server.
 
         Args:
-            server_name: If set, only return bindings for this server.
-            server_version: If set, only return bindings targeting this version.
-            server_alias: If set, only return bindings targeting this alias.
+            server_name: If set, only return endpoints for this server.
+            server_version: If set, only return endpoints targeting this version.
+            server_alias: If set, only return endpoints targeting this alias.
             filter_string: SQL-like filter.
             max_results: Maximum number of results to return.
             order_by: List of columns to order by.
             page_token: Token for pagination.
 
         Returns:
-            A PagedList of MCPAccessBinding entities.
+            A PagedList of MCPAccessEndpoint entities.
         """
         raise NotImplementedError(self.__class__.__name__)
 
-    def update_mcp_access_binding(
+    def update_mcp_access_endpoint(
         self,
         server_name: str,
-        binding_id: int,
+        endpoint_id: str,
         server_version: str | None = NOT_SET,
         server_alias: str | None = NOT_SET,
-        endpoint_url: str | None = NOT_SET,
+        url: str | None = NOT_SET,
         transport_type: MCPRemoteTransportType | None = NOT_SET,
-    ) -> MCPAccessBinding:
-        """Update an existing access binding.
+        last_updated_by: str | None = None,
+    ) -> MCPAccessEndpoint:
+        """Update an existing access endpoint.
 
         Args:
             server_name: Server name.
-            binding_id: Binding ID.
+            endpoint_id: Endpoint ID.
             server_version: New version target. Omit to leave unchanged; non-null values update
                 the version target.
             server_alias: New alias target. Omit to leave unchanged; non-null values update the
                 alias target.
-            endpoint_url: New endpoint URL. Omit to leave unchanged; null is invalid.
+            url: New endpoint URL. Omit to leave unchanged; null is invalid.
             transport_type: New transport type. Omit to leave unchanged; non-null values update
                 the transport type.
+            last_updated_by: Authenticated username of the updater.
 
         Returns:
-            The updated MCPAccessBinding entity.
+            The updated MCPAccessEndpoint entity.
         """
         raise NotImplementedError(self.__class__.__name__)
 
-    def delete_mcp_access_binding(self, server_name: str, binding_id: int) -> None:
-        """Delete an access binding.
+    def delete_mcp_access_endpoint(self, server_name: str, endpoint_id: str) -> None:
+        """Delete an access endpoint.
 
         Args:
             server_name: Server name.
-            binding_id: Binding ID.
+            endpoint_id: Endpoint ID.
         """
         raise NotImplementedError(self.__class__.__name__)
 

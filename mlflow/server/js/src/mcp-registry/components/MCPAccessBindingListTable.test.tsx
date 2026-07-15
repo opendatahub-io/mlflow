@@ -44,7 +44,7 @@ describe('MCPAccessBindingListTable', () => {
     const bindings = [
       createMockMCPAccessBinding({
         binding_id: 1,
-        endpoint_url: 'https://mcp.example.com/fs',
+        url: 'https://mcp.example.com/fs',
         server_name: 'io.test/server',
         server_version: '1.0.0',
         transport_type: 'streamable-http',

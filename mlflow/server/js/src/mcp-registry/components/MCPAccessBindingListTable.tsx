@@ -44,16 +44,16 @@ const EndpointCell: ColumnDef<MCPAccessBinding>['cell'] = ({ row: { original } }
           componentId="mlflow.mcp_registry.bindings.table.copy_endpoint"
           size="small"
           icon={<CopyIcon />}
-          onClick={() => copyToClipboard(original.endpoint_url)}
+          onClick={() => copyToClipboard(original.url)}
           css={{ flexShrink: 0 }}
         />
       </Tooltip>
       <Link
         componentId="mlflow.mcp_registry.bindings.table.endpoint_link"
-        to={MCPRegistryRoutes.getAccessBindingDetailRoute(original.server_name, original.binding_id)}
+        to={MCPRegistryRoutes.getAccessBindingDetailRoute(original.server_name, original.id)}
         css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
       >
-        {original.endpoint_url}
+        {original.url}
       </Link>
     </span>
   );
@@ -95,7 +95,7 @@ const useMCPAccessBindingTableColumns = () => {
           defaultMessage: 'Endpoint',
           description: 'Header for the endpoint column in the access bindings table',
         }),
-        accessorKey: 'endpoint_url',
+        accessorKey: 'url',
         id: 'endpoint',
         meta: { flex: 2 },
         cell: EndpointCell,
@@ -178,7 +178,7 @@ export const MCPAccessBindingListTable = ({
     data: bindings ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getRowId: (row, index) => row.binding_id?.toString() ?? index.toString(),
+    getRowId: (row, index) => row.id?.toString() ?? index.toString(),
     meta: { onEditBinding },
   });
 

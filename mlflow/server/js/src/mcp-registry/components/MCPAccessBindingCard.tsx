@@ -16,7 +16,7 @@ export const MCPAccessBindingCard = ({ binding }: { binding: MCPAccessBinding })
     <Card
       componentId="mlflow.mcp_registry.bindings.card"
       width="100%"
-      href={`#${MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.binding_id)}`}
+      href={`#${MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.id)}`}
       dangerouslyAppendEmotionCSS={{
         borderLeft: `3px solid ${theme.colors.actionPrimaryBackgroundDefault}`,
         height: '100%',

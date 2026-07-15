@@ -49,7 +49,7 @@ export const useLatestMCPServerVersionQuery = (name: string, enabled = true) => 
 
 export const useMCPAccessBindingQuery = (serverName: string, bindingId: string) => {
   return useQuery<MCPAccessBinding, Error>([MCP_QUERY_KEYS.BINDING_DETAIL, serverName, bindingId], {
-    queryFn: () => MCPRegistryApi.getMCPAccessBinding(serverName, Number(bindingId)),
+    queryFn: () => MCPRegistryApi.getMCPAccessBinding(serverName, bindingId),
     retry: false,
     enabled: Boolean(serverName && bindingId),
   });
@@ -64,6 +64,6 @@ export const useMCPAccessBindingsQuery = (name: string) => {
 
   return {
     ...queryResult,
-    data: queryResult.data?.mcp_access_bindings,
+    data: queryResult.data?.mcp_access_endpoints,
   };
 };

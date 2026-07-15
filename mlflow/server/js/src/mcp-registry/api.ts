@@ -130,7 +130,7 @@ export const MCPRegistryApi = {
   // MCP Access Binding endpoints
 
   createMCPAccessBinding: (name: string, request: CreateMCPAccessBindingRequest): Promise<MCPAccessBinding> => {
-    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/bindings`), {
+    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/endpoints`), {
       method: HTTPMethods.POST,
       body: request,
     }) as Promise<MCPAccessBinding>;
@@ -147,7 +147,7 @@ export const MCPRegistryApi = {
       order_by: params.order_by,
       page_token: params.page_token,
     });
-    return fetchAPI(getAjaxUrl(`${BASE_URL}/bindings${query}`)) as Promise<SearchMCPAccessBindingsResponse>;
+    return fetchAPI(getAjaxUrl(`${BASE_URL}/endpoints${query}`)) as Promise<SearchMCPAccessBindingsResponse>;
   },
 
   searchMCPAccessBindings: (
@@ -163,29 +163,29 @@ export const MCPRegistryApi = {
       page_token: params.page_token,
     });
     return fetchAPI(
-      getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/bindings${query}`),
+      getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/endpoints${query}`),
     ) as Promise<SearchMCPAccessBindingsResponse>;
   },
 
-  getMCPAccessBinding: (name: string, bindingId: number): Promise<MCPAccessBinding> => {
+  getMCPAccessBinding: (name: string, bindingId: string): Promise<MCPAccessBinding> => {
     return fetchAPI(
-      getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/bindings/${bindingId}`),
+      getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/endpoints/${bindingId}`),
     ) as Promise<MCPAccessBinding>;
   },
 
   updateMCPAccessBinding: (
     name: string,
-    bindingId: number,
+    bindingId: string,
     request: UpdateMCPAccessBindingRequest,
   ): Promise<MCPAccessBinding> => {
-    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/bindings/${bindingId}`), {
+    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/endpoints/${bindingId}`), {
       method: HTTPMethods.PATCH,
       body: request,
     }) as Promise<MCPAccessBinding>;
   },
 
-  deleteMCPAccessBinding: (name: string, bindingId: number): Promise<void> => {
-    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/bindings/${bindingId}`), {
+  deleteMCPAccessBinding: (name: string, bindingId: string): Promise<void> => {
+    return fetchAPI(getAjaxUrl(`${BASE_URL}/${encodeURIComponent(name)}/endpoints/${bindingId}`), {
       method: HTTPMethods.DELETE,
     }) as Promise<void>;
   },

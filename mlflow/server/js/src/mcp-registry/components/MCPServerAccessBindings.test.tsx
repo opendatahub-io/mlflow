@@ -30,12 +30,12 @@ describe('MCPServerAccessBindings', () => {
     const bindings = [
       createMockMCPAccessBinding({
         binding_id: 1,
-        endpoint_url: 'https://mcp.example.com/alpha',
+        url: 'https://mcp.example.com/alpha',
         transport_type: 'streamable-http',
       }),
       createMockMCPAccessBinding({
         binding_id: 2,
-        endpoint_url: 'https://mcp.example.com/beta',
+        url: 'https://mcp.example.com/beta',
         transport_type: 'sse',
       }),
     ];
@@ -65,7 +65,7 @@ describe('MCPServerAccessBindings', () => {
     const onEditBinding = jest.fn();
     const binding = createMockMCPAccessBinding({
       binding_id: 1,
-      endpoint_url: 'https://mcp.example.com/alpha',
+      url: 'https://mcp.example.com/alpha',
     });
     renderComponent({ bindings: [binding], onEditBinding });
 
@@ -77,7 +77,7 @@ describe('MCPServerAccessBindings', () => {
     const onDeleteBinding = jest.fn();
     const binding = createMockMCPAccessBinding({
       binding_id: 1,
-      endpoint_url: 'https://mcp.example.com/alpha',
+      url: 'https://mcp.example.com/alpha',
     });
     renderComponent({ bindings: [binding], onDeleteBinding });
 
