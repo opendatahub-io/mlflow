@@ -234,7 +234,7 @@ const ExperimentPageTabsImpl = () => {
           }
         />
       )}
-      {!enableWorkflowBasedNavigation ? (
+      {!enableWorkflowBasedNavigation || showExperimentPageSideNav ? (
         <div css={{ display: 'flex', flex: 1, minWidth: 0, minHeight: 0 }}>
           {loadingExperiment || inferringExperimentType ? (
             <ExperimentPageSideNavSkeleton />
