@@ -323,7 +323,7 @@ $mlflow-form-status-icon-offset: 0.2em;
     background-color: color-mix(in srgb, var(--pf-t--global--background--color--primary--default) 60%, transparent);
   }
 
-  /* Alias tags — styled as PF compact outlined labels */
+  /* Tags — styled as PF compact outlined labels */
   [data-component-type='tag'][role='status']:not([aria-haspopup]) {
     display: inline-flex;
     align-items: center;
@@ -341,8 +341,6 @@ $mlflow-form-status-icon-offset: 0.2em;
     border: var(--pf-t--global--border--width--action--default) solid
       var(--pf-t--global--border--color--nonstatus--gray--default);
     border-radius: var(--pf-t--global--border--radius--pill);
-    background-color: transparent;
-    color: var(--pf-t--global--text--color--regular);
     white-space: nowrap;
 
     button[data-component-id$='.close'][data-component-type='button'] {

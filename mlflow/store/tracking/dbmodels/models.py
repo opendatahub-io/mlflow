@@ -24,7 +24,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import aliased, backref, query_expression, relationship, validates, with_expression
+from sqlalchemy.orm import (
+    aliased,
+    backref,
+    query_expression,
+    relationship,
+    validates,
+    with_expression,
+)
 
 from mlflow.entities import (
     Assessment,
