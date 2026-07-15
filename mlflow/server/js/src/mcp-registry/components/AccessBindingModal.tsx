@@ -68,7 +68,7 @@ export const AccessBindingModal = ({
     if (visible) {
       if (editBinding) {
         setSelectedServer(editBinding.server_name);
-        setEndpointUrl(editBinding.url);
+        setEndpointUrl(editBinding.endpoint_url);
         setSelectedTarget(bindingToTarget(editBinding));
         setTransportType(editBinding.transport_type);
       } else {
@@ -102,9 +102,9 @@ export const AccessBindingModal = ({
       updateMutation.mutate(
         {
           serverName: editBinding.server_name,
-          bindingId: editBinding.id,
+          bindingId: editBinding.binding_id,
           request: {
-            url: endpointUrl.trim(),
+            endpoint_url: endpointUrl.trim(),
             server_alias: isAlias ? targetValue : null,
             server_version: isAlias ? null : targetValue,
             transport_type: transportType,
@@ -122,7 +122,7 @@ export const AccessBindingModal = ({
         {
           serverName: selectedServer,
           request: {
-            url: endpointUrl.trim(),
+            endpoint_url: endpointUrl.trim(),
             server_alias: isAlias ? targetValue : undefined,
             server_version: isAlias ? undefined : targetValue,
             transport_type: transportType,

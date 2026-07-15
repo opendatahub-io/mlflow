@@ -60,7 +60,7 @@ const MCPAccessBindingDetailPage = () => {
   const deleteMutation = useDeleteAccessBindingMutation();
 
   const clientConfig = useMemo(
-    () => (binding ? buildClientConfig(binding.server_name, binding.url, binding.transport_type) : ''),
+    () => (binding ? buildClientConfig(binding.server_name, binding.endpoint_url, binding.transport_type) : ''),
     [binding],
   );
 
@@ -183,7 +183,7 @@ const MCPAccessBindingDetailPage = () => {
           <FormattedMessage defaultMessage="Endpoint URL:" description="Binding detail endpoint URL label" />
         </Typography.Text>
         <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}>
-          <Typography.Text>{binding.url}</Typography.Text>
+          <Typography.Text>{binding.endpoint_url}</Typography.Text>
           <Tooltip
             componentId="mlflow.mcp_registry.binding_detail.copy_tooltip"
             content={intl.formatMessage({
@@ -195,7 +195,7 @@ const MCPAccessBindingDetailPage = () => {
               componentId="mlflow.mcp_registry.binding_detail.copy_endpoint"
               size="small"
               icon={<CopyIcon />}
-              onClick={() => copyToClipboard(binding.url)}
+              onClick={() => copyToClipboard(binding.endpoint_url)}
               css={{ flexShrink: 0 }}
             />
           </Tooltip>
@@ -293,7 +293,7 @@ const MCPAccessBindingDetailPage = () => {
         error={deleteMutation.error?.message ?? null}
         onConfirm={() => {
           deleteMutation.mutate(
-            { serverName: binding.server_name, bindingId: binding.id },
+            { serverName: binding.server_name, bindingId: binding.binding_id },
             {
               onSuccess: () => {
                 setDeleteModalVisible(false);

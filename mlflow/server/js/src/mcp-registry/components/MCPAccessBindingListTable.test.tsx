@@ -43,8 +43,8 @@ describe('MCPAccessBindingListTable', () => {
   it('renders binding rows with data', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
-        url: 'https://mcp.example.com/fs',
+        binding_id: 1,
+        endpoint_url: 'https://mcp.example.com/fs',
         server_name: 'io.test/server',
         server_version: '1.0.0',
         transport_type: 'streamable-http',
@@ -59,7 +59,7 @@ describe('MCPAccessBindingListTable', () => {
   it('renders resolved display name for MCP Server column', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
+        binding_id: 1,
         server_name: 'io.test/raw-name',
         resolved_version: {
           name: 'io.test/raw-name',
@@ -77,14 +77,14 @@ describe('MCPAccessBindingListTable', () => {
   });
 
   it('formats transport type', () => {
-    const bindings = [createMockMCPAccessBinding({ id: 1, transport_type: 'sse' })];
+    const bindings = [createMockMCPAccessBinding({ binding_id: 1, transport_type: 'sse' })];
     renderTable({ bindings });
     expect(screen.getByText('SSE')).toBeInTheDocument();
   });
 
   it('shows alias in version/alias column', () => {
     const bindings = [
-      createMockMCPAccessBinding({ id: 1, server_alias: 'production', server_version: undefined }),
+      createMockMCPAccessBinding({ binding_id: 1, server_alias: 'production', server_version: undefined }),
     ];
     renderTable({ bindings });
     expect(screen.getByText('production')).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('MCPAccessBindingListTable', () => {
   it('includes version in server detail link when binding has server_version', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
+        binding_id: 1,
         server_name: 'io.test/server',
         server_version: '2.0.0',
       }),
@@ -121,7 +121,7 @@ describe('MCPAccessBindingListTable', () => {
   it('includes resolved version in server detail link for alias bindings', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
+        binding_id: 1,
         server_name: 'io.test/server',
         server_alias: 'production',
         server_version: undefined,
@@ -143,7 +143,7 @@ describe('MCPAccessBindingListTable', () => {
   it('server detail link has no version param when binding has neither version nor resolved_version', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
+        binding_id: 1,
         server_name: 'io.test/server',
         server_version: undefined,
         server_alias: undefined,

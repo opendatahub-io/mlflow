@@ -78,6 +78,6 @@ export const MCPAccessBindingCardGrid = ({
       />
     }
     renderItem={(binding) => <MCPAccessBindingCard binding={binding} />}
-    getItemKey={(binding) => binding.id}
+    getItemKey={(binding) => binding.binding_id}
   />
 );

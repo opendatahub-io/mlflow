@@ -29,13 +29,13 @@ describe('MCPServerAccessBindings', () => {
   it('renders binding cards when bindings provided', () => {
     const bindings = [
       createMockMCPAccessBinding({
-        id: 1,
-        url: 'https://mcp.example.com/alpha',
+        binding_id: 1,
+        endpoint_url: 'https://mcp.example.com/alpha',
         transport_type: 'streamable-http',
       }),
       createMockMCPAccessBinding({
-        id: 2,
-        url: 'https://mcp.example.com/beta',
+        binding_id: 2,
+        endpoint_url: 'https://mcp.example.com/beta',
         transport_type: 'sse',
       }),
     ];
@@ -64,8 +64,8 @@ describe('MCPServerAccessBindings', () => {
   it('edit callback fires on Edit link click', async () => {
     const onEditBinding = jest.fn();
     const binding = createMockMCPAccessBinding({
-      id: 1,
-      url: 'https://mcp.example.com/alpha',
+      binding_id: 1,
+      endpoint_url: 'https://mcp.example.com/alpha',
     });
     renderComponent({ bindings: [binding], onEditBinding });
 
@@ -76,8 +76,8 @@ describe('MCPServerAccessBindings', () => {
   it('delete callback fires on delete icon click', async () => {
     const onDeleteBinding = jest.fn();
     const binding = createMockMCPAccessBinding({
-      id: 1,
-      url: 'https://mcp.example.com/alpha',
+      binding_id: 1,
+      endpoint_url: 'https://mcp.example.com/alpha',
     });
     renderComponent({ bindings: [binding], onDeleteBinding });
 

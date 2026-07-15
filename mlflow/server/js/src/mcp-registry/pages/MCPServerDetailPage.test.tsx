@@ -282,7 +282,7 @@ describe('MCPServerDetailPage', () => {
   it('renders access bindings table when bindings exist', async () => {
     const binding = createMockMCPAccessBinding({
       server_name: 'dev.mainline/mcp',
-      url: 'https://mcp.example.com/server',
+      endpoint_url: 'https://mcp.example.com/server',
       transport_type: 'streamable-http',
       server_version: '1',
     });

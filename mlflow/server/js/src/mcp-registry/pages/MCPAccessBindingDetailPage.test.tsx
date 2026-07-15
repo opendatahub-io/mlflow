@@ -22,9 +22,9 @@ import {
 } from '../test-utils';
 
 const mockBinding = createMockMCPAccessBinding({
-  id: 42,
+  binding_id: 42,
   server_name: 'io.test/server',
-  url: 'https://mcp.example.com/fs',
+  endpoint_url: 'https://mcp.example.com/fs',
   transport_type: 'streamable-http',
   server_version: '1',
   server_alias: undefined,

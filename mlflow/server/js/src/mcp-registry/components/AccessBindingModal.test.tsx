@@ -67,7 +67,7 @@ describe('AccessBindingModal', () => {
   it('renders edit mode with pre-filled data from editBinding prop', () => {
     const editBinding = createMockMCPAccessBinding({
       server_name: 'io.test/alpha',
-      url: 'https://existing.example.com/mcp',
+      endpoint_url: 'https://existing.example.com/mcp',
       transport_type: 'sse',
       server_version: '1',
     });

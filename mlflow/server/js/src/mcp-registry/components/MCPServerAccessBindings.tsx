@@ -37,7 +37,7 @@ const BindingCard = ({
     <Card
       componentId="mlflow.mcp_registry.detail.binding.card"
       width="100%"
-      onClick={() => navigate(MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.id))}
+      onClick={() => navigate(MCPRegistryRoutes.getAccessBindingDetailRoute(binding.server_name, binding.binding_id))}
       dangerouslyAppendEmotionCSS={{
         cursor: 'pointer',
         '&:hover': {
@@ -48,7 +48,7 @@ const BindingCard = ({
       <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
         <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
           <Typography.Text bold css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {binding.url}
+            {binding.endpoint_url}
           </Typography.Text>
           <Tag componentId="mlflow.mcp_registry.detail.binding.transport" color="turquoise" css={{ flexShrink: 0 }}>
             {formatTransportType(binding.transport_type)}
@@ -188,7 +188,7 @@ export const MCPServerAccessBindings = ({
         <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
           {bindings.map((binding) => (
             <BindingCard
-              key={binding.id}
+              key={binding.binding_id}
               binding={binding}
               serverDescription={server?.description}
               onEditBinding={onEditBinding}

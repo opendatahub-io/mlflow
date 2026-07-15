@@ -6,11 +6,10 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from mlflow.exceptions import MlflowException
-from mlflow.utils.annotations import experimental
 from mlflow.utils.workspace_utils import resolve_entity_workspace_name
 
 if TYPE_CHECKING:
-    from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
+    from mlflow.entities.mcp_access_binding import MCPAccessBinding
 
 
 class MCPStatus(str, Enum):
@@ -38,9 +37,8 @@ class MCPRemoteTransportType(str, Enum):
         return self.value
 
 
-_MCP_SERVER_NAME_NAMESPACE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$")
-_MCP_SERVER_NAME_SLUG_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$")
-_MCP_SERVER_RESERVED_SLUGS = {"aliases", "endpoints", "tags", "versions"}
+_MCP_SERVER_NAME_NAMESPACE_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+_MCP_SERVER_RESERVED_SLUGS = {"aliases", "bindings", "tags", "versions"}
 
 
 def validate_mcp_server_name(name: str) -> None:
@@ -67,20 +65,20 @@ def validate_mcp_server_name(name: str) -> None:
             "such as 'com.example/server-name'."
         )
 
-    if _MCP_SERVER_NAME_NAMESPACE_RE.fullmatch(namespace) is None:
+    labels = namespace.split(".")
+    if len(labels) < 2 or any(not label for label in labels):
         raise MlflowException.invalid_parameter_value(
             "Invalid MCP server name. Expected '<reverse-dns namespace>/<server slug>' "
             "such as 'com.example/server-name'."
         )
 
-    if _MCP_SERVER_NAME_SLUG_RE.fullmatch(slug) is None:
+    if any(_MCP_SERVER_NAME_NAMESPACE_RE.fullmatch(label) is None for label in labels):
         raise MlflowException.invalid_parameter_value(
             "Invalid MCP server name. Expected '<reverse-dns namespace>/<server slug>' "
             "such as 'com.example/server-name'."
         )
 
 
-@experimental(version="3.15.0")
 @dataclass(frozen=True)
 class MCPTool:
     name: str
@@ -128,7 +126,12 @@ class MCPTool:
         )
 
 
-@experimental(version="3.15.0")
+@dataclass(frozen=True)
+class MCPServerTag:
+    key: str
+    value: str
+
+
 @dataclass
 class MCPServer:
     name: str
@@ -139,7 +142,7 @@ class MCPServer:
     status: MCPStatus | None = None
     tags: dict[str, str] = field(default_factory=dict)
     aliases: dict[str, str] = field(default_factory=dict)
-    access_endpoints: list[MCPAccessEndpoint] = field(default_factory=list)
+    access_bindings: list[MCPAccessBinding] = field(default_factory=list)
     latest_version: str | None = None
     created_by: str | None = None
     last_updated_by: str | None = None
@@ -148,47 +151,3 @@ class MCPServer:
 
     def __post_init__(self):
         self.workspace = resolve_entity_workspace_name(self.workspace)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> MCPServer:
-        if not isinstance(data, dict):
-            raise MlflowException.invalid_parameter_value(
-                "Failed to parse MCP server response: expected a dictionary"
-            )
-
-        try:
-            from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
-
-            aliases = data.get("aliases", [])
-            if isinstance(aliases, dict):
-                parsed_aliases = aliases
-            else:
-                parsed_aliases = {a["alias"]: a["version"] for a in aliases}
-
-            return cls(
-                name=data["name"],
-                display_name=data.get("display_name"),
-                description=data.get("description"),
-                icons=data.get("icons"),
-                workspace=data.get("workspace"),
-                status=MCPStatus(data["status"]) if data.get("status") else None,
-                tags=data.get("tags") or {},
-                aliases=parsed_aliases,
-                access_endpoints=[
-                    MCPAccessEndpoint.from_dict(endpoint)
-                    for endpoint in data.get("access_endpoints", [])
-                ],
-                latest_version=data.get("latest_version"),
-                created_by=data.get("created_by"),
-                last_updated_by=data.get("last_updated_by"),
-                creation_timestamp=data.get("creation_timestamp"),
-                last_updated_timestamp=data.get("last_updated_timestamp"),
-            )
-        except KeyError as e:
-            raise MlflowException.invalid_parameter_value(
-                f"Failed to parse MCP server response: missing required field {e}"
-            ) from None
-        except (ValueError, TypeError) as e:
-            raise MlflowException.invalid_parameter_value(
-                f"Failed to parse MCP server response: {e}"
-            ) from None

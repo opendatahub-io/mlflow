@@ -23,9 +23,9 @@ export interface MCPIcon {
 }
 
 export interface MCPAccessBindingSummary {
-  id: string;
+  binding_id: number;
   server_name: string;
-  url: string;
+  endpoint_url: string;
   transport_type: MCPRemoteTransportType;
   server_version?: string;
   server_alias?: string;
@@ -43,7 +43,7 @@ export interface MCPServer {
   description?: string;
   icons?: MCPIcon[];
   status?: MCPStatus;
-  access_endpoints: MCPAccessBindingSummary[];
+  access_bindings: MCPAccessBindingSummary[];
   latest_version?: string;
   aliases: MCPServerAlias[];
   tags: Record<string, string>;
@@ -70,9 +70,9 @@ export interface MCPServerVersion {
 }
 
 export interface MCPAccessBinding {
-  id: string;
+  binding_id: number;
   server_name: string;
-  url: string;
+  endpoint_url: string;
   transport_type: MCPRemoteTransportType;
   tools?: MCPTool[];
   server_version?: string;
@@ -165,14 +165,14 @@ export interface UpdateMCPServerVersionRequest {
 export interface CreateMCPAccessBindingRequest {
   server_version?: string;
   server_alias?: string;
-  url: string;
+  endpoint_url: string;
   transport_type?: MCPRemoteTransportType;
 }
 
 export interface UpdateMCPAccessBindingRequest {
   server_version?: string | null;
   server_alias?: string | null;
-  url?: string | null;
+  endpoint_url?: string | null;
   transport_type?: MCPRemoteTransportType | null;
 }
 
@@ -224,6 +224,6 @@ export interface SearchMCPServerVersionsResponse {
 }
 
 export interface SearchMCPAccessBindingsResponse {
-  mcp_access_endpoints: MCPAccessBinding[];
+  mcp_access_bindings: MCPAccessBinding[];
   next_page_token?: string;
 }

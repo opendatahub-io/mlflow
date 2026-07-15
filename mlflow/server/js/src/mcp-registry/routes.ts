@@ -36,10 +36,10 @@ class MCPRegistryRoutes {
     }
     return path;
   }
-  static getAccessBindingDetailRoute(serverName: string, bindingId: string) {
+  static getAccessBindingDetailRoute(serverName: string, bindingId: number) {
     return generatePath(MCPRegistryRoutePaths.mcpAccessBindingDetailPage, {
       serverName: encodeURIComponent(serverName),
-      bindingId,
+      bindingId: String(bindingId),
     });
   }
 }
