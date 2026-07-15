@@ -481,7 +481,7 @@ const MCPServerDetailPage = () => {
         onConfirm={() => {
           if (!deletingBinding) return;
           deleteBindingMutation.mutate(
-            { serverName: deletingBinding.server_name, bindingId: deletingBinding.binding_id },
+            { serverName: deletingBinding.server_name, bindingId: deletingBinding.id },
             { onSuccess: () => setDeletingBinding(undefined) },
           );
         }}

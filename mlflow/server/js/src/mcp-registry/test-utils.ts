@@ -6,7 +6,7 @@ const BASE_URL = 'ajax-api/3.0/mlflow/mcp-servers';
 
 export const createMockMCPServer = (overrides: Partial<MCPServer> = {}): MCPServer => ({
   name: 'io.github.test/server',
-  access_bindings: [],
+  access_endpoints: [],
   aliases: [],
   tags: {},
   ...overrides,
@@ -29,9 +29,9 @@ export const createMockMCPServerVersion = (overrides: Partial<MCPServerVersion> 
 });
 
 export const createMockMCPAccessBinding = (overrides: Partial<MCPAccessBinding> = {}): MCPAccessBinding => ({
-  binding_id: 1,
+  id: 1,
   server_name: 'io.github.test/server',
-  endpoint_url: 'https://example.com/mcp',
+  url: 'https://example.com/mcp',
   transport_type: 'streamable-http',
   ...overrides,
 });
@@ -57,7 +57,7 @@ export const getMockedSearchMCPServerVersionsResponse = (versions: MCPServerVers
 
 export const getMockedSearchMCPAccessBindingsResponse = (bindings: MCPAccessBinding[] = []) =>
   rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings`), (_req, res, ctx) =>
-    res(ctx.json({ mcp_access_bindings: bindings, next_page_token: undefined })),
+    res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
   );
 
 export const getMockedUpdateMCPServerVersionResponse = (version: MCPServerVersion) =>
@@ -71,7 +71,7 @@ export const getMockedDeleteMCPServerResponse = () =>
 
 export const getMockedSearchMCPAccessBindingsAllResponse = (bindings: MCPAccessBinding[] = []) =>
   rest.get(getAjaxUrl(`${BASE_URL}/bindings`), (_req, res, ctx) =>
-    res(ctx.json({ mcp_access_bindings: bindings, next_page_token: undefined })),
+    res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
   );
 
 export const getMockedGetMCPAccessBindingResponse = (binding: MCPAccessBinding) =>

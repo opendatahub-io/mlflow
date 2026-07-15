@@ -37,7 +37,6 @@ def upgrade():
         sa.Column("display_name", sa.String(length=256), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("icons", json_type, nullable=True),
-        sa.Column("latest_version", sa.String(length=128), nullable=True),
         sa.Column("created_by", sa.String(length=256), nullable=True),
         sa.Column("last_updated_by", sa.String(length=256), nullable=True),
         sa.Column("created_at", sa.BigInteger(), nullable=False),
@@ -55,6 +54,10 @@ def upgrade():
         ),
         sa.Column("name", sa.String(length=256), nullable=False),
         sa.Column("version", sa.String(length=128), nullable=False),
+        sa.Column("version_major", sa.Integer(), nullable=False),
+        sa.Column("version_minor", sa.Integer(), nullable=False),
+        sa.Column("version_patch", sa.Integer(), nullable=False),
+        sa.Column("version_prerelease_sort_key", sa.String(length=512), nullable=False),
         sa.Column("server_json", json_type, nullable=False),
         sa.Column("display_name", sa.String(length=256), nullable=True),
         sa.Column(
@@ -154,8 +157,8 @@ def upgrade():
     )
 
     op.create_table(
-        "mcp_access_bindings",
-        sa.Column("binding_id", sa.Integer(), autoincrement=True, nullable=False),
+        "mcp_access_endpoints",
+        sa.Column("id", sa.String(length=36), nullable=False),
         sa.Column(
             "workspace",
             sa.String(length=63),
@@ -165,7 +168,7 @@ def upgrade():
         sa.Column("server_name", sa.String(length=256), nullable=False),
         sa.Column("server_version", sa.String(length=128), nullable=True),
         sa.Column("server_alias", sa.String(length=256), nullable=True),
-        sa.Column("endpoint_url", sa.String(length=2048), nullable=False),
+        sa.Column("url", sa.String(length=2048), nullable=False),
         sa.Column(
             "transport_type",
             sa.String(length=32),
@@ -181,40 +184,51 @@ def upgrade():
             ["mcp_servers.workspace", "mcp_servers.name"],
             ondelete="CASCADE",
             onupdate="CASCADE",
-            name="mcp_access_bindings_server_fkey",
+            name="mcp_access_endpoints_server_fkey",
         ),
-        sa.PrimaryKeyConstraint("binding_id", name="mcp_access_bindings_pk"),
+        sa.PrimaryKeyConstraint("id", name="mcp_access_endpoints_pk"),
     )
 
+    # Keep this support index narrow enough for MySQL's 3072-byte key limit.
+    # Latest resolution still orders in SQL by semver core, prerelease sort
+    # key, created_at, and finally raw version; only the coarse prefix is
+    # indexed here because that is the most important pruning portion.
     op.create_index(
         "idx_mcp_server_versions_latest",
         "mcp_server_versions",
-        ["workspace", "name", "status", sa.text("created_at DESC"), sa.text("version DESC")],
+        [
+            "workspace",
+            "name",
+            "status",
+            sa.text("version_major DESC"),
+            sa.text("version_minor DESC"),
+            sa.text("version_patch DESC"),
+        ],
     )
 
     op.create_index(
-        "ix_mcp_access_bindings_server_name",
-        "mcp_access_bindings",
+        "ix_mcp_access_endpoints_server_name",
+        "mcp_access_endpoints",
         ["workspace", "server_name"],
     )
     op.create_index(
-        "ix_mcp_access_bindings_version",
-        "mcp_access_bindings",
+        "ix_mcp_access_endpoints_version",
+        "mcp_access_endpoints",
         ["workspace", "server_name", "server_version"],
     )
     op.create_index(
-        "ix_mcp_access_bindings_alias",
-        "mcp_access_bindings",
+        "ix_mcp_access_endpoints_alias",
+        "mcp_access_endpoints",
         ["workspace", "server_name", "server_alias"],
     )
 
 
 def downgrade():
-    op.drop_index("ix_mcp_access_bindings_alias", table_name="mcp_access_bindings")
-    op.drop_index("ix_mcp_access_bindings_version", table_name="mcp_access_bindings")
-    op.drop_index("ix_mcp_access_bindings_server_name", table_name="mcp_access_bindings")
+    op.drop_index("ix_mcp_access_endpoints_alias", table_name="mcp_access_endpoints")
+    op.drop_index("ix_mcp_access_endpoints_version", table_name="mcp_access_endpoints")
+    op.drop_index("ix_mcp_access_endpoints_server_name", table_name="mcp_access_endpoints")
     op.drop_index("idx_mcp_server_versions_latest", table_name="mcp_server_versions")
-    op.drop_table("mcp_access_bindings")
+    op.drop_table("mcp_access_endpoints")
     op.drop_table("mcp_server_aliases")
     op.drop_table("mcp_server_version_tags")
     op.drop_table("mcp_server_tags")

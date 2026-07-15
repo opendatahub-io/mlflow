@@ -64,6 +64,6 @@ export const useMCPAccessBindingsQuery = (name: string) => {
 
   return {
     ...queryResult,
-    data: queryResult.data?.mcp_access_bindings,
+    data: queryResult.data?.mcp_access_endpoints,
   };
 };
