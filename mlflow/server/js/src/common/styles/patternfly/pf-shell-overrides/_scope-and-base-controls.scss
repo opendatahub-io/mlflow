@@ -78,7 +78,8 @@
     border: none !important; // Remove native border
     box-shadow: inset 0 0 0 var(--pf-t--global--border--width--action--default)
       var(--pf-t--global--border--color--brand--default) !important;
-    span > svg {
+    span > svg,
+    span[role='img'] {
       color: var(--pf-t--global--text--color--brand--default) !important;
     }
     padding-block-start: calc(
@@ -100,7 +101,8 @@
       border-color: transparent !important;
       box-shadow: none !important;
 
-      span > svg {
+      span > svg,
+      span[role='img'] {
         color: var(--pf-t--global--text--color--on-disabled) !important;
       }
 
@@ -146,21 +148,24 @@
 
   button.du-bois-light-btn:not([aria-label='Toggle visibility of rows']):not(.ag-cell *):not(.ag-grid-sticky *):not(
       .du-bois-light-btn-icon-only
-    ),
+    ):not(.du-bois-light-btn-link),
   button.du-bois-dark-btn:not([aria-label='Toggle visibility of rows']):not(.ag-cell *):not(.ag-grid-sticky *):not(
       .du-bois-dark-btn-icon-only
-    ) {
+    ):not(.du-bois-dark-btn-link) {
     padding-block-start: var(--pf-t--global--spacer--xs) !important;
     padding-block-end: var(--pf-t--global--spacer--xs) !important;
     padding-inline-start: var(--pf-t--global--spacer--md) !important;
     padding-inline-end: var(--pf-t--global--spacer--md) !important;
+    min-height: calc(
+      var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+        var(--pf-t--global--spacer--sm) * 2
+    ) !important;
     border-radius: var(--pf-t--global--border--radius--pill) !important;
     border-start-start-radius: var(--pf-t--global--border--radius--pill) !important;
     border-start-end-radius: var(--pf-t--global--border--radius--pill) !important;
     border-end-start-radius: var(--pf-t--global--border--radius--pill) !important;
     border-end-end-radius: var(--pf-t--global--border--radius--pill) !important;
     height: auto !important;
-    align-self: center !important;
   }
 
   // Prevent buttons from stretching in the prompts detail action bar
@@ -183,12 +188,19 @@
     background-color: transparent !important;
   }
 
-  button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled:not(.du-bois-dark-btn-sm),
-  button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled:not(.du-bois-light-btn-sm) {
+  button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled:not(.du-bois-dark-btn-sm):not(.du-bois-dark-btn-dangerous),
+  button.du-bois-light-btn.du-bois-light-btn-icon-only:enabled:not(.du-bois-light-btn-sm):not(
+      .du-bois-light-btn-dangerous
+    ) {
     background-color: transparent !important;
+    color: var(--pf-t--global--text--color--brand--default) !important;
     padding-block-start: var(--pf-t--global--spacer--sm) !important;
     padding-block-end: var(--pf-t--global--spacer--sm) !important;
     border-radius: var(--pf-t--global--border--radius--small) !important;
+
+    span[role='img'] {
+      color: var(--pf-t--global--text--color--brand--default) !important;
+    }
   }
 
   button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled:hover,
@@ -216,9 +228,9 @@
     color: var(--pf-t--global--text--color--brand--default) !important;
   }
 
-  button.du-bois-light-btn-dangerous,
+  button.du-bois-light-btn-dangerous:not(.du-bois-light-btn-icon-only),
   button.du-bois-light-btn-dangerous.du-bois-light-btn-primary,
-  button.du-bois-dark-btn-dangerous,
+  button.du-bois-dark-btn-dangerous:not(.du-bois-dark-btn-icon-only),
   button.du-bois-dark-btn-dangerous.du-bois-dark-btn-primary {
     background-color: var(--pf-t--global--color--status--danger--default) !important;
     color: var(--pf-t--global--text--color--status--on-danger--default) !important;
@@ -243,6 +255,27 @@
         color: var(--pf-t--global--text--color--on-disabled) !important;
         background-color: var(--pf-t--global--background--color--disabled--default) !important;
         border-color: transparent !important;
+      }
+    }
+  }
+
+  // Danger icon-only buttons — transparent background, danger-colored icon
+  button.du-bois-light-btn-dangerous.du-bois-light-btn-icon-only:not(.du-bois-light-btn-primary),
+  button.du-bois-dark-btn-dangerous.du-bois-dark-btn-icon-only:not(.du-bois-dark-btn-primary) {
+    background-color: transparent !important;
+    color: var(--pf-t--global--color--status--danger--default) !important;
+    border-color: transparent !important;
+
+    span > svg {
+      color: var(--pf-t--global--color--status--danger--default) !important;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      color: var(--pf-t--global--color--status--danger--hover) !important;
+
+      span > svg {
+        color: var(--pf-t--global--color--status--danger--hover) !important;
       }
     }
   }

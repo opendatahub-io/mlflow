@@ -778,3 +778,30 @@
     background-color: var(--pf-t--global--background--color--floating--default) !important;
   }
 }
+
+/* Portalled listbox (SimpleSelect) — renders outside .pf-shell-root
+   via Radix portal, so these rules must be at the global scope.
+   DOM: [data-radix-popper-content-wrapper] > div[role='listbox']
+        > div > div[data-combobox-option-list] > div[role='option'] */
+[data-radix-popper-content-wrapper] div[role='listbox'] [role='option'] {
+  &:hover,
+  &[data-highlighted='true'] {
+    background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+  }
+
+  &[aria-selected='true'] {
+    font-weight: var(--pf-t--global--font--weight--body--bold) !important;
+  }
+
+  &[disabled] {
+    color: var(--pf-t--global--text--color--disabled) !important;
+
+    label {
+      color: inherit !important;
+    }
+
+    &:hover {
+      background-color: transparent !important;
+    }
+  }
+}
