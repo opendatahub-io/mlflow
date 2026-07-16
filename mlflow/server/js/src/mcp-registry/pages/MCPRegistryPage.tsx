@@ -20,6 +20,7 @@ import type { RadioChangeEvent } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
+import { isIntegrated } from '../../common/utils/embedUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
 import { useNavigate, useSearchParams } from '../../common/utils/RoutingUtils';
@@ -120,11 +121,11 @@ const MCPRegistryPage = () => {
       >
         <FormattedMessage defaultMessage="Create access binding" description="Button to create a new access binding" />
       </Button>
-    ) : !isServersEmpty ? (
+    ) : (
       <Button componentId="mlflow.mcp_registry.create_server_button" type="primary" onClick={openModal}>
         <FormattedMessage defaultMessage="Create MCP server" description="Button to create a new MCP server" />
       </Button>
-    ) : null;
+    );
 
   const serversEmptyState = (
     <div css={emptyCenterStyles}>
@@ -152,43 +153,55 @@ const MCPRegistryPage = () => {
     </div>
   );
 
+  const integrated = isIntegrated();
+
   return (
     <>
       <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <Spacer shrinks={false} />
-        <Header
-          title={
-            <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-              <span
-                css={{
-                  display: 'flex',
-                  borderRadius: theme.borders.borderRadiusSm,
-                  backgroundColor: theme.colors.backgroundSecondary,
-                  padding: theme.spacing.sm,
-                }}
-              >
-                <McpIcon />
-              </span>
-              <FormattedMessage defaultMessage="MCP Registry" description="MCP Registry page title" />
-            </span>
-          }
-          buttons={createButton}
-        />
-        <Spacer shrinks={false} />
+        {!integrated && (
+          <>
+            <Spacer shrinks={false} />
+            <Header
+              title={
+                <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+                  <span
+                    css={{
+                      display: 'flex',
+                      borderRadius: theme.borders.borderRadiusSm,
+                      backgroundColor: theme.colors.backgroundSecondary,
+                      padding: theme.spacing.sm,
+                    }}
+                  >
+                    <McpIcon />
+                  </span>
+                  <FormattedMessage defaultMessage="MCP Registry" description="MCP Registry page title" />
+                </span>
+              }
+              buttons={createButton}
+            />
+            <Spacer shrinks={false} />
+          </>
+        )}
         <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <SegmentedControlGroup
-            name="mcp-registry-tabs"
-            value={activeTab}
-            onChange={handleTabChange}
-            componentId="mlflow.mcp_registry.tabs"
-          >
-            <SegmentedControlButton value="bindings">
-              <FormattedMessage defaultMessage="Access Bindings" description="MCP Registry access bindings tab label" />
-            </SegmentedControlButton>
-            <SegmentedControlButton value="servers">
-              <FormattedMessage defaultMessage="Servers" description="MCP Registry servers tab label" />
-            </SegmentedControlButton>
-          </SegmentedControlGroup>
+          <div css={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SegmentedControlGroup
+              name="mcp-registry-tabs"
+              value={activeTab}
+              onChange={handleTabChange}
+              componentId="mlflow.mcp_registry.tabs"
+            >
+              <SegmentedControlButton value="bindings">
+                <FormattedMessage
+                  defaultMessage="Access Bindings"
+                  description="MCP Registry access bindings tab label"
+                />
+              </SegmentedControlButton>
+              <SegmentedControlButton value="servers">
+                <FormattedMessage defaultMessage="Servers" description="MCP Registry servers tab label" />
+              </SegmentedControlButton>
+            </SegmentedControlGroup>
+            {integrated && createButton}
+          </div>
 
           {activeTab === 'servers' && (
             <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -335,7 +348,7 @@ const MCPRegistryPage = () => {
                         componentId="mlflow.mcp_registry.bindings.empty_state.create_server"
                         type="primary"
                         icon={<PlusIcon />}
-                        disabled
+                        onClick={openModal}
                       >
                         <FormattedMessage
                           defaultMessage="Create MCP server"
@@ -398,7 +411,7 @@ const MCPRegistryPage = () => {
                             componentId="mlflow.mcp_registry.bindings.list.empty_state.create_server"
                             type="primary"
                             icon={<PlusIcon />}
-                            disabled
+                            onClick={openModal}
                           >
                             <FormattedMessage
                               defaultMessage="Create MCP server"

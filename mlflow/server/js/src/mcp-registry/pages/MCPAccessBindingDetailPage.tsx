@@ -18,6 +18,7 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
+import { isIntegrated } from '../../common/utils/embedUtils';
 import { Link, useNavigate, useParams } from '../../common/utils/RoutingUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import { copyToClipboard } from '../../common/utils/copyToClipboard';
@@ -98,7 +99,7 @@ const MCPAccessBindingDetailPage = () => {
   if (error || !binding) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header breadcrumbs={breadcrumbs} title="" />
         <Alert
           componentId="mlflow.mcp_registry.binding_detail.error"
@@ -123,7 +124,7 @@ const MCPAccessBindingDetailPage = () => {
 
   return (
     <ScrollablePageWrapper>
-      <Spacer shrinks={false} />
+      {!isIntegrated() && <Spacer shrinks={false} />}
       <Header
         breadcrumbs={breadcrumbs}
         title={displayName}

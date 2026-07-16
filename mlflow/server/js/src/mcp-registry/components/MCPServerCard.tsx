@@ -3,6 +3,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import MCPRegistryRoutes from '../routes';
+import { useNavigate } from '../../common/utils/RoutingUtils';
 import { resolveDisplayName, resolveIconSrc } from '../utils';
 import { useLatestMCPServerVersionQuery } from '../hooks/useMCPServerDetailQuery';
 import { CardIconWrapper } from './CardIconWrapper';
@@ -11,6 +12,7 @@ import Utils from '../../common/utils/Utils';
 
 export const MCPServerCard = ({ server }: { server: MCPServer }) => {
   const { theme } = useDesignSystemTheme();
+  const navigate = useNavigate();
   const intl = useIntl();
   const { data: latestVersion } = useLatestMCPServerVersionQuery(server.name, !server.latest_version);
 
@@ -24,7 +26,7 @@ export const MCPServerCard = ({ server }: { server: MCPServer }) => {
     <Card
       componentId="mlflow.mcp_registry.card"
       width="100%"
-      href={`#${MCPRegistryRoutes.getMCPServerDetailRoute(server.name)}`}
+      onClick={() => navigate(MCPRegistryRoutes.getMCPServerDetailRoute(server.name))}
       dangerouslyAppendEmotionCSS={{ height: '100%' }}
     >
       <div css={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>

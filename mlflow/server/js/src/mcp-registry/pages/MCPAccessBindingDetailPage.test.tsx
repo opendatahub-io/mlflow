@@ -54,7 +54,7 @@ const defaultHandlers = [
 describe('MCPAccessBindingDetailPage', () => {
   const server = setupServer(...defaultHandlers);
 
-  const renderPage = (initialEntries = ['/mcp-registry/io.test%2Fserver/bindings/42']) => {
+  const renderPage = (initialEntries = ['/mcp-registry/io.test%2Fserver/bindings/ep-042']) => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<MCPAccessBindingDetailPage />, {
       wrapper: ({ children }) => (
@@ -102,7 +102,7 @@ describe('MCPAccessBindingDetailPage', () => {
   it('shows loading spinner while fetching', () => {
     // Use a delayed handler to keep the loading state
     server.use(
-      rest.get(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers/:name/bindings/:bindingId'), (_req, res, ctx) =>
+      rest.get(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers/:name/endpoints/:bindingId'), (_req, res, ctx) =>
         res(ctx.delay('infinite'), ctx.json(mockBinding)),
       ),
     );

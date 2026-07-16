@@ -18,6 +18,7 @@ import type { TagColors } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
+import { isIntegrated } from '../../common/utils/embedUtils';
 import { Link, useNavigate, useParams, useSearchParams } from '../../common/utils/RoutingUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
@@ -223,6 +224,7 @@ const MCPServerDetailPage = () => {
   if (serverLoading) {
     return (
       <ScrollablePageWrapper>
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <div
           css={{
             display: 'flex',
@@ -241,7 +243,7 @@ const MCPServerDetailPage = () => {
   if (serverError || !server) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header breadcrumbs={breadcrumbs} title="" />
         <Alert
           componentId="mlflow.mcp_registry.detail.error"
@@ -263,7 +265,7 @@ const MCPServerDetailPage = () => {
 
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Spacer shrinks={false} />
+      {!isIntegrated() && <Spacer shrinks={false} />}
       <Header
         breadcrumbs={breadcrumbs}
         title={displayName}

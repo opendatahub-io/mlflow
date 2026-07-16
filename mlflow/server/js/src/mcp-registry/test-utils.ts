@@ -56,7 +56,7 @@ export const getMockedSearchMCPServerVersionsResponse = (versions: MCPServerVers
   );
 
 export const getMockedSearchMCPAccessBindingsResponse = (bindings: MCPAccessBinding[] = []) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings`), (_req, res, ctx) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints`), (_req, res, ctx) =>
     res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
   );
 
@@ -70,20 +70,20 @@ export const getMockedDeleteMCPServerResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.json({})));
 
 export const getMockedSearchMCPAccessBindingsAllResponse = (bindings: MCPAccessBinding[] = []) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/bindings`), (_req, res, ctx) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/endpoints`), (_req, res, ctx) =>
     res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
   );
 
 export const getMockedGetMCPAccessBindingResponse = (binding: MCPAccessBinding) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) => res(ctx.json(binding)));
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) => res(ctx.json(binding)));
 
 export const getMockedGetMCPAccessBindingErrorResponse = (status = 404, message = 'Not found') =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) =>
     res(ctx.status(status), ctx.json({ message })),
   );
 
 export const getMockedDeleteMCPAccessBindingResponse = () =>
-  rest.delete(getAjaxUrl(`${BASE_URL}/:name/bindings/:bindingId`), (_req, res, ctx) => res(ctx.json({})));
+  rest.delete(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) => res(ctx.json({})));
 
 export const getMockedCreateMCPServerVersionResponse = (version?: MCPServerVersion) =>
   rest.post(getAjaxUrl(`${BASE_URL}/:name/versions`), (_req, res, ctx) =>
