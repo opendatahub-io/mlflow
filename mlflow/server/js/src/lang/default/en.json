@@ -27,6 +27,10 @@
     "defaultMessage": "Store it securely and restrict access to server administrators only.",
     "description": "AI Gateway setup guide > Passphrase warning security note"
   },
+  "+5GzfZ": {
+    "defaultMessage": "Edit display name",
+    "description": "MCP server detail edit server display name action"
+  },
   "+634bT": {
     "defaultMessage": "Feedback",
     "description": "Review question type: feedback"
@@ -42,6 +46,10 @@
   "+8+eEg": {
     "defaultMessage": "Follow these steps to enable the AI Gateway feature for managing AI provider credentials.",
     "description": "AI Gateway setup guide > Subtitle"
+  },
+  "+8D/Xe": {
+    "defaultMessage": "No access bindings found",
+    "description": "Empty state when access binding search returns no results"
   },
   "+8uMvO": {
     "defaultMessage": "Enter new password",
@@ -159,6 +167,18 @@
     "defaultMessage": "Max",
     "description": "Column title for the column displaying the maximum metric values for a metric"
   },
+  "+itf/D": {
+    "defaultMessage": "Save",
+    "description": "Save button"
+  },
+  "+jMswj": {
+    "defaultMessage": "Target:",
+    "description": "Binding card target label"
+  },
+  "+jTk/P": {
+    "defaultMessage": "Show less",
+    "description": "MCP server package show less env vars button"
+  },
   "+kOR9h": {
     "defaultMessage": "Save",
     "description": "Queue settings: save button"
@@ -182,6 +202,10 @@
   "+o0xUA": {
     "defaultMessage": "An error occurred while attempting to fetch trace data (ID: {traceId}). Please ensure that the MLflow tracking server is running, and that the trace data exists. Error details:",
     "description": "An error message explaining that an error occurred while fetching trace data"
+  },
+  "+pqOTO": {
+    "defaultMessage": "Streamable HTTP",
+    "description": "MCP registry streamable HTTP transport option"
   },
   "+tURAJ": {
     "defaultMessage": "Cancel",
@@ -223,6 +247,10 @@
     "defaultMessage": "Oops!",
     "description": "Error modal title to rendering errors"
   },
+  "/44YOb": {
+    "defaultMessage": "Create MCP server version",
+    "description": "MCP server detail create version button"
+  },
   "/4Aok8": {
     "defaultMessage": "Run",
     "description": "Column header for the run name in the runs table on the logged model details page"
@@ -238,6 +266,10 @@
   "/8w8Ea": {
     "defaultMessage": "Pass / Fail",
     "description": "Review question input type: pass/fail"
+  },
+  "/Adc0h": {
+    "defaultMessage": "Copy identifier",
+    "description": "Tooltip for copy package identifier button"
   },
   "/Aup8Q": {
     "defaultMessage": "Request time",
@@ -298,6 +330,10 @@
   "/Ni371": {
     "defaultMessage": "Fix the response format schema: {error}",
     "description": "Reason shown when the playground Submit button is disabled because the response format schema is invalid"
+  },
+  "/PBJ8N": {
+    "defaultMessage": "Save",
+    "description": "MCP registry edit access binding modal save button"
   },
   "/Q7stq": {
     "defaultMessage": "Learn more",
@@ -434,6 +470,10 @@
   "/w5HDz": {
     "defaultMessage": "Create webhook",
     "description": "Create webhook modal title"
+  },
+  "/xcOO2": {
+    "defaultMessage": "Create MCP server",
+    "description": "MCP servers table empty state CTA button"
   },
   "/y0ZU4": {
     "defaultMessage": "Updated",
@@ -595,6 +635,10 @@
     "defaultMessage": "Trace archival retention unit",
     "description": "Label for trace archival retention unit selector"
   },
+  "0mvnEB": {
+    "defaultMessage": "Create endpoint",
+    "description": "Empty state title for access bindings table"
+  },
   "0pY/4R": {
     "defaultMessage": "Usage",
     "description": "Tab label for endpoint usage metrics"
@@ -606,6 +650,10 @@
   "0phUi0": {
     "defaultMessage": "Copy link to trace",
     "description": "Tooltip for the share trace button"
+  },
+  "0qq5zE": {
+    "defaultMessage": "Copy endpoint URL",
+    "description": "Tooltip for copy endpoint URL button on binding detail"
   },
   "0qzcFj": {
     "defaultMessage": "Loading users…",
@@ -626,6 +674,10 @@
   "0uYJoi": {
     "defaultMessage": "Alerts",
     "description": "Tab label for budget alerts"
+  },
+  "0ueLGI": {
+    "defaultMessage": "Edit display name",
+    "description": "MCP server update version display name modal title"
   },
   "0vwlO5": {
     "defaultMessage": "Each message has a role that tells the model who is speaking:",
@@ -775,6 +827,10 @@
     "defaultMessage": "Version",
     "description": "Column title text for model version in model version table"
   },
+  "1fkQkn": {
+    "defaultMessage": "Created by:",
+    "description": "Binding detail created by label"
+  },
   "1hI96w": {
     "defaultMessage": "Showing only visible runs",
     "description": "Experiment page > compare runs > parallel chart > header > indicator for only visible runs shown"
@@ -810,6 +866,14 @@
   "1l/c+M": {
     "defaultMessage": "User frustration",
     "description": "LLM template option"
+  },
+  "1oN1ky": {
+    "defaultMessage": "MCP Registry",
+    "description": "Sidebar link for MCP Registry page"
+  },
+  "1oaTIy": {
+    "defaultMessage": "secret",
+    "description": "Header secret badge"
   },
   "1oofcq": {
     "defaultMessage": "Show less",
@@ -858,6 +922,10 @@
   "26uApn": {
     "defaultMessage": "Trace archival retention updated",
     "description": "Partial save status message when experiment trace archival retention update succeeds"
+  },
+  "271P9S": {
+    "defaultMessage": "Create and manage direct access endpoints for your MCP servers.",
+    "description": "Empty state description for access bindings card grid"
   },
   "27XMby": {
     "defaultMessage": "Missing",
@@ -947,6 +1015,10 @@
     "defaultMessage": "Reviewers",
     "description": "Create review queue: reviewers field label"
   },
+  "2ScZy5": {
+    "defaultMessage": "Transport:",
+    "description": "MCP server package transport label"
+  },
   "2Us2jl": {
     "defaultMessage": "X axis",
     "description": "Label for X axis in Contour chart configurator in compare runs chart config modal"
@@ -983,6 +1055,10 @@
     "defaultMessage": "Save prompt to registry",
     "description": "Title of the save-prompt-version modal on the playground page"
   },
+  "2aFhNQ": {
+    "defaultMessage": "Version/Alias:",
+    "description": "MCP registry binding modal version/alias label"
+  },
   "2cshW2": {
     "defaultMessage": "Resolved ({count})",
     "description": "Issue status filter > Resolved button label"
@@ -990,6 +1066,10 @@
   "2deqxk": {
     "defaultMessage": "We couldn't find any models matching your search criteria. Try changing your search filters.",
     "description": "Empty state message displayed when all models are filtered out in the logged models list page"
+  },
+  "2edtUe": {
+    "defaultMessage": "Transport",
+    "description": "Header for the transport type column in the access bindings table"
   },
   "2f2qeb": {
     "defaultMessage": "Type",
@@ -1039,6 +1119,10 @@
     "defaultMessage": "Share",
     "description": "Text for share button on experiment view page header"
   },
+  "2pEWG3": {
+    "defaultMessage": "Select a version to view details.",
+    "description": "MCP server detail placeholder when no version is selected"
+  },
   "2pSaCv": {
     "defaultMessage": "Create new API key",
     "description": "Option to create new API key"
@@ -1078,6 +1162,10 @@
   "2zy+D5": {
     "defaultMessage": "Add new tag",
     "description": "Experiment tracking > experiment page > runs > add new tag button"
+  },
+  "3/LDru": {
+    "defaultMessage": "Are you sure you want to delete this access binding? This action cannot be undone.",
+    "description": "Access binding delete confirmation message"
   },
   "3253th": {
     "defaultMessage": "Trace archival retention update failed",
@@ -1155,6 +1243,10 @@
     "defaultMessage": "This tab displays all the traces logged to this logged model. MLflow supports automatic tracing for many popular generative AI frameworks. Follow the steps below to log your first trace. For more information about MLflow Tracing, visit the <a>MLflow documentation</a>.",
     "description": "Message that explains the function of the 'Traces' tab in logged model page. This message is followed by a tutorial explaining how to get started with MLflow Tracing."
   },
+  "3Xy5rr": {
+    "defaultMessage": "Create access binding",
+    "description": "Access bindings card grid empty state CTA button"
+  },
   "3YddwH": {
     "defaultMessage": "Traffic split percentages must total 100%",
     "description": "Tooltip shown when save button is disabled due to invalid traffic split total"
@@ -1231,6 +1323,10 @@
     "defaultMessage": "Clear all demo data",
     "description": "Clear demo data button"
   },
+  "42ghQw": {
+    "defaultMessage": "Save",
+    "description": "MCP server update version display name modal confirm button"
+  },
   "44XPr5": {
     "defaultMessage": "Chart view",
     "description": "Label for the table view toggle button in the logged model list page"
@@ -1254,6 +1350,10 @@
   "46xd2Z": {
     "defaultMessage": "Compare",
     "description": "Runs charts > components > config > RunsChartsConfigureDifferenceChart > Compare config section"
+  },
+  "47HcTC": {
+    "defaultMessage": "Empty",
+    "description": "Fallback for empty server JSON in compare view"
   },
   "47JmSp": {
     "defaultMessage": "Configure new model",
@@ -1342,6 +1442,10 @@
   "4PquPn": {
     "defaultMessage": "Add a message to send to the endpoint.",
     "description": "Empty-state hint for the playground messages panel"
+  },
+  "4QTnoO": {
+    "defaultMessage": "View raw server.json",
+    "description": "MCP server version detail view raw JSON button"
   },
   "4Qft47": {
     "defaultMessage": "{nodeCount, plural, =0 {} one {# node} other {# nodes}}",
@@ -1475,6 +1579,10 @@
     "defaultMessage": "Click to pin the run",
     "description": "A tooltip for the pin icon button in the runs chart tooltip next to the not pinned run"
   },
+  "59sogb": {
+    "defaultMessage": "Enter tools JSON array",
+    "description": "Placeholder for version tools input"
+  },
   "5AiU0Q": {
     "defaultMessage": "Create your first prompt",
     "description": "Title for the empty state on the prompts list page"
@@ -1482,6 +1590,10 @@
   "5B5dhT": {
     "defaultMessage": "Validate the model before deployment",
     "description": "Heading text for validating the model before deploying it for serving"
+  },
+  "5F/eep": {
+    "defaultMessage": "Tools",
+    "description": "Version edit tools label"
   },
   "5GCYzy": {
     "defaultMessage": "Experiment Runs - Databricks",
@@ -1539,6 +1651,10 @@
     "defaultMessage": "Export as CSV",
     "description": "Experiment page > compare runs tab > chart header > export CSV data option"
   },
+  "5Yxrg9": {
+    "defaultMessage": "Save",
+    "description": "MCP server version edit description save button"
+  },
   "5Z4WgY": {
     "defaultMessage": "Tool call metrics require Unity Catalog trace storage.",
     "description": "Message shown on Tool Calls tab when experiment uses MySQL trace storage"
@@ -1566,6 +1682,10 @@
   "5e1r3Y": {
     "defaultMessage": "Cancel",
     "description": "Evaluation review > assessments > cancel assessment button label"
+  },
+  "5fUSTW": {
+    "defaultMessage": "Edit",
+    "description": "Edit access binding link"
   },
   "5iPi6b": {
     "defaultMessage": "No permissions",
@@ -1614,6 +1734,10 @@
   "5yjgeu": {
     "defaultMessage": "This key will be saved for reuse.",
     "description": "Text indicating API key will be saved for reuse"
+  },
+  "5zdBY2": {
+    "defaultMessage": "Delete",
+    "description": "Access binding detail delete action"
   },
   "60b0vW": {
     "defaultMessage": "Always show spans with exceptions, regardless of filter conditions",
@@ -1682,6 +1806,10 @@
   "6Q/0BO": {
     "defaultMessage": "The retrieval groundedness LLM judge returns a binary evaluation and written rationale on whether the generated response is factually consistent with the agent's retrieved context.",
     "description": "Evaluation results > known type of evaluation result assessment > description of retrieval groundedness judge."
+  },
+  "6QwDyx": {
+    "defaultMessage": "Name",
+    "description": "Header for the name column in the MCP servers table"
   },
   "6SXoSp": {
     "defaultMessage": "Model definition",
@@ -1754,6 +1882,10 @@
   "6fV0+T": {
     "defaultMessage": "Total: {total}%",
     "description": "Total weight display"
+  },
+  "6hFDDi": {
+    "defaultMessage": "Create endpoint",
+    "description": "Access bindings table empty state CTA button"
   },
   "6hZXzG": {
     "defaultMessage": "Search judges",
@@ -1839,6 +1971,10 @@
     "defaultMessage": "Off",
     "description": "Runs charts > line chart > ignore outliers > off setting label"
   },
+  "78GhUd": {
+    "defaultMessage": "MCP Server:",
+    "description": "MCP registry binding modal server label"
+  },
   "79dD5F": {
     "defaultMessage": "There was an error submitting your note.",
     "description": "Error message text when saving an editable note in MLflow"
@@ -1870,6 +2006,10 @@
   "7GU2wd": {
     "defaultMessage": "Add traces from the Traces tab to start reviewing them with your team.",
     "description": "Review queue: empty queue description"
+  },
+  "7Hw8oa": {
+    "defaultMessage": "Servers",
+    "description": "MCP Registry servers tab label"
   },
   "7KKvmS": {
     "defaultMessage": "Created by",
@@ -1911,9 +2051,17 @@
     "defaultMessage": "Create a custom judge function using the {decorator} decorator. All parameters ({inputs}, {outputs}, {expectations}, {trace}) are optional — include only the ones your logic needs. {link}",
     "description": "Step 1 description for defining judge function"
   },
+  "7ODAYz": {
+    "defaultMessage": "Search access bindings",
+    "description": "Placeholder for MCP access bindings search filter input"
+  },
   "7PCvDy": {
     "defaultMessage": "OK",
     "description": "Confirmation button text on the model version stage transition request/approval modal"
+  },
+  "7PmKiS": {
+    "defaultMessage": "Add access binding",
+    "description": "MCP server add access binding button"
   },
   "7RNlsx": {
     "defaultMessage": "MLflow API documentation",
@@ -1954,6 +2102,10 @@
   "7cd+cQ": {
     "defaultMessage": "Trace Archival Retention",
     "description": "Label for displaying the experiment trace archival retention"
+  },
+  "7eEsbo": {
+    "defaultMessage": "Failed to load access binding",
+    "description": "Access binding detail page error title"
   },
   "7hHw+R": {
     "defaultMessage": "Instructions",
@@ -2087,6 +2239,10 @@
     "defaultMessage": "Type a key",
     "description": "Key-value tag editor modal > Tag dropdown > Tag input placeholder"
   },
+  "8CXWXX": {
+    "defaultMessage": "Tools ({count})",
+    "description": "MCP server version detail tools subsection heading"
+  },
   "8DoNdT": {
     "defaultMessage": "Save",
     "description": "Save button text for edit endpoint name modal"
@@ -2130,6 +2286,10 @@
   "8WJEHc": {
     "defaultMessage": "New model registry UI",
     "description": "Model registry > Switcher for the new model registry UI containing aliases > label"
+  },
+  "8XY0tX": {
+    "defaultMessage": "Delete version",
+    "description": "MCP server delete version confirmation modal title"
   },
   "8XbTnl": {
     "defaultMessage": "Value",
@@ -2182,6 +2342,10 @@
   "8mP5Mz": {
     "defaultMessage": "Enable Usage Tracking in the Overview tab to view logs",
     "description": "Tooltip shown on disabled Logs tab explaining that usage tracking must be enabled first"
+  },
+  "8mdDKH": {
+    "defaultMessage": "Copy URL",
+    "description": "Tooltip for copy remote URL button"
   },
   "8oh0iW": {
     "defaultMessage": "Clear filters",
@@ -2278,6 +2442,10 @@
   "9Cv+WU": {
     "defaultMessage": "Max tokens",
     "description": "Label for max tokens input"
+  },
+  "9EibEs": {
+    "defaultMessage": "Metadata:",
+    "description": "MCP server version detail metadata label"
   },
   "9FaThs": {
     "defaultMessage": "No providers available",
@@ -2423,6 +2591,10 @@
     "defaultMessage": "LLM Connections",
     "description": "Settings content section title: LLM connections"
   },
+  "9m/8+5": {
+    "defaultMessage": "Add tag",
+    "description": "Tooltip for add tag button in create MCP server modal"
+  },
   "9mAGv0": {
     "defaultMessage": "Model name",
     "description": "Text for form title on creating model in the model registry"
@@ -2471,6 +2643,10 @@
     "defaultMessage": "Choose from a selection of built-in LLM judges or create your own custom code based judge. {learnMore}",
     "description": "Description for the empty state when no judges exist"
   },
+  "9xfwTO": {
+    "defaultMessage": "Loading servers...",
+    "description": "Loading state for MCP servers card grid"
+  },
   "9y+yUQ": {
     "defaultMessage": "File is too large to preview",
     "description": "Label to indicate that the file is too large to preview"
@@ -2479,9 +2655,17 @@
     "defaultMessage": "Reset period",
     "description": "Budget reset period label"
   },
+  "9yiunK": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy raw server.json button"
+  },
   "9zZeT2": {
     "defaultMessage": "Delete records",
     "description": "Title for the V2 dataset records bulk-delete confirmation modal"
+  },
+  "9zm5R/": {
+    "defaultMessage": "Register an MCP server before creating access bindings.",
+    "description": "Empty state description for access bindings list when no servers exist"
   },
   "A+5KMV": {
     "defaultMessage": "Model ID",
@@ -2490,6 +2674,10 @@
   "A+GxQM": {
     "defaultMessage": "avg per request",
     "description": "Subtitle for average tokens per request in gateway"
+  },
+  "A/vYwt": {
+    "defaultMessage": "Create MCP server",
+    "description": "Button to create a new MCP server"
   },
   "A1ljDC": {
     "defaultMessage": "Docs",
@@ -2574,6 +2762,10 @@
   "AOoWxS": {
     "defaultMessage": "Error",
     "description": "Title for error fallback component in prompts management UI"
+  },
+  "AP+v4+": {
+    "defaultMessage": "Delete",
+    "description": "MCP server detail delete server action"
   },
   "APwgn9": {
     "defaultMessage": "Identifying issues from traces...",
@@ -2843,6 +3035,10 @@
     "defaultMessage": "Instructions",
     "description": "Label for guardrail judge instructions"
   },
+  "Bh7AL1": {
+    "defaultMessage": "Latest version",
+    "description": "Header for the latest version column in the MCP servers table"
+  },
   "BkDhmT": {
     "defaultMessage": "Chat",
     "description": "Label for the chat tab of the model trace explorer."
@@ -2915,6 +3111,10 @@
     "defaultMessage": "Evaluation",
     "description": "Label for the evaluation section in the MLflow experiment navbar"
   },
+  "C18YVq": {
+    "defaultMessage": "Created at:",
+    "description": "Binding detail created at label"
+  },
   "C1y/A6": {
     "defaultMessage": "Assertions",
     "description": "Assertions column header"
@@ -2947,6 +3147,10 @@
     "defaultMessage": "Name",
     "description": "Table header for model name"
   },
+  "C9Wh20": {
+    "defaultMessage": "Are you sure you want to delete this MCP server and all its versions? This action cannot be undone.",
+    "description": "MCP server delete confirmation message"
+  },
   "C9ccNu": {
     "defaultMessage": "Number",
     "description": "Numeric select menu option for assessment data type"
@@ -2971,6 +3175,10 @@
     "defaultMessage": "System Metrics",
     "description": "Experiment tracking > runs charts > cards > RunsChartsDifferenceChartCard > system metrics heading"
   },
+  "CHdcpF": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server version detail show more packages button"
+  },
   "CKwhUr": {
     "defaultMessage": "Move to Todo",
     "description": "Review focused view: send a completed/declined trace back to the to-do list"
@@ -2990,6 +3198,10 @@
   "CRr6Tx": {
     "defaultMessage": "Create and manage judges",
     "description": "Title for the empty state of the judges page"
+  },
+  "CSrxJY": {
+    "defaultMessage": "Aliases allow you to assign a mutable, named reference to a particular MCP server version.",
+    "description": "Description for the edit aliases modal on the MCP server detail page"
   },
   "CTEh+b": {
     "defaultMessage": "Cancel",
@@ -3038,6 +3250,10 @@
   "Cbgg9B": {
     "defaultMessage": "Switch sides",
     "description": "A label for button used to switch prompt versions when in side-by-side comparison view"
+  },
+  "Cbwpjj": {
+    "defaultMessage": "Edit",
+    "description": "Edit access binding link in table"
   },
   "CbzDeZ": {
     "defaultMessage": "An error occurred while rendering this component.",
@@ -3106,6 +3322,10 @@
   "CyTYL6": {
     "defaultMessage": "Line chart",
     "description": "Experiment tracking > runs charts > add chart menu > line chart"
+  },
+  "CzXzL8": {
+    "defaultMessage": "Tools:",
+    "description": "Label for tools field in create MCP server modal"
   },
   "D+UN8o": {
     "defaultMessage": "No metric charts",
@@ -3243,6 +3463,10 @@
     "defaultMessage": "Download attachment ({contentType})",
     "description": "Download link for trace attachment with unknown content type"
   },
+  "DrEq7H": {
+    "defaultMessage": "No access bindings found",
+    "description": "Empty state when MCP access binding search returns no results"
+  },
   "DutAb5": {
     "defaultMessage": "Search to find more queues",
     "description": "Add to review queue: hint that more custom queues are searchable"
@@ -3291,6 +3515,10 @@
     "defaultMessage": "Save",
     "description": "Text for saving changes on rows in editable form table in MLflow"
   },
+  "E80Rl1": {
+    "defaultMessage": "Edit tags",
+    "description": "Label for the edit tags button on the MCP server detail page"
+  },
   "E9fsRD": {
     "defaultMessage": "Show span tree",
     "description": "Tooltip for a button that show the span tree view of the trace UI."
@@ -3318,6 +3546,10 @@
   "ECkDrg": {
     "defaultMessage": "{count} selected",
     "description": "Label for item selector showing count of selected items"
+  },
+  "ED/0qk": {
+    "defaultMessage": "Packages ({count})",
+    "description": "MCP server version detail packages subsection heading"
   },
   "ED1+Xu": {
     "defaultMessage": "Prompts & versions",
@@ -3415,9 +3647,17 @@
     "defaultMessage": "Clear conversation",
     "description": "Label for the button that resets the playground conversation to an empty user message"
   },
+  "Ehnbx0": {
+    "defaultMessage": "Environment Variables ({count})",
+    "description": "MCP server package environment variables heading with count"
+  },
   "EiFPFP": {
     "defaultMessage": "Custom Guardrail",
     "description": "Custom guardrail type name"
+  },
+  "EiV1ml": {
+    "defaultMessage": "Edit version details",
+    "description": "MCP server version edit details modal title"
   },
   "EjPmMR": {
     "defaultMessage": "Workspace Manager",
@@ -3442,6 +3682,10 @@
   "EtPSl6": {
     "defaultMessage": "Discard unsaved changes?",
     "description": "Title of the prompt shown when leaving the dataset record side panel with unsaved edits"
+  },
+  "EtmCKX": {
+    "defaultMessage": "Copy endpoint URL",
+    "description": "Tooltip for copy endpoint URL button"
   },
   "Eu0gxa": {
     "defaultMessage": "Capture and debug LLM interactions and agent workflows.",
@@ -3511,6 +3755,10 @@
     "defaultMessage": "Endpoint Name",
     "description": "Label for endpoint name input"
   },
+  "FI8zLo": {
+    "defaultMessage": "Status:",
+    "description": "MCP server version detail status label"
+  },
   "FKnUSV": {
     "defaultMessage": "Open assistant",
     "description": "Canonical button label for opening the MLflow assistant from an agent action card"
@@ -3546,6 +3794,10 @@
   "FZL3HX": {
     "defaultMessage": "When enabled, all requests to this endpoint will be logged as traces. This allows you to monitor usage, debug issues, and analyze performance.",
     "description": "Tooltip explaining what usage tracking does"
+  },
+  "FZe3Mu": {
+    "defaultMessage": "Last modified",
+    "description": "Header for the last modified column in the MCP servers table"
   },
   "FZubuU": {
     "defaultMessage": "Input an experiment name",
@@ -3618,6 +3870,10 @@
   "FoMjFN": {
     "defaultMessage": "Scorer",
     "description": "Column header for scorer name"
+  },
+  "FolS8j": {
+    "defaultMessage": "More actions",
+    "description": "Aria label for access binding detail actions overflow menu"
   },
   "FpjDSq": {
     "defaultMessage": "Compare",
@@ -3699,6 +3955,10 @@
     "defaultMessage": "Start Time:",
     "description": "Text for start time row header in the main table in the model comparison\n                page"
   },
+  "GRC83e": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for MCP servers tab"
+  },
   "GRaplV": {
     "defaultMessage": "Context sufficiency",
     "description": "Evaluation results > known type of evaluation result assessment > context sufficiency assessment. Used to indicate if the retrieved context is sufficient to generate the expected response. Label displayed if user provided custom value, e.g. \"Context Sufficiency: mostly sufficient\""
@@ -3727,9 +3987,17 @@
     "defaultMessage": "Are you sure you want to delete the webhook \"{name}\"? This action cannot be undone.",
     "description": "Delete webhook confirmation message"
   },
+  "GcrbK9": {
+    "defaultMessage": "Description:",
+    "description": "Binding detail description label"
+  },
   "GdtTc/": {
     "defaultMessage": "Run evaluation",
     "description": "Home page quick action title for running evaluations"
+  },
+  "GeC7uZ": {
+    "defaultMessage": "Show less",
+    "description": "MCP server version detail show less tools button"
   },
   "GfFwBD": {
     "defaultMessage": "Declined",
@@ -3803,6 +4071,10 @@
     "defaultMessage": "null",
     "description": "Null value in the evaluations table."
   },
+  "H3W2Hz": {
+    "defaultMessage": "URL Variables",
+    "description": "MCP server remote URL variables heading"
+  },
   "H7JwOl": {
     "defaultMessage": "Delete version",
     "description": "A label for a button to delete prompt version on the prompt details page"
@@ -3814,6 +4086,10 @@
   "HBiA7e": {
     "defaultMessage": "Tool usage over time",
     "description": "Title for the tool usage chart"
+  },
+  "HCAsed": {
+    "defaultMessage": "Aliases:",
+    "description": "MCP compare metadata aliases label"
   },
   "HF6L/f": {
     "defaultMessage": "Monitor quality metrics from scorers",
@@ -3871,6 +4147,10 @@
     "defaultMessage": "See detailed trace view",
     "description": "Evaluation review > see detailed trace view button"
   },
+  "HUcFqG": {
+    "defaultMessage": "Create",
+    "description": "MCP registry create access binding modal create button"
+  },
   "HUf9qJ": {
     "defaultMessage": "Are you sure you want to delete {modelName}? This cannot be undone.",
     "description": "Confirmation message for delete model modal on model view page"
@@ -3882,6 +4162,10 @@
   "HXbUkt": {
     "defaultMessage": "Child runs",
     "description": "Run page > Overview > Child runs"
+  },
+  "HXhGPv": {
+    "defaultMessage": "Tags",
+    "description": "Header for the tags column in the MCP servers table"
   },
   "HYQHVk": {
     "defaultMessage": "See more",
@@ -3983,6 +4267,10 @@
     "defaultMessage": "Assistant",
     "description": "Display text for the 'assistant' role in a GenAI chat message."
   },
+  "Hx2WUa": {
+    "defaultMessage": "Add",
+    "description": "MCP server version detail add metadata button"
+  },
   "HyBP+D": {
     "defaultMessage": "Tags",
     "description": "Title text for the tags section under details tab on the model view\n                   page"
@@ -3994,6 +4282,10 @@
   "HzGYm5": {
     "defaultMessage": "Aliases",
     "description": "Aliases section in the metadata on model version page"
+  },
+  "I0VCTr": {
+    "defaultMessage": "Created:",
+    "description": "MCP compare metadata created label"
   },
   "I1mNex": {
     "defaultMessage": "Select the events that will trigger this webhook.",
@@ -4095,6 +4387,10 @@
     "defaultMessage": "Description update failed",
     "description": "Partial save status message when experiment description update fails"
   },
+  "IWF0yU": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for MCP servers table"
+  },
   "IWNUE0": {
     "defaultMessage": "Failed to load roles",
     "description": "Alert title shown when the roles query fails on the account page"
@@ -4139,6 +4435,10 @@
     "defaultMessage": "Edit",
     "description": "Text for the edit button next to the description section title on\n             the model version view page"
   },
+  "IkH/5t": {
+    "defaultMessage": "Edit metadata",
+    "description": "Aria label for edit metadata button"
+  },
   "Ikj6rr": {
     "defaultMessage": "Quick start",
     "description": "Gateway > Endpoints > Compact quick start section label"
@@ -4154,6 +4454,10 @@
   "IsIgE2": {
     "defaultMessage": "Automatically log traces for Gemini conversations by calling the {code} function. For example:",
     "description": "Description of how to log traces for API calls to Google's Gemini API using MLflow autologging. This message is followed by a code example."
+  },
+  "IsNuwt": {
+    "defaultMessage": "Viewing version {version}",
+    "description": "MCP server version detail heading"
   },
   "Isig6r": {
     "defaultMessage": "Error loading shared view state: share key is invalid",
@@ -4207,6 +4511,10 @@
     "defaultMessage": "Filters{numFilters}",
     "description": "Evaluation review > evaluations list > filter dropdown button"
   },
+  "JBt+0g": {
+    "defaultMessage": "Aliases:",
+    "description": "MCP server version detail aliases label"
+  },
   "JCboZ7": {
     "defaultMessage": "Path copied",
     "description": "Tooltip displayed after experiment path was successfully copied to clipboard"
@@ -4243,6 +4551,10 @@
     "defaultMessage": "Record ID",
     "description": "Header for the dataset record id column"
   },
+  "JLcT0X": {
+    "defaultMessage": "Versions",
+    "description": "MCP registry binding modal versions group label"
+  },
   "JNS471": {
     "defaultMessage": "No results. Try using a different keyword or adjusting your filters.",
     "description": "Models table > no results after filtering"
@@ -4254,6 +4566,10 @@
   "JNv3nr": {
     "defaultMessage": "Moving average over time",
     "description": "Label for assessment score over time chart"
+  },
+  "JOfqZ1": {
+    "defaultMessage": "Approved endpoints that connect MCP servers in the registry to live deployments in your environment.",
+    "description": "Description text for the access bindings tab"
   },
   "JPd7WA": {
     "defaultMessage": "Key must be unique",
@@ -4283,6 +4599,10 @@
     "defaultMessage": "Run ID",
     "description": "Run page > Overview > Run ID section label"
   },
+  "JYz7tl": {
+    "defaultMessage": "Failed to load MCP server",
+    "description": "MCP server detail page error title"
+  },
   "JaA2me": {
     "defaultMessage": "Failed to update issue: {error}",
     "description": "Error message when issue update fails"
@@ -4295,6 +4615,10 @@
     "defaultMessage": "User",
     "description": "Column label for user"
   },
+  "JdZI8+": {
+    "defaultMessage": "Version",
+    "description": "Header for the version column in the MCP server versions table"
+  },
   "Jdkf6Z": {
     "defaultMessage": "URL is required",
     "description": "Form validation error message informing the user that the webhook URL is required"
@@ -4303,9 +4627,17 @@
     "defaultMessage": "STRING",
     "description": "Header label for string assessment type"
   },
+  "Je8178": {
+    "defaultMessage": "Hide raw server.json",
+    "description": "MCP server version detail hide raw JSON button"
+  },
   "JfFfzy": {
     "defaultMessage": "Sample rate:",
     "description": "Sample rate label for scorer"
+  },
+  "JfLrpE": {
+    "defaultMessage": "Add tags",
+    "description": "Label for the add tags button in the MCP servers table"
   },
   "Jfryx4": {
     "defaultMessage": "Top K",
@@ -4335,6 +4667,10 @@
     "defaultMessage": "Delete",
     "description": "Bulk-delete button on the users table (no rows selected)"
   },
+  "Jr4PZf": {
+    "defaultMessage": "server.json:",
+    "description": "Label for server.json field in create MCP server modal"
+  },
   "Jrri/Y": {
     "defaultMessage": "Temperature",
     "description": "Experiment page > prompt lab > temperature parameter label"
@@ -4350,6 +4686,10 @@
   "JwhonN": {
     "defaultMessage": "Authentication method",
     "description": "Label for auth mode selector"
+  },
+  "JwyUDQ": {
+    "defaultMessage": "Add/edit alias for MCP server version {version}",
+    "description": "Title for the edit aliases modal on the MCP server detail page"
   },
   "JxakWy": {
     "defaultMessage": "Judge \"{label}\" failed: {error}",
@@ -4379,6 +4719,10 @@
     "defaultMessage": "Experiment renamed",
     "description": "Partial save status message when experiment rename succeeds"
   },
+  "K8AByX": {
+    "defaultMessage": "Output Schema",
+    "description": "MCP tool output schema toggle"
+  },
   "K8JcAN": {
     "defaultMessage": "Datasets",
     "description": "Label for the datasets filter dropdown in the logged model list page"
@@ -4386,6 +4730,10 @@
   "K8LdMX": {
     "defaultMessage": "Automatically log traces for CrewAI executions by calling the {code} function. For example:",
     "description": "Description of how to log traces for the CrewAI package using MLflow autologging. This message is followed by a code example."
+  },
+  "K8sPfc": {
+    "defaultMessage": "Create",
+    "description": "Label for the confirm button in the create MCP server version modal"
   },
   "K8ynGW": {
     "defaultMessage": "Search datasets",
@@ -4398,6 +4746,10 @@
   "KB62p3": {
     "defaultMessage": "Track every version of your app's code and prompts to understand how quality changes over time. {learnMoreLink}",
     "description": "Empty state description displayed when no models are logged in the genai logged models list page"
+  },
+  "KD4sAs": {
+    "defaultMessage": "MCP Registry",
+    "description": "MCP Registry breadcrumb link"
   },
   "KDxbQI": {
     "defaultMessage": "An error occurred while rendering the trace",
@@ -4439,6 +4791,10 @@
     "defaultMessage": "Endpoints ({count})",
     "description": "Gateway > Endpoints using key drawer > Title"
   },
+  "KQMhjY": {
+    "defaultMessage": "Status:",
+    "description": "MCP compare metadata status label"
+  },
   "KRzwkL": {
     "defaultMessage": "Type {itemName} to confirm deletion:",
     "description": "Type to confirm instruction"
@@ -4470,6 +4826,10 @@
   "Ka1jM2": {
     "defaultMessage": "Disabled",
     "description": "Runs charts > line chart > ignore outliers > disabled label"
+  },
+  "Kax91w": {
+    "defaultMessage": "Create MCP server",
+    "description": "Title for the create MCP server version modal"
   },
   "KcGozs": {
     "defaultMessage": "Endpoint:",
@@ -4579,6 +4939,10 @@
     "defaultMessage": "Provider",
     "description": "Dimension toggle option for provider"
   },
+  "LA4/Jy": {
+    "defaultMessage": "Create and manage MCP servers using MLflow.",
+    "description": "Empty state description for MCP servers tab"
+  },
   "LBaK9z": {
     "defaultMessage": "Open dataset",
     "description": "Text for the button that opens the dataset source URL in a new tab"
@@ -4639,6 +5003,10 @@
     "defaultMessage": "This setting enables UI telemetry data collection. Learn more about what types of data are collected in our {documentation}.",
     "description": "Enable telemetry settings description"
   },
+  "LYaZPq": {
+    "defaultMessage": "Switch sides",
+    "description": "Label for button to switch MCP server versions in comparison view"
+  },
   "La+f9S": {
     "defaultMessage": "Budgets",
     "description": "Budget policies page title"
@@ -4646,6 +5014,10 @@
   "LajLDb": {
     "defaultMessage": "Move to top",
     "description": "Experiment page > compare runs tab > chart header > move to top option"
+  },
+  "LbpFi1": {
+    "defaultMessage": "Create MCP server",
+    "description": "MCP Registry empty state CTA button"
   },
   "LfggX9": {
     "defaultMessage": "Loading users…",
@@ -4690,6 +5062,10 @@
   "LuOEnE": {
     "defaultMessage": "Add",
     "description": "Categorical add-option button"
+  },
+  "LvcRxz": {
+    "defaultMessage": "Delete version",
+    "description": "MCP server delete version button"
   },
   "Lvcsl4": {
     "defaultMessage": "Review and edit the guardrail details, choose placement and action.",
@@ -5063,6 +5439,10 @@
     "defaultMessage": "Is the text grammatically correct and naturally flowing?",
     "description": "Hint for Fluency template"
   },
+  "NbxAJs": {
+    "defaultMessage": "Metadata:",
+    "description": "MCP compare metadata tags label"
+  },
   "NekUba": {
     "defaultMessage": "Add to dataset",
     "description": "Button text for adding a trace to an evaluation dataset"
@@ -5179,6 +5559,10 @@
     "defaultMessage": "Enter the retention",
     "description": "Placeholder for trace archival retention amount input"
   },
+  "O92ET5": {
+    "defaultMessage": "Repository:",
+    "description": "MCP server version detail repository label"
+  },
   "O9Awk8": {
     "defaultMessage": "Failed to invoke webhook",
     "description": "Message informing the user that the webhook test failed to invoke"
@@ -5222,6 +5606,10 @@
   "OH7mDs": {
     "defaultMessage": "Expectations",
     "description": "Column selector label for the expectations column"
+  },
+  "OHUKmu": {
+    "defaultMessage": "Add/Edit Metadata",
+    "description": "Title for a modal that allows the user to add or edit metadata tags on MCP server versions."
   },
   "OLZyxe": {
     "defaultMessage": "{errorCount, plural, one {# error} other {# errors}}",
@@ -5439,6 +5827,10 @@
     "defaultMessage": "A GraphQL error occurred.",
     "description": "Generic message for a GraphQL error, typically due to query parsing or validation issues"
   },
+  "PQy6iN": {
+    "defaultMessage": "Comparing version {baseline} with version {compared}",
+    "description": "MCP server version compare heading"
+  },
   "PRCcZe": {
     "defaultMessage": "Select ({count})",
     "description": "Confirm button in the select traces modal showing number of selected traces"
@@ -5467,6 +5859,10 @@
     "defaultMessage": "Clear selection",
     "description": "Clear model selection"
   },
+  "PXXPl4": {
+    "defaultMessage": "Transport Type:",
+    "description": "MCP registry binding modal transport label"
+  },
   "PYGkI3": {
     "defaultMessage": "Install the <a>MLflow tracing SDK</a> for TypeScript using npm, then initialize it in your application.",
     "description": "Step 1 description for TypeScript traces onboarding"
@@ -5494,6 +5890,10 @@
   "PewjIJ": {
     "defaultMessage": "GenAI apps & agents",
     "description": "Label for experiments focused on generative AI model development"
+  },
+  "Pgl9HJ": {
+    "defaultMessage": "Hide raw JSON",
+    "description": "MCP server version detail hide raw tools JSON button"
   },
   "Pgxfhl": {
     "defaultMessage": "Role",
@@ -5623,6 +6023,10 @@
     "defaultMessage": "Total",
     "description": "Label for total token usage"
   },
+  "QL5BPA": {
+    "defaultMessage": "{action} tool {name}",
+    "description": "Aria label for expanding/collapsing a tool row"
+  },
   "QLRaAz": {
     "defaultMessage": "Select all rows on this page",
     "description": "Aria label for the select-all checkbox in the V2 dataset records table header"
@@ -5634,6 +6038,10 @@
   "QPC4hV": {
     "defaultMessage": "Use other parameters or disable run grouping to continue.",
     "description": "Experiment page > compare runs > parallel coordinates chart > unsupported string values warning > description"
+  },
+  "QQyJYV": {
+    "defaultMessage": "https://mcp.example.com/server",
+    "description": "MCP registry binding modal endpoint placeholder"
   },
   "QR5jwv": {
     "defaultMessage": "Add an option",
@@ -5731,6 +6139,10 @@
     "defaultMessage": "Parallel Coordinates Plot",
     "description": "Tab text for parallel coordinates plot on the model comparison page"
   },
+  "QumV2s": {
+    "defaultMessage": "https://github.com/org/repo",
+    "description": "Placeholder for source in create MCP server modal"
+  },
   "Qv7cZx": {
     "defaultMessage": "Promote model",
     "description": "Button text to promote the model to a different registered model"
@@ -5811,6 +6223,10 @@
     "defaultMessage": "Create prompt version",
     "description": "Label for the create prompt action on the registered prompt details page"
   },
+  "RJhypK": {
+    "defaultMessage": "Metadata:",
+    "description": "Label for metadata field in create MCP server version modal"
+  },
   "RQ80MZ": {
     "defaultMessage": "You're not assigned to this queue, so you can't submit reviews here.",
     "description": "Review focused view: viewing a queue the reviewer is not assigned to"
@@ -5818,6 +6234,10 @@
   "RRvtnM": {
     "defaultMessage": "Did the conversation avoid causing user frustration?",
     "description": "Hint for UserFrustration template"
+  },
+  "RSPGtl": {
+    "defaultMessage": "@latest",
+    "description": "MCP registry latest alias option"
   },
   "RU5Jip": {
     "defaultMessage": "Latency comparison",
@@ -5858,6 +6278,10 @@
   "RekJb/": {
     "defaultMessage": "Account",
     "description": "Sidebar account menu item"
+  },
+  "Rgq23W": {
+    "defaultMessage": "Updated by:",
+    "description": "Binding detail updated by label"
   },
   "RhQhT4": {
     "defaultMessage": "Model",
@@ -5902,6 +6326,10 @@
   "Rs+SVS": {
     "defaultMessage": "Ready",
     "description": "Label for ready state of a experiment logged model"
+  },
+  "RsCEso": {
+    "defaultMessage": "Enter a valid HTTP or HTTPS URL",
+    "description": "MCP registry binding modal endpoint URL validation error"
   },
   "RsTIRk": {
     "defaultMessage": "Add personal notes about this trace.",
@@ -5950,6 +6378,10 @@
   "S3YY1P": {
     "defaultMessage": "Span: {spanName}",
     "description": "Label for the span name in assessment metadata"
+  },
+  "S4UbbT": {
+    "defaultMessage": "Transport:",
+    "description": "Binding detail transport label"
   },
   "S50iFK": {
     "defaultMessage": "Create endpoint",
@@ -6014,6 +6446,10 @@
   "SLHSXV": {
     "defaultMessage": "Search parameters",
     "description": "Run page > Overview > Parameters table > Filter input placeholder"
+  },
+  "SLYo1F": {
+    "defaultMessage": "Endpoint",
+    "description": "Header for the endpoint column in the access bindings table"
   },
   "SLjN1/": {
     "defaultMessage": "Description",
@@ -6107,6 +6543,10 @@
     "defaultMessage": "None",
     "description": "Label for a user_frustration assessment with 'none' value"
   },
+  "SmQylv": {
+    "defaultMessage": "Version/Alias:",
+    "description": "Binding detail version or alias label"
+  },
   "Smixdu": {
     "defaultMessage": "Day",
     "description": "Time unit: day"
@@ -6163,6 +6603,10 @@
     "defaultMessage": "Pre-built LLM-as-a-judge",
     "description": "Sub-label for a pre-built LLM-as-a-judge row in the run evaluation modal"
   },
+  "T/42qK": {
+    "defaultMessage": "Access Bindings",
+    "description": "MCP server access bindings section title"
+  },
   "T/46y0": {
     "defaultMessage": "Machine learning",
     "description": "A short label for custom experiments focused on machine learning"
@@ -6170,6 +6614,10 @@
   "T/UYwm": {
     "defaultMessage": "Raw Schema JSON:",
     "description": "Label for the raw schema JSON in the experiment run dataset schema"
+  },
+  "T0GuxG": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for access bindings list when no servers exist"
   },
   "T1sd79": {
     "defaultMessage": "Go to model",
@@ -6290,6 +6738,10 @@
   "ThrXMh": {
     "defaultMessage": "Inputs",
     "description": "Table section name for schema inputs in the model comparison page"
+  },
+  "Tj7qTS": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy JSON button"
   },
   "Tl63jz": {
     "defaultMessage": "All runs are filtered",
@@ -6567,6 +7019,10 @@
     "defaultMessage": "Copy your MLflow models to another registered model for simple model promotion across environments. For more mature production-grade setups, we recommend setting up automated model training workflows to produce models in controlled environments. <link>Learn more</link>",
     "description": "Model registry > OSS Promote model modal > description paragraph body"
   },
+  "V5hAI0": {
+    "defaultMessage": "MCP Registry",
+    "description": "MCP Registry page title"
+  },
   "V6AwxC": {
     "defaultMessage": "Run judges",
     "description": "Button text for running multiple judges from the run evaluation modal"
@@ -6594,6 +7050,10 @@
   "VDumsF": {
     "defaultMessage": "Failed to update the review queue: {error}",
     "description": "Add to review queue: error toast when adding or removing traces fails"
+  },
+  "VETJ8j": {
+    "defaultMessage": "Server-Sent Events (SSE)",
+    "description": "MCP registry SSE transport option"
   },
   "VEuVfv": {
     "defaultMessage": "{count, plural, one {1 trace selected} other {# traces selected}}",
@@ -6635,6 +7095,10 @@
     "defaultMessage": "No guardrails match your search.",
     "description": "Empty state when search has no results"
   },
+  "VOQ/YG": {
+    "defaultMessage": "Are you sure you want to delete version {version}? This action cannot be undone.",
+    "description": "MCP server delete version confirmation message"
+  },
   "VP+qFF": {
     "defaultMessage": "Show diff only",
     "description": "Label next to the switch that controls displaying only differing values in comparision tables on the compare runs page"
@@ -6650,6 +7114,10 @@
   "VTNUPu": {
     "defaultMessage": "Automatic evaluation is not available for judges that use expectations.",
     "description": "Hint text explaining why automatic evaluation is disabled for judges with expectations"
+  },
+  "VTT91L": {
+    "defaultMessage": "No versions",
+    "description": "Empty state when MCP server has no versions"
   },
   "VTePPP": {
     "defaultMessage": "Create your first experiment",
@@ -6783,6 +7251,10 @@
     "defaultMessage": "Search chat sessions by input",
     "description": "Placeholder text for the search input in the chat sessions table"
   },
+  "W7JOu2": {
+    "defaultMessage": "required",
+    "description": "Header required badge"
+  },
   "W7x1CI": {
     "defaultMessage": "e.g. 0.0",
     "description": "Placeholder for the presence-penalty input on the playground parameters panel"
@@ -6870,6 +7342,10 @@
   "WQwCH6": {
     "defaultMessage": "Aliased versions",
     "description": "Column title for aliased versions in the registered model page"
+  },
+  "WRPwF9": {
+    "defaultMessage": "Human-readable label for this server",
+    "description": "Placeholder for display name in create MCP server modal"
   },
   "WVUF2N": {
     "defaultMessage": "Are you sure you want to delete the prompt?",
@@ -7095,6 +7571,10 @@
     "defaultMessage": "Learn more",
     "description": "Link text in column header tooltip that opens documentation in a new tab"
   },
+  "XWtgGm": {
+    "defaultMessage": "Status",
+    "description": "Version edit status label"
+  },
   "XX8+x1": {
     "defaultMessage": "View prompt template",
     "description": "Experiment page > artifact compare view > run column header prompt metadata > \"view prompt template\" button label"
@@ -7270,6 +7750,10 @@
   "YMOiLx": {
     "defaultMessage": "Save",
     "description": "Save-changes button on the dataset record drawer footer"
+  },
+  "YOW2R+": {
+    "defaultMessage": "Delete access binding",
+    "description": "Aria label for delete access binding button"
   },
   "YOp3/x": {
     "defaultMessage": "Unavailable when runs are grouped",
@@ -7519,6 +8003,10 @@
     "defaultMessage": "(unknown)",
     "description": "Filler text when run's time information is unavailable"
   },
+  "ZcWNz2": {
+    "defaultMessage": "Description",
+    "description": "Header for the description column in the MCP servers table"
+  },
   "ZfsnMj": {
     "defaultMessage": "Not grounded",
     "description": "Evaluation results > grounded assessment > negative value label. Displayed if evaluation result is considered as not grounded."
@@ -7618,6 +8106,10 @@
   "a3G5A7": {
     "defaultMessage": "Provider",
     "description": "Summary provider label"
+  },
+  "a3Ohkk": {
+    "defaultMessage": "Add tag",
+    "description": "Aria label for add tag button in create MCP server modal"
   },
   "a6aAez": {
     "defaultMessage": "Cleaning up workspace metadata…",
@@ -7851,6 +8343,10 @@
     "defaultMessage": "Edit the request body below and click Send request to call the endpoint.",
     "description": "Try it description in starter code modal"
   },
+  "bAx8j3": {
+    "defaultMessage": "Draft",
+    "description": "Draft status option in create MCP server modal"
+  },
   "bCdY2j": {
     "defaultMessage": "Add \"{label}\"",
     "description": "Evaluation review > assessments > add new custom value element"
@@ -7951,6 +8447,10 @@
     "defaultMessage": "Run ID:",
     "description": "Text for run ID header in the main table in the model comparison page"
   },
+  "bjH2oX": {
+    "defaultMessage": "Display name",
+    "description": "Aria label for display name input"
+  },
   "bjoGjg": {
     "defaultMessage": "Last hour",
     "description": "Option for the start select dropdown to filter runs from the last hour"
@@ -7971,6 +8471,14 @@
     "defaultMessage": "Average Value",
     "description": "Column header for average value"
   },
+  "bmFw/h": {
+    "defaultMessage": "Edit tags",
+    "description": "Label for the edit tags button in the MCP servers table"
+  },
+  "bmH/Ju": {
+    "defaultMessage": "Source:",
+    "description": "Label for source field in create MCP server modal"
+  },
   "bmHBO7": {
     "defaultMessage": "Sessions",
     "description": "Label for the chat sessions tab in the MLflow experiment navbar"
@@ -7987,6 +8495,10 @@
     "defaultMessage": "Budgets",
     "description": "Sidebar link for gateway budgets"
   },
+  "bq5S+p": {
+    "defaultMessage": "Enter a description",
+    "description": "Placeholder for MCP server version description textarea"
+  },
   "bqn2bk": {
     "defaultMessage": "Outputs",
     "description": "Table section name for schema outputs in the model comparison page"
@@ -8002,6 +8514,10 @@
   "by+x8N": {
     "defaultMessage": "Type",
     "description": "Run page > Overview > Experiment ID section label"
+  },
+  "by0DzI": {
+    "defaultMessage": "JSON content",
+    "description": "Aria label for JSON code block"
   },
   "byhyEj": {
     "defaultMessage": "Re-Run judge",
@@ -8163,6 +8679,10 @@
     "defaultMessage": "Something went wrong",
     "description": "Generic title used when a dataset action surfaces an unexpected error"
   },
+  "cTwsmx": {
+    "defaultMessage": "Copy JSON",
+    "description": "Tooltip for copy raw tools JSON button"
+  },
   "cXhWaG": {
     "defaultMessage": "Select Model",
     "description": "Header for the model selection step in issue detection modal"
@@ -8190,6 +8710,10 @@
   "cmYzGP": {
     "defaultMessage": "Dismiss",
     "description": "A label for the button to dismiss the modal with the usage example of the prompt"
+  },
+  "cmfXqd": {
+    "defaultMessage": "More actions",
+    "description": "Aria label for MCP server detail actions overflow menu"
   },
   "cn52sr": {
     "defaultMessage": "Select an LLM judge",
@@ -8251,6 +8775,14 @@
     "defaultMessage": "Run",
     "description": "Column title for the column displaying the run names for a metric"
   },
+  "d2Z2Ub": {
+    "defaultMessage": "Last updated:",
+    "description": "Binding detail last updated label"
+  },
+  "d2ZU/7": {
+    "defaultMessage": "secret",
+    "description": "MCP server package env var secret badge"
+  },
   "d2b9xa": {
     "defaultMessage": "Enable Usage Tracking in the Overview tab to configure guardrails",
     "description": "Tooltip shown on disabled Guardrails tab explaining that usage tracking must be enabled first"
@@ -8275,6 +8807,10 @@
     "defaultMessage": "Toggle session grouping",
     "description": "Tooltip for the group by session button in the traces table toolbar"
   },
+  "d7vMSs": {
+    "defaultMessage": "Loading access bindings...",
+    "description": "Loading state for MCP access bindings card grid"
+  },
   "d8I3cy": {
     "defaultMessage": "Show only visible",
     "description": "Experiment page > compare runs tab > chart header > move down option"
@@ -8298,6 +8834,10 @@
   "dDbfnY": {
     "defaultMessage": "{count} {count, plural, one {hour} other {hours}}",
     "description": "Formatted trace archival retention in hours"
+  },
+  "dDbtkI": {
+    "defaultMessage": "Tools ({count})",
+    "description": "MCP server version detail tools tab"
   },
   "dEGUt+": {
     "defaultMessage": "Use this button to automatically detect quality issues in your traces using AI. This feature helps you identify problems like correctness, latency, and other quality concerns in your agent.",
@@ -8342,6 +8882,10 @@
   "dSaI6E": {
     "defaultMessage": "Failed to load audio attachment",
     "description": "Error message when trace audio attachment fails to load"
+  },
+  "dScNPd": {
+    "defaultMessage": "MCP Server",
+    "description": "Header for the server name column in the access bindings table"
   },
   "dTHmzd": {
     "defaultMessage": "Saved API keys can be managed in LLM Connections under Settings.",
@@ -8406,6 +8950,10 @@
   "dqfOjO": {
     "defaultMessage": "You cannot select rows when comparing runs",
     "description": "Tooltip message for the select button when comparing runs"
+  },
+  "dsPent": {
+    "defaultMessage": "Headers ({count})",
+    "description": "MCP server remote headers heading with count"
   },
   "dt3hj5": {
     "defaultMessage": "Add tags",
@@ -8575,6 +9123,10 @@
     "defaultMessage": "Add a judge to your experiment to measure your GenAI app quality",
     "description": "Title for the empty state when no judges exist"
   },
+  "eZ8y48": {
+    "defaultMessage": "Create MCP server version",
+    "description": "Title for the create MCP server version modal when adding a version to an existing server"
+  },
   "eZOxx1": {
     "defaultMessage": "Toggle the preview sidepane",
     "description": "Experiment page > control bar > expanded view toggle button tooltip"
@@ -8682,6 +9234,14 @@
   "f4CfIz": {
     "defaultMessage": "(edited)",
     "description": "Link text in an edited assessment that allows the user to click to see the previous value"
+  },
+  "f6/IBm": {
+    "defaultMessage": "Preview",
+    "description": "MCP server detail preview tab"
+  },
+  "f6/YpY": {
+    "defaultMessage": "Cancel",
+    "description": "Label for the cancel button in the create MCP server version modal"
   },
   "f6B8LJ": {
     "defaultMessage": "Numeric",
@@ -8867,6 +9427,10 @@
     "defaultMessage": "Does the response follow the provided guidelines?",
     "description": "Hint for Guidelines template"
   },
+  "g+LzMY": {
+    "defaultMessage": "Edit binding",
+    "description": "Access binding detail edit button"
+  },
   "g+YDB/": {
     "defaultMessage": "Group by",
     "description": "Label for the grouping selector button in the logged model list page when no grouping is selected"
@@ -8947,6 +9511,10 @@
     "defaultMessage": "MLflow assistant",
     "description": "Tab label for the in-UI MLflow assistant path in the agent action card"
   },
+  "gNdiXX": {
+    "defaultMessage": "Create endpoint",
+    "description": "Empty state title for access bindings card grid"
+  },
   "gOH/XL": {
     "defaultMessage": "No additional metadata is available for this dataset.",
     "description": "Body shown in the V2 evaluation dataset metadata modal when digest/schema/profile are all empty"
@@ -9026,6 +9594,10 @@
   "ga32oj": {
     "defaultMessage": "Configure chart",
     "description": "Experiment page > compare runs > parallel coordinates chart > configure chart button"
+  },
+  "gb0v4d": {
+    "defaultMessage": "Edit access binding",
+    "description": "MCP registry edit access binding modal title"
   },
   "gc+GrI": {
     "defaultMessage": "Model, input data or prompt have changed since last evaluation of the output",
@@ -9483,6 +10055,10 @@
     "defaultMessage": "My webhook",
     "description": "Webhook name placeholder"
   },
+  "iWh6qQ": {
+    "defaultMessage": "Version:",
+    "description": "MCP server package version label"
+  },
   "iX9mZm": {
     "defaultMessage": "Saved {name} v{version} to the registry",
     "description": "Success toast shown on the playground after saving the current messages as a new prompt version"
@@ -9534,6 +10110,10 @@
   "ijHH2H": {
     "defaultMessage": "Failed to duplicate some endpoints. Please try again.",
     "description": "Gateway > Endpoints list > Duplicate error message"
+  },
+  "ik/j6P": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server package show more env vars button"
   },
   "imKpxw": {
     "defaultMessage": "ID",
@@ -9587,6 +10167,10 @@
     "defaultMessage": "Cancel",
     "description": "Cancel-button text for the V2 evaluation dataset delete modal on the detail page"
   },
+  "j/2d8u": {
+    "defaultMessage": "Endpoint URL:",
+    "description": "Binding detail endpoint URL label"
+  },
   "j/BF11": {
     "defaultMessage": "Connect to the tracking server",
     "description": "Step 1 title for Python traces onboarding"
@@ -9618,6 +10202,10 @@
   "j4vtTO": {
     "defaultMessage": "Save aliases",
     "description": "Alias editor > Confirm change of aliases"
+  },
+  "j5t9Sd": {
+    "defaultMessage": "Enter display name",
+    "description": "Placeholder for version display name input"
   },
   "j77+aP": {
     "defaultMessage": "Fail",
@@ -9691,6 +10279,10 @@
     "defaultMessage": "Groundedness assessment is missing. This is likely because your agent is not returning retrieved_context.",
     "description": "Evaluation results > known type of evaluation result assessment > groundedness assessment. Used to indicate if the result is grounded in context of LLMs evaluation. Label displayed if user provided custom value, e.g. \"Groundedness: moderately grounded\""
   },
+  "jQSwNN": {
+    "defaultMessage": "Client configuration",
+    "description": "Binding detail client config section title"
+  },
   "jR08Zd": {
     "defaultMessage": "This judge template is not yet supported for sample judge output",
     "description": "Tooltip message when selected template is not supported for running on sample traces"
@@ -9710,6 +10302,10 @@
   "jXfgov": {
     "defaultMessage": "All runs are hidden. Select at least one run to view charts.",
     "description": "Experiment tracking > runs charts > indication displayed when no runs are selected for comparison"
+  },
+  "jZVaFN": {
+    "defaultMessage": "Input Schema",
+    "description": "MCP tool input schema toggle"
   },
   "jcGdSy": {
     "defaultMessage": "Queue",
@@ -9755,6 +10351,10 @@
     "defaultMessage": "Pending",
     "description": "Label for pending state of a experiment logged model"
   },
+  "joZkJS": {
+    "defaultMessage": "Remotes ({count})",
+    "description": "MCP server version detail remotes subsection heading"
+  },
   "joh88n": {
     "defaultMessage": "{numValue} for run \"{runName}\"",
     "description": "Error/null assessment tooltip"
@@ -9762,6 +10362,10 @@
   "jp0HKC": {
     "defaultMessage": "Tokens per trace",
     "description": "Title for the token stats chart"
+  },
+  "jp25Wv": {
+    "defaultMessage": "Save metadata",
+    "description": "Button label for saving metadata in the MCP server version metadata modal"
   },
   "jpvRrY": {
     "defaultMessage": "Pre-LLM Guardrails",
@@ -9827,6 +10431,10 @@
     "defaultMessage": "Copy issue ID",
     "description": "Tooltip to copy issue ID"
   },
+  "k4Pj5X": {
+    "defaultMessage": "Select as compared version",
+    "description": "Label for selecting compared MCP server version in the comparison view"
+  },
   "k4ulqN": {
     "defaultMessage": "Drag to reorder {option}",
     "description": "Categorical option chip: drag-handle accessibility label"
@@ -9866,6 +10474,10 @@
   "kEmVw4": {
     "defaultMessage": "Trace Archival Retention",
     "description": "Label for workspace trace archival retention field"
+  },
+  "kFqjAb": {
+    "defaultMessage": "''{alias}'' alias name (case insensitive) is reserved.",
+    "description": "Alias editor > Warning about using a reserved alias name"
   },
   "kGVN6k": {
     "defaultMessage": "e.g. {example}",
@@ -9910,6 +10522,10 @@
   "kQ9rmr": {
     "defaultMessage": "Operator",
     "description": "Usage overview > filter row > operator column label"
+  },
+  "kQpQFQ": {
+    "defaultMessage": "Tags:",
+    "description": "Label for tags field in create MCP server modal"
   },
   "kQw850": {
     "defaultMessage": "Test succeeded (HTTP {status})",
@@ -9995,6 +10611,14 @@
     "defaultMessage": "Learn more about the AI Gateway in the {gatewayDocs}.",
     "description": "AI Gateway setup guide > Documentation link"
   },
+  "kpuHrG": {
+    "defaultMessage": "Cancel",
+    "description": "MCP server version edit description cancel button"
+  },
+  "kwXUSF": {
+    "defaultMessage": "Search MCP servers by name",
+    "description": "Placeholder for MCP server search filter input"
+  },
   "kwqwaU": {
     "defaultMessage": "View starter code",
     "description": "Title for coding agent starter code card on endpoint overview"
@@ -10038,6 +10662,10 @@
   "lDYP1d": {
     "defaultMessage": "Needs review",
     "description": "Review queue status: pending"
+  },
+  "lEpsnJ": {
+    "defaultMessage": "Delete access binding",
+    "description": "Access binding delete confirmation modal title"
   },
   "lFnpMi": {
     "defaultMessage": "AutoML",
@@ -10119,6 +10747,10 @@
     "defaultMessage": "Hide charts with no data",
     "description": "Experiment page > control bar > label for a checkbox toggle button that hides chart cards with no corresponding data"
   },
+  "ld2Xn9": {
+    "defaultMessage": "Compare",
+    "description": "MCP server detail compare tab"
+  },
   "leXUJw": {
     "defaultMessage": "Create and manage API keys for authenticating to external LLM providers.",
     "description": "Settings content section subtitle for LLM connections (API keys)"
@@ -10199,9 +10831,17 @@
     "defaultMessage": "Save",
     "description": "Evaluation review > assessments > save button"
   },
+  "m30WmQ": {
+    "defaultMessage": "Aliases",
+    "description": "MCP registry binding modal aliases group label"
+  },
   "m4159e": {
     "defaultMessage": "Metrics ({length})",
     "description": "Run page > Overview > Metrics table > Section title"
+  },
+  "m5qURv": {
+    "defaultMessage": "Last updated",
+    "description": "Header for the last updated column in the access bindings table"
   },
   "m8ztHR": {
     "defaultMessage": "Edited {timeSince} by {source}.",
@@ -10218,6 +10858,10 @@
   "mBhoMH": {
     "defaultMessage": "Last modified",
     "description": "Last modified column header"
+  },
+  "mDb6cp": {
+    "defaultMessage": "{action} remote {url}",
+    "description": "Aria label for expanding/collapsing a remote row"
   },
   "mEV+mz": {
     "defaultMessage": "New prompt",
@@ -10250,6 +10894,10 @@
   "mLeTrI": {
     "defaultMessage": "Change password",
     "description": "Button to open the change password modal"
+  },
+  "mLqAKf": {
+    "defaultMessage": "Display name:",
+    "description": "Label for display name field in create MCP server modal"
   },
   "mLr9U7": {
     "defaultMessage": "Learn more.",
@@ -10407,9 +11055,17 @@
     "defaultMessage": "Flexible, governed deployments with the new Model Registry UI",
     "description": "Model registry > OSS Promo modal for model version aliases > modal title"
   },
+  "munhk5": {
+    "defaultMessage": "Delete MCP server",
+    "description": "MCP server delete confirmation modal title"
+  },
   "mv6CY3": {
     "defaultMessage": "Yes, save and close",
     "description": "Key-value tag editor modal > Unsaved tag message > Yes, save and close button"
+  },
+  "mwR/4I": {
+    "defaultMessage": "Active",
+    "description": "Active status option in create MCP server modal"
   },
   "mzmlq2": {
     "defaultMessage": "Detects personally identifiable information such as names, emails, and phone numbers.",
@@ -10451,6 +11107,10 @@
     "defaultMessage": "Use multiple models for load balancing by splitting traffic with weights",
     "description": "Gateway > Endpoint details > Description for adding more primary models"
   },
+  "nAJlQl": {
+    "defaultMessage": "Deprecated",
+    "description": "Deprecated status option in create MCP server modal"
+  },
   "nAhHpm": {
     "defaultMessage": "Cancel",
     "description": "Cancel button text for create workspace modal"
@@ -10467,6 +11127,10 @@
     "defaultMessage": "Pass",
     "description": "The label for a passing asseessment above a bar-chart in the summary stats."
   },
+  "nE+gTQ": {
+    "defaultMessage": "Show less",
+    "description": "MCP server version detail show less packages button"
+  },
   "nEnDEu": {
     "defaultMessage": "Cancel",
     "description": "Cancel create evaluation dataset button text"
@@ -10478,6 +11142,10 @@
   "nF10K1": {
     "defaultMessage": "Machine learning",
     "description": "Label for custom experiments focused on machine learning"
+  },
+  "nGF/Tf": {
+    "defaultMessage": "Show {count} more",
+    "description": "MCP server version detail show more tools button"
   },
   "nIk08y": {
     "defaultMessage": "Trace view",
@@ -10531,6 +11199,10 @@
     "defaultMessage": "Submit",
     "description": "Review focused view: submit answers and mark the trace complete"
   },
+  "nUfB8J": {
+    "defaultMessage": "No access bindings configured for this server.",
+    "description": "MCP server empty access bindings message"
+  },
   "nVndit": {
     "defaultMessage": "Registered on {registeredDate}",
     "description": "Label to display at what date the model was registered"
@@ -10558,6 +11230,10 @@
   "nYSJgH": {
     "defaultMessage": "Show all parent spans",
     "description": "Checkbox label for a setting that enables showing all parent spans in the trace explorer regardless of filter conditions."
+  },
+  "nZjAlt": {
+    "defaultMessage": "Register an MCP server before creating access bindings.",
+    "description": "Empty state description for access bindings tab when no servers exist"
   },
   "naivho": {
     "defaultMessage": "of",
@@ -10603,6 +11279,10 @@
     "defaultMessage": "Prompt Name",
     "description": "Header for prompt name column in linked prompts table on logged model details page"
   },
+  "nrIEMg": {
+    "defaultMessage": "No servers found",
+    "description": "Empty state when MCP server search returns no results"
+  },
   "nugZSE": {
     "defaultMessage": "Show less",
     "description": "Button label to collapse conversation messages in model trace explorer"
@@ -10642,6 +11322,10 @@
   "o2qOGQ": {
     "defaultMessage": "Total",
     "description": "Label for total cost"
+  },
+  "o4MUEA": {
+    "defaultMessage": "Name:",
+    "description": "MCP server version detail name label"
   },
   "o5AS8R": {
     "defaultMessage": "Custom code judge",
@@ -10686,6 +11370,10 @@
   "oHW+ks": {
     "defaultMessage": "Description",
     "description": "Title text for the description section under details tab on the model\n                   view page"
+  },
+  "oHglm6": {
+    "defaultMessage": "Configuration",
+    "description": "MCP server version detail configuration tab"
   },
   "oJg/Kk": {
     "defaultMessage": "— model must call a tool.",
@@ -10739,6 +11427,10 @@
     "defaultMessage": "Rename",
     "description": "Label for the rename run button above the experiment runs table"
   },
+  "oWmpyr": {
+    "defaultMessage": "Select an MCP server",
+    "description": "MCP registry binding modal server placeholder"
+  },
   "oY+vPi": {
     "defaultMessage": "Showing all runs",
     "description": "Experiment page > compare runs > parallel chart > header > indicator for all runs shown"
@@ -10763,6 +11455,10 @@
     "defaultMessage": "Compact view",
     "description": "Run page > artifact view > logged table view > compact view toggle button"
   },
+  "odrnWp": {
+    "defaultMessage": "Status:",
+    "description": "Label for status field in create MCP server modal"
+  },
   "ofL8Me": {
     "defaultMessage": "e.g. 1.0",
     "description": "Placeholder for the top-p input on the playground parameters panel"
@@ -10779,6 +11475,10 @@
     "defaultMessage": "PII Detection",
     "description": "PII guardrail type name"
   },
+  "oj/VFA": {
+    "defaultMessage": "Display name",
+    "description": "Version edit display name label"
+  },
   "ojLGIx": {
     "defaultMessage": "Enter a feedback name",
     "description": "Placeholder for the feedback name typeahead"
@@ -10786,6 +11486,10 @@
   "okQ1oB": {
     "defaultMessage": "Please input a new name for the new experiment.",
     "description": "Error message for name requirement in create experiment for MLflow"
+  },
+  "ol+AXD": {
+    "defaultMessage": "MCP server:",
+    "description": "Binding detail MCP server label"
   },
   "olY499": {
     "defaultMessage": "Search datasets",
@@ -10827,6 +11531,10 @@
     "defaultMessage": "No group by columns selected",
     "description": "Experiment page > artifact compare view > empty state for no group by columns selected > title"
   },
+  "ox4hKu": {
+    "defaultMessage": "Create MCP server",
+    "description": "Access bindings list empty state create server button"
+  },
   "oy2LTl": {
     "defaultMessage": "Filter",
     "description": "Label for the span filters popover in the trace explorer."
@@ -10858,6 +11566,10 @@
   "p4zd2r": {
     "defaultMessage": "Displaying runs from {numExperiments} experiments",
     "description": "Breadcrumb nav item to link to compare-experiments page on compare runs page"
+  },
+  "p5raoI": {
+    "defaultMessage": "Website:",
+    "description": "MCP server version detail website label"
   },
   "p9ZErC": {
     "defaultMessage": "Start review",
@@ -11083,6 +11795,10 @@
     "defaultMessage": "Experiment id copied",
     "description": "Tooltip displayed after experiment id was successfully copied to clipboard"
   },
+  "qHqhov": {
+    "defaultMessage": "Select as baseline version",
+    "description": "Label for selecting baseline MCP server version in the comparison view"
+  },
   "qIHqi7": {
     "defaultMessage": "Evaluation runs",
     "description": "Issue detection run details > Breadcrumb > Evaluation runs"
@@ -11135,6 +11851,10 @@
     "defaultMessage": "Hide run",
     "description": "A tooltip for the visibility icon button in the runs table next to the visible run"
   },
+  "qU/7Y0": {
+    "defaultMessage": "Create access binding",
+    "description": "MCP registry create access binding modal title"
+  },
   "qVQYZH": {
     "defaultMessage": "Show less",
     "description": "Button to close alert description"
@@ -11170,6 +11890,10 @@
   "qhOwHa": {
     "defaultMessage": "Endpoints",
     "description": "Sidebar link for gateway endpoints"
+  },
+  "qhnfB3": {
+    "defaultMessage": "Create MCP server",
+    "description": "Access bindings empty state create server button"
   },
   "qkRBUr": {
     "defaultMessage": "Line smoothing",
@@ -11363,6 +12087,10 @@
     "defaultMessage": "Labeling sessions",
     "description": "Label for the labeling sessions tab in the MLflow experiment navbar"
   },
+  "rQLVyc": {
+    "defaultMessage": "Create access binding",
+    "description": "Button to create a new access binding"
+  },
   "rRaThb": {
     "defaultMessage": "Select a provider first",
     "description": "Placeholder when no provider selected"
@@ -11370,6 +12098,10 @@
   "rRhMQt": {
     "defaultMessage": "Execution time (ms)",
     "description": "Column label for execution time with the unit suffix"
+  },
+  "rXwa8+": {
+    "defaultMessage": "Create MCP server",
+    "description": "Empty state title for access bindings tab when no servers exist"
   },
   "rY00Iw": {
     "defaultMessage": "Add filter",
@@ -11499,6 +12231,10 @@
     "defaultMessage": "No runs logged",
     "description": "Empty state title text for experiment runs page when no runs are logged in the experiment"
   },
+  "sCavJv": {
+    "defaultMessage": "Access Bindings",
+    "description": "MCP Registry access bindings tab label"
+  },
   "sD3+jL": {
     "defaultMessage": "Failed to save webhook",
     "description": "Generic error message informing the user that webhook saving failed"
@@ -11530,6 +12266,10 @@
   "sIC5K3": {
     "defaultMessage": "Time (relative)",
     "description": "Experiment page > view controls > global settings for line chart view > settings for x-axis > label for setting to use relative time axis in all charts"
+  },
+  "sIe4Ds": {
+    "defaultMessage": "Created:",
+    "description": "MCP server version detail registered at label"
   },
   "sKaamx": {
     "defaultMessage": "Sort",
@@ -11582,6 +12322,10 @@
   "sYKPid": {
     "defaultMessage": "Description",
     "description": "Roles table description header"
+  },
+  "sYN+/j": {
+    "defaultMessage": "Edit server description",
+    "description": "MCP server edit server-level description modal title"
   },
   "sYkXR1": {
     "defaultMessage": "JSON body for the MLflow Invocations API. Use \"messages\" for chat or \"input\" for embeddings.",
@@ -11655,6 +12399,10 @@
     "defaultMessage": "Dataset metadata",
     "description": "Title for the V2 evaluation dataset metadata modal"
   },
+  "t+UhZI": {
+    "defaultMessage": "required",
+    "description": "MCP server package env var required badge"
+  },
   "t+aG6y": {
     "defaultMessage": "User",
     "description": "Display text for the 'user' role in a GenAI chat message."
@@ -11674,6 +12422,10 @@
   "t0oYFv": {
     "defaultMessage": "Last updated by",
     "description": "Column selector label for the last-updated-by column"
+  },
+  "t12Gxp": {
+    "defaultMessage": "Version/Alias",
+    "description": "Header for the version or alias column in the access bindings table"
   },
   "t3mHNt": {
     "defaultMessage": "Errors",
@@ -12047,6 +12799,10 @@
     "defaultMessage": "X axis",
     "description": "Label for X axis in scatter chart configurator in compare runs chart config modal"
   },
+  "vBUTRa": {
+    "defaultMessage": "Enter your MCP server definition",
+    "description": "Placeholder for server.json in create MCP server modal"
+  },
   "vCUglz": {
     "defaultMessage": "Suggested actions",
     "description": "Evaluation review > assessments > suggested actions > title"
@@ -12135,6 +12891,10 @@
     "defaultMessage": "All",
     "description": "Tab text to view all versions under details tab on the model view page"
   },
+  "vkQHFS": {
+    "defaultMessage": "Add tags",
+    "description": "Label for the add tags button on the MCP server detail page"
+  },
   "vlUEAo": {
     "defaultMessage": "Delete",
     "description": "Delete assessment modal button text"
@@ -12187,6 +12947,10 @@
     "defaultMessage": "Status",
     "description": "Run page > Overview > Run status section label"
   },
+  "vyiOXJ": {
+    "defaultMessage": "Endpoint URL:",
+    "description": "MCP registry binding modal endpoint label"
+  },
   "w+Josc": {
     "defaultMessage": "Enter an expectation name",
     "description": "Placeholder for the expectation name typeahead"
@@ -12214,6 +12978,10 @@
   "w4bpXQ": {
     "defaultMessage": "Use a custom model name",
     "description": "Label for custom model input section"
+  },
+  "w5RsIq": {
+    "defaultMessage": "{action} package {identifier}",
+    "description": "Aria label for expanding/collapsing a package row"
   },
   "w80phd": {
     "defaultMessage": "Error",
@@ -12295,6 +13063,10 @@
     "defaultMessage": "Failed calls",
     "description": "Label for failed calls statistic"
   },
+  "wROuT1": {
+    "defaultMessage": "Updated:",
+    "description": "Binding card updated label"
+  },
   "wT28RL": {
     "defaultMessage": "Owner",
     "description": "Review queue sidebar: queue-owner column"
@@ -12323,9 +13095,17 @@
     "defaultMessage": "Are you sure you want to save and close without adding \"{tag}\"",
     "description": "Key-value tag editor modal > Unsaved tag message"
   },
+  "wcXwcq": {
+    "defaultMessage": "Type a value",
+    "description": "Placeholder for tag value input in create MCP server modal"
+  },
   "wciksY": {
     "defaultMessage": "Here's how to optimize your prompt with your dataset in your Python code:",
     "description": "Description of how to optimize a prompt with a dataset in Python"
+  },
+  "wdBU9n": {
+    "defaultMessage": "View raw JSON",
+    "description": "MCP server version detail view raw tools JSON button"
   },
   "weYjQS": {
     "defaultMessage": "Constrain how the model formats its output:",
@@ -12475,6 +13255,10 @@
     "defaultMessage": "Chat",
     "description": "Label for chat prompt type in the prompt creation modal"
   },
+  "xMNoOG": {
+    "defaultMessage": "{version}",
+    "description": "MCP server version item label"
+  },
   "xNKhsu": {
     "defaultMessage": "Recent Experiments",
     "description": "Home page experiments preview title"
@@ -12494,6 +13278,10 @@
   "xRM/Eb": {
     "defaultMessage": "Latency (AVG)",
     "description": "Column header for average latency"
+  },
+  "xRb5P+": {
+    "defaultMessage": "Edit",
+    "description": "MCP server edit version button"
   },
   "xRw7H2": {
     "defaultMessage": "Created by",
@@ -12534,6 +13322,10 @@
   "xZALB+": {
     "defaultMessage": "Cancel",
     "description": "Manage review questions: cancel delete"
+  },
+  "xaiZn5": {
+    "defaultMessage": "Create and manage direct access endpoints for your MCP servers.",
+    "description": "Empty state description for access bindings table"
   },
   "xbfKJS": {
     "defaultMessage": "JSON body for the OpenAI-compatible Chat Completions API. Include \"model\" (endpoint name) and \"messages\".",
@@ -12658,6 +13450,10 @@
   "yDLCp6": {
     "defaultMessage": "View all",
     "description": "Home page experiments view all link"
+  },
+  "yEh+Sb": {
+    "defaultMessage": "Create and manage MCP servers using MLflow.",
+    "description": "Empty state description for MCP servers table"
   },
   "yFl8nB": {
     "defaultMessage": "This model will be deprecated on {date}",
@@ -12794,6 +13590,10 @@
   "z42Rsj": {
     "defaultMessage": "Source run",
     "description": "Label for the column indicating a run being the source of the logged model's metric (i.e. source run). Displayed in the logged model details metrics table."
+  },
+  "z4Cxm8": {
+    "defaultMessage": "Select version for comparison",
+    "description": "Aria label for the version comparison radio group"
   },
   "z4aclU": {
     "defaultMessage": "Discard",
@@ -12975,6 +13775,10 @@
     "defaultMessage": "Adherence",
     "description": "Issue category title for adherence"
   },
+  "znbl+r": {
+    "defaultMessage": "Access Bindings",
+    "description": "MCP server version detail access bindings tab"
+  },
   "zp4MBw": {
     "defaultMessage": "Token count",
     "description": "Label for the token count section"
@@ -13006,6 +13810,10 @@
   "zyPq2R": {
     "defaultMessage": "An error occurred while attempting to delete traces. Please refresh the page and try again.",
     "description": "Experiment page > traces view controls > Delete traces modal > Error message"
+  },
+  "zznpND": {
+    "defaultMessage": "Aliases",
+    "description": "Version edit aliases label"
   },
   "zzuzri": {
     "defaultMessage": "Description",

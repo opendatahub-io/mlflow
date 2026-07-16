@@ -1,4 +1,5 @@
 import { Button, PencilIcon, useDesignSystemTheme } from '@databricks/design-system';
+import type { TagColors } from '@databricks/design-system';
 import { AliasTag } from '../../../common/components/AliasTag';
 import { FormattedMessage } from 'react-intl';
 
@@ -8,12 +9,16 @@ interface ModelVersionTableAliasesCellProps {
   version: string;
   onAddEdit: () => void;
   className?: string;
+  highlightedAliases?: string[];
+  aliasColors?: Record<string, TagColors>;
 }
 
 export const ModelVersionTableAliasesCell = ({
   aliases = [],
   onAddEdit,
   className,
+  highlightedAliases,
+  aliasColors,
 }: ModelVersionTableAliasesCellProps) => {
   const { theme } = useDesignSystemTheme();
 
@@ -46,9 +51,10 @@ export const ModelVersionTableAliasesCell = ({
         </Button>
       ) : (
         <>
-          {aliases.map((alias) => (
-            <AliasTag value={alias} key={alias} css={{ marginTop: theme.spacing.xs / 2 }} />
-          ))}
+          {aliases.map((alias) => {
+            const color = aliasColors?.[alias] ?? (highlightedAliases?.includes(alias) ? 'turquoise' : undefined);
+            return <AliasTag key={alias} value={alias} css={{ marginTop: theme.spacing.xs / 2 }} color={color} />;
+          })}
           <Button
             componentId="codegen_mlflow_app_src_model-registry_components_aliases_modelversiontablealiasescell.tsx_41"
             size="small"
