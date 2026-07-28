@@ -202,8 +202,13 @@ export const createMLflowRoutePath = (routePath: string) => {
   // "/experiments", so absolute paths like "/experiments/:id" would
   // produce a doubled segment. Strip the prefix so links resolve
   // correctly against the basename.
-  if (process.env['DEPLOYMENT_MODE'] === 'federated' && routePath.startsWith('/experiments')) {
-    return routePath.slice('/experiments'.length) || '/';
+  if (process.env['DEPLOYMENT_MODE'] === 'federated') {
+    if (routePath.startsWith('/experiments')) {
+      return routePath.slice('/experiments'.length) || '/';
+    }
+    if (routePath.startsWith('/mcp-registry')) {
+      return routePath.slice('/mcp-registry'.length) || '/';
+    }
   }
   return routePath;
 };
