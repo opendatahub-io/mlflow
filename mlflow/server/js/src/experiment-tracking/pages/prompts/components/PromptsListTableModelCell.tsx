@@ -1,10 +1,9 @@
-import { Tooltip, Typography, useDesignSystemTheme } from '@databricks/design-system';
+import { Tooltip, Typography } from '@databricks/design-system';
 import type { ColumnDef } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
 
 export const PromptsListTableModelCell: ColumnDef<RegisteredPrompt>['cell'] = ({ getValue }) => {
-  const { theme } = useDesignSystemTheme();
   const modelName = getValue<string>();
 
   if (!modelName) {

@@ -10,7 +10,7 @@ import {
   TableSkeletonRows,
   useDesignSystemTheme,
 } from '@databricks/design-system';
-import type { ColumnDef, SortDirection, SortingState } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
