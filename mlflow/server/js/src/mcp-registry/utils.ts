@@ -1,48 +1,60 @@
 import type { TagProps } from '@databricks/design-system';
-import type { MCPIcon, MCPRemoteTransportType, MCPStatus, MCPTool, ServerJSONPayload } from './types';
+import type {
+  ConnectOptionKey,
+  MCPAccessEndpoint,
+  MCPIcon,
+  MCPServer,
+  MCPRemoteTransportType,
+  MCPTool,
+  PackageConnectOptionKey,
+  RemoteConnectOptionKey,
+  ServerJSONPayload,
+} from './types';
+import { MCPStatus, MCPServerAction } from './types';
+
+export const resolveIcon = (icons?: MCPIcon[], isDarkMode?: boolean): MCPIcon | undefined => {
+  if (!icons?.length) return undefined;
+  const preferred = isDarkMode ? 'dark' : 'light';
+  return icons.find((i) => i.theme === preferred) ?? icons.find((i) => !i.theme);
+};
+
+export const sanitizeHref = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return url;
+    }
+  } catch {
+    // malformed URL
+  }
+  return undefined;
+};
 
 export const STATUS_TAG_COLOR: Record<MCPStatus, TagProps['color']> = {
-  draft: 'charcoal',
-  active: 'lime',
-  deprecated: 'lemon',
-  deleted: 'coral',
+  [MCPStatus.DRAFT]: 'charcoal',
+  [MCPStatus.ACTIVE]: 'lime',
+  [MCPStatus.DEPRECATED]: 'lemon',
+  [MCPStatus.DELETED]: 'coral',
 };
 
 export const STATUS_TRANSITIONS: Record<MCPStatus, MCPStatus[]> = {
-  draft: ['active'],
-  active: ['draft', 'deprecated'],
-  deprecated: ['active'],
-  deleted: [],
+  [MCPStatus.DRAFT]: [MCPStatus.ACTIVE],
+  [MCPStatus.ACTIVE]: [MCPStatus.DRAFT, MCPStatus.DEPRECATED],
+  [MCPStatus.DEPRECATED]: [MCPStatus.ACTIVE],
+  [MCPStatus.DELETED]: [],
 };
 
 export const LATEST_ALIAS = 'latest';
 
 export const RESERVED_ALIASES = [LATEST_ALIAS];
 
-export const emptyCenterStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  minHeight: 400,
-  width: '100%',
-  '& > div': {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-};
-
 export const MCP_QUERY_KEYS = {
   SERVERS_LIST: 'mcp_servers_list',
   SERVER: 'mcp_server',
   SERVER_VERSIONS: 'mcp_server_versions',
   SERVER_LATEST_VERSION: 'mcp_server_latest_version',
-  SERVER_BINDINGS: 'mcp_server_bindings',
-  BINDINGS_LIST: 'mcp_bindings_list',
-  BINDING_DETAIL: 'mcp_binding_detail',
+  SERVER_ENDPOINTS: 'mcp_server_endpoints',
 } as const;
 
 export const DEFAULT_PAGE_SIZE = 25;
@@ -52,41 +64,27 @@ export const resolveDisplayName = (server: { display_name?: string; name: string
   return server.display_name || server.name;
 };
 
-export const tagsRecordToArray = (tags: Record<string, string>): { key: string; value: string }[] =>
-  Object.entries(tags).map(([key, value]) => ({ key, value }));
-
-export const resolveVersionDisplayName = (
-  version: { display_name?: string; server_json?: { title?: string } } | null | undefined,
+const resolveVersionDisplayName = (
+  version: { server_json?: { title?: string } } | null | undefined,
   fallback: string,
 ): string => {
-  return version?.display_name || version?.server_json?.title || fallback;
+  return version?.server_json?.title || fallback;
 };
 
-export const resolveBindingDisplayName = (binding: {
+export const resolveEndpointDisplayName = (endpoint: {
   server_name: string;
-  resolved_version?: { display_name?: string; server_json?: { title?: string } } | null;
+  resolved_version?: { server_json?: { title?: string } } | null;
 }): string => {
-  return resolveVersionDisplayName(binding.resolved_version, binding.server_name);
+  return resolveVersionDisplayName(endpoint.resolved_version, endpoint.server_name);
 };
 
 const TRANSPORT_LABELS: Record<MCPRemoteTransportType, string> = {
-  'streamable-http': 'Streamable HTTP',
-  sse: 'SSE',
+  'streamable-http': 'streamable-http',
+  sse: 'sse',
 };
 
-export const buildSearchFilterClause = (searchFilter: string | undefined, field: string): string | undefined => {
-  if (!searchFilter) {
-    return undefined;
-  }
-  const sqlKeywordPattern = /(\s+(ILIKE|LIKE|IN|IS)\s+)|=|!=|<=|>=|<|>/i;
-  if (sqlKeywordPattern.test(searchFilter)) {
-    return searchFilter;
-  }
-  return `${field} LIKE '%${searchFilter.replace(/'/g, "''")}%'`;
-};
-
-export const resolveIconSrc = (icons: MCPIcon[] | undefined): string | undefined => {
-  return icons?.[0]?.src;
+export const formatTransportType = (transport: MCPRemoteTransportType): string => {
+  return TRANSPORT_LABELS[transport] || transport;
 };
 
 export const isValidEndpointUrl = (url: string): boolean => {
@@ -99,11 +97,35 @@ export const isValidEndpointUrl = (url: string): boolean => {
   }
 };
 
-export const formatTransportType = (transport: MCPRemoteTransportType): string => {
-  return TRANSPORT_LABELS[transport] || transport;
+export const tagsRecordToArray = (tags: Record<string, string> = {}): { key: string; value: string }[] =>
+  Object.entries(tags).map(([key, value]) => ({ key, value }));
+
+export const findLatestEndpoint = (server: MCPServer): MCPAccessEndpoint | undefined =>
+  server.latest_version
+    ? (server.access_endpoints ?? []).find((e) => e.resolved_version?.version === server.latest_version)
+    : server.access_endpoints?.[0];
+
+export const isServerDimmed = (server: MCPServer): boolean => server.status !== MCPStatus.ACTIVE;
+
+export const formatEndpointTarget = (endpoint: Pick<MCPAccessEndpoint, 'server_alias' | 'server_version'>): string =>
+  endpoint.server_alias ? `@${endpoint.server_alias}` : endpoint.server_version || '—';
+
+const hasAction = (actions: MCPServerAction[] | undefined, action: MCPServerAction) =>
+  actions === undefined || actions.includes(action);
+
+export const getServerPermissions = (server?: MCPServer) => {
+  if (!server) {
+    return { canUpdate: false, canDelete: false, canManage: false };
+  }
+  const actions = server.allowed_actions;
+  return {
+    canUpdate: hasAction(actions, MCPServerAction.UPDATE),
+    canDelete: hasAction(actions, MCPServerAction.DELETE),
+    canManage: hasAction(actions, MCPServerAction.MANAGE),
+  };
 };
 
-export interface ServerJsonValidationResult {
+interface ServerJsonValidationResult {
   valid: boolean;
   error?: string;
   parsed?: ServerJSONPayload;
@@ -167,4 +189,23 @@ export const validateToolsJson = (value: string): { valid: boolean; error?: stri
   }
 
   return { valid: true, parsed: parsed as MCPTool[] };
+};
+
+export const buildPackageConnectOptionKey = (pkg: {
+  registryType: string;
+  identifier: string;
+}): PackageConnectOptionKey => `pkg:${pkg.registryType}:${pkg.identifier}`;
+
+export const buildRemoteConnectOptionKey = (remote: { url?: string; type: string }): RemoteConnectOptionKey =>
+  `remote:${remote.type}:${remote.url ?? ''}`;
+
+export const deriveConnectOptionKeys = (serverJson: ServerJSONPayload): Set<ConnectOptionKey> => {
+  const keys = new Set<ConnectOptionKey>();
+  for (const pkg of serverJson.packages ?? []) {
+    keys.add(buildPackageConnectOptionKey(pkg));
+  }
+  for (const remote of serverJson.remotes ?? []) {
+    keys.add(buildRemoteConnectOptionKey(remote));
+  }
+  return keys;
 };

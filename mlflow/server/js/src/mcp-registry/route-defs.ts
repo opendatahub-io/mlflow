@@ -15,15 +15,7 @@ export const getMCPRegistryRouteDefs = () => {
       element: createLazyRouteElement(() => import('./pages/MCPServerDetailPage')),
       pageId: MCPRegistryPageId.mcpServerDetailPage,
       handle: {
-        getPageTitle: (params) => `MCP Server: ${params['serverName']}`,
-      } satisfies DocumentTitleHandle,
-    },
-    {
-      path: MCPRegistryRoutePaths.mcpAccessBindingDetailPage,
-      element: createLazyRouteElement(() => import('./pages/MCPAccessBindingDetailPage')),
-      pageId: MCPRegistryPageId.mcpAccessBindingDetailPage,
-      handle: {
-        getPageTitle: () => 'Access Binding',
+        getPageTitle: (params) => `MCP Server: ${decodeURIComponent(params['serverName'] || '')}`,
       } satisfies DocumentTitleHandle,
     },
   ];

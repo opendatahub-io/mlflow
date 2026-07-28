@@ -1,13 +1,14 @@
 import { useQuery } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { MCPRegistryApi } from '../api';
 import type {
-  MCPAccessBinding,
   MCPServer,
   MCPServerVersion,
   SearchMCPServerVersionsResponse,
-  SearchMCPAccessBindingsResponse,
+  SearchMCPAccessEndpointsResponse,
 } from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
+import { ErrorWrapper } from '../../common/utils/ErrorWrapper';
+import { ErrorCodes } from '../../common/constants';
 
 export const useMCPServerQuery = (name: string) => {
   return useQuery<MCPServer, Error>([MCP_QUERY_KEYS.SERVER, name], {
@@ -19,7 +20,7 @@ export const useMCPServerQuery = (name: string) => {
 
 export const useMCPServerVersionsQuery = (name: string) => {
   const queryResult = useQuery<SearchMCPServerVersionsResponse, Error>([MCP_QUERY_KEYS.SERVER_VERSIONS, name], {
-    queryFn: () => MCPRegistryApi.searchMCPServerVersions(name, { order_by: ['created_at DESC'] }),
+    queryFn: () => MCPRegistryApi.searchMCPServerVersions(name, { order_by: ['`version` DESC'], max_results: 100 }),
     retry: false,
     enabled: Boolean(name),
   });
@@ -27,6 +28,7 @@ export const useMCPServerVersionsQuery = (name: string) => {
   return {
     ...queryResult,
     data: queryResult.data?.mcp_server_versions,
+    hasMoreVersions: Boolean(queryResult.data?.next_page_token),
   };
 };
 
@@ -36,7 +38,10 @@ export const useLatestMCPServerVersionQuery = (name: string, enabled = true) => 
       try {
         return await MCPRegistryApi.getLatestMCPServerVersion(name);
       } catch (e: unknown) {
-        if (e instanceof Error && (e.message.includes('404') || e.message.includes('RESOURCE_DOES_NOT_EXIST'))) {
+        if (
+          e instanceof ErrorWrapper &&
+          (e.getStatus() === 404 || e.getErrorCode() === ErrorCodes.RESOURCE_DOES_NOT_EXIST)
+        ) {
           return undefined;
         }
         throw e;
@@ -47,17 +52,9 @@ export const useLatestMCPServerVersionQuery = (name: string, enabled = true) => 
   });
 };
 
-export const useMCPAccessBindingQuery = (serverName: string, bindingId: string) => {
-  return useQuery<MCPAccessBinding, Error>([MCP_QUERY_KEYS.BINDING_DETAIL, serverName, bindingId], {
-    queryFn: () => MCPRegistryApi.getMCPAccessBinding(serverName, bindingId),
-    retry: false,
-    enabled: Boolean(serverName && bindingId),
-  });
-};
-
-export const useMCPAccessBindingsQuery = (name: string) => {
-  const queryResult = useQuery<SearchMCPAccessBindingsResponse, Error>([MCP_QUERY_KEYS.SERVER_BINDINGS, name], {
-    queryFn: () => MCPRegistryApi.searchMCPAccessBindings(name),
+export const useMCPAccessEndpointsQuery = (name: string) => {
+  const queryResult = useQuery<SearchMCPAccessEndpointsResponse, Error>([MCP_QUERY_KEYS.SERVER_ENDPOINTS, name], {
+    queryFn: () => MCPRegistryApi.searchMCPAccessEndpoints(name),
     retry: false,
     enabled: Boolean(name),
   });

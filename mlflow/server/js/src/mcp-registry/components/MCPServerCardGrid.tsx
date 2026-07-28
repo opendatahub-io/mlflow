@@ -1,9 +1,11 @@
 import type { CursorPaginationProps } from '@databricks/design-system';
+import { CursorPagination, Spinner, useDesignSystemTheme } from '@databricks/design-system';
 import { FormattedMessage } from 'react-intl';
 
 import type { MCPServer } from '../types';
 import { MCPServerCard } from './MCPServerCard';
-import { PaginatedCardGrid } from './PaginatedCardGrid';
+import { MCPServersEmptyState } from './MCPRegistryEmptyState';
+import { cardGridStyles, flexColumnContainerStyles } from '../styles';
 
 export const MCPServerCardGrid = ({
   servers,
@@ -14,6 +16,7 @@ export const MCPServerCardGrid = ({
   onNextPage,
   onPreviousPage,
   pageSizeSelect,
+  onCreateServer,
 }: {
   servers?: MCPServer[];
   isLoading?: boolean;
@@ -23,26 +26,66 @@ export const MCPServerCardGrid = ({
   onNextPage: () => void;
   onPreviousPage: () => void;
   pageSizeSelect?: CursorPaginationProps['pageSizeSelect'];
-}) => (
-  <PaginatedCardGrid
-    items={servers}
-    isLoading={isLoading}
-    isFiltered={isFiltered}
-    hasNextPage={hasNextPage}
-    hasPreviousPage={hasPreviousPage}
-    onNextPage={onNextPage}
-    onPreviousPage={onPreviousPage}
-    pageSizeSelect={pageSizeSelect}
-    loadingMessage={
-      <FormattedMessage defaultMessage="Loading servers..." description="Loading state for MCP servers card grid" />
-    }
-    noResultsMessage={
-      <FormattedMessage
-        defaultMessage="No servers found"
-        description="Empty state when MCP server search returns no results"
+  onCreateServer?: () => void;
+}) => {
+  const { theme } = useDesignSystemTheme();
+
+  if (isLoading) {
+    return (
+      <div
+        role="status"
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.sm,
+          padding: theme.spacing.lg,
+          minHeight: 200,
+        }}
+      >
+        <Spinner size="small" />
+        <FormattedMessage defaultMessage="Loading servers..." description="Loading state for MCP servers card grid" />
+      </div>
+    );
+  }
+
+  if (!servers?.length) {
+    return (
+      <MCPServersEmptyState
+        isFiltered={isFiltered}
+        componentId="mlflow.mcp_registry.empty_state.create_server"
+        onCreateServer={onCreateServer}
       />
-    }
-    renderItem={(server) => <MCPServerCard server={server} />}
-    getItemKey={(server) => server.name}
-  />
-);
+    );
+  }
+
+  return (
+    <div css={{ ...flexColumnContainerStyles, minHeight: 0 }}>
+      <div role="list" aria-label="MCP servers" css={cardGridStyles(theme)}>
+        {servers.map((server) => (
+          <div role="listitem" key={server.name}>
+            <MCPServerCard server={server} />
+          </div>
+        ))}
+      </div>
+      <div
+        css={{
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          paddingTop: theme.spacing.sm,
+          paddingBottom: theme.spacing.sm,
+        }}
+      >
+        <CursorPagination
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onNextPage={onNextPage}
+          onPreviousPage={onPreviousPage}
+          pageSizeSelect={pageSizeSelect}
+          componentId="mlflow.mcp_registry.grid.pagination"
+        />
+      </div>
+    </div>
+  );
+};

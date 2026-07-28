@@ -1,6 +1,54 @@
-export type MCPStatus = 'draft' | 'active' | 'deprecated' | 'deleted';
+export enum MCPStatus {
+  DRAFT = 'draft',
+  ACTIVE = 'active',
+  DEPRECATED = 'deprecated',
+  DELETED = 'deleted',
+}
 
-export type MCPRemoteTransportType = 'streamable-http' | 'sse';
+export enum TransportType {
+  STDIO = 'stdio',
+  STREAMABLE_HTTP = 'streamable-http',
+  SSE = 'sse',
+}
+
+export type MCPRemoteTransportType = TransportType.STREAMABLE_HTTP | TransportType.SSE;
+
+export interface ConnectOptionSettings {
+  hidden?: boolean;
+}
+
+export type PackageConnectOptionKey = `pkg:${string}:${string}`;
+export type RemoteConnectOptionKey = `remote:${string}:${string}`;
+export type ConnectOptionKey = PackageConnectOptionKey | RemoteConnectOptionKey;
+export type ConnectOptionsMap = Record<ConnectOptionKey, ConnectOptionSettings>;
+
+export enum MCPServerDetailViewMode {
+  PREVIEW = 'preview',
+  COMPARE = 'compare',
+}
+
+export interface MCPServerDetailViewState {
+  mode: MCPServerDetailViewMode;
+  comparedVersion?: string;
+}
+
+export enum ConnectionSource {
+  PACKAGE = 'package',
+  REMOTE = 'remote',
+  ENDPOINT = 'endpoint',
+}
+
+export enum ConnectionFormat {
+  CLAUDE_CODE = 'claude-code',
+  MCP_JSON = 'mcp-json',
+}
+
+export enum MCPServerAction {
+  USE = 'USE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  MANAGE = 'MANAGE',
+}
 
 // Entity types
 
@@ -8,10 +56,10 @@ export interface MCPTool {
   name: string;
   title?: string;
   description?: string;
-  icons?: MCPIcon[];
   inputSchema?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   annotations?: Record<string, unknown>;
+  icons?: MCPIcon[];
   execution?: Record<string, unknown>;
 }
 
@@ -20,16 +68,7 @@ export interface MCPIcon {
   sizes?: string[];
   mimeType?: string;
   theme?: string;
-}
-
-export interface MCPAccessBindingSummary {
-  id: string;
-  server_name: string;
-  url: string;
-  transport_type: MCPRemoteTransportType;
-  server_version?: string;
-  server_alias?: string;
-  resolved_version?: MCPServerVersion;
+  source?: 'server' | 'version';
 }
 
 export interface MCPServerAlias {
@@ -43,7 +82,7 @@ export interface MCPServer {
   description?: string;
   icons?: MCPIcon[];
   status?: MCPStatus;
-  access_endpoints: MCPAccessBindingSummary[];
+  access_endpoints?: MCPAccessEndpoint[];
   latest_version?: string;
   aliases: MCPServerAlias[];
   tags: Record<string, string>;
@@ -51,17 +90,18 @@ export interface MCPServer {
   last_updated_by?: string;
   creation_timestamp?: number;
   last_updated_timestamp?: number;
+  allowed_actions?: MCPServerAction[];
 }
 
 export interface MCPServerVersion {
   name: string;
   version: string;
   server_json: ServerJSONPayload;
-  display_name?: string;
   status: MCPStatus;
   tools?: MCPTool[];
   aliases: string[];
   tags: Record<string, string>;
+  connect_options?: ConnectOptionsMap | null;
   source?: string;
   created_by?: string;
   last_updated_by?: string;
@@ -69,7 +109,7 @@ export interface MCPServerVersion {
   last_updated_timestamp?: number;
 }
 
-export interface MCPAccessBinding {
+export interface MCPAccessEndpoint {
   id: string;
   server_name: string;
   url: string;
@@ -86,18 +126,37 @@ export interface MCPAccessBinding {
 
 // ServerJSON payload types use camelCase field names to match the MCP server.json specification
 
-export interface ServerJSONEnvironmentVariable {
-  name: string;
-  description?: string;
+export interface ServerJSONInput {
+  value?: string;
+  default?: string;
+  choices?: string[];
+  placeholder?: string;
+  valueHint?: string;
+  format?: string;
   isRequired?: boolean;
   isSecret?: boolean;
+  isRepeated?: boolean;
+  description?: string;
+  variables?: Record<string, ServerJSONInput>;
 }
 
+export interface ServerJSONEnvironmentVariable extends ServerJSONInput {
+  name: string;
+}
+
+export interface ServerJSONNamedArgument extends ServerJSONInput {
+  name: string;
+}
+
+export type ServerJSONPositionalArgument = ServerJSONInput;
+
+export type ServerJSONArgument = ServerJSONNamedArgument | ServerJSONPositionalArgument;
+
 export interface ServerJSONTransport {
-  type: string;
+  type: TransportType;
   url?: string;
   headers?: ServerJSONEnvironmentVariable[];
-  variables?: Record<string, unknown>;
+  variables?: Record<string, ServerJSONInput>;
 }
 
 export interface ServerJSONPackage {
@@ -108,6 +167,10 @@ export interface ServerJSONPackage {
   version?: string;
   environmentVariables?: ServerJSONEnvironmentVariable[];
   runtimeHint?: string;
+  runtimeArguments?: ServerJSONArgument[];
+  packageArguments?: ServerJSONArgument[];
+  fileSha256?: string;
+  websiteUrl?: string;
   [key: string]: unknown;
 }
 
@@ -150,26 +213,26 @@ export interface UpdateMCPServerRequest {
 
 export interface CreateMCPServerVersionRequest {
   server_json: ServerJSONPayload;
-  display_name?: string;
   status?: MCPStatus;
   source?: string;
   tools?: MCPTool[];
+  connect_options?: ConnectOptionsMap;
 }
 
 export interface UpdateMCPServerVersionRequest {
-  display_name?: string | null;
   status?: MCPStatus | null;
   tools?: MCPTool[] | null;
+  connect_options?: ConnectOptionsMap | null;
 }
 
-export interface CreateMCPAccessBindingRequest {
+export interface CreateMCPAccessEndpointRequest {
   server_version?: string;
   server_alias?: string;
   url: string;
   transport_type?: MCPRemoteTransportType;
 }
 
-export interface UpdateMCPAccessBindingRequest {
+export interface UpdateMCPAccessEndpointRequest {
   server_version?: string | null;
   server_alias?: string | null;
   url?: string | null;
@@ -202,7 +265,7 @@ export interface SearchMCPServerVersionsParams {
   page_token?: string;
 }
 
-export interface SearchMCPAccessBindingsParams {
+export interface SearchMCPAccessEndpointsParams {
   server_version?: string;
   server_alias?: string;
   filter_string?: string;
@@ -223,7 +286,7 @@ export interface SearchMCPServerVersionsResponse {
   next_page_token?: string;
 }
 
-export interface SearchMCPAccessBindingsResponse {
-  mcp_access_endpoints: MCPAccessBinding[];
+export interface SearchMCPAccessEndpointsResponse {
+  mcp_access_endpoints: MCPAccessEndpoint[];
   next_page_token?: string;
 }

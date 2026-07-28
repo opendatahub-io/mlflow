@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
 import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
+import { rest } from 'msw';
+import { getAjaxUrl } from '@mlflow/mlflow/src/common/utils/FetchUtils';
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { setupServer } from '../../common/utils/setup-msw';
 import {
@@ -15,6 +17,19 @@ import {
 } from '../test-utils';
 import { useCreateMCPServerVersionModal } from './useCreateMCPServerVersionModal';
 
+// Monaco does not render in jsdom; stand the editor in with a labelled textarea.
+jest.mock('../../experiment-tracking/pages/experiment-evaluation-datasets-v2/components/LazyJsonRecordEditor', () => ({
+  LazyJsonRecordEditor: ({
+    ariaLabel,
+    value,
+    onChange,
+  }: {
+    ariaLabel: string;
+    value: string;
+    onChange: (next: string) => void;
+  }) => <textarea aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} />,
+}));
+
 const VALID_SERVER_JSON = JSON.stringify({
   name: 'io.github.test/server',
   version: '1.0.0',
@@ -25,8 +40,40 @@ const setTextareaValue = (element: HTMLElement, value: string) => {
   fireEvent.change(element, { target: { value } });
 };
 
-const TestComponent = ({ onSuccess }: { onSuccess?: (result: { name: string; version: string }) => void }) => {
-  const { CreateMCPServerVersionModal, openModal } = useCreateMCPServerVersionModal({ onSuccess });
+const TestComponent = ({
+  onSuccess,
+  serverName,
+  latestVersion,
+}: {
+  onSuccess?: (result: { name: string; version: string }) => void;
+  serverName?: string;
+  latestVersion?: ReturnType<typeof createMockMCPServerVersion>;
+}) => {
+  const { CreateMCPServerVersionModal, openModal } = useCreateMCPServerVersionModal({
+    onSuccess,
+    serverName,
+    latestVersion,
+  });
+  return (
+    <>
+      <button onClick={openModal}>Open</button>
+      {CreateMCPServerVersionModal}
+    </>
+  );
+};
+
+const VersionModeTestComponent = ({
+  onSuccess,
+  latestVersion,
+}: {
+  onSuccess?: (result: { name: string; version: string }) => void;
+  latestVersion: ReturnType<typeof createMockMCPServerVersion>;
+}) => {
+  const { CreateMCPServerVersionModal, openModal } = useCreateMCPServerVersionModal({
+    onSuccess,
+    serverName: latestVersion.name,
+    latestVersion,
+  });
   return (
     <>
       <button onClick={openModal}>Open</button>
@@ -42,9 +89,18 @@ describe('useCreateMCPServerVersionModal', () => {
     getMockedUpdateMCPServerResponse(),
   );
 
-  const renderModal = (onSuccess?: (result: { name: string; version: string }) => void) => {
+  const renderModal = (
+    onSuccessOrProps?:
+      | ((result: { name: string; version: string }) => void)
+      | {
+          onSuccess?: (result: { name: string; version: string }) => void;
+          serverName?: string;
+          latestVersion?: ReturnType<typeof createMockMCPServerVersion>;
+        },
+  ) => {
+    const props = typeof onSuccessOrProps === 'function' ? { onSuccess: onSuccessOrProps } : (onSuccessOrProps ?? {});
     const queryClient = new QueryClient();
-    render(<TestComponent onSuccess={onSuccess} />, {
+    render(<TestComponent {...props} />, {
       wrapper: ({ children }) => (
         <IntlProvider locale="en">
           <TestRouter
@@ -78,7 +134,6 @@ describe('useCreateMCPServerVersionModal', () => {
     expect(screen.getByText(/server\.json:/)).toBeInTheDocument();
     expect(screen.getByText('Status:')).toBeInTheDocument();
     expect(screen.getByText('Source:')).toBeInTheDocument();
-    expect(screen.getByText('Tools:')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('Create')).toBeInTheDocument();
   });
@@ -95,7 +150,7 @@ describe('useCreateMCPServerVersionModal', () => {
     renderModal();
     await openModal();
 
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, '{invalid json');
     await userEvent.click(screen.getByText('Create'));
 
@@ -108,7 +163,7 @@ describe('useCreateMCPServerVersionModal', () => {
     renderModal();
     await openModal();
 
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, '{"version": "1.0.0"}');
     await userEvent.click(screen.getByText('Create'));
 
@@ -121,7 +176,7 @@ describe('useCreateMCPServerVersionModal', () => {
     renderModal();
     await openModal();
 
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, '{"name": "test-server"}');
     await userEvent.click(screen.getByText('Create'));
 
@@ -141,7 +196,7 @@ describe('useCreateMCPServerVersionModal', () => {
     renderModal(onSuccess);
     await openModal();
 
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, VALID_SERVER_JSON);
     await userEvent.click(screen.getByText('Create'));
 
@@ -159,7 +214,7 @@ describe('useCreateMCPServerVersionModal', () => {
     renderModal();
     await openModal();
 
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, VALID_SERVER_JSON);
     await userEvent.click(screen.getByText('Create'));
 
@@ -184,7 +239,7 @@ describe('useCreateMCPServerVersionModal', () => {
     await openModal();
 
     // Enter invalid JSON and submit to trigger a validation error
-    const textarea = screen.getByPlaceholderText('Enter your MCP server definition');
+    const textarea = screen.getByLabelText('server.json editor');
     setTextareaValue(textarea, '{bad json');
     await userEvent.click(screen.getByRole('button', { name: 'Create' }));
     await waitFor(() => {
@@ -218,5 +273,119 @@ describe('useCreateMCPServerVersionModal', () => {
     // Display name should be empty
     const freshInput = screen.getByPlaceholderText('Human-readable label for this server');
     expect(freshInput).toHaveValue('');
+  });
+
+  it('carries over tools from latest version when creating a new version', async () => {
+    const tools = [{ name: 'search', description: 'Search the web' }];
+    const latestVersion = createMockMCPServerVersion({ tools });
+    const capturedBody = jest.fn();
+
+    mswServer.use(
+      rest.post(getAjaxUrl('ajax-api/3.0/mlflow/mcp-servers/:name/versions'), async (req, res, ctx) => {
+        capturedBody(await req.json());
+        return res(ctx.json(createMockMCPServerVersion({ version: '2' })));
+      }),
+    );
+
+    const queryClient = new QueryClient();
+    render(<VersionModeTestComponent latestVersion={latestVersion} />, {
+      wrapper: ({ children }) => (
+        <IntlProvider locale="en">
+          <TestRouter
+            routes={[
+              testRoute(
+                <DesignSystemProvider>
+                  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+                </DesignSystemProvider>,
+                '/',
+              ),
+            ]}
+            initialEntries={['/']}
+          />
+        </IntlProvider>
+      ),
+    });
+
+    await userEvent.click(screen.getByText('Open'));
+    await waitFor(() => {
+      expect(screen.getByText('Create new version')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Tools:')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Create'));
+
+    await waitFor(() => {
+      expect(capturedBody).toHaveBeenCalled();
+    });
+
+    expect(capturedBody.mock.calls[0][0]).toMatchObject({ tools });
+  });
+
+  it('renders Icons section in new-server mode', async () => {
+    renderModal();
+    await openModal();
+
+    expect(screen.getByText('Icons')).toBeInTheDocument();
+    expect(screen.getByText('Preview')).toBeInTheDocument();
+  });
+
+  it('shows SDK tab and hides Create button when SDK tab is active', async () => {
+    renderModal();
+    await openModal();
+
+    expect(screen.getByText('Form')).toBeInTheDocument();
+    expect(screen.getByText('Python')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Python'));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Use the MLflow Python client to register an MCP server from a URL:'),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/register_mcp_server_from_url/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument();
+  });
+
+  it('restores Create button when switching back to Form tab', async () => {
+    renderModal();
+    await openModal();
+
+    await userEvent.click(screen.getByText('Python'));
+    await userEvent.click(screen.getByText('Form'));
+
+    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
+  });
+
+  it('does not show SDK tab in version mode', async () => {
+    const latestVersion = createMockMCPServerVersion({});
+    renderModal({ serverName: latestVersion.name, latestVersion });
+    await userEvent.click(screen.getByText('Open'));
+    await waitFor(() => {
+      expect(screen.getByText('Create new version')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Python')).not.toBeInTheDocument();
+  });
+
+  it('hides Icons section in version mode', async () => {
+    const latestVersion = createMockMCPServerVersion({
+      server_json: {
+        name: 'io.github.test/server',
+        version: '2.0.0',
+        icons: [{ src: 'https://example.com/existing-icon.svg' }],
+      },
+    });
+
+    renderModal({ serverName: 'io.github.test/server', latestVersion });
+    await userEvent.click(screen.getByText('Open'));
+    await waitFor(() => {
+      expect(screen.getByText('Create new version')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Icons')).not.toBeInTheDocument();
+    expect(screen.queryByText('Display name:')).not.toBeInTheDocument();
   });
 });

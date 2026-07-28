@@ -3,7 +3,6 @@ import { createMLflowRoutePath, generatePath } from '../common/utils/RoutingUtil
 export enum MCPRegistryPageId {
   mcpRegistryPage = 'mlflow.mcp-registry',
   mcpServerDetailPage = 'mlflow.mcp-registry.server-detail',
-  mcpAccessBindingDetailPage = 'mlflow.mcp-registry.binding-detail',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- TODO(FEINF-4274)
@@ -14,10 +13,6 @@ export class MCPRegistryRoutePaths {
 
   static get mcpServerDetailPage() {
     return createMLflowRoutePath('/mcp-registry/:serverName');
-  }
-
-  static get mcpAccessBindingDetailPage() {
-    return createMLflowRoutePath('/mcp-registry/:serverName/bindings/:bindingId');
   }
 }
 
@@ -35,12 +30,6 @@ class MCPRegistryRoutes {
       return `${path}?version=${encodeURIComponent(version)}`;
     }
     return path;
-  }
-  static getAccessBindingDetailRoute(serverName: string, bindingId: string) {
-    return generatePath(MCPRegistryRoutePaths.mcpAccessBindingDetailPage, {
-      serverName: encodeURIComponent(serverName),
-      bindingId,
-    });
   }
 }
 

@@ -192,4 +192,271 @@ describe('useMCPServersListQuery', () => {
 
     expect(capturedMaxResults).toBe('25');
   });
+
+  it('returns error when API fails', async () => {
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (_req, res, ctx) => res(ctx.status(500), ctx.json({ message: 'Server error' }))),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({}), { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.error).toBeDefined();
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('wraps plain text search in ILIKE clause', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useMCPServersListQuery({ searchFilter: 'github', filterActive: false, filterHasEndpoints: false }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("name ILIKE '%github%'");
+  });
+
+  it('passes SQL filter syntax through without modification', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(
+      () =>
+        useMCPServersListQuery({
+          searchFilter: "tags.env = 'production'",
+          filterActive: false,
+          filterHasEndpoints: false,
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("tags.env = 'production'");
+  });
+
+  it('escapes ILIKE wildcards in plain text search', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useMCPServersListQuery({ searchFilter: 'my_server%', filterActive: false, filterHasEndpoints: false }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("name ILIKE '%my\\_server\\%%'");
+  });
+
+  it('ignores onNextPage while query is fetching', async () => {
+    let callCount = 0;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        callCount++;
+        const token = req.url.searchParams.get('page_token');
+        if (token) {
+          // Delay page-2 response so isFetching stays true during the second click
+          return res(
+            ctx.delay(500),
+            ctx.json({ mcp_servers: [createMockMCPServer({ name: 'page2' })], next_page_token: 'page-3' }),
+          );
+        }
+        return res(ctx.json({ mcp_servers: [createMockMCPServer()], next_page_token: 'page-2' }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({}), { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    const callsAfterInitialLoad = callCount;
+
+    // First click triggers fetch for page 2 (slow response)
+    act(() => {
+      result.current.onNextPage();
+    });
+    // Second click should be ignored because isFetching is true
+    act(() => {
+      result.current.onNextPage();
+    });
+
+    await waitFor(() => {
+      expect(result.current.data?.[0]?.name).toBe('page2');
+    });
+
+    // Only one additional API call should have been made (the second click was ignored)
+    expect(callCount - callsAfterInitialLoad).toBe(1);
+  });
+
+  it('escapes single quotes in plain text search', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useMCPServersListQuery({ searchFilter: "O'Brien", filterActive: false, filterHasEndpoints: false }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("name ILIKE '%O''Brien%'");
+  });
+
+  it('ignores onPreviousPage while query is fetching', async () => {
+    let requestCount = 0;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        requestCount++;
+        const token = req.url.searchParams.get('page_token');
+        if (token === 'page-2') {
+          // Delay page 2 response so isFetching stays true
+          return res(
+            ctx.delay(500),
+            ctx.json({ mcp_servers: [createMockMCPServer({ name: 'page2' })], next_page_token: undefined }),
+          );
+        }
+        return res(ctx.json({ mcp_servers: [createMockMCPServer()], next_page_token: 'page-2' }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({}), { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Navigate to page 2 (slow response)
+    act(() => {
+      result.current.onNextPage();
+    });
+
+    // Immediately try going back while page 2 is still fetching
+    act(() => {
+      result.current.onPreviousPage();
+    });
+
+    // Wait for page 2 to arrive
+    await waitFor(() => {
+      expect(result.current.data?.[0]?.name).toBe('page2');
+    });
+
+    // Should still be on page 2 (onPreviousPage was ignored)
+    expect(result.current.hasPreviousPage).toBe(true);
+  });
+
+  it('includes active status filter when filterActive is true', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({ filterActive: true, filterHasEndpoints: false }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("status = 'active'");
+  });
+
+  it('includes endpoint filter when filterHasEndpoints is true', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({ filterActive: false, filterHasEndpoints: true }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("has_access_endpoints = 'true'");
+  });
+
+  it('combines both filters when both are true', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({ filterActive: true, filterHasEndpoints: true }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBe("status = 'active' AND has_access_endpoints = 'true'");
+  });
+
+  it('sends no filter when both filters are off and no search', async () => {
+    let capturedFilter: string | null = null;
+    mockServer.use(
+      rest.get(getAjaxUrl(BASE_URL), (req, res, ctx) => {
+        capturedFilter = req.url.searchParams.get('filter_string');
+        return res(ctx.json({ mcp_servers: [], next_page_token: undefined }));
+      }),
+    );
+
+    const { result } = renderHook(() => useMCPServersListQuery({ filterActive: false, filterHasEndpoints: false }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(capturedFilter).toBeNull();
+  });
 });

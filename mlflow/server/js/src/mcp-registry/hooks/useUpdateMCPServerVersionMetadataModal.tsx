@@ -5,7 +5,7 @@ import type { MCPServerVersion } from '../types';
 import { MCP_QUERY_KEYS, tagsRecordToArray } from '../utils';
 import { useCallback } from 'react';
 import { diffCurrentAndNewTags } from '../../common/utils/TagUtils';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 import type { KeyValueEntity } from '../../common/types';
 
 type UpdateMCPServerVersionMetadataPayload = {
@@ -15,15 +15,8 @@ type UpdateMCPServerVersionMetadataPayload = {
   toDelete: { key: string }[];
 };
 
-export const useUpdateMCPServerVersionMetadataModal = ({
-  serverName,
-  onSuccess,
-}: {
-  serverName: string;
-  onSuccess?: () => void;
-}) => {
+export const useUpdateMCPServerVersionMetadataModal = ({ serverName }: { serverName: string }) => {
   const queryClient = useQueryClient();
-  const intl = useIntl();
 
   const updateMutation = useMutation<unknown, Error, UpdateMCPServerVersionMetadataPayload>({
     mutationFn: async ({ serverName: name, version, toAdd, toDelete }) => {
@@ -45,10 +38,6 @@ export const useUpdateMCPServerVersionMetadataModal = ({
         description="Title for a modal that allows the user to add or edit metadata tags on MCP server versions."
       />
     ),
-    saveButtonLabel: intl.formatMessage({
-      defaultMessage: 'Save metadata',
-      description: 'Button label for saving metadata in the MCP server version metadata modal',
-    }),
     valueRequired: true,
     saveTagsHandler: (editedVersion, currentTags, newTags) => {
       const { addedOrModifiedTags, deletedTags } = diffCurrentAndNewTags(currentTags, newTags);
@@ -66,8 +55,8 @@ export const useUpdateMCPServerVersionMetadataModal = ({
               queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_VERSIONS, serverName]);
               queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER, serverName]);
               queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVER_LATEST_VERSION, serverName]);
+              queryClient.invalidateQueries([MCP_QUERY_KEYS.SERVERS_LIST]);
               resolve();
-              onSuccess?.();
             },
             onError: reject,
           },

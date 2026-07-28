@@ -1,27 +1,50 @@
-import { useState } from 'react';
 import { McpIcon, useDesignSystemTheme } from '@databricks/design-system';
+import type { MCPIcon as MCPIconType } from '../types';
+import { mcpIconStyles } from '../styles';
+import { resolveIcon, sanitizeHref } from '../utils';
+import { useIconFallback } from '../hooks/useIconFallback';
 
-export const MCPServerIcon = ({ iconSrc, className }: { iconSrc?: string; className?: string }) => {
+const ICON_SIZE = 16;
+
+export const resolveIconSrc = (
+  icons?: MCPIconType[],
+  fallbackIcons?: MCPIconType[],
+  isDarkMode?: boolean,
+): string | undefined => resolveIcon(icons, isDarkMode)?.src ?? resolveIcon(fallbackIcons, isDarkMode)?.src;
+
+export const MCPServerIcon = ({
+  icons,
+  fallbackIcons,
+  name,
+  css: cssProp,
+}: {
+  icons?: MCPIconType[];
+  fallbackIcons?: MCPIconType[];
+  name?: string;
+  css?: Record<string, unknown>;
+}) => {
   const { theme } = useDesignSystemTheme();
-  const [iconError, setIconError] = useState(false);
+  const primarySrc = sanitizeHref(resolveIcon(icons, theme.isDarkMode)?.src);
+  const fallbackSrc = sanitizeHref(resolveIcon(fallbackIcons, theme.isDarkMode)?.src);
+  const { activeSrc, onError } = useIconFallback(primarySrc, fallbackSrc);
 
-  if (iconSrc && !iconError) {
+  if (activeSrc) {
     return (
       <img
-        src={iconSrc}
-        alt=""
+        src={activeSrc}
+        alt={name || ''}
         referrerPolicy="no-referrer"
-        onError={() => setIconError(true)}
-        className={className}
+        onError={onError}
         css={{
-          flexShrink: 0,
-          width: theme.general.iconFontSize,
-          height: theme.general.iconFontSize,
+          width: ICON_SIZE,
+          height: ICON_SIZE,
           objectFit: 'contain',
+          ...mcpIconStyles(theme),
+          ...cssProp,
         }}
       />
     );
   }
 
-  return <McpIcon className={className} css={{ flexShrink: 0, color: theme.colors.textSecondary }} />;
+  return <McpIcon aria-hidden css={{ width: ICON_SIZE, height: ICON_SIZE, ...mcpIconStyles(theme), ...cssProp }} />;
 };

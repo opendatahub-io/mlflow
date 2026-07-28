@@ -1,4 +1,11 @@
 import { useMemo } from 'react';
+import {
+  selectedRowIndicatorStyles,
+  textEllipsisStyles,
+  flexColumnGapStyles,
+  flexRowWrapStyles,
+  spaceBetweenRowStyles,
+} from '../styles';
 import { useReactTable_unverifiedWithReact18 as useReactTable } from '@databricks/web-shared/react-table';
 import {
   ChevronRightIcon,
@@ -16,20 +23,16 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { flexRender, getCoreRowModel } from '@tanstack/react-table';
 import { FormattedMessage, useIntl } from 'react-intl';
 
-import type { TagColors } from '@databricks/design-system';
 import type { MCPServerVersion } from '../types';
+import { MCPServerDetailViewMode } from '../types';
 import { STATUS_TAG_COLOR } from '../utils';
-import { MCPServerDetailViewMode } from '../hooks/useMCPServerDetailViewState';
 import { MCPServerVersionDiffSelectorButton } from './MCPServerVersionDiffSelectorButton';
-import { ModelVersionTableAliasesCell } from '../../model-registry/components/aliases/ModelVersionTableAliasesCell';
+import { MCPServerAliasesCell } from './MCPServerAliasesCell';
 import Utils from '../../common/utils/Utils';
 
 interface MCPServerVersionListMeta {
-  serverName: string;
   serverDisplayName: string;
   aliasesByVersion: Record<string, string[]>;
-  aliasColors?: Record<string, TagColors>;
-  showEditAliasesModal?: (versionNumber: string) => void;
 }
 
 const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
@@ -40,16 +43,15 @@ const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
-  const { serverName, serverDisplayName, aliasesByVersion, aliasColors, showEditAliasesModal } =
-    meta as MCPServerVersionListMeta;
+  const { serverDisplayName, aliasesByVersion } = meta as MCPServerVersionListMeta;
   const aliases = aliasesByVersion[original.version] || [];
 
-  const rawDisplayName = original.display_name || original.server_json?.title;
-  const versionDisplayName = rawDisplayName && rawDisplayName !== serverDisplayName ? rawDisplayName : undefined;
+  const rawTitle = original.server_json?.title;
+  const versionTitle = rawTitle && rawTitle !== serverDisplayName ? rawTitle : undefined;
 
   return (
-    <div css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-      <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+    <div css={flexColumnGapStyles(theme)}>
+      <div css={flexRowWrapStyles(theme)}>
         <Typography.Text bold>
           <FormattedMessage
             defaultMessage="{version}"
@@ -60,24 +62,11 @@ const MCPServerVersionCell: ColumnDef<MCPServerVersion>['cell'] = ({
         <Tag componentId="mlflow.mcp_registry.detail.version_status_tag" color={STATUS_TAG_COLOR[original.status]}>
           {original.status}
         </Tag>
-        <ModelVersionTableAliasesCell
-          modelName={serverName}
-          version={original.version}
-          aliases={aliases}
-          aliasColors={aliasColors}
-          onAddEdit={() => {
-            showEditAliasesModal?.(original.version);
-          }}
-        />
+        <MCPServerAliasesCell aliases={aliases} />
       </div>
-      {versionDisplayName && (
-        <Typography.Text
-          size="sm"
-          color="secondary"
-          css={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          title={versionDisplayName}
-        >
-          {versionDisplayName}
+      {versionTitle && (
+        <Typography.Text size="sm" color="secondary" css={textEllipsisStyles} title={versionTitle}>
+          {versionTitle}
         </Typography.Text>
       )}
       {original.creation_timestamp && (
@@ -93,28 +82,24 @@ export const MCPServerVersionList = ({
   versions,
   selectedVersion,
   comparedVersion,
-  mode,
+  mode = MCPServerDetailViewMode.PREVIEW,
   onSelectVersion,
   onSelectComparedVersion,
   isLoading,
-  serverName,
   serverDisplayName,
   aliasesByVersion,
-  aliasColors,
-  showEditAliasesModal,
+  hasMoreVersions,
 }: {
   versions?: MCPServerVersion[];
   selectedVersion?: string;
   comparedVersion?: string;
-  mode: MCPServerDetailViewMode;
+  mode?: MCPServerDetailViewMode;
   onSelectVersion: (version: string) => void;
   onSelectComparedVersion?: (version: string) => void;
   isLoading?: boolean;
-  serverName: string;
   serverDisplayName: string;
   aliasesByVersion: Record<string, string[]>;
-  aliasColors?: Record<string, TagColors>;
-  showEditAliasesModal?: (versionNumber: string) => void;
+  hasMoreVersions?: boolean;
 }) => {
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
@@ -125,7 +110,7 @@ export const MCPServerVersionList = ({
       {
         id: 'version',
         header: intl.formatMessage({
-          defaultMessage: 'Version',
+          defaultMessage: 'Versions',
           description: 'Header for the version column in the MCP server versions table',
         }),
         accessorKey: 'version',
@@ -140,7 +125,7 @@ export const MCPServerVersionList = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.version,
-    meta: { serverName, serverDisplayName, aliasesByVersion, aliasColors, showEditAliasesModal },
+    meta: { serverDisplayName, aliasesByVersion },
   });
 
   const emptyState =
@@ -173,6 +158,8 @@ export const MCPServerVersionList = ({
             return (
               <TableRow
                 key={row.id}
+                tabIndex={isCompareMode ? undefined : 0}
+                aria-selected={isSelected}
                 css={{
                   backgroundColor:
                     isCompareMode && (isSelected || isCompared)
@@ -183,38 +170,50 @@ export const MCPServerVersionList = ({
                   cursor: isCompareMode ? 'default' : 'pointer',
                 }}
                 onClick={isCompareMode ? undefined : () => onSelectVersion(version)}
+                onKeyDown={
+                  isCompareMode
+                    ? undefined
+                    : (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelectVersion(version);
+                        }
+                      }
+                }
               >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} css={{ alignItems: 'center' }}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <div css={spaceBetweenRowStyles}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {!isCompareMode && isSelected && (
+                        <div css={selectedRowIndicatorStyles(theme)}>
+                          <ChevronRightIcon />
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                 ))}
-                {isCompareMode ? (
+                {isCompareMode && (
                   <MCPServerVersionDiffSelectorButton
                     isSelectedBaseline={isSelected}
                     isSelectedCompared={isCompared}
                     onSelectBaseline={() => onSelectVersion(version)}
                     onSelectCompared={() => onSelectComparedVersion?.(version)}
                   />
-                ) : (
-                  isSelected && (
-                    <div
-                      css={{
-                        width: theme.spacing.md * 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        paddingRight: theme.spacing.sm,
-                      }}
-                    >
-                      <ChevronRightIcon />
-                    </div>
-                  )
                 )}
               </TableRow>
             );
           })
         )}
       </Table>
+      {hasMoreVersions && (
+        <Typography.Hint css={{ padding: theme.spacing.sm, textAlign: 'center' }}>
+          <FormattedMessage
+            defaultMessage="Only the most recent 100 versions are shown."
+            description="Warning shown when the MCP server has more versions than can be displayed"
+          />
+        </Typography.Hint>
+      )}
     </div>
   );
 };

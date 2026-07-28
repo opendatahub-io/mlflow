@@ -1,5 +1,5 @@
-import { describe, it, expect } from '@jest/globals';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, jest } from '@jest/globals';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
 import { DesignSystemProvider } from '@databricks/design-system';
@@ -7,22 +7,37 @@ import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/util
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { setupServer } from '../../common/utils/setup-msw';
 import MCPServerDetailPage from './MCPServerDetailPage';
+import { TransportType, MCPStatus, MCPServerAction } from '../types';
 import {
   createMockMCPServer,
   createMockMCPServerVersion,
-  createMockMCPAccessBinding,
+  createMockAccessEndpoint,
   getMockedGetMCPServerResponse,
   getMockedGetMCPServerErrorResponse,
   getMockedSearchMCPServerVersionsResponse,
-  getMockedSearchMCPAccessBindingsResponse,
   getMockedDeleteMCPServerVersionResponse,
   getMockedDeleteMCPServerResponse,
   getMockedGetLatestMCPServerVersionResponse,
   getMockedUpdateMCPServerResponse,
-  getMockedUpdateMCPServerErrorResponse,
+  getMockedUpdateMCPServerVersionResponse,
   getMockedSetMCPServerTagResponse,
   getMockedDeleteMCPServerTagResponse,
+  getMockedCurrentUserResponse,
+  getMockedSearchAccessEndpointsResponse,
 } from '../test-utils';
+
+// Monaco does not render in jsdom; stand the editor in with a labelled textarea.
+jest.mock('../../experiment-tracking/pages/experiment-evaluation-datasets-v2/components/LazyJsonRecordEditor', () => ({
+  LazyJsonRecordEditor: ({
+    ariaLabel,
+    value,
+    onChange,
+  }: {
+    ariaLabel: string;
+    value: string;
+    onChange: (next: string) => void;
+  }) => <textarea aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} />,
+}));
 
 const mockServer = createMockMCPServer({
   name: 'dev.mainline/mcp',
@@ -32,7 +47,7 @@ const mockServer = createMockMCPServer({
 const mockVersion = createMockMCPServerVersion({
   name: 'dev.mainline/mcp',
   version: '1',
-  status: 'active',
+  status: MCPStatus.ACTIVE,
   server_json: {
     name: 'dev.mainline/mcp',
     version: '1.0.0',
@@ -44,7 +59,7 @@ const mockVersion = createMockMCPServerVersion({
         identifier: '@mainline/mcp-server',
         version: '1.0.0',
         runtimeHint: 'npx',
-        transport: { type: 'stdio' },
+        transport: { type: TransportType.STDIO },
         environmentVariables: [
           { name: 'API_KEY', description: 'API key for authentication', isRequired: true, isSecret: true },
           { name: 'LOG_LEVEL', description: 'Logging verbosity' },
@@ -53,10 +68,10 @@ const mockVersion = createMockMCPServerVersion({
       {
         registryType: 'pypi',
         identifier: 'mainline-mcp-server',
-        transport: { type: 'stdio' },
+        transport: { type: TransportType.STDIO },
       },
     ],
-    remotes: [{ type: 'streamable-http', url: 'https://api.mainline.dev/mcp' }],
+    remotes: [{ type: TransportType.STREAMABLE_HTTP, url: 'https://api.mainline.dev/mcp' }],
   },
 });
 
@@ -64,9 +79,10 @@ const defaultHandlers = [
   getMockedGetLatestMCPServerVersionResponse(mockVersion),
   getMockedGetMCPServerResponse(mockServer),
   getMockedSearchMCPServerVersionsResponse([mockVersion]),
-  getMockedSearchMCPAccessBindingsResponse([]),
+  getMockedSearchAccessEndpointsResponse([]),
   getMockedDeleteMCPServerVersionResponse(),
   getMockedDeleteMCPServerResponse(),
+  getMockedCurrentUserResponse({ isAdmin: true }),
 ];
 
 describe('MCPServerDetailPage', () => {
@@ -135,7 +151,7 @@ describe('MCPServerDetailPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Packages (2)')).toBeInTheDocument();
+      expect(screen.getByText('Run locally')).toBeInTheDocument();
     });
     expect(screen.getByText('npm')).toBeInTheDocument();
     expect(screen.getByText('pypi')).toBeInTheDocument();
@@ -148,7 +164,7 @@ describe('MCPServerDetailPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Remotes (1)')).toBeInTheDocument();
+      expect(screen.getByText('Official endpoints')).toBeInTheDocument();
     });
     expect(screen.getByText('streamable-http')).toBeInTheDocument();
     expect(screen.getByText('https://api.mainline.dev/mcp')).toBeInTheDocument();
@@ -166,9 +182,13 @@ describe('MCPServerDetailPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Expand package @mainline\/mcp-server/ }));
     await waitFor(() => {
+      expect(screen.getByText('View details')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('View details'));
+    await waitFor(() => {
       expect(screen.getByText('Environment Variables (2)')).toBeInTheDocument();
     });
-    expect(screen.getAllByText('@mainline/mcp-server').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('API_KEY')).toBeInTheDocument();
     expect(screen.getByText('required')).toBeInTheDocument();
     expect(screen.getByText('secret')).toBeInTheDocument();
@@ -198,39 +218,41 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('renders empty access bindings message', async () => {
+  it('updates version status from an inline selector after clicking the status edit button', async () => {
+    const updatedVersion = createMockMCPServerVersion({
+      ...mockVersion,
+      status: MCPStatus.DEPRECATED,
+    });
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Access Bindings'));
-    await waitFor(() => {
-      expect(screen.getByText('No access bindings configured for this server.')).toBeInTheDocument();
-    });
-  });
+    server.use(
+      getMockedUpdateMCPServerVersionResponse(updatedVersion),
+      getMockedGetLatestMCPServerVersionResponse(updatedVersion),
+      getMockedSearchMCPServerVersionsResponse([updatedVersion]),
+    );
 
-  it('opens edit version modal with status select when Edit is clicked', async () => {
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
-    });
+    expect(screen.getAllByText(MCPStatus.ACTIVE).length).toBeGreaterThanOrEqual(1);
+    await userEvent.click(screen.getByLabelText('Edit version status'));
 
-    const editBtn = document.querySelector(
-      '[data-component-id="mlflow.mcp_registry.detail.edit_version"]',
-    ) as HTMLElement;
-    await userEvent.click(editBtn);
+    const statusSelect = screen.getByRole('combobox', { name: 'Version status' });
+    expect(statusSelect).toHaveTextContent('Active');
+    await userEvent.click(await screen.findByRole('option', { name: 'Deprecated' }));
+
     await waitFor(() => {
-      expect(screen.getByText('Edit version details')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.queryByRole('combobox', { name: 'Version status' })).not.toBeInTheDocument();
+      expect(screen.getAllByText(MCPStatus.DEPRECATED).length).toBeGreaterThanOrEqual(1);
     });
+    expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
   });
 
   it('selects different version when multiple exist', async () => {
     const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
-      status: 'draft',
+      status: MCPStatus.DRAFT,
       server_json: {
         name: 'dev.mainline/mcp',
         version: '2.0.0',
@@ -279,30 +301,11 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('renders access bindings table when bindings exist', async () => {
-    const binding = createMockMCPAccessBinding({
-      server_name: 'dev.mainline/mcp',
-      url: 'https://mcp.example.com/server',
-      transport_type: 'streamable-http',
-      server_version: '1',
-    });
-    server.use(getMockedSearchMCPAccessBindingsResponse([binding]));
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
-    });
-
-    await userEvent.click(screen.getByText('Access Bindings'));
-    await waitFor(() => {
-      expect(screen.getByText('https://mcp.example.com/server')).toBeInTheDocument();
-    });
-  });
-
   it('selects first version by default when multiple exist', async () => {
     const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
-      status: 'draft',
+      status: MCPStatus.DRAFT,
       server_json: {
         name: 'dev.mainline/mcp',
         version: '2.0.0',
@@ -318,10 +321,10 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('falls back to first version when URL version param is invalid', async () => {
+  it('does not rewrite URL when version param is not in loaded page', async () => {
     renderPage(['/mcp-registry/dev.mainline%2Fmcp?version=nonexistent']);
     await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+      expect(screen.getByText('Select a version to view details.')).toBeInTheDocument();
     });
   });
 
@@ -329,7 +332,7 @@ describe('MCPServerDetailPage', () => {
     const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
-      status: 'draft',
+      status: MCPStatus.DRAFT,
       server_json: {
         name: 'dev.mainline/mcp',
         version: '2.0.0',
@@ -350,11 +353,11 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('disables all status transitions for deleted version in edit modal', async () => {
+  it('disables all status transitions for deleted version', async () => {
     const deletedVersion = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '1',
-      status: 'deleted',
+      status: MCPStatus.DELETED,
       server_json: {
         name: 'dev.mainline/mcp',
         version: '1.0.0',
@@ -368,14 +371,21 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    const editBtn = document.querySelector(
-      '[data-component-id="mlflow.mcp_registry.detail.edit_version"]',
-    ) as HTMLElement;
-    await userEvent.click(editBtn);
-    await waitFor(() => {
-      expect(screen.getByText('Edit version details')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Edit version status'));
+
+    const statusSelect = screen.getByRole('combobox', { name: 'Version status' });
+    expect(statusSelect).toHaveTextContent('Deleted');
+
+    const options = within(await screen.findByRole('listbox')).getAllByRole('option');
+    expect(
+      options.every(
+        (option) =>
+          option.textContent === 'Deleted' ||
+          option.getAttribute('aria-disabled') === 'true' ||
+          option.hasAttribute('data-disabled') ||
+          option.hasAttribute('disabled'),
+      ),
+    ).toBe(true);
   });
 
   it('displays server description as read-only', async () => {
@@ -399,11 +409,11 @@ describe('MCPServerDetailPage', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'More actions' }));
       const menuItems = await screen.findAllByRole('menuitem');
-      const editItem = menuItems.find((item) => item.textContent === 'Edit display name');
+      const editItem = menuItems.find((item) => item.textContent === 'Edit');
       expect(editItem).toBeDefined();
       await userEvent.click(editItem!);
       await waitFor(() => {
-        expect(screen.getByText('Edit display name')).toBeInTheDocument();
+        expect(screen.getByText('Edit server details')).toBeInTheDocument();
       });
     });
   });
@@ -439,23 +449,80 @@ describe('MCPServerDetailPage', () => {
     });
   });
 
-  it('Compare toggle is disabled with a single version', async () => {
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
+  describe('permission gating via allowed_actions', () => {
+    const setupWithPermissions = (allowed_actions?: MCPServerAction[]) => {
+      const permServer = createMockMCPServer({
+        name: 'dev.mainline/mcp',
+        display_name: 'Mainline',
+        description: 'A test server',
+        allowed_actions,
+      });
+      server.use(getMockedGetMCPServerResponse(permServer), getMockedCurrentUserResponse({ isAdmin: false }));
+    };
+
+    it('hides all action buttons for READ-only user', async () => {
+      setupWithPermissions([]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
+      });
+      expect(screen.queryByText('Create new version')).not.toBeInTheDocument();
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+      expect(screen.queryByText('Delete version')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('More actions')).not.toBeInTheDocument();
     });
 
-    // SegmentedControlButton renders as a radio input; find the one associated with "Compare"
-    const compareLabel = screen.getByText('Compare').closest('label');
-    const compareInput = compareLabel?.querySelector('input');
-    expect(compareInput).toBeDisabled();
+    it('shows edit buttons for EDIT user', async () => {
+      setupWithPermissions([MCPServerAction.USE, MCPServerAction.UPDATE]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByLabelText('More actions')).toBeInTheDocument();
+      expect(screen.queryByText('Delete version')).not.toBeInTheDocument();
+    });
+
+    it('shows all buttons for MANAGE user', async () => {
+      setupWithPermissions([
+        MCPServerAction.USE,
+        MCPServerAction.UPDATE,
+        MCPServerAction.DELETE,
+        MCPServerAction.MANAGE,
+      ]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByText('Delete version')).toBeInTheDocument();
+      expect(screen.getByLabelText('More actions')).toBeInTheDocument();
+    });
+
+    it('shows all buttons when allowed_actions is undefined (no auth)', async () => {
+      setupWithPermissions(undefined);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByText('Delete version')).toBeInTheDocument();
+    });
+
+    it('shows Unavailable tag when auth is available and server has no endpoints', async () => {
+      setupWithPermissions([]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Unavailable')).toBeInTheDocument();
+      });
+    });
   });
 
-  it('Compare toggle is enabled with multiple versions', async () => {
-    const mockVersion2 = createMockMCPServerVersion({
+  it('switches to compare view when Compare button is clicked', async () => {
+    const version2 = createMockMCPServerVersion({
       name: 'dev.mainline/mcp',
       version: '2',
-      status: 'draft',
+      status: MCPStatus.DRAFT,
       server_json: {
         name: 'dev.mainline/mcp',
         version: '2.0.0',
@@ -463,30 +530,8 @@ describe('MCPServerDetailPage', () => {
         description: 'Updated version.',
       },
     });
-    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
-    renderPage();
-    await waitFor(() => {
-      expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
-    });
+    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, version2]));
 
-    const compareLabel = screen.getByText('Compare').closest('label');
-    const compareInput = compareLabel?.querySelector('input');
-    expect(compareInput).not.toBeDisabled();
-  });
-
-  it('clicking Compare shows compare view', async () => {
-    const mockVersion2 = createMockMCPServerVersion({
-      name: 'dev.mainline/mcp',
-      version: '2',
-      status: 'draft',
-      server_json: {
-        name: 'dev.mainline/mcp',
-        version: '2.0.0',
-        title: 'Mainline v2',
-        description: 'Updated version.',
-      },
-    });
-    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
@@ -494,39 +539,26 @@ describe('MCPServerDetailPage', () => {
 
     await userEvent.click(screen.getByText('Compare'));
     await waitFor(() => {
-      expect(screen.getByText(/Comparing version .+ with version/)).toBeInTheDocument();
+      expect(screen.getByText(/Comparing version/)).toBeInTheDocument();
     });
   });
 
-  it('switching back to Preview restores version detail', async () => {
-    const mockVersion2 = createMockMCPServerVersion({
-      name: 'dev.mainline/mcp',
-      version: '2',
-      status: 'draft',
-      server_json: {
-        name: 'dev.mainline/mcp',
-        version: '2.0.0',
-        title: 'Mainline v2',
-        description: 'Updated version.',
-      },
+  it('renders AccessEndpointsSubsection when endpoints data is present', async () => {
+    const endpoint = createMockAccessEndpoint({
+      server_name: 'dev.mainline/mcp',
+      url: 'https://api.mainline.dev/mcp',
+      transport_type: TransportType.STREAMABLE_HTTP,
     });
-    server.use(getMockedSearchMCPServerVersionsResponse([mockVersion, mockVersion2]));
+    server.use(getMockedSearchAccessEndpointsResponse([endpoint]));
+
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Viewing version 1')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText('Compare'));
     await waitFor(() => {
-      expect(screen.getByText(/Comparing version .+ with version/)).toBeInTheDocument();
+      expect(screen.getByText('Access endpoints')).toBeInTheDocument();
     });
-
-    await userEvent.click(screen.getByText('Preview'));
-    await waitFor(
-      () => {
-        expect(screen.getByText(/Viewing version/)).toBeInTheDocument();
-      },
-      { timeout: 10000 },
-    );
-  }, 15000);
+    expect(screen.getByText('https://api.mainline.dev/mcp')).toBeInTheDocument();
+  });
 });

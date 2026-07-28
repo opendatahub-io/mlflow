@@ -11,6 +11,7 @@ interface PaginatedResponse {
 export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TData>({
   queryKeyPrefix,
   searchFilter,
+  extraQueryKeys,
   storageKey,
   queryFn,
   extractData,
@@ -18,6 +19,7 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
 }: {
   queryKeyPrefix: string;
   searchFilter?: string;
+  extraQueryKeys?: Record<string, unknown>;
   storageKey: string;
   queryFn: (params: { searchFilter?: string; pageToken?: string; pageSize: number }) => Promise<TResponse>;
   extractData: (response: TResponse) => TData | undefined;
@@ -32,10 +34,11 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
     initialValue: DEFAULT_PAGE_SIZE,
   });
 
+  const extraQueryKeysStable = JSON.stringify(extraQueryKeys);
   useEffect(() => {
     setCurrentPageToken(undefined);
     previousPageTokens.current = [];
-  }, [searchFilter]);
+  }, [searchFilter, extraQueryKeysStable]);
 
   const pageSizeSelect = useMemo<CursorPaginationProps['pageSizeSelect']>(
     () => ({
@@ -51,7 +54,7 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
   );
 
   const queryResult = useQuery<TResponse, Error>(
-    [queryKeyPrefix, { searchFilter, pageToken: currentPageToken, pageSize }],
+    [queryKeyPrefix, { searchFilter, pageToken: currentPageToken, pageSize, ...extraQueryKeys }],
     {
       queryFn: () => queryFn({ searchFilter, pageToken: currentPageToken, pageSize }),
       retry: false,
@@ -61,19 +64,23 @@ export const useCursorPaginatedQuery = <TResponse extends PaginatedResponse, TDa
   );
 
   const onNextPage = useCallback(() => {
+    if (queryResult.isFetching) return;
     previousPageTokens.current.push(currentPageToken);
     setCurrentPageToken(queryResult.data?.next_page_token ?? undefined);
-  }, [queryResult.data?.next_page_token, currentPageToken]);
+  }, [queryResult.data?.next_page_token, queryResult.isFetching, currentPageToken]);
 
   const onPreviousPage = useCallback(() => {
+    if (queryResult.isFetching) return;
     const previousPageToken = previousPageTokens.current.pop();
     setCurrentPageToken(previousPageToken);
-  }, []);
+  }, [queryResult.isFetching]);
 
   return {
     data: queryResult.data ? extractData(queryResult.data) : undefined,
+    rawResponse: queryResult.data,
     error: queryResult.error ?? undefined,
     isLoading: queryResult.isLoading,
+    isFetching: queryResult.isFetching,
     hasNextPage: Boolean(queryResult.data?.next_page_token),
     hasPreviousPage: Boolean(currentPageToken),
     onNextPage,

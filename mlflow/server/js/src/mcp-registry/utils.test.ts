@@ -1,16 +1,24 @@
 import { describe, it, expect } from '@jest/globals';
+import { MCPServerAction } from './types';
 import {
+  sanitizeHref,
   resolveDisplayName,
-  resolveVersionDisplayName,
-  resolveBindingDisplayName,
-  buildSearchFilterClause,
+  resolveEndpointDisplayName,
   formatTransportType,
   isValidEndpointUrl,
+  formatEndpointTarget,
+  tagsRecordToArray,
   STATUS_TAG_COLOR,
   STATUS_TRANSITIONS,
   validateServerJson,
   validateToolsJson,
+  buildPackageConnectOptionKey,
+  buildRemoteConnectOptionKey,
+  isServerDimmed,
+  getServerPermissions,
 } from './utils';
+import { MCPStatus, TransportType } from './types';
+import { createMockMCPServer, createMockAccessEndpoint } from './test-utils';
 
 describe('resolveDisplayName', () => {
   it('returns display_name when set', () => {
@@ -23,101 +31,6 @@ describe('resolveDisplayName', () => {
 
   it('falls back to name when display_name is empty string', () => {
     expect(resolveDisplayName({ display_name: '', name: 'io.test/server' })).toBe('io.test/server');
-  });
-});
-
-describe('resolveVersionDisplayName', () => {
-  it('returns version display_name first', () => {
-    expect(
-      resolveVersionDisplayName({ display_name: 'Custom Name', server_json: { title: 'Title' } }, 'fallback'),
-    ).toBe('Custom Name');
-  });
-
-  it('falls back to server_json.title', () => {
-    expect(resolveVersionDisplayName({ server_json: { title: 'JSON Title' } }, 'fallback')).toBe('JSON Title');
-  });
-
-  it('falls back to fallback when no display_name or title', () => {
-    expect(resolveVersionDisplayName({ server_json: {} }, 'fallback')).toBe('fallback');
-  });
-
-  it('falls back to fallback when version is null', () => {
-    expect(resolveVersionDisplayName(null, 'fallback')).toBe('fallback');
-  });
-
-  it('falls back to fallback when version is undefined', () => {
-    expect(resolveVersionDisplayName(undefined, 'fallback')).toBe('fallback');
-  });
-});
-
-describe('resolveBindingDisplayName', () => {
-  it('uses resolved_version.display_name first', () => {
-    expect(
-      resolveBindingDisplayName({
-        server_name: 'io.test/server',
-        resolved_version: { display_name: 'Custom', server_json: { title: 'Title' } },
-      }),
-    ).toBe('Custom');
-  });
-
-  it('falls back to resolved_version.server_json.title', () => {
-    expect(
-      resolveBindingDisplayName({
-        server_name: 'io.test/server',
-        resolved_version: { server_json: { title: 'Title' } },
-      }),
-    ).toBe('Title');
-  });
-
-  it('falls back to server_name when no resolved_version', () => {
-    expect(resolveBindingDisplayName({ server_name: 'io.test/server', resolved_version: null })).toBe('io.test/server');
-  });
-});
-
-describe('buildSearchFilterClause', () => {
-  it('returns undefined for empty filter', () => {
-    expect(buildSearchFilterClause(undefined, 'name')).toBeUndefined();
-    expect(buildSearchFilterClause('', 'name')).toBeUndefined();
-  });
-
-  it('wraps plain text in LIKE clause', () => {
-    expect(buildSearchFilterClause('test', 'name')).toBe("name LIKE '%test%'");
-  });
-
-  it('uses the specified field name', () => {
-    expect(buildSearchFilterClause('test', 'server_name')).toBe("server_name LIKE '%test%'");
-  });
-
-  it('escapes single quotes in the search term', () => {
-    expect(buildSearchFilterClause("it's", 'name')).toBe("name LIKE '%it''s%'");
-  });
-
-  it('passes through explicit SQL filter syntax', () => {
-    expect(buildSearchFilterClause("status = 'active'", 'name')).toBe("status = 'active'");
-  });
-
-  it('passes through LIKE and ILIKE expressions', () => {
-    expect(buildSearchFilterClause("name LIKE '%foo%'", 'name')).toBe("name LIKE '%foo%'");
-    expect(buildSearchFilterClause("name ILIKE '%foo%'", 'name')).toBe("name ILIKE '%foo%'");
-  });
-
-  it('passes through comparison operators', () => {
-    expect(buildSearchFilterClause('version != 1.0', 'name')).toBe('version != 1.0');
-  });
-});
-
-describe('formatTransportType', () => {
-  it('formats streamable-http', () => {
-    expect(formatTransportType('streamable-http')).toBe('Streamable HTTP');
-  });
-
-  it('formats sse', () => {
-    expect(formatTransportType('sse')).toBe('SSE');
-  });
-
-  it('returns raw value for unknown types', () => {
-    // @ts-expect-error testing unknown transport type
-    expect(formatTransportType('unknown')).toBe('unknown');
   });
 });
 
@@ -145,46 +58,6 @@ describe('STATUS_TRANSITIONS', () => {
 
   it('deleted has no transitions', () => {
     expect(STATUS_TRANSITIONS.deleted).toEqual([]);
-  });
-});
-
-describe('isValidEndpointUrl', () => {
-  it('accepts valid HTTPS URLs', () => {
-    expect(isValidEndpointUrl('https://test.com')).toBe(true);
-    expect(isValidEndpointUrl('https://mcp.example.com/server')).toBe(true);
-    expect(isValidEndpointUrl('https://mcp.internal.example.com/filesystem')).toBe(true);
-  });
-
-  it('accepts valid HTTP URLs', () => {
-    expect(isValidEndpointUrl('http://localhost:8080/path')).toBe(true);
-    expect(isValidEndpointUrl('http://192.168.1.1:3000')).toBe(true);
-  });
-
-  it('rejects URLs without double slashes', () => {
-    expect(isValidEndpointUrl('https:test.com')).toBe(false);
-    expect(isValidEndpointUrl('http:localhost')).toBe(false);
-  });
-
-  it('rejects non-HTTP schemes', () => {
-    expect(isValidEndpointUrl('ftp://test.com')).toBe(false);
-    expect(isValidEndpointUrl('ws://test.com')).toBe(false);
-    expect(isValidEndpointUrl('file:///etc/passwd')).toBe(false);
-  });
-
-  it('rejects non-URL strings', () => {
-    expect(isValidEndpointUrl('not-a-url')).toBe(false);
-    expect(isValidEndpointUrl('')).toBe(false);
-    expect(isValidEndpointUrl('   ')).toBe(false);
-    expect(isValidEndpointUrl('://missing-scheme.com')).toBe(false);
-  });
-
-  it('rejects URL with scheme only and no host', () => {
-    expect(isValidEndpointUrl('https://')).toBe(false);
-    expect(isValidEndpointUrl('http://')).toBe(false);
-  });
-
-  it('trims whitespace before validating', () => {
-    expect(isValidEndpointUrl('  https://test.com  ')).toBe(true);
   });
 });
 
@@ -328,5 +201,230 @@ describe('validateToolsJson', () => {
     const result = validateToolsJson('[{"name": "search", "description": "Search the web"}]');
     expect(result.valid).toBe(true);
     expect(result.parsed).toEqual([{ name: 'search', description: 'Search the web' }]);
+  });
+});
+
+describe('buildPackageConnectOptionKey', () => {
+  it('joins registry type and identifier', () => {
+    expect(buildPackageConnectOptionKey({ registryType: 'npm', identifier: '@acme/pkg' })).toBe('pkg:npm:@acme/pkg');
+  });
+});
+
+describe('buildRemoteConnectOptionKey', () => {
+  it('prefers url when present', () => {
+    expect(buildRemoteConnectOptionKey({ type: 'sse', url: 'https://example.com' })).toBe(
+      'remote:sse:https://example.com',
+    );
+  });
+
+  it('falls back to type when url is missing', () => {
+    expect(buildRemoteConnectOptionKey({ type: 'sse' })).toBe('remote:sse:');
+  });
+});
+
+describe('sanitizeHref', () => {
+  it('allows https URLs', () => {
+    expect(sanitizeHref('https://example.com')).toBe('https://example.com');
+  });
+
+  it('allows http URLs', () => {
+    expect(sanitizeHref('http://localhost:5000')).toBe('http://localhost:5000');
+  });
+
+  it('rejects javascript: URLs', () => {
+    expect(sanitizeHref(`${'javascript'}:alert(1)`)).toBeUndefined();
+  });
+
+  it('rejects data: URLs', () => {
+    expect(sanitizeHref('data:text/html,<script>alert(1)</script>')).toBeUndefined();
+  });
+
+  it('rejects ftp: URLs', () => {
+    expect(sanitizeHref('ftp://example.com')).toBeUndefined();
+  });
+
+  it('returns undefined for undefined input', () => {
+    expect(sanitizeHref(undefined)).toBeUndefined();
+  });
+
+  it('returns undefined for malformed URLs', () => {
+    expect(sanitizeHref('not a url')).toBeUndefined();
+  });
+});
+
+describe('getServerPermissions', () => {
+  it('grants all actions when allowed_actions is undefined (no auth or admin)', () => {
+    const perms = getServerPermissions(createMockMCPServer());
+    expect(perms.canUpdate).toBe(true);
+    expect(perms.canDelete).toBe(true);
+    expect(perms.canManage).toBe(true);
+  });
+
+  it('denies all actions when allowed_actions is empty (READ permission)', () => {
+    const perms = getServerPermissions(createMockMCPServer({ allowed_actions: [] }));
+    expect(perms.canUpdate).toBe(false);
+    expect(perms.canDelete).toBe(false);
+    expect(perms.canManage).toBe(false);
+  });
+
+  it('grants only matching actions', () => {
+    const perms = getServerPermissions(
+      createMockMCPServer({ allowed_actions: [MCPServerAction.USE, MCPServerAction.UPDATE] }),
+    );
+    expect(perms.canUpdate).toBe(true);
+    expect(perms.canDelete).toBe(false);
+    expect(perms.canManage).toBe(false);
+  });
+
+  it('grants all actions for MANAGE permission', () => {
+    const perms = getServerPermissions(
+      createMockMCPServer({
+        allowed_actions: [MCPServerAction.USE, MCPServerAction.UPDATE, MCPServerAction.DELETE, MCPServerAction.MANAGE],
+      }),
+    );
+    expect(perms.canUpdate).toBe(true);
+    expect(perms.canDelete).toBe(true);
+    expect(perms.canManage).toBe(true);
+  });
+});
+
+describe('isServerDimmed', () => {
+  it('returns false for active server', () => {
+    expect(isServerDimmed(createMockMCPServer({ status: MCPStatus.ACTIVE }))).toBe(false);
+  });
+
+  it('returns true for draft server', () => {
+    expect(isServerDimmed(createMockMCPServer({ status: MCPStatus.DRAFT }))).toBe(true);
+  });
+
+  it('returns true for deprecated server', () => {
+    expect(isServerDimmed(createMockMCPServer({ status: MCPStatus.DEPRECATED }))).toBe(true);
+  });
+
+  it('returns true when status is undefined (no version resolved)', () => {
+    expect(isServerDimmed(createMockMCPServer({}))).toBe(true);
+  });
+});
+
+describe('resolveEndpointDisplayName', () => {
+  it('returns server_json title from resolved_version when set', () => {
+    expect(
+      resolveEndpointDisplayName({
+        server_name: 'io.test/server',
+        resolved_version: { server_json: { title: 'Server Title' } },
+      }),
+    ).toBe('Server Title');
+  });
+
+  it('falls back to server_name when resolved_version has no title', () => {
+    expect(
+      resolveEndpointDisplayName({
+        server_name: 'io.test/server',
+        resolved_version: { server_json: {} },
+      }),
+    ).toBe('io.test/server');
+  });
+
+  it('falls back to server_name when resolved_version is null', () => {
+    expect(resolveEndpointDisplayName({ server_name: 'io.test/server', resolved_version: null })).toBe(
+      'io.test/server',
+    );
+  });
+
+  it('falls back to server_name when resolved_version is undefined', () => {
+    expect(resolveEndpointDisplayName({ server_name: 'io.test/server' })).toBe('io.test/server');
+  });
+});
+
+describe('formatTransportType', () => {
+  it('returns label for streamable-http', () => {
+    expect(formatTransportType(TransportType.STREAMABLE_HTTP)).toBe('streamable-http');
+  });
+
+  it('returns label for sse', () => {
+    expect(formatTransportType(TransportType.SSE)).toBe('sse');
+  });
+
+  it('falls back to raw value for unknown transport', () => {
+    // @ts-expect-error testing fallback for unknown transport type
+    expect(formatTransportType('unknown-type')).toBe('unknown-type');
+  });
+});
+
+describe('isValidEndpointUrl', () => {
+  it('accepts valid https URL', () => {
+    expect(isValidEndpointUrl('https://example.com/api')).toBe(true);
+  });
+
+  it('accepts valid http URL', () => {
+    expect(isValidEndpointUrl('http://localhost:8080')).toBe(true);
+  });
+
+  it('accepts URL with leading/trailing whitespace', () => {
+    expect(isValidEndpointUrl('  https://example.com  ')).toBe(true);
+  });
+
+  it('rejects empty string', () => {
+    expect(isValidEndpointUrl('')).toBe(false);
+  });
+
+  it('rejects whitespace-only string', () => {
+    expect(isValidEndpointUrl('   ')).toBe(false);
+  });
+
+  it('rejects non-http protocol', () => {
+    expect(isValidEndpointUrl('ftp://example.com')).toBe(false);
+  });
+
+  it('rejects javascript: protocol', () => {
+    // eslint-disable-next-line no-script-url -- testing URL validation rejects this
+    expect(isValidEndpointUrl('javascript:alert(1)')).toBe(false);
+  });
+
+  it('rejects plain text', () => {
+    expect(isValidEndpointUrl('not a url')).toBe(false);
+  });
+
+  it('rejects URL without hostname', () => {
+    expect(isValidEndpointUrl('https://')).toBe(false);
+  });
+});
+
+describe('formatEndpointTarget', () => {
+  it('returns alias prefixed with @ when server_alias is set', () => {
+    expect(formatEndpointTarget({ server_alias: 'stable', server_version: '1.0.0' })).toBe('@stable');
+  });
+
+  it('returns version when server_alias is not set', () => {
+    expect(formatEndpointTarget({ server_version: '1.0.0' })).toBe('1.0.0');
+  });
+
+  it('returns dash when neither alias nor version is set', () => {
+    expect(formatEndpointTarget({})).toBe('—');
+  });
+
+  it('returns dash when version is empty string', () => {
+    expect(formatEndpointTarget({ server_version: '' })).toBe('—');
+  });
+
+  it('prefers alias over version', () => {
+    expect(formatEndpointTarget({ server_alias: 'latest', server_version: '2.0.0' })).toBe('@latest');
+  });
+});
+
+describe('tagsRecordToArray', () => {
+  it('converts record to key-value array', () => {
+    expect(tagsRecordToArray({ env: 'prod', team: 'ml' })).toEqual([
+      { key: 'env', value: 'prod' },
+      { key: 'team', value: 'ml' },
+    ]);
+  });
+
+  it('returns empty array for empty record', () => {
+    expect(tagsRecordToArray({})).toEqual([]);
+  });
+
+  it('returns empty array when called with no arguments', () => {
+    expect(tagsRecordToArray()).toEqual([]);
   });
 });

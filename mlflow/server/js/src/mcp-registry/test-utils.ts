@@ -1,12 +1,12 @@
 import { rest } from 'msw';
 import { getAjaxUrl } from '@mlflow/mlflow/src/common/utils/FetchUtils';
-import type { MCPServer, MCPServerVersion, MCPAccessBinding } from './types';
+import type { MCPAccessEndpoint, MCPServer, MCPServerVersion } from './types';
+import { MCPStatus, TransportType } from './types';
 
 const BASE_URL = 'ajax-api/3.0/mlflow/mcp-servers';
 
 export const createMockMCPServer = (overrides: Partial<MCPServer> = {}): MCPServer => ({
   name: 'io.github.test/server',
-  access_endpoints: [],
   aliases: [],
   tags: {},
   ...overrides,
@@ -21,18 +21,10 @@ export const createMockMCPServerVersion = (overrides: Partial<MCPServerVersion> 
     title: 'Test Server',
     description: 'A test MCP server',
   },
-  status: 'active',
+  status: MCPStatus.ACTIVE,
   aliases: [],
   tags: {},
   creation_timestamp: 1717520552000,
-  ...overrides,
-});
-
-export const createMockMCPAccessBinding = (overrides: Partial<MCPAccessBinding> = {}): MCPAccessBinding => ({
-  id: 'ep-001',
-  server_name: 'io.github.test/server',
-  url: 'https://example.com/mcp',
-  transport_type: 'streamable-http',
   ...overrides,
 });
 
@@ -55,11 +47,6 @@ export const getMockedSearchMCPServerVersionsResponse = (versions: MCPServerVers
     res(ctx.json({ mcp_server_versions: versions, next_page_token: undefined })),
   );
 
-export const getMockedSearchMCPAccessBindingsResponse = (bindings: MCPAccessBinding[] = []) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints`), (_req, res, ctx) =>
-    res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
-  );
-
 export const getMockedUpdateMCPServerVersionResponse = (version: MCPServerVersion) =>
   rest.patch(getAjaxUrl(`${BASE_URL}/:name/versions/:version`), (_req, res, ctx) => res(ctx.json(version)));
 
@@ -68,22 +55,6 @@ export const getMockedDeleteMCPServerVersionResponse = () =>
 
 export const getMockedDeleteMCPServerResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name`), (_req, res, ctx) => res(ctx.json({})));
-
-export const getMockedSearchMCPAccessBindingsAllResponse = (bindings: MCPAccessBinding[] = []) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/endpoints`), (_req, res, ctx) =>
-    res(ctx.json({ mcp_access_endpoints: bindings, next_page_token: undefined })),
-  );
-
-export const getMockedGetMCPAccessBindingResponse = (binding: MCPAccessBinding) =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) => res(ctx.json(binding)));
-
-export const getMockedGetMCPAccessBindingErrorResponse = (status = 404, message = 'Not found') =>
-  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) =>
-    res(ctx.status(status), ctx.json({ message })),
-  );
-
-export const getMockedDeleteMCPAccessBindingResponse = () =>
-  rest.delete(getAjaxUrl(`${BASE_URL}/:name/endpoints/:bindingId`), (_req, res, ctx) => res(ctx.json({})));
 
 export const getMockedCreateMCPServerVersionResponse = (version?: MCPServerVersion) =>
   rest.post(getAjaxUrl(`${BASE_URL}/:name/versions`), (_req, res, ctx) =>
@@ -111,3 +82,52 @@ export const getMockedSetMCPServerTagResponse = () =>
 
 export const getMockedDeleteMCPServerTagResponse = () =>
   rest.delete(getAjaxUrl(`${BASE_URL}/:name/tags/:key`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedCurrentUserResponse = ({ isAdmin = false }: { isAdmin?: boolean } = {}) =>
+  rest.get(getAjaxUrl('ajax-api/2.0/mlflow/users/current'), (_req, res, ctx) =>
+    res(ctx.json({ user: { username: 'testuser', is_admin: isAdmin } })),
+  );
+
+// Access endpoint mocks
+
+export const createMockAccessEndpoint = (overrides: Partial<MCPAccessEndpoint> = {}): MCPAccessEndpoint => ({
+  id: 'ae-mock-1',
+  server_name: 'io.github.test/server',
+  url: 'https://example.com/mcp',
+  transport_type: TransportType.STREAMABLE_HTTP,
+  ...overrides,
+});
+
+export const getMockedSearchAccessEndpointsResponse = (endpoints: MCPAccessEndpoint[] = []) =>
+  rest.get(getAjaxUrl(`${BASE_URL}/:name/endpoints`), (_req, res, ctx) =>
+    res(ctx.json({ mcp_access_endpoints: endpoints, next_page_token: undefined })),
+  );
+
+export const getMockedCreateAccessEndpointResponse = (endpoint?: MCPAccessEndpoint) =>
+  rest.post(getAjaxUrl(`${BASE_URL}/:name/endpoints`), (_req, res, ctx) =>
+    res(ctx.json(endpoint ?? createMockAccessEndpoint())),
+  );
+
+export const getMockedUpdateAccessEndpointResponse = (endpoint?: MCPAccessEndpoint) =>
+  rest.patch(getAjaxUrl(`${BASE_URL}/:name/endpoints/:endpointId`), (_req, res, ctx) =>
+    res(ctx.json(endpoint ?? createMockAccessEndpoint())),
+  );
+
+export const getMockedDeleteAccessEndpointResponse = () =>
+  rest.delete(getAjaxUrl(`${BASE_URL}/:name/endpoints/:endpointId`), (_req, res, ctx) => res(ctx.json({})));
+
+export const getMockedAccessEndpointErrorResponse = (
+  method: 'post' | 'patch' = 'post',
+  status = 400,
+  message = 'Bad request',
+) => {
+  const handler =
+    method === 'post'
+      ? rest.post(getAjaxUrl(`${BASE_URL}/:name/endpoints`), (_req, res, ctx) =>
+          res(ctx.status(status), ctx.json({ message })),
+        )
+      : rest.patch(getAjaxUrl(`${BASE_URL}/:name/endpoints/:endpointId`), (_req, res, ctx) =>
+          res(ctx.status(status), ctx.json({ message })),
+        );
+  return handler;
+};

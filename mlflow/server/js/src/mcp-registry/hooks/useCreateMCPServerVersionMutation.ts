@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
+import { useIntl } from 'react-intl';
 import { MCPRegistryApi } from '../api';
-import type { MCPServerVersion, MCPStatus, MCPTool, ServerJSONPayload } from '../types';
+import type { ConnectOptionsMap, MCPIcon, MCPServerVersion, MCPStatus, MCPTool, ServerJSONPayload } from '../types';
 import { MCP_QUERY_KEYS } from '../utils';
+import Utils from '../../common/utils/Utils';
 
 type CreateMCPServerVersionPayload = {
   serverJson: ServerJSONPayload;
@@ -9,35 +11,70 @@ type CreateMCPServerVersionPayload = {
   isNewServer?: boolean;
   status?: MCPStatus;
   source?: string;
+  icons?: MCPIcon[] | null;
   tools?: MCPTool[];
   tags?: Record<string, string>;
+  connectOptions?: ConnectOptionsMap;
 };
 
 export const useCreateMCPServerVersionMutation = () => {
   const queryClient = useQueryClient();
+  const intl = useIntl();
 
   return useMutation<MCPServerVersion, Error, CreateMCPServerVersionPayload>({
-    mutationFn: async ({ serverJson, displayName, isNewServer, status, source, tools, tags }) => {
+    mutationFn: async ({
+      serverJson,
+      displayName,
+      isNewServer,
+      status,
+      source,
+      icons,
+      tools,
+      tags,
+      connectOptions,
+    }) => {
       const name = serverJson.name;
       const version = await MCPRegistryApi.createMCPServerVersion(name, {
         server_json: serverJson,
-        display_name: displayName || undefined,
         status,
         source,
         tools,
+        connect_options: connectOptions,
       });
 
-      try {
-        if (isNewServer) {
-          const serverDisplayName = displayName || serverJson.title;
-          if (serverDisplayName || serverJson.description) {
+      if (isNewServer) {
+        const serverDisplayName = displayName || serverJson.title;
+        if (serverDisplayName || serverJson.description) {
+          try {
             await MCPRegistryApi.updateMCPServer(name, {
               display_name: serverDisplayName || undefined,
               description: serverJson.description || undefined,
             });
+          } catch {
+            Utils.displayGlobalErrorNotification(
+              intl.formatMessage({
+                defaultMessage: 'Display name and description could not be saved',
+                description: 'Error notification when updating MCP server display name fails',
+              }),
+            );
           }
         }
+      }
 
+      if (icons !== undefined) {
+        try {
+          await MCPRegistryApi.updateMCPServer(name, { icons });
+        } catch {
+          Utils.displayGlobalErrorNotification(
+            intl.formatMessage({
+              defaultMessage: 'Icons could not be saved',
+              description: 'Error notification when updating MCP server icons fails',
+            }),
+          );
+        }
+      }
+
+      try {
         if (tags) {
           const setTag = isNewServer
             ? (key: string, value: string) => MCPRegistryApi.setMCPServerTag(name, { key, value })
@@ -46,7 +83,12 @@ export const useCreateMCPServerVersionMutation = () => {
           await Promise.all(Object.entries(tags).map(([key, value]) => setTag(key, value)));
         }
       } catch {
-        // Version was created successfully; metadata/tag failures are non-fatal
+        Utils.displayGlobalErrorNotification(
+          intl.formatMessage({
+            defaultMessage: 'Tags could not be saved',
+            description: 'Error notification when saving MCP server tags fails',
+          }),
+        );
       }
 
       return version;
