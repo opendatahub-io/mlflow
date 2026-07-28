@@ -18,7 +18,8 @@ import threading
 import urllib
 import uuid
 import warnings
-from typing import TYPE_CHECKING, Any, Literal, Sequence, Union
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence, Union
 
 import yaml
 from pydantic import BaseModel
@@ -29,6 +30,7 @@ from mlflow.entities import (
     EvaluationDataset,
     Experiment,
     FileInfo,
+    Link,
     LoggedModel,
     LoggedModelInput,
     LoggedModelOutput,
@@ -48,7 +50,7 @@ from mlflow.entities import (
 )
 from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.mcp_server import MCPRemoteTransportType, MCPServer, MCPStatus, MCPTool
-from mlflow.entities.mcp_server_version import MCPServerVersion
+from mlflow.entities.mcp_server_version import ConnectOptionSettings, MCPServerVersion
 from mlflow.entities.model_registry import ModelVersion, Prompt, PromptVersion, RegisteredModel
 from mlflow.entities.model_registry.model_version_stages import ALL_STAGES
 from mlflow.entities.model_registry.prompt_version import PromptModelConfig
@@ -1490,6 +1492,7 @@ class MlflowClient:
         experiment_id: str | None = None,
         start_time_ns: int | None = None,
         run_id: str | None = None,
+        links: list[Link] | None = None,
     ) -> Span:
         """
         Create a new trace object and start a root span under it.
@@ -1520,6 +1523,8 @@ class MlflowClient:
             start_time_ns: The start time of the trace in nanoseconds since the UNIX epoch.
             run_id: The ID of the MLflow run to associate with the trace. If provided, the
                 trace will be linked to this run.
+            links: A list of :py:class:`Link <mlflow.entities.Link>` objects to associate with
+                the root span.
 
         Returns:
             An :py:class:`Span <mlflow.entities.Span>` object
@@ -1574,6 +1579,7 @@ class MlflowClient:
             metadata=metadata,
             experiment_id=experiment_id,
             start_time_ns=start_time_ns,
+            links=links,
         )
 
     @deprecated_parameter("request_id", "trace_id", version="3.0.0")
@@ -1657,6 +1663,7 @@ class MlflowClient:
         inputs: Any | None = None,
         attributes: dict[str, Any] | None = None,
         start_time_ns: int | None = None,
+        links: list[Link] | None = None,
     ) -> Span:
         """
         Create a new span and start it without attaching it to the global trace context.
@@ -1732,6 +1739,8 @@ class MlflowClient:
             attributes: A dictionary of attributes to set on the span.
             start_time_ns: The start time of the span in nano seconds since the UNIX epoch.
                 If not provided, the current time will be used.
+            links: A list of :py:class:`Link <mlflow.entities.Link>` objects to associate with
+                the span.
 
         Returns:
             An :py:class:`mlflow.entities.Span` object representing the span.
@@ -1799,6 +1808,7 @@ class MlflowClient:
             inputs=inputs,
             attributes=attributes,
             start_time_ns=start_time_ns,
+            links=links,
         )
 
     @deprecated_parameter("request_id", "trace_id", version="3.0.0")
@@ -6811,17 +6821,20 @@ class MlflowClient:
     def create_mcp_server_version(
         self,
         server_json: dict[str, Any],
-        display_name: str | None = None,
         source: str | None = None,
         status: MCPStatus | None = None,
-        tools: list[MCPTool] | None = None,
+        tools: list[MCPTool] | None = NOT_SET,
+        connect_options: dict[str, ConnectOptionSettings] | None = None,
     ) -> MCPServerVersion:
+        from mlflow.genai.mcp_tool_discovery import resolve_tools_for_create
+
+        resolved_tools = resolve_tools_for_create(server_json=server_json, tools=tools)
         return self._tracking_client.store.create_mcp_server_version(
             server_json=server_json,
-            display_name=display_name,
             source=source,
             status=status,
-            tools=tools,
+            tools=resolved_tools,
+            connect_options=connect_options,
         )
 
     def get_mcp_server_version(self, name: str, version: str) -> MCPServerVersion:
@@ -6853,17 +6866,35 @@ class MlflowClient:
         self,
         name: str,
         version: str,
-        display_name: str | None = NOT_SET,
         status: MCPStatus | None = NOT_SET,
         tools: list[MCPTool] | None = NOT_SET,
+        connect_options: dict[str, ConnectOptionSettings] | None = NOT_SET,
     ) -> MCPServerVersion:
         return self._tracking_client.store.update_mcp_server_version(
             name=name,
             version=version,
-            display_name=display_name,
             status=status,
             tools=tools,
+            connect_options=connect_options,
         )
+
+    def refresh_mcp_server_version_tools(
+        self,
+        name: str,
+        version: str,
+        mcp_server_access_headers: Mapping[str, str] | None = None,
+        dry_run: bool = False,
+    ) -> MCPServerVersion:
+        from mlflow.genai.mcp_tool_discovery import discover_tools_for_server_json
+
+        current = self.get_mcp_server_version(name=name, version=version)
+        discovered_tools = discover_tools_for_server_json(
+            server_json=current.server_json,
+            headers=mcp_server_access_headers,
+        )
+        if dry_run:
+            return replace(current, tools=discovered_tools)
+        return self.update_mcp_server_version(name=name, version=version, tools=discovered_tools)
 
     def delete_mcp_server_version(self, name: str, version: str) -> None:
         self._tracking_client.store.delete_mcp_server_version(name=name, version=version)
