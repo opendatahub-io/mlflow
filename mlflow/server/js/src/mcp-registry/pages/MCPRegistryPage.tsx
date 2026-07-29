@@ -111,29 +111,32 @@ const MCPRegistryPage = () => {
                 componentId="mlflow.mcp_registry.search"
               />
             </div>
-            <SegmentedControlGroup
-              name="mcp-registry-view-mode"
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as ViewMode)}
-              componentId="mlflow.mcp_registry.view_toggle"
-            >
-              <SegmentedControlButton
-                value="list"
-                icon={<ListIcon />}
-                aria-label={intl.formatMessage({
-                  defaultMessage: 'List view',
-                  description: 'Aria label for list view toggle',
-                })}
-              />
-              <SegmentedControlButton
-                value="grid"
-                icon={<GridIcon />}
-                aria-label={intl.formatMessage({
-                  defaultMessage: 'Grid view',
-                  description: 'Aria label for grid view toggle',
-                })}
-              />
-            </SegmentedControlGroup>
+            <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+              {integrated && createButton}
+              <SegmentedControlGroup
+                name="mcp-registry-view-mode"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                componentId="mlflow.mcp_registry.view_toggle"
+              >
+                <SegmentedControlButton
+                  value="list"
+                  icon={<ListIcon />}
+                  aria-label={intl.formatMessage({
+                    defaultMessage: 'List view',
+                    description: 'Aria label for list view toggle',
+                  })}
+                />
+                <SegmentedControlButton
+                  value="grid"
+                  icon={<GridIcon />}
+                  aria-label={intl.formatMessage({
+                    defaultMessage: 'Grid view',
+                    description: 'Aria label for grid view toggle',
+                  })}
+                />
+              </SegmentedControlGroup>
+            </div>
           </div>
           {error?.message && (
             <Alert
