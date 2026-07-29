@@ -17,8 +17,6 @@ on:
       - "docs/**"
       - "**.md"
       - "dev/clint/**"
-      - ".github/workflows/docs.yml"
-      - ".github/workflows/preview-docs.yml"
       - "mlflow/server/js/**"
       - ".github/workflows/js.yml"
       - ".claude/**"
