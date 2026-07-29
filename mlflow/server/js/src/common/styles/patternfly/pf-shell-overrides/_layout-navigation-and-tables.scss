@@ -256,8 +256,7 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
   // and a version-status or compare-status tag.
   div:has(> [data-component-id='mlflow.mcp_registry.detail.version_status']),
   div:has(> span > [data-component-id='mlflow.mcp_registry.detail.version_status']),
-  div:has(> span > [data-component-id='mlflow.mcp_registry.compare.status']),
-  div:has(> span > [data-component-id='mlflow.mcp_registry.binding_detail.copy_endpoint']) {
+  div:has(> span > [data-component-id='mlflow.mcp_registry.compare.status']) {
     align-items: center !important;
   }
 

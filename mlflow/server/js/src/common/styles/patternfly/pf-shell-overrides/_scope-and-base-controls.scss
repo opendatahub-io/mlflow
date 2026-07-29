@@ -280,6 +280,10 @@
     }
   }
 
+  [data-component-type='toggle_button'] {
+    box-shadow: none !important;
+  }
+
   .du-bois-light-alert,
   .du-bois-dark-alert {
     border-radius: var(--pf-t--global--border--radius--medium);
