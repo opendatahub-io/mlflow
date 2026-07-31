@@ -7,8 +7,7 @@ import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/util
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { setupServer } from '../../common/utils/setup-msw';
 import MCPServerDetailPage from './MCPServerDetailPage';
-import { TransportType, MCPStatus } from '../types';
-import type { MCPServerAction } from '../types';
+import { TransportType, MCPStatus, MCPServerAction } from '../types';
 import {
   createMockMCPServer,
   createMockMCPServerVersion,
@@ -471,6 +470,43 @@ describe('MCPServerDetailPage', () => {
       expect(screen.queryByText('Edit')).not.toBeInTheDocument();
       expect(screen.queryByText('Delete version')).not.toBeInTheDocument();
       expect(screen.queryByLabelText('More actions')).not.toBeInTheDocument();
+    });
+
+    it('shows edit buttons for EDIT user', async () => {
+      setupWithPermissions([MCPServerAction.USE, MCPServerAction.UPDATE]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByLabelText('More actions')).toBeInTheDocument();
+      expect(screen.queryByText('Delete version')).not.toBeInTheDocument();
+    });
+
+    it('shows all buttons for MANAGE user', async () => {
+      setupWithPermissions([
+        MCPServerAction.USE,
+        MCPServerAction.UPDATE,
+        MCPServerAction.DELETE,
+        MCPServerAction.MANAGE,
+      ]);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByText('Delete version')).toBeInTheDocument();
+      expect(screen.getByLabelText('More actions')).toBeInTheDocument();
+    });
+
+    it('shows all buttons when allowed_actions is undefined (no auth)', async () => {
+      setupWithPermissions(undefined);
+      renderPage();
+      await waitFor(() => {
+        expect(screen.getByText('Create new version')).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+      expect(screen.getByText('Delete version')).toBeInTheDocument();
     });
 
     it('shows Unavailable tag when auth is available and server has no endpoints', async () => {

@@ -235,8 +235,8 @@
     "defaultMessage": "Oops!",
     "description": "Error modal title to rendering errors"
   },
-  "/44YOb": {
-    "defaultMessage": "Create MCP server version",
+  "egLFDc": {
+    "defaultMessage": "Create new version",
     "description": "MCP server detail create version button"
   },
   "/4Aok8": {
@@ -835,9 +835,9 @@
     "defaultMessage": "User frustration",
     "description": "LLM template option"
   },
-  "1oN1ky": {
-    "defaultMessage": "MCP Registry",
-    "description": "Sidebar link for MCP Registry page"
+  "DAnoyO": {
+    "defaultMessage": "MCP registry",
+    "description": "Sidebar link for MCP registry page"
   },
   "1oaTIy": {
     "defaultMessage": "secret",

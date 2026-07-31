@@ -261,7 +261,7 @@ export function MlflowSidebar({
                 isActive: isMCPRegistryActive,
                 children: (
                   <>
-                    <FormattedMessage defaultMessage="MCP Registry" description="Sidebar link for MCP Registry page" />
+                    <FormattedMessage defaultMessage="MCP registry" description="Sidebar link for MCP registry page" />
                     <span css={{ marginLeft: 'auto' }}>
                       <MCPRegistryBetaTag />
                     </span>
