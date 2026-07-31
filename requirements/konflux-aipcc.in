@@ -28,3 +28,6 @@ tokenizers==0.22.2
 
 # Pillow 12.3.0+ fixes CVE-2026-59199 (and related Pillow CVEs) in the shipped runtime image.
 pillow>=12.3.0
+
+# pyasn1 0.6.4+ fixes CVE-2026-59884/59885/59886 (DoS via crafted ASN.1 inputs).
+pyasn1>=0.6.4
