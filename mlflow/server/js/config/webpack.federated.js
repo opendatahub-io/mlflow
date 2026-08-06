@@ -12,6 +12,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const { moduleFederationPlugins } = require('./moduleFederation');
 const { name } = require('../package.json');
 
@@ -143,6 +144,15 @@ module.exports = {
       MLFLOW_USE_ABSOLUTE_AJAX_URLS: 'false',
     }),
     new webpack.ProvidePlugin({ process: require.resolve('process/browser') }),
+    // Without this, monaco-editor/react has no worker bundle to load and blows up
+    // with "Cannot read properties of undefined (reading 'toUrl')" the first time a
+    // JSON editor (e.g. the MCP server/version create modal) mounts. See craco.config.js
+    // for the matching standalone-build configuration.
+    new MonacoWebpackPlugin({
+      languages: ['json'],
+      features: ['!gotoSymbol', '!documentSymbols'],
+      filename: 'static/js/monaco-[name].worker.[contenthash:8].js',
+    }),
   ],
   optimization: {
     // Work around webpack module concatenation issues triggered by react-redux
