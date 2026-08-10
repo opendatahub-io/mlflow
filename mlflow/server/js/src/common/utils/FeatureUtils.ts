@@ -49,10 +49,13 @@ export const shouldEnableGraphQLSampledMetrics = () => false;
 export const shouldEnableGraphQLModelVersionsForRunDetails = () => false;
 
 /**
- * Feature flag to enable Scorers UI tab in experiment page
+ * Feature flag to enable Scorers UI (Judges tab) in experiment page.
+ * Judges rely on running scorers via jobs / the AI Gateway, which are
+ * disabled downstream, so gate this behind shouldEnableAIGateway() to avoid
+ * showing a "Judges" tab that can't actually run anything.
  */
 export const enableScorersUI = () => {
-  return true;
+  return shouldEnableAIGateway();
 };
 
 /**
