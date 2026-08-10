@@ -2656,6 +2656,55 @@ def test_list_scorers_cross_experiment(mock_get_request_message, mock_tracking_s
     assert call_args.args[0] == ["1", "2", "3"]
 
 
+def test_list_scorers_with_allowed_and_matching_experiment_id(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = ListScorers(
+        experiment_id="123", allowed_experiment_ids=["123", "456"]
+    )
+    mock_tracking_store.get_experiment.return_value = mock.MagicMock(lifecycle_stage="active")
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_called_once_with("123")
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with(["123"])
+    mock_tracking_store.list_scorers.assert_not_called()
+    assert resp.status_code == 200
+
+
+def test_list_scorers_with_allowed_and_non_matching_experiment_id(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = ListScorers(
+        experiment_id="999", allowed_experiment_ids=["123", "456"]
+    )
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with([])
+    assert resp.status_code == 200
+
+
+def test_list_scorers_with_empty_allowed_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = ListScorers(allowed_experiment_ids=[])
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with([])
+    mock_tracking_store.list_scorers.assert_not_called()
+    assert resp.status_code == 200
+
+
 def test_list_scorer_versions(mock_get_request_message, mock_tracking_store):
     experiment_id = "123"
     name = "accuracy_scorer"
@@ -3214,7 +3263,9 @@ def test_batch_get_traces_handler(mock_get_request_message, mock_tracking_store)
     response = _batch_get_traces()
 
     # Verify the store was called with the correct trace IDs
-    mock_tracking_store.batch_get_traces.assert_called_once_with([trace_id_1, trace_id_2], None)
+    mock_tracking_store.batch_get_traces.assert_called_once_with(
+        [trace_id_1, trace_id_2], None, experiment_ids=None
+    )
 
     # Verify response was created
     assert response is not None
@@ -3234,10 +3285,42 @@ def test_batch_get_traces_handler_empty_list(mock_get_request_message, mock_trac
 
     response = _batch_get_traces()
 
-    mock_tracking_store.batch_get_traces.assert_called_once_with([], None)
+    mock_tracking_store.batch_get_traces.assert_called_once_with([], None, experiment_ids=None)
 
     # Verify response was created
     assert response is not None
+    assert response.status_code == 200
+
+
+def test_batch_get_traces_handler_with_allowed_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraces(
+        trace_ids=["t1", "t2"], allowed_experiment_ids=["exp-1", "exp-2"]
+    )
+    mock_tracking_store.batch_get_traces.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_traces()
+
+    mock_tracking_store.batch_get_traces.assert_called_once_with(
+        ["t1", "t2"], None, experiment_ids=["exp-1", "exp-2"]
+    )
+    assert response.status_code == 200
+
+
+def test_batch_get_traces_handler_with_empty_allowed_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraces(
+        trace_ids=["t1"], allowed_experiment_ids=[]
+    )
+    mock_tracking_store.batch_get_traces.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_traces()
+
+    mock_tracking_store.batch_get_traces.assert_called_once_with(["t1"], None, experiment_ids=[])
     assert response.status_code == 200
 
 
@@ -3269,7 +3352,9 @@ def test_batch_get_trace_infos_handler(mock_get_request_message, mock_tracking_s
 
     response = _batch_get_trace_infos()
 
-    mock_tracking_store.batch_get_trace_infos.assert_called_once_with([trace_id_1, trace_id_2])
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(
+        [trace_id_1, trace_id_2], experiment_ids=None
+    )
 
     assert response is not None
     assert response.status_code == 200
@@ -3277,6 +3362,38 @@ def test_batch_get_trace_infos_handler(mock_get_request_message, mock_tracking_s
     assert len(trace_infos) == 2
     assert trace_infos[0]["trace_id"] == trace_id_1
     assert trace_infos[1]["trace_id"] == trace_id_2
+
+
+def test_batch_get_trace_infos_handler_with_allowed_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraceInfos(
+        trace_ids=["t1", "t2"], allowed_experiment_ids=["exp-1", "exp-2"]
+    )
+    mock_tracking_store.batch_get_trace_infos.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_trace_infos()
+
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(
+        ["t1", "t2"], experiment_ids=["exp-1", "exp-2"]
+    )
+    assert response.status_code == 200
+
+
+def test_batch_get_trace_infos_handler_with_empty_allowed_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraceInfos(
+        trace_ids=["t1"], allowed_experiment_ids=[]
+    )
+    mock_tracking_store.batch_get_trace_infos.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_trace_infos()
+
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(["t1"], experiment_ids=[])
+    assert response.status_code == 200
 
 
 def test_get_trace_handler(mock_get_request_message, mock_tracking_store):

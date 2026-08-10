@@ -375,13 +375,20 @@ class AbstractStore(MCPServerRegistryMixin, GatewayStoreMixin):
         """
         raise MlflowNotImplementedException()
 
-    def batch_get_traces(self, trace_ids: list[str], location: str | None = None) -> list[Trace]:
+    def batch_get_traces(
+        self,
+        trace_ids: list[str],
+        location: str | None = None,
+        experiment_ids: list[str] | None = None,
+    ) -> list[Trace]:
         """
         Get a batch of complete traces with spans for given trace ids.
 
         Args:
             trace_ids: List of trace IDs to fetch.
             location: Location of the trace. For example, "catalog.schema" for UC schema.
+            experiment_ids: Optional list of experiment IDs to scope the query. When
+                provided, only traces belonging to these experiments are returned.
 
         Returns:
             List of Trace objects.
@@ -392,7 +399,10 @@ class AbstractStore(MCPServerRegistryMixin, GatewayStoreMixin):
         raise MlflowNotImplementedException()
 
     def batch_get_trace_infos(
-        self, trace_ids: list[str], location: str | None = None
+        self,
+        trace_ids: list[str],
+        location: str | None = None,
+        experiment_ids: list[str] | None = None,
     ) -> list[TraceInfo]:
         """
         Get trace metadata (TraceInfo) for given trace IDs without loading spans.
@@ -403,6 +413,8 @@ class AbstractStore(MCPServerRegistryMixin, GatewayStoreMixin):
         Args:
             trace_ids: List of trace IDs to fetch.
             location: Location of the trace. For example, "catalog.schema" for UC schema.
+            experiment_ids: Optional list of experiment IDs to scope the query. When
+                provided, only traces belonging to these experiments are returned.
 
         Returns:
             List of TraceInfo objects containing only metadata (no spans).

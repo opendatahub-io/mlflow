@@ -42,6 +42,7 @@ from mlflow.entities import (
     InputTag,
     IssueSeverity,
     IssueStatus,
+    LifecycleStage,
     Metric,
     Param,
     RunStatus,
@@ -1025,6 +1026,27 @@ def _validate_request_json_with_schema(
                 value=value,
                 proto_parsing_succeeded=proto_parsing_succeeded,
             )
+
+
+def _raw_request_has_field(field_name: str) -> bool:
+    """Check whether *field_name* was present in the raw HTTP request.
+
+    Protobuf ``repeated`` fields deserialise to ``[]`` whether the caller
+    sent an empty list *or* omitted the field entirely.  For auth-scoping
+    fields (e.g. ``allowed_experiment_ids``) the difference matters:
+
+    * absent  → no auth restriction (``None``)
+    * ``[]``  → deny-all (empty authorised set)
+
+    This helper inspects the raw Flask request (query-string for GET,
+    JSON body for POST) to distinguish the two cases.
+    """
+    try:
+        if request.method == "GET":
+            return field_name in request.args
+        return field_name in (request.get_json(force=True, silent=True) or {})
+    except RuntimeError:
+        return False
 
 
 def _get_request_message(request_message, flask_request=request, schema=None):
@@ -4071,9 +4093,19 @@ def _batch_get_traces() -> Response:
     """
     request_message = _get_request_message(
         BatchGetTraces(),
-        schema={"trace_ids": [_assert_array, _assert_required, _assert_item_type_string]},
+        schema={
+            "trace_ids": [_assert_array, _assert_required, _assert_item_type_string],
+            "allowed_experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
-    traces = _get_tracking_store().batch_get_traces(request_message.trace_ids, None)
+    experiment_ids = (
+        list(request_message.allowed_experiment_ids)
+        if _raw_request_has_field("allowed_experiment_ids")
+        else None
+    )
+    traces = _get_tracking_store().batch_get_traces(
+        request_message.trace_ids, None, experiment_ids=experiment_ids
+    )
     response_message = BatchGetTraces.Response()
     response_message.traces.extend([t.to_proto() for t in traces])
     return _wrap_response(response_message, pretty=False)
@@ -4084,9 +4116,19 @@ def _batch_get_traces() -> Response:
 def _batch_get_trace_infos() -> Response:
     request_message = _get_request_message(
         BatchGetTraceInfos(),
-        schema={"trace_ids": [_assert_array, _assert_required, _assert_item_type_string]},
+        schema={
+            "trace_ids": [_assert_array, _assert_required, _assert_item_type_string],
+            "allowed_experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
-    trace_infos = _get_tracking_store().batch_get_trace_infos(request_message.trace_ids)
+    experiment_ids = (
+        list(request_message.allowed_experiment_ids)
+        if _raw_request_has_field("allowed_experiment_ids")
+        else None
+    )
+    trace_infos = _get_tracking_store().batch_get_trace_infos(
+        request_message.trace_ids, experiment_ids=experiment_ids
+    )
     response_message = BatchGetTraceInfos.Response()
     response_message.trace_infos.extend([ti.to_proto() for ti in trace_infos])
     return _wrap_trace_info_response(response_message)
@@ -5703,11 +5745,33 @@ def _register_scorer():
 def _list_scorers():
     request_message = _get_request_message(
         ListScorers(),
-        schema={"experiment_id": [_assert_string]},
+        schema={
+            "experiment_id": [_assert_string],
+            "allowed_experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
     response_message = ListScorers.Response()
     store = _get_tracking_store()
-    if request_message.experiment_id:
+    if _raw_request_has_field("allowed_experiment_ids"):
+        allowed = list(request_message.allowed_experiment_ids)
+        if request_message.experiment_id:
+            if request_message.experiment_id in allowed:
+                requested_experiment_ids = [request_message.experiment_id]
+            else:
+                requested_experiment_ids = []
+        else:
+            requested_experiment_ids = allowed
+        requested_experiment_ids = list(dict.fromkeys(requested_experiment_ids))
+        valid_experiment_ids = []
+        for eid in requested_experiment_ids:
+            try:
+                exp = store.get_experiment(eid)
+            except MlflowException:
+                continue
+            if exp.lifecycle_stage == LifecycleStage.ACTIVE:
+                valid_experiment_ids.append(eid)
+        scorers = store.list_scorers_across_experiments(valid_experiment_ids)
+    elif request_message.experiment_id:
         scorers = store.list_scorers(request_message.experiment_id)
     else:
         # Cross-experiment listing: walk the active workspace's experiments
@@ -5715,7 +5779,7 @@ def _list_scorers():
         # batch the scorer fetch through ``list_scorers_across_experiments``.
         # Auth-side ``filter_list_scorers`` applies per-row RBAC filtering on
         # the response.
-        experiment_ids: list[str] = []
+        discovered_experiment_ids: list[str] = []
         page_token: str | None = None
         while True:
             page = store.search_experiments(
@@ -5723,10 +5787,10 @@ def _list_scorers():
                 max_results=1000,
                 page_token=page_token,
             )
-            experiment_ids.extend(e.experiment_id for e in page)
+            discovered_experiment_ids.extend(e.experiment_id for e in page)
             if not (page_token := page.token):
                 break
-        scorers = store.list_scorers_across_experiments(experiment_ids)
+        scorers = store.list_scorers_across_experiments(discovered_experiment_ids)
     response_message.scorers.extend([scorer.to_proto() for scorer in scorers])
     response = Response(mimetype="application/json")
     response.set_data(message_to_json(response_message))

@@ -956,10 +956,6 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
             experiment = self.get_experiment(experiment_id)
             self._check_experiment_is_active(experiment)
 
-            # Note: we need to ensure the generated "run_id" only contains digits and lower
-            # case letters, because some query filters contain "IN" clause, and in MYSQL the
-            # "IN" clause is case-insensitive, we use a trick that filters out comparison values
-            # containing upper case letters when parsing "IN" clause inside query filter.
             run_id = uuid.uuid4().hex
             artifact_location = append_to_uri_path(
                 experiment.artifact_location,
@@ -5920,13 +5916,26 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
             return Trace(info=trace_snapshot.trace_info, data=TraceData(spans=spans))
         return None
 
-    def batch_get_traces(self, trace_ids: list[str], location: str | None = None) -> list[Trace]:
+    def _build_trace_batch_filters(self, session, trace_ids, experiment_ids):
+        filters = [SqlTraceInfo.request_id.in_(trace_ids)]
+        if experiment_ids is not None:
+            experiment_ids = self._filter_experiment_ids(session, [int(e) for e in experiment_ids])
+            filters.append(SqlTraceInfo.experiment_id.in_(experiment_ids))
+        return filters
+
+    def batch_get_traces(
+        self,
+        trace_ids: list[str],
+        location: str | None = None,
+        experiment_ids: list[str] | None = None,
+    ) -> list[Trace]:
         """
         Get complete traces with spans for given trace ids.
 
         Args:
             trace_ids: The trace IDs to get.
             location: Location of the trace. Should be None for SQLAlchemy backend.
+            experiment_ids: Optional list of experiment IDs to scope the query.
 
         Returns:
             List of Trace objects for the given trace IDs.
@@ -5941,6 +5950,7 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
         with self.ManagedSessionMaker() as session:
             # Load trace metadata first; DB-backed span rows are fetched separately only for traces
             # that still read from the tracking store.
+            filters = self._build_trace_batch_filters(session, trace_ids, experiment_ids)
             sql_trace_infos = (
                 self
                 ._trace_query(session)
@@ -5949,7 +5959,7 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
                     selectinload(SqlTraceInfo.request_metadata),
                     selectinload(SqlTraceInfo.assessments),
                 )
-                .filter(SqlTraceInfo.request_id.in_(trace_ids))
+                .filter(*filters)
                 .order_by(order_case)
                 .all()
             )
@@ -6000,7 +6010,10 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
         return traces
 
     def batch_get_trace_infos(
-        self, trace_ids: list[str], location: str | None = None
+        self,
+        trace_ids: list[str],
+        location: str | None = None,
+        experiment_ids: list[str] | None = None,
     ) -> list[TraceInfo]:
         """
         Get trace metadata (TraceInfo) for given trace IDs without loading spans.
@@ -6008,6 +6021,7 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
         Args:
             trace_ids: The trace IDs to get.
             location: Location of the trace. Should be None for SQLAlchemy backend.
+            experiment_ids: Optional list of experiment IDs to scope the query.
 
         Returns:
             List of TraceInfo objects for the given trace IDs.
@@ -6020,13 +6034,8 @@ class SqlAlchemyStore(SqlAlchemyMCPServerRegistryMixin, SqlAlchemyGatewayStoreMi
             value=SqlTraceInfo.request_id,
         )
         with self.ManagedSessionMaker() as session:
-            sql_trace_infos = (
-                self
-                ._trace_query(session)
-                .filter(SqlTraceInfo.request_id.in_(trace_ids))
-                .order_by(order_case)
-                .all()
-            )
+            filters = self._build_trace_batch_filters(session, trace_ids, experiment_ids)
+            sql_trace_infos = self._trace_query(session).filter(*filters).order_by(order_case).all()
 
             return [sql_trace_info.to_mlflow_entity() for sql_trace_info in sql_trace_infos]
 
@@ -9583,7 +9592,7 @@ def _get_search_experiments_filter_clauses(parsed_filters, dialect):
         if type_ == "attribute":
             if SearchExperimentsUtils.is_string_attribute(
                 type_, key, comparator
-            ) and comparator not in ("=", "!=", "LIKE", "ILIKE"):
+            ) and comparator not in ("=", "!=", "LIKE", "ILIKE", "IN", "NOT IN"):
                 raise MlflowException.invalid_parameter_value(
                     f"Invalid comparator for string attribute: {comparator}"
                 )
