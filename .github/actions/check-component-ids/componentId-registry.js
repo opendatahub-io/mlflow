@@ -1761,7 +1761,6 @@ module.exports = {
   "mlflow.mcp_registry.create_server_version.modal": "",
   "mlflow.mcp_registry.detail.access_endpoints_help": "",
   "mlflow.mcp_registry.detail.actions": "",
-  "mlflow.mcp_registry.detail.actions.create_version": "",
   "mlflow.mcp_registry.detail.actions.delete": "",
   "mlflow.mcp_registry.detail.actions.edit": "",
   "mlflow.mcp_registry.detail.add_endpoint": "",

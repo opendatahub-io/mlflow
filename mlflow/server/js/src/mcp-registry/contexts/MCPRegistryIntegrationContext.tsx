@@ -4,7 +4,7 @@ import type { MCPServer, MCPServerVersion } from '../types';
 
 export interface MCPRegistryIntegrationContextValue {
   /**
-   * Renders host-provided action buttons (e.g. Deploy) in the MCP server
+   * Renders host-provided action buttons (e.g. Deploy) in the MCP server version
    * detail page header. Not called outside of federated/integrated mode.
    */
   renderDetailActions?: (server: MCPServer, version?: MCPServerVersion) => ReactNode;

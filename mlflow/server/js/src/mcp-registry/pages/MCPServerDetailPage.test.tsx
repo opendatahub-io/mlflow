@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, afterEach } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
@@ -6,11 +6,8 @@ import { DesignSystemProvider } from '@databricks/design-system';
 import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { testRoute, TestRouter } from '../../common/utils/RoutingTestUtils';
 import { setupServer } from '../../common/utils/setup-msw';
-import { isIntegrated } from '../../common/utils/embedUtils';
 import MCPServerDetailPage from './MCPServerDetailPage';
 import { TransportType, MCPStatus, MCPServerAction } from '../types';
-import { MCPRegistryIntegrationProvider } from '../contexts/MCPRegistryIntegrationContext';
-import type { MCPRegistryIntegrationContextValue } from '../contexts/MCPRegistryIntegrationContext';
 import {
   createMockMCPServer,
   createMockMCPServerVersion,
@@ -41,13 +38,6 @@ jest.mock('../../experiment-tracking/pages/experiment-evaluation-datasets-v2/com
     onChange: (next: string) => void;
   }) => <textarea aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} />,
 }));
-
-// Defaults to standalone mode (false); individual tests opt into federated/integrated mode.
-jest.mock('../../common/utils/embedUtils', () => ({
-  ...jest.requireActual<Record<string, unknown>>('../../common/utils/embedUtils'),
-  isIntegrated: jest.fn(() => false),
-}));
-const mockedIsIntegrated = jest.mocked(isIntegrated);
 
 const mockServer = createMockMCPServer({
   name: 'dev.mainline/mcp',
@@ -98,35 +88,27 @@ const defaultHandlers = [
 describe('MCPServerDetailPage', () => {
   const server = setupServer(...defaultHandlers);
 
-  const renderPage = (
-    initialEntries = ['/mcp-registry/dev.mainline%2Fmcp'],
-    renderDetailActions?: MCPRegistryIntegrationContextValue['renderDetailActions'],
-  ) => {
+  const renderPage = (initialEntries = ['/mcp-registry/dev.mainline%2Fmcp']) => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <MCPRegistryIntegrationProvider renderDetailActions={renderDetailActions}>
-        <MCPServerDetailPage />
-      </MCPRegistryIntegrationProvider>,
-      {
-        wrapper: ({ children }) => (
-          <IntlProvider locale="en">
-            <TestRouter
-              routes={[
-                testRoute(
-                  <DesignSystemProvider>
-                    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-                  </DesignSystemProvider>,
-                  '/mcp-registry/:serverName',
-                ),
-                testRoute(<div data-testid="mcp-registry-list" />, '/mcp-registry'),
-                testRoute(<div />, '*'),
-              ]}
-              initialEntries={initialEntries}
-            />
-          </IntlProvider>
-        ),
-      },
-    );
+    render(<MCPServerDetailPage />, {
+      wrapper: ({ children }) => (
+        <IntlProvider locale="en">
+          <TestRouter
+            routes={[
+              testRoute(
+                <DesignSystemProvider>
+                  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+                </DesignSystemProvider>,
+                '/mcp-registry/:serverName',
+              ),
+              testRoute(<div data-testid="mcp-registry-list" />, '/mcp-registry'),
+              testRoute(<div />, '*'),
+            ]}
+            initialEntries={initialEntries}
+          />
+        </IntlProvider>
+      ),
+    });
   };
 
   it('renders breadcrumb and server name', async () => {
@@ -534,19 +516,6 @@ describe('MCPServerDetailPage', () => {
         expect(screen.getByText('Unavailable')).toBeInTheDocument();
       });
     });
-
-    it('hides "Create new version" from the integrated overflow menu for a DELETE-only user', async () => {
-      mockedIsIntegrated.mockReturnValue(true);
-      setupWithPermissions([MCPServerAction.USE, MCPServerAction.DELETE]);
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getByLabelText('More actions')).toBeInTheDocument();
-      });
-      await userEvent.click(screen.getByLabelText('More actions'));
-      expect(screen.queryByText('Create new version')).not.toBeInTheDocument();
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-      mockedIsIntegrated.mockReturnValue(false);
-    });
   });
 
   it('switches to compare view when Compare button is clicked', async () => {
@@ -591,53 +560,5 @@ describe('MCPServerDetailPage', () => {
       expect(screen.getByText('Access endpoints')).toBeInTheDocument();
     });
     expect(screen.getByText('https://api.mainline.dev/mcp')).toBeInTheDocument();
-  });
-
-  describe('host-provided detail actions (renderDetailActions)', () => {
-    afterEach(() => {
-      mockedIsIntegrated.mockReturnValue(false);
-    });
-
-    it('renders host-provided actions in the header when integrated', async () => {
-      mockedIsIntegrated.mockReturnValue(true);
-      renderPage(undefined, (renderedServer, version) => (
-        <button>{`Deploy ${renderedServer.name}@${version?.version ?? 'latest'}`}</button>
-      ));
-      await waitFor(() => {
-        expect(screen.getByText('Deploy dev.mainline/mcp@1')).toBeInTheDocument();
-      });
-    });
-
-    it('does not invoke renderDetailActions when standalone (not integrated)', async () => {
-      mockedIsIntegrated.mockReturnValue(false);
-      const renderDetailActions = jest.fn(() => <button>Deploy</button>);
-      renderPage(undefined, renderDetailActions);
-      await waitFor(() => {
-        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
-      });
-      expect(screen.queryByText('Deploy')).not.toBeInTheDocument();
-      expect(renderDetailActions).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op in standalone mode when no provider is supplied', async () => {
-      mockedIsIntegrated.mockReturnValue(false);
-      renderPage();
-      await waitFor(() => {
-        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
-      });
-    });
-
-    it('contains a throwing renderDetailActions instead of crashing the whole page', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      mockedIsIntegrated.mockReturnValue(true);
-      renderPage(undefined, () => {
-        throw new Error('boom from host-provided renderDetailActions');
-      });
-      await waitFor(() => {
-        expect(screen.getAllByText('Mainline').length).toBeGreaterThanOrEqual(1);
-      });
-      expect(screen.queryByText('boom from host-provided renderDetailActions')).not.toBeInTheDocument();
-      consoleErrorSpy.mockRestore();
-    });
   });
 });

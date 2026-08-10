@@ -19,7 +19,6 @@ import {
   useDesignSystemTheme,
 } from '@databricks/design-system';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { ErrorBoundary } from 'react-error-boundary';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
 import { isIntegrated } from '../../common/utils/embedUtils';
@@ -50,23 +49,6 @@ import { LATEST_ALIAS, resolveDisplayName } from '../utils';
 import { lineClampStyles } from '../styles';
 import { useServerState } from '../hooks/useServerState';
 import { MCPServerIcon } from '../components/MCPServerIcon';
-import { useMCPRegistryIntegration } from '../contexts/MCPRegistryIntegrationContext';
-import type { MCPRegistryIntegrationContextValue } from '../contexts/MCPRegistryIntegrationContext';
-import type { MCPServer, MCPServerVersion } from '../types';
-
-// Rendered as a child of ErrorBoundary so the renderDetailActions() call itself happens
-// during this component's render (a descendant render ErrorBoundary can catch), rather
-// than during MCPServerDetailPage's own render where a throw would bypass the boundary
-// entirely and hit the page-level withErrorBoundary wrapper instead.
-const IntegrationDetailActions = ({
-  renderDetailActions,
-  server,
-  version,
-}: {
-  renderDetailActions: MCPRegistryIntegrationContextValue['renderDetailActions'];
-  server: MCPServer;
-  version?: MCPServerVersion;
-}) => <>{renderDetailActions?.(server, version)}</>;
 
 const getAliasesModalTitle = (version: string) => (
   <FormattedMessage
@@ -100,8 +82,6 @@ const MCPServerDetailPage = () => {
   const { data: endpoints } = useMCPAccessEndpointsQuery(serverName);
 
   const { canUpdate, canDelete, isDimmed } = useServerState(server);
-  const { renderDetailActions } = useMCPRegistryIntegration();
-  const integrated = isIntegrated();
 
   const { viewState, setPreviewMode, setCompareMode, setComparedVersion, switchSides } = useMCPServerDetailViewState(
     versions,
@@ -244,19 +224,6 @@ const MCPServerDetailPage = () => {
   }
 
   const displayName = resolveDisplayName(server);
-  // renderDetailActions is host-provided code running inside MLflow's render tree (across
-  // the Module Federation boundary), so an error boundary keeps a throw scoped to the
-  // integration actions rather than taking down the whole detail page. resetKeys clears a
-  // caught error when the server/version selection changes, so a failure on one version
-  // doesn't permanently blank the actions slot after navigating to a working one.
-  // fallback must be a valid element (not null/undefined) -- react-error-boundary calls
-  // isValidElement() on it and throws "requires either a fallback, fallbackRender, or
-  // FallbackComponent prop" otherwise, which would escape to the page-level error boundary.
-  const integrationActions = integrated ? (
-    <ErrorBoundary fallback={<></>} resetKeys={[serverName, currentVersion?.version]}>
-      <IntegrationDetailActions renderDetailActions={renderDetailActions} server={server} version={currentVersion} />
-    </ErrorBoundary>
-  ) : null;
 
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -295,7 +262,7 @@ const MCPServerDetailPage = () => {
           </span>
         }
         buttons={
-          integrationActions || canUpdate || canDelete ? (
+          canUpdate || canDelete ? (
             <>
               {(canUpdate || canDelete) && (
                 <DropdownMenu.Root>
@@ -310,17 +277,6 @@ const MCPServerDetailPage = () => {
                     />
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Content>
-                    {integrated && canUpdate && (
-                      <DropdownMenu.Item
-                        componentId="mlflow.mcp_registry.detail.actions.create_version"
-                        onClick={openCreateVersionModal}
-                      >
-                        <FormattedMessage
-                          defaultMessage="Create new version"
-                          description="MCP server detail create version button"
-                        />
-                      </DropdownMenu.Item>
-                    )}
                     {canUpdate && (
                       <DropdownMenu.Item
                         componentId="mlflow.mcp_registry.detail.actions.edit"
@@ -343,7 +299,7 @@ const MCPServerDetailPage = () => {
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
               )}
-              {canUpdate && !integrated && (
+              {canUpdate && (
                 <Button
                   componentId="mlflow.mcp_registry.detail.create_version"
                   type="primary"
@@ -355,7 +311,6 @@ const MCPServerDetailPage = () => {
                   />
                 </Button>
               )}
-              {integrationActions}
             </>
           ) : undefined
         }
