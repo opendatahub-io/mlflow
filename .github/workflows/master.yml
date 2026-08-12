@@ -65,14 +65,26 @@ jobs:
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-python
+        with:
+          python-version: "3.12"
+          pin-micro-version: "false"
       - uses: ./.github/actions/setup-pyenv
       - uses: ./.github/actions/setup-java
       - name: Install dependencies
         run: |
-          uv sync --extra extras --extra gateway --extra mcp --extra genai
+          uv sync --python 3.12 --extra extras --extra gateway --extra mcp --extra genai
           uv pip install \
             -r requirements/test-requirements.txt \
             -r requirements/extra-ml-requirements.txt
+
+      - name: Overlay Konflux-pinned dependencies
+        run: |
+          pip install --no-cache-dir --require-hashes --no-deps \
+            -r requirements/konflux-aipcc-requirements.txt
+
+          pip install --no-cache-dir --require-hashes --no-deps \
+            -r requirements/konflux-pypi-requirements.txt
+
       - uses: ./.github/actions/show-versions
       - uses: ./.github/actions/cache-hf
       - name: Import check
