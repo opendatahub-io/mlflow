@@ -170,7 +170,10 @@ const MCPServerDetailPage = () => {
     serverName: serverName,
   });
 
-  const breadcrumbs = (
+  // Hidden when embedded: the host builds its own breadcrumb from the
+  // segments reported via McpRegistryBreadcrumbReporter (see src/odh),
+  // so we don't want to double up on breadcrumbs here.
+  const breadcrumbs = isIntegrated() ? undefined : (
     <Breadcrumb>
       <Breadcrumb.Item>
         <Link componentId="mlflow.mcp_registry.detail.breadcrumb_back" to={MCPRegistryRoutes.mcpRegistryPageRoute}>
