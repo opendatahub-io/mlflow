@@ -72,8 +72,10 @@ jobs:
       - uses: ./.github/actions/setup-pyenv
       - uses: ./.github/actions/setup-java
       - name: Install dependencies
+        env:
+          PYTHON_VERSION: ${{ steps.setup-python.outputs.python-version }}
         run: |
-          uv sync --python ${{ steps.setup-python.outputs.python-version }} --extra extras --extra gateway --extra mcp --extra genai
+          uv sync --python "$PYTHON_VERSION" --extra extras --extra gateway --extra mcp --extra genai
           uv pip install \
             -r requirements/test-requirements.txt \
             -r requirements/extra-ml-requirements.txt
