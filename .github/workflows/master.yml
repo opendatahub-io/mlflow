@@ -82,10 +82,14 @@ jobs:
 
       - name: Overlay Konflux-pinned dependencies
         run: |
-          pip install --no-cache-dir --require-hashes --no-deps \
+          # Konflux pins are curated and may fall outside the rolling-window
+          # exclusion policy set by setup-python. Unset rather than empty:
+          # UV_EXCLUDE_NEWER= is treated as an invalid date by uv.
+          unset UV_EXCLUDE_NEWER
+          uv pip install --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-aipcc-requirements.txt
 
-          pip install --no-cache-dir --require-hashes --no-deps \
+          uv pip install --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-pypi-requirements.txt
 
       - uses: ./.github/actions/show-versions
