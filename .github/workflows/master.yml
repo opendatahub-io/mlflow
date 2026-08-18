@@ -64,20 +64,31 @@ jobs:
     steps:
       - name: Install UBI runtime libraries
         run: |
+          # Enable EPEL early so packages like utf8proc are available
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
+            dnf-plugins-core
+          dnf makecache || true
+
+          # Try to enable CRB / CodeReady; fall back if not available
+          dnf config-manager --set-enabled crb \
+            || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
+            || true
+
           # gcc/make/libpq-devel: konflux-pypi pins psycopg2 (sdist), which
           # Dockerfile.konflux wheels during the image build.
+          # utf8proc (libutf8proc.so.2) and freetype (libfreetype.so.6) are
+          # required by AIPCC pyarrow / matplotlib after the Konflux overlay.
           dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
             git tar gzip findutils which procps-ng gcc make \
             openblas-threads libgomp libtiff libjpeg-turbo openjpeg2 \
             libpq-devel \
             openssh-server openssh-clients \
-            dnf-plugins-core
-          # libthrift-0.15.0.so (needed by AIPCC pyarrow) is in EPEL, not UBI.
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-          dnf config-manager --set-enabled crb \
-            || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
-            || true
+            dnf-plugins-core \
+            utf8proc freetype
+
+          # libthrift-0.15.0.so (needed by AIPCC pyarrow) is in EPEL.
           dnf install -y thrift re2
+
           ssh-keygen -A
           mkdir -p /var/run/sshd /run/sshd
           /usr/sbin/sshd
