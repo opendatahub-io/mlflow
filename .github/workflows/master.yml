@@ -68,7 +68,7 @@ jobs:
           # Dockerfile.konflux wheels during the image build.
           dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
             git tar gzip findutils which procps-ng gcc make \
-            openblas-threads libgomp libtiff libjpeg-turbo \
+            openblas-threads libgomp libtiff libjpeg-turbo openjpeg2 \
             libpq-devel \
             openssh-server openssh-clients \
             dnf-plugins-core
@@ -77,7 +77,7 @@ jobs:
           dnf config-manager --set-enabled crb \
             || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
             || true
-          dnf install -y thrift
+          dnf install -y thrift re2
           ssh-keygen -A
           mkdir -p /var/run/sshd /run/sshd
           /usr/sbin/sshd
