@@ -180,6 +180,14 @@ openai==2.34.0 \
     --hash=sha256:038930249278473ce68ffffedd036de9c4d8a999746d4f8bf5fc0f45b943476c
 opentelemetry-api==1.41.1 \
     --hash=sha256:2bed8f95380c7f7a3839602be33d17840c38767b84e7107569ff3cca0f485599
+opentelemetry-exporter-otlp==1.41.1 \
+    --hash=sha256:9614a8c3367e46a5d7adea0fd510fb6e9e23afdc320450c9fd0e159ec430cef7
+opentelemetry-exporter-otlp-proto-common==1.41.1 \
+    --hash=sha256:255299acc632ce0ee76842c26a8461bc89befa275c24e391d1af0306dc5fab01
+opentelemetry-exporter-otlp-proto-grpc==1.41.1 \
+    --hash=sha256:48133f038d4d53d377e917b42fb867cd6cbd50af272e31ef191fa9ab86856637
+opentelemetry-exporter-otlp-proto-http==1.41.1 \
+    --hash=sha256:58cad79e230f38abae1278756315a1e9b5f7145df07f4c4aa8579578d8b3ba53
 opentelemetry-proto==1.41.1 \
     --hash=sha256:75200f5e37d8b3ab30525a50475675a60769d83b26765c578cdeee44eb0d4004
 opentelemetry-sdk==1.41.1 \
