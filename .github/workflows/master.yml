@@ -85,11 +85,13 @@ jobs:
           # Konflux pins are curated and may fall outside the rolling-window
           # exclusion policy set by setup-python. Unset rather than empty:
           # UV_EXCLUDE_NEWER= is treated as an invalid date by uv.
+          # --no-config ignores pyproject.toml constraint-dependencies
+          # (e.g. xgboost<3.1.0), which break --require-hashes.
           unset UV_EXCLUDE_NEWER
-          uv pip install --no-cache-dir --require-hashes --no-deps \
+          uv --no-config pip install --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-aipcc-requirements.txt
 
-          uv pip install --no-cache-dir --require-hashes --no-deps \
+          uv --no-config pip install --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-pypi-requirements.txt
 
       - uses: ./.github/actions/show-versions
