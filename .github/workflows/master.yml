@@ -51,6 +51,10 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: read
+    # AIPCC wheels are built for UBI9 and link RHEL sonames (libopenblasp.so.0,
+    # libtiff.so.5, libthrift-0.15.0.so). Ubuntu cannot provide those.
+    container:
+      image: registry.access.redhat.com/ubi9/ubi:9.7
     strategy:
       fail-fast: false
       matrix:
@@ -58,27 +62,33 @@ jobs:
         include:
           - splits: 4
     steps:
+      - name: Install UBI runtime libraries
+        run: |
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
+            git tar gzip findutils which procps-ng \
+            openblas-threads libgomp libtiff libjpeg-turbo \
+            openssh-server openssh-clients \
+            dnf-plugins-core
+          # libthrift-0.15.0.so (needed by AIPCC pyarrow) is in EPEL, not UBI.
+          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+          dnf config-manager --set-enabled crb \
+            || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
+            || true
+          dnf install -y thrift
+          ssh-keygen -A
+          mkdir -p /var/run/sshd /run/sshd
+          /usr/sbin/sshd
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/untracked
-      - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-python
         id: setup-python
         with:
           python-version: "3.12"
           pin-micro-version: "false"
-      - uses: ./.github/actions/setup-pyenv
       - uses: ./.github/actions/setup-java
-      - name: Install OpenBLAS runtime for Konflux NumPy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libopenblas0-pthread
-          # AIPCC numpy is linked against the RHEL soname libopenblasp.so.0.
-          # Ubuntu ships the same library as libopenblas.so.0.
-          so=$(dpkg -L libopenblas0-pthread | grep -E 'libopenblas\.so\.0$' | head -1)
-          sudo ln -sfn "$so" /usr/lib/x86_64-linux-gnu/libopenblasp.so.0
       - name: Install dependencies
         env:
           PYTHON_VERSION: ${{ steps.setup-python.outputs.python-version }}
