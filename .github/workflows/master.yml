@@ -150,6 +150,13 @@ jobs:
         run: |
           # UBI containers do not ship ~/.ssh; ssh-keygen will not create it.
           mkdir -p ~/.ssh
+          # sshd is started during "Install UBI runtime libraries"; restart if
+          # it exited before the SFTP tests run.
+          if ! pgrep -x sshd >/dev/null; then
+            ssh-keygen -A
+            mkdir -p /var/run/sshd /run/sshd
+            /usr/sbin/sshd
+          fi
           source dev/setup-ssh.sh
           uv run --no-sync pytest --splits=$SPLITS --group=$GROUP \
             --quiet --requires-ssh --ignore-flavors \
