@@ -71,6 +71,14 @@ jobs:
           pin-micro-version: "false"
       - uses: ./.github/actions/setup-pyenv
       - uses: ./.github/actions/setup-java
+      - name: Install OpenBLAS runtime for Konflux NumPy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libopenblas0-pthread
+          # AIPCC numpy is linked against the RHEL soname libopenblasp.so.0.
+          # Ubuntu ships the same library as libopenblas.so.0.
+          so=$(dpkg -L libopenblas0-pthread | grep -E 'libopenblas\.so\.0$' | head -1)
+          sudo ln -sfn "$so" /usr/lib/x86_64-linux-gnu/libopenblasp.so.0
       - name: Install dependencies
         env:
           PYTHON_VERSION: ${{ steps.setup-python.outputs.python-version }}
