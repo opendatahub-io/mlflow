@@ -105,11 +105,14 @@ jobs:
           # UV_EXCLUDE_NEWER= is treated as an invalid date by uv.
           # --no-config ignores pyproject.toml constraint-dependencies
           # (e.g. xgboost<3.1.0), which break --require-hashes.
+          # --python .venv/bin/python is required in the job container: uv
+          # otherwise honors .python-version (3.10) instead of the 3.12 venv.
           unset UV_EXCLUDE_NEWER
-          uv --no-config pip install --no-cache-dir --require-hashes --no-deps \
+          unset PIP_CONSTRAINT
+          uv --no-config pip install --python .venv/bin/python --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-aipcc-requirements.txt
 
-          uv --no-config pip install --no-cache-dir --require-hashes --no-deps \
+          uv --no-config pip install --python .venv/bin/python --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-pypi-requirements.txt
 
       - uses: ./.github/actions/show-versions
