@@ -148,6 +148,8 @@ jobs:
           SPLITS: ${{ matrix.splits }}
           GROUP: ${{ matrix.group }}
         run: |
+          # UBI containers do not ship ~/.ssh; ssh-keygen will not create it.
+          mkdir -p ~/.ssh
           source dev/setup-ssh.sh
           uv run --no-sync pytest --splits=$SPLITS --group=$GROUP \
             --quiet --requires-ssh --ignore-flavors \
