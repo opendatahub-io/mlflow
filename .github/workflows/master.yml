@@ -64,9 +64,12 @@ jobs:
     steps:
       - name: Install UBI runtime libraries
         run: |
+          # gcc/make/libpq-devel: konflux-pypi pins psycopg2 (sdist), which
+          # Dockerfile.konflux wheels during the image build.
           dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
-            git tar gzip findutils which procps-ng \
+            git tar gzip findutils which procps-ng gcc make \
             openblas-threads libgomp libtiff libjpeg-turbo \
+            libpq-devel \
             openssh-server openssh-clients \
             dnf-plugins-core
           # libthrift-0.15.0.so (needed by AIPCC pyarrow) is in EPEL, not UBI.
@@ -82,6 +85,8 @@ jobs:
         with:
           persist-credentials: false
           submodules: true
+      - name: Mark repository as git safe directory
+        run: git config --global --add safe.directory "$(pwd)"
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/setup-python
         id: setup-python
@@ -109,6 +114,7 @@ jobs:
           # otherwise honors .python-version (3.10) instead of the 3.12 venv.
           unset UV_EXCLUDE_NEWER
           unset PIP_CONSTRAINT
+          export UV_LINK_MODE=copy
           uv --no-config pip install --python .venv/bin/python --no-cache-dir --require-hashes --no-deps \
             -r requirements/konflux-aipcc-requirements.txt
 
