@@ -536,48 +536,9 @@ _KONFLUX_UNLOADABLE_ON_UBI = {
     "tests/utils/test_model_utils.py",
 }
 
-_KONFLUX_MISSING_MODULE_MARKERS = (
-    "No module named 'tensorflow'",
-    "No module named 'sentence_transformers'",
-    "No module named 'datasets'",
-)
-# pyarrow AIPCC wheels link these; they are not in ubi.repo (option 2).
-_KONFLUX_MISSING_SONAMES = ("libthrift", "libsnappy", "libre2")
-
 
 def _konflux_pinned_tests_enabled() -> bool:
     return os.environ.get("MLFLOW_KONFLUX_PINNED_TESTS") == "1"
-
-
-def _is_konflux_optional_import_failure(message: str) -> bool:
-    if any(marker in message for marker in _KONFLUX_MISSING_MODULE_MARKERS):
-        return True
-    return "cannot open shared object file" in message and any(
-        soname in message for soname in _KONFLUX_MISSING_SONAMES
-    )
-
-
-def pytest_collectreport(report):
-    # Convert leftover extra-ml / missing-soname collection errors to skips so
-    # this job does not fail-fast on the next file that imports sklearn.
-    if not _konflux_pinned_tests_enabled() or not report.failed:
-        return
-    if _is_konflux_optional_import_failure(str(report.longrepr)):
-        report.outcome = "skipped"
-        report.longrepr = "skipped: Konflux pin set cannot import this module on UBI"
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    outcome = yield
-    if not _konflux_pinned_tests_enabled():
-        return
-    report = outcome.get_result()
-    if not report.failed or call.excinfo is None:
-        return
-    if _is_konflux_optional_import_failure(str(call.excinfo.value)):
-        report.outcome = "skipped"
-        report.longrepr = f"skipped: {call.excinfo.value}"
 
 
 @pytest.hookimpl(hookwrapper=True)

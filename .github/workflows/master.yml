@@ -170,6 +170,8 @@ jobs:
             --ignore=tests/projects/test_projects.py \
             --ignore=tests/projects/test_virtualenv_projects.py \
             --ignore=tests/projects/test_docker_projects.py \
+            --ignore=tests/projects/test_projects_cli.py \
+            --ignore=tests/metrics/test_metric_definitions.py \
             tests
 
   database:

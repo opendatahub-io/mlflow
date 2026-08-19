@@ -198,6 +198,7 @@ def test_delete_selective_artifacts(artifact_path):
 
 
 def test_log_and_download_sklearn_model(tmp_path):
+    pytest.importorskip("sklearn")
     from numpy.testing import assert_allclose
     from sklearn.datasets import load_iris
     from sklearn.linear_model import LogisticRegression

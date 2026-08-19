@@ -1,6 +1,7 @@
 import cgi
 import os
 import pathlib
+import shutil
 import subprocess
 import tempfile
 from contextlib import contextmanager
@@ -244,6 +245,7 @@ def is_github_actions():
 
 
 @pytest.mark.skipif(is_windows(), reason="This example doesn't work on Windows")
+@pytest.mark.skipif(shutil.which("docker") is None, reason="docker is not installed")
 def test_mlflow_artifacts_example(tmp_path):
     root = pathlib.Path(mlflow.__file__).parents[1]
     # On GitHub Actions, remove generated images to save disk space

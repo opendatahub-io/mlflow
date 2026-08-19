@@ -38,7 +38,14 @@ def test_detect_environment_from_env_var(monkeypatch, env_var, expected):
     ("value", "expected"),
     [
         ("demo", Environment.DEMO.value),
-        ("staging", None),
+        pytest.param(
+            "staging",
+            None,
+            marks=pytest.mark.skipif(
+                Path("/.dockerenv").exists(),
+                reason="GHA container jobs have /.dockerenv",
+            ),
+        ),
     ],
 )
 def test_detect_environment_deployment_env(monkeypatch, value, expected):
@@ -74,6 +81,10 @@ def test_detect_environment_docker(tmp_path, monkeypatch):
         assert _detect_environment() == Environment.DOCKER
 
 
+@pytest.mark.skipif(
+    Path("/.dockerenv").exists(),
+    reason="GHA container jobs have /.dockerenv",
+)
 def test_detect_environment_none():
     assert _detect_environment() is None
 

@@ -986,11 +986,31 @@ def read_data(artifact_path):
     raise ValueError(f"Unsupported file type in {artifact_path}. Expected .json or .parquet")
 
 
+def _pyarrow_loadable() -> bool:
+    try:
+        import pyarrow  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+_LOG_TABLE_FILE_TYPES = [
+    "json",
+    pytest.param(
+        "parquet",
+        marks=pytest.mark.skipif(
+            not _pyarrow_loadable(),
+            reason="pyarrow cannot load (missing native libs such as libthrift)",
+        ),
+    ),
+]
+
+
 @pytest.mark.skipif(
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table(file_type):
     import pandas as pd
 
@@ -1064,7 +1084,7 @@ def test_log_table(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_subdirectory(file_type):
     import pandas as pd
 
@@ -1113,7 +1133,7 @@ def test_log_table_with_subdirectory(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_load_table(file_type):
     table_dict = {
         "inputs": ["What is MLflow?", "What is Databricks?"],
@@ -1198,7 +1218,7 @@ def test_load_table(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_datetime_columns(file_type):
     import pandas as pd
 
@@ -1236,7 +1256,7 @@ def test_log_table_with_datetime_columns(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_image_columns(file_type):
     import numpy as np
     from PIL import Image
@@ -1274,7 +1294,7 @@ def test_log_table_with_image_columns(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_pil_image_columns(file_type):
     import numpy as np
     from PIL import Image
@@ -1314,7 +1334,7 @@ def test_log_table_with_pil_image_columns(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_invalid_image_columns(file_type):
     image = mlflow.Image([[1, 2, 3]])
     table_dict = {
@@ -1333,7 +1353,7 @@ def test_log_table_with_invalid_image_columns(file_type):
     "MLFLOW_SKINNY" in os.environ,
     reason="Skinny client does not support the np or pandas dependencies",
 )
-@pytest.mark.parametrize("file_type", ["json", "parquet"])
+@pytest.mark.parametrize("file_type", _LOG_TABLE_FILE_TYPES)
 def test_log_table_with_valid_image_columns(file_type):
     class ImageObj:
         def __init__(self):

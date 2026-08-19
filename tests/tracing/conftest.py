@@ -1,4 +1,5 @@
 import random
+import shutil
 import subprocess
 import tempfile
 import time
@@ -68,6 +69,8 @@ def async_logging_enabled(request, monkeypatch):
 @pytest.fixture
 def otel_collector():
     """Start an OpenTelemetry collector in a Docker container."""
+    if shutil.which("docker") is None:
+        pytest.skip("docker is not installed")
     subprocess.check_call(["docker", "pull", "otel/opentelemetry-collector"])
 
     # Use a random port to avoid conflicts
