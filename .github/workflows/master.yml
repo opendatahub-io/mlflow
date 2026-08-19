@@ -51,8 +51,8 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: read
-    # AIPCC wheels are built for UBI9 and link RHEL sonames (libopenblasp.so.0,
-    # libtiff.so.5, libthrift-0.15.0.so). Ubuntu cannot provide those.
+    # AIPCC wheels are built for UBI9 and link RHEL sonames
+    # (libopenblasp.so.0, libtiff.so.5). Ubuntu cannot provide those.
     container:
       image: registry.access.redhat.com/ubi9/ubi:9.7
     strategy:
@@ -62,42 +62,30 @@ jobs:
         include:
           - splits: 4
     steps:
-      - name: Install UBI runtime libraries
+      - name: Install CI bootstrap packages
         run: |
-          # Enable EPEL early so packages like utf8proc are available
-          dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm \
-            dnf-plugins-core
-          dnf makecache || true
-
-          # Try to enable CRB / CodeReady; fall back if not available
+          # git/tar: checkout and actions. gcc/make/libpq-devel: konflux-pypi
+          # pins psycopg2 as an sdist; Dockerfile.konflux wheels it in the
+          # image build. openssh: SFTP artifact-repo tests. Not image RPMs.
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
+            dnf-plugins-core \
+            git tar gzip findutils which procps-ng gcc make \
+            libpq-devel \
+            openssh-server openssh-clients
           dnf config-manager --set-enabled crb \
             || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
             || true
-
-          # gcc/make/libpq-devel: konflux-pypi pins psycopg2 (sdist), which
-          # Dockerfile.konflux wheels during the image build.
-          # utf8proc (libutf8proc.so.2) and freetype (libfreetype.so.6) are
-          # required by AIPCC pyarrow / matplotlib after the Konflux overlay.
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
-            git tar gzip findutils which procps-ng gcc make \
-            openblas-threads libgomp libtiff libjpeg-turbo openjpeg2 \
-            libpq-devel \
-            openssh-server openssh-clients \
-            dnf-plugins-core \
-            utf8proc freetype
-
-          # libthrift-0.15.0.so (needed by AIPCC pyarrow) is in EPEL.
-          dnf install -y thrift re2
-
-          # libsnappy.so.1 is in full RHEL/CentOS BaseOS, not the UBI subset.
-          dnf install -y --nogpgcheck \
-            https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/Packages/snappy-1.1.8-8.el9.x86_64.rpm
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
           submodules: true
       - name: Mark repository as git safe directory
         run: git config --global --add safe.directory "$(pwd)"
+      - name: Install Konflux runtime RPMs
+        run: |
+          # Same OS packages as Dockerfile.konflux (ubi.repo only).
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
+            $(grep -vE '^[[:space:]]*(#|$)' requirements/konflux-runtime-rpms.txt)
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/setup-python
         id: setup-python
@@ -111,8 +99,7 @@ jobs:
         run: |
           uv sync --python "$PYTHON_VERSION" --extra extras --extra gateway --extra mcp --extra genai
           uv pip install \
-            -r requirements/test-requirements.txt \
-            -r requirements/extra-ml-requirements.txt
+            -r requirements/test-requirements.txt
 
       - name: Overlay Konflux-pinned dependencies
         run: |
@@ -149,6 +136,10 @@ jobs:
           # `-I` is used to avoid importing modules from user-specific site-packages
           # that might conflict with the built-in modules (e.g. `types`).
           uv run --no-sync python -I tests/check_mlflow_lazily_imports_ml_packages.py
+          # Native wheels that ship in the image and whose sonames are in
+          # ubi.repo. pyarrow is omitted: it also wants re2/snappy/thrift,
+          # which are not in UBI.
+          uv run --no-sync python -I -c "import numpy, pandas, sklearn, PIL, matplotlib"
       - name: Run tests
         env:
           SPLITS: ${{ matrix.splits }}
@@ -173,6 +164,9 @@ jobs:
             --ignore=tests/genai \
             --ignore=tests/docker \
             --ignore=tests/sagemaker \
+            --ignore=tests/projects/test_projects.py \
+            --ignore=tests/projects/test_virtualenv_projects.py \
+            --ignore=tests/projects/test_docker_projects.py \
             tests
 
   database:

@@ -1026,8 +1026,15 @@ def clean_up_envs():
         from mlflow.utils.virtualenv import _get_mlflow_virtualenv_root
 
         shutil.rmtree(_get_mlflow_virtualenv_root(), ignore_errors=True)
-        if not is_windows():
-            conda_info = json.loads(subprocess.check_output(["conda", "info", "--json"], text=True))
+        # Konflux/UBI CI has no conda. Missing binary must be a no-op: this
+        # autouse fixture otherwise FileNotFoundError's every module teardown.
+        if not is_windows() and shutil.which("conda"):
+            try:
+                conda_info = json.loads(
+                    subprocess.check_output(["conda", "info", "--json"], text=True)
+                )
+            except (OSError, subprocess.CalledProcessError, json.JSONDecodeError):
+                return
             root_prefix = conda_info["root_prefix"]
             regex = re.compile(r"mlflow-\w{32,}")
             for env in conda_info["envs"]:

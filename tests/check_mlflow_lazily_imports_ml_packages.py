@@ -3,6 +3,7 @@ Tests that `import mlflow` and `mlflow.autolog()` do not import ML packages.
 """
 
 import importlib
+import importlib.util
 import logging
 import sys
 
@@ -37,9 +38,17 @@ def main():
     imported = ml_packages.intersection(set(sys.modules))
     assert imported == set(), f"`mlflow.autolog` imports {imported} but it should not"
 
-    # Ensure that the ML packages are importable
+    # Only require import of packages that are actually installed. Konflux CI
+    # overlays image pins and does not install extra-ml-requirements.txt.
     failed_to_import = []
     for package in sorted(ml_packages):
+        try:
+            spec = importlib.util.find_spec(package)
+        except (ImportError, ModuleNotFoundError, ValueError):
+            spec = None
+        if spec is None:
+            logger.info("Skipping import check for %s (not installed)", package)
+            continue
         try:
             importlib.import_module(package)
         except ImportError:

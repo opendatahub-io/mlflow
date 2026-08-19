@@ -1,0 +1,23 @@
+# OS packages installed in the Konflux runtime image (Dockerfile.konflux
+# final stage) and in the python CI job. Only packages available from
+# requirements/ubi.repo (BaseOS, AppStream, CodeReady Builder).
+#
+# Keep requirements/rpms.in.yaml packages in sync with this file.
+# After changing it, regenerate:
+#   rpm-lockfile-prototype --containerfile Dockerfile.konflux \
+#     --outfile requirements/rpms.lock.yaml requirements/rpms.in.yaml
+#
+# Not listed (not in UBI repos): re2, snappy, thrift. AIPCC pyarrow may
+# still need those sonames at import time; that is outside this ticket.
+
+freetype
+libgomp
+libjpeg-turbo
+libtiff
+openblas-threads
+openjpeg2
+postgresql-libs
+python3.12
+python3.12-pip
+sqlite
+utf8proc

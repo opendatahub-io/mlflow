@@ -15,12 +15,19 @@ contentOrigin:
   repofiles:
     - ubi.repo
 
+# Keep in sync with requirements/konflux-runtime-rpms.txt
 packages:
+  - freetype
+  - libgomp
+  - libjpeg-turbo
+  - libtiff
   - openblas-threads
+  - openjpeg2
   - postgresql-libs
   - python3.12
   - python3.12-pip
   - sqlite
+  - utf8proc
 
 context:
   containerfile: ../Dockerfile.konflux
