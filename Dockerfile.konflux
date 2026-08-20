@@ -47,6 +47,7 @@ USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
 COPY requirements/konflux-runtime-rpms.txt /tmp/konflux-runtime-rpms.txt
+COPY requirements/epel.repo /tmp/epel.repo
 RUN set -eux; \
     rpms=; \
     while IFS= read -r line || [ -n "$line" ]; do \
@@ -55,8 +56,16 @@ RUN set -eux; \
         *) rpms="$rpms $line" ;; \
       esac; \
     done < /tmp/konflux-runtime-rpms.txt; \
+    if [ -f /cachi2/cachi2.env ]; then \
+      . /cachi2/cachi2.env; \
+    else \
+      # Non-hermetic builds (GHA docker build) have no RPM prefetch.
+      # EPEL supplies re2 and thrift for AIPCC pyarrow. Hermetic Konflux
+      # installs those from rpms.lock.yaml via /cachi2 instead.
+      cp /tmp/epel.repo /etc/yum.repos.d/epel.repo; \
+      rpm --import https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9; \
+    fi; \
     microdnf install -y --setopt=tsflags=nodocs $rpms && \
-    if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
         -r /tmp/konflux-aipcc-requirements.txt && \
     python3.12 -m pip install --no-cache-dir --no-deps \
@@ -68,7 +77,8 @@ RUN set -eux; \
         /tmp/dist/psycopg2-*.whl \
         /tmp/dist/starlette-*.whl && \
     microdnf clean all && \
-    rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt /tmp/konflux-runtime-rpms.txt
+    rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt \
+      /tmp/konflux-runtime-rpms.txt /tmp/epel.repo /etc/yum.repos.d/epel.repo
 
 # Copy built UI from builder stage
 COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build

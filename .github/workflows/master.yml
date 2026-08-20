@@ -83,12 +83,10 @@ jobs:
         run: git config --global --add safe.directory "$(pwd)"
       - name: Install Konflux runtime RPMs
         run: |
-          # Same OS packages as Dockerfile.konflux. EPEL supplies re2 and
-          # thrift so AIPCC pyarrow can load.
-          cp requirements/epel.repo /etc/yum.repos.d/epel.repo
-          rpm --import https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
-            $(grep -vE '^[[:space:]]*(#|$)' requirements/konflux-runtime-rpms.txt)
+          # Same RPM closure as Konflux hermetic prefetch. Download the
+          # architecture-specific rpms.lock.yaml artifacts, verify checksums,
+          # then install only those files (no live UBI/EPEL resolve).
+          python3 dev/install_locked_rpms.py requirements/rpms.lock.yaml
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/setup-python
         id: setup-python

@@ -249,9 +249,7 @@ def is_github_actions():
 
 
 @pytest.mark.skipif(is_windows(), reason="This example doesn't work on Windows")
-@pytest.mark.skipif(
-    not docker_compose_v2_available(), reason="docker compose v2 is not available"
-)
+@pytest.mark.skipif(not docker_compose_v2_available(), reason="docker compose v2 is not available")
 def test_mlflow_artifacts_example(tmp_path):
     root = pathlib.Path(mlflow.__file__).parents[1]
     # On GitHub Actions, remove generated images to save disk space
