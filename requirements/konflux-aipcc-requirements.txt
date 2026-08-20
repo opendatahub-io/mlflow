@@ -86,8 +86,8 @@ fsspec==2026.4.0 \
     --hash=sha256:57e9e37e877e67c0bdeaa7024c6c70ec149b2c540896b180e765d5301d1459be
 gitdb==4.0.12 \
     --hash=sha256:be784ee25c084b5e2d0fc901e07f0f2329b33e88ede8a865f0241c14dbfaa810
-gitpython==3.1.49 \
-    --hash=sha256:689abbf29c2b251e7e3a9513d0bbc38dfa2965433ec3cdceccd6e460808710f2
+gitpython==3.1.52 \
+    --hash=sha256:d6e91e8f692b28604694c4d53d01453907fce57428da15cfbb6cc2a11682baaf
 google-auth==2.50.0 \
     --hash=sha256:16eb937863ec3ebee9006c8d918d6e844c4670ad96f57caad33813cd90678782
 graphene==3.4.3 \

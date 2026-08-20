@@ -31,3 +31,6 @@ pillow>=12.3.0
 
 # pyasn1 0.6.4+ fixes CVE-2026-59884/59885/59886 (DoS via crafted ASN.1 inputs).
 pyasn1>=0.6.4
+
+# GitPython 3.1.51+ fixes CVE-2026-67325 (and CVE-2026-67323) command injection issues in the shipped runtime image.
+gitpython>=3.1.51
