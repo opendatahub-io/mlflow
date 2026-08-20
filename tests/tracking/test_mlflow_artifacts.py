@@ -1,7 +1,6 @@
 import cgi
 import os
 import pathlib
-import shutil
 import subprocess
 import tempfile
 from contextlib import contextmanager
@@ -17,7 +16,12 @@ from mlflow.artifacts import download_artifacts
 from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore
 from mlflow.utils.os import is_windows
 
-from tests.helper_functions import LOCALHOST, get_safe_port, kill_process_tree
+from tests.helper_functions import (
+    LOCALHOST,
+    docker_compose_v2_available,
+    get_safe_port,
+    kill_process_tree,
+)
 from tests.tracking.integration_test_utils import _await_server_up_or_die
 
 
@@ -245,7 +249,9 @@ def is_github_actions():
 
 
 @pytest.mark.skipif(is_windows(), reason="This example doesn't work on Windows")
-@pytest.mark.skipif(shutil.which("docker") is None, reason="docker is not installed")
+@pytest.mark.skipif(
+    not docker_compose_v2_available(), reason="docker compose v2 is not available"
+)
 def test_mlflow_artifacts_example(tmp_path):
     root = pathlib.Path(mlflow.__file__).parents[1]
     # On GitHub Actions, remove generated images to save disk space

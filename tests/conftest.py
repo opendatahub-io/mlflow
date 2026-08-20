@@ -523,17 +523,11 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config):
         outcome.force_result((*rest, f"{status} | {_RESOURCE_USAGE.format()}"))
 
 
-# Paths whose collection imports extra-ml packages or pyarrow/sklearn.
-# sklearn 1.8 imports pyarrow, which needs libthrift (not in ubi.repo).
+# Paths whose collection imports extra-ml packages that are not in the
+# Konflux pin files (tensorflow, Hugging Face datasets).
 _KONFLUX_UNLOADABLE_ON_UBI = {
-    "tests/gateway",
-    "tests/data",
-    "tests/uc_oss",
-    "tests/store/artifact/test_hdfs_artifact_repo.py",
-    "tests/telemetry/test_tracked_events.py",
-    "tests/test_mlflow_version_comp.py",
-    "tests/utils/test_databricks_utils.py",
-    "tests/utils/test_model_utils.py",
+    "tests/data/test_tensorflow_dataset.py",
+    "tests/data/test_huggingface_dataset_and_source.py",
 }
 
 

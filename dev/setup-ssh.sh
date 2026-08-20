@@ -3,6 +3,8 @@
 # GitHub Actions containers set HOME=/github/home even when whoami is root.
 # The SSH client reads keys from $HOME/.ssh; sshd looks up root's
 # authorized_keys from /etc/passwd (/root/.ssh). Both must have the key.
+set -euo pipefail
+
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 

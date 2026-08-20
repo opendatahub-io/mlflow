@@ -9,6 +9,8 @@ from mlflow.entities import RunStatus
 from mlflow.projects import _project_spec
 from mlflow.utils.file_utils import TempDir, _copy_project
 
+from tests.helper_functions import docker_daemon_available
+
 TEST_DIR = "tests"
 TEST_PROJECT_DIR = os.path.abspath(os.path.join(TEST_DIR, "resources", "example_project"))
 TEST_DOCKER_PROJECT_DIR = os.path.join(TEST_DIR, "resources", "example_docker_project")
@@ -26,6 +28,11 @@ GIT_PROJECT_BRANCH = "test-branch"
 SSH_PROJECT_URI = "git@github.com:mlflow/mlflow-example.git"
 
 _logger = logging.getLogger(__name__)
+
+requires_conda = pytest.mark.skipif(shutil.which("conda") is None, reason="conda is not installed")
+requires_docker = pytest.mark.skipif(
+    not docker_daemon_available(), reason="docker daemon is not available"
+)
 
 
 def load_project():
@@ -49,6 +56,9 @@ def assert_dirs_equal(expected, actual):
 def docker_example_base_image():
     import docker
     from docker.errors import APIError, BuildError
+
+    if not docker_daemon_available():
+        pytest.skip("docker daemon is not available")
 
     mlflow_home = os.environ.get("MLFLOW_HOME", None)
     if not mlflow_home:

@@ -193,6 +193,20 @@ arches:
     name: openblas-threads
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/Packages/r/re2-20211101-20.el9.aarch64.rpm
+    repoid: epel
+    size: 182849
+    checksum: sha256:46ec41f0fd0e7d91e2357010dca276bf451e8ef3f8c18ed4fe45eb4b07e4fe57
+    name: re2
+    evr: 1:20211101-20.el9
+    sourcerpm: re2-20211101-20.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/Packages/t/thrift-0.15.0-4.el9.aarch64.rpm
+    repoid: epel
+    size: 1448235
+    checksum: sha256:017dbab0b9ab48fe18490e644c01fa82640c9c7a6f6fa70d0f61be8f84acc602
+    name: thrift
+    evr: 0.15.0-4.el9
+    sourcerpm: thrift-0.15.0-4.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-aarch64-appstream-source-rpms
@@ -326,6 +340,18 @@ arches:
     checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
     name: sqlite
     evr: 3.34.1-10.el9_8
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/r/re2-20211101-20.el9.src.rpm
+    repoid: epel-source
+    size: 422945
+    checksum: sha256:58df721b355ae5cf96d74acb9c30eb84f5e0cfbd18d7704851cc198d0d18c768
+    name: re2
+    evr: 1:20211101-20.el9
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/t/thrift-0.15.0-4.el9.src.rpm
+    repoid: epel-source
+    size: 4048927
+    checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
+    name: thrift
+    evr: 0.15.0-4.el9
   module_metadata: []
 - arch: ppc64le
   packages:
@@ -525,6 +551,20 @@ arches:
     name: openblas-threads
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/ppc64le/Packages/r/re2-20211101-20.el9.ppc64le.rpm
+    repoid: epel
+    size: 208923
+    checksum: sha256:4c77bb4247be21175467061e768197bbb7f5762acb378a037abed5d126b4d3fc
+    name: re2
+    evr: 1:20211101-20.el9
+    sourcerpm: re2-20211101-20.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/ppc64le/Packages/t/thrift-0.15.0-4.el9.ppc64le.rpm
+    repoid: epel
+    size: 1547419
+    checksum: sha256:7ec1fe931cf95b919c4dc587809e1379fb08aea85feb1cc39f199d7f58a9bc67
+    name: thrift
+    evr: 0.15.0-4.el9
+    sourcerpm: thrift-0.15.0-4.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-ppc64le-appstream-source-rpms
@@ -658,6 +698,18 @@ arches:
     checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
     name: sqlite
     evr: 3.34.1-10.el9_8
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/r/re2-20211101-20.el9.src.rpm
+    repoid: epel-source
+    size: 422945
+    checksum: sha256:58df721b355ae5cf96d74acb9c30eb84f5e0cfbd18d7704851cc198d0d18c768
+    name: re2
+    evr: 1:20211101-20.el9
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/t/thrift-0.15.0-4.el9.src.rpm
+    repoid: epel-source
+    size: 4048927
+    checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
+    name: thrift
+    evr: 0.15.0-4.el9
   module_metadata: []
 - arch: s390x
   packages:
@@ -850,6 +902,20 @@ arches:
     name: openblas-threads
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/s390x/Packages/r/re2-20211101-20.el9.s390x.rpm
+    repoid: epel
+    size: 189657
+    checksum: sha256:96dab17ac923690142fa90806581b9f01a33274526c27615a9d24a0628a10305
+    name: re2
+    evr: 1:20211101-20.el9
+    sourcerpm: re2-20211101-20.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/s390x/Packages/t/thrift-0.15.0-4.el9.s390x.rpm
+    repoid: epel
+    size: 1502938
+    checksum: sha256:5eeac4106253903222a2dae482fcfa52f8e758cadd50dd66922761e3928aeb26
+    name: thrift
+    evr: 0.15.0-4.el9
+    sourcerpm: thrift-0.15.0-4.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-s390x-appstream-source-rpms
@@ -959,6 +1025,18 @@ arches:
     checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
     name: sqlite
     evr: 3.34.1-10.el9_8
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/r/re2-20211101-20.el9.src.rpm
+    repoid: epel-source
+    size: 422945
+    checksum: sha256:58df721b355ae5cf96d74acb9c30eb84f5e0cfbd18d7704851cc198d0d18c768
+    name: re2
+    evr: 1:20211101-20.el9
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/t/thrift-0.15.0-4.el9.src.rpm
+    repoid: epel-source
+    size: 4048927
+    checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
+    name: thrift
+    evr: 0.15.0-4.el9
   module_metadata: []
 - arch: x86_64
   packages:
@@ -1158,6 +1236,20 @@ arches:
     name: openblas-threads
     evr: 0.3.29-1.el9
     sourcerpm: openblas-0.3.29-1.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/r/re2-20211101-20.el9.x86_64.rpm
+    repoid: epel
+    size: 195981
+    checksum: sha256:34dfb705bdc3e6fb00e85e920e6f9578654a86dd89c0b25ddcb523a72a77c4b7
+    name: re2
+    evr: 1:20211101-20.el9
+    sourcerpm: re2-20211101-20.el9.src.rpm
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/Packages/t/thrift-0.15.0-4.el9.x86_64.rpm
+    repoid: epel
+    size: 1658536
+    checksum: sha256:7272b1b47a705c89a9d30842bb89401fc2f316c9e7b178a5c479e2479461959a
+    name: thrift
+    evr: 0.15.0-4.el9
+    sourcerpm: thrift-0.15.0-4.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-x86_64-appstream-source-rpms
@@ -1291,4 +1383,16 @@ arches:
     checksum: sha256:4387ae8d5a5a0b972b7a8612dca277499a43e7991163c7519e8a0ced2e57c90a
     name: sqlite
     evr: 3.34.1-10.el9_8
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/r/re2-20211101-20.el9.src.rpm
+    repoid: epel-source
+    size: 422945
+    checksum: sha256:58df721b355ae5cf96d74acb9c30eb84f5e0cfbd18d7704851cc198d0d18c768
+    name: re2
+    evr: 1:20211101-20.el9
+  - url: https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/Packages/t/thrift-0.15.0-4.el9.src.rpm
+    repoid: epel-source
+    size: 4048927
+    checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
+    name: thrift
+    evr: 0.15.0-4.el9
   module_metadata: []

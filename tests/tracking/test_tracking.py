@@ -986,23 +986,9 @@ def read_data(artifact_path):
     raise ValueError(f"Unsupported file type in {artifact_path}. Expected .json or .parquet")
 
 
-def _pyarrow_loadable() -> bool:
-    try:
-        import pyarrow  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
 _LOG_TABLE_FILE_TYPES = [
     "json",
-    pytest.param(
-        "parquet",
-        marks=pytest.mark.skipif(
-            not _pyarrow_loadable(),
-            reason="pyarrow cannot load (missing native libs such as libthrift)",
-        ),
-    ),
+    "parquet",
 ]
 
 

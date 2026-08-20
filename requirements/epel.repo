@@ -1,0 +1,13 @@
+[epel]
+name = Extra Packages for Enterprise Linux 9 - $basearch
+baseurl = https://dl.fedoraproject.org/pub/epel/9/Everything/$basearch/
+enabled = 1
+gpgcheck = 1
+gpgkey = https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
+
+[epel-source]
+name = Extra Packages for Enterprise Linux 9 - Source
+baseurl = https://dl.fedoraproject.org/pub/epel/9/Everything/source/tree/
+enabled = 1
+gpgcheck = 1
+gpgkey = https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9

@@ -54,7 +54,7 @@ jobs:
     # AIPCC wheels are built for UBI9 and link RHEL sonames
     # (libopenblasp.so.0, libtiff.so.5). Ubuntu cannot provide those.
     container:
-      image: registry.access.redhat.com/ubi9/ubi:9.7
+      image: registry.access.redhat.com/ubi9/ubi@sha256:e9a31af6530caffa3551f266c51a0d43b602e8f76a0dc12826dbeebceb487c92 # 9.7
     strategy:
       fail-fast: false
       matrix:
@@ -83,7 +83,10 @@ jobs:
         run: git config --global --add safe.directory "$(pwd)"
       - name: Install Konflux runtime RPMs
         run: |
-          # Same OS packages as Dockerfile.konflux (ubi.repo only).
+          # Same OS packages as Dockerfile.konflux. EPEL supplies re2 and
+          # thrift so AIPCC pyarrow can load.
+          cp requirements/epel.repo /etc/yum.repos.d/epel.repo
+          rpm --import https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
           dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
             $(grep -vE '^[[:space:]]*(#|$)' requirements/konflux-runtime-rpms.txt)
       - uses: ./.github/actions/untracked
@@ -136,15 +139,16 @@ jobs:
           # `-I` is used to avoid importing modules from user-specific site-packages
           # that might conflict with the built-in modules (e.g. `types`).
           uv run --python .venv/bin/python --no-sync python -I tests/check_mlflow_lazily_imports_ml_packages.py
-          # Native wheels whose sonames are in ubi.repo. sklearn is omitted:
-          # sklearn 1.8 imports pyarrow, which needs libthrift (not in UBI).
-          uv run --python .venv/bin/python --no-sync python -I -c "import numpy, pandas, PIL, matplotlib"
+          # Native wheels shipped in the image, including AIPCC pyarrow/sklearn
+          # which need EPEL thrift/re2. Import pyarrow.parquet so a parquet-only
+          # soname miss fails here instead of later in log_table.
+          uv run --python .venv/bin/python --no-sync python -I -c "import numpy, pandas, sklearn, pyarrow, pyarrow.parquet, PIL, matplotlib"
       - name: Run tests
         env:
           SPLITS: ${{ matrix.splits }}
           GROUP: ${{ matrix.group }}
-          # Skip extra-ml / pyarrow collection (tests/conftest.py). Option 2
-          # dropped extra-ml-requirements.txt and does not install libthrift.
+          # Skip extra-ml collection (tests/conftest.py). tensorflow/datasets
+          # are not in the Konflux pin files.
           MLFLOW_KONFLUX_PINNED_TESTS: "1"
         run: |
           # UBI containers do not ship ~/.ssh; ssh-keygen will not create it.
@@ -167,10 +171,7 @@ jobs:
             --ignore=tests/genai \
             --ignore=tests/docker \
             --ignore=tests/sagemaker \
-            --ignore=tests/projects/test_projects.py \
             --ignore=tests/projects/test_virtualenv_projects.py \
-            --ignore=tests/projects/test_docker_projects.py \
-            --ignore=tests/projects/test_projects_cli.py \
             --ignore=tests/metrics/test_metric_definitions.py \
             tests
 
