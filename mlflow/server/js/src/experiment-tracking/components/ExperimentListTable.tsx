@@ -2,13 +2,11 @@ import { useReactTable_unverifiedWithReact18 as useReactTable } from '@databrick
 import { useMemo } from 'react';
 import type { CursorPaginationProps } from '@databricks/design-system';
 import {
-  BeakerIcon,
   Button,
   Checkbox,
   useDesignSystemTheme,
   Empty,
   NoIcon,
-  PlusIcon,
   Table,
   CursorPagination,
   TableRow,
@@ -18,6 +16,9 @@ import {
   Tag,
   Tooltip,
   QuestionMarkIcon,
+  Typography,
+  BeakerIcon,
+  PlusIcon,
 } from '@databricks/design-system';
 import 'react-virtualized/styles.css';
 import type { ExperimentEntity } from '../types';
@@ -30,6 +31,8 @@ import { Link } from '../../common/utils/RoutingUtils';
 import Routes from '../routes';
 import { ExperimentListTableTagsCell } from './ExperimentListTableTagsCell';
 import { isDemoExperiment } from '../utils/isDemoExperiment';
+import { useIsIntegrated } from '../../common/utils/embedUtils';
+import noExperimentsImg from '../../odh/static/rh-no-experiments.svg';
 
 export type ExperimentTableColumnDef = ColumnDef<ExperimentEntity>;
 
@@ -143,6 +146,7 @@ export const ExperimentListTable = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = useExperimentsTableColumns();
+  const integrated = useIsIntegrated();
 
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/components/ExperimentListTable.tsx', {
     data: experiments ?? EMPTY_DATA,
@@ -184,7 +188,42 @@ export const ExperimentListTable = ({
       );
     }
     if (isEmptyList) {
-      return (
+      return integrated ? (
+        <div
+          css={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 400,
+            padding: theme.spacing.md,
+          }}
+        >
+          <img css={{ maxWidth: 'min(100%, 600px)' }} src={noExperimentsImg} alt="" />
+          <Typography.Title level={3} css={{ marginTop: theme.spacing.md }}>
+            <FormattedMessage defaultMessage="No experiments" description="Home page experiments empty state title" />
+          </Typography.Title>
+          <Typography.Paragraph color="secondary" css={{ maxWidth: 600, textAlign: 'center' }}>
+            <FormattedMessage
+              defaultMessage="Experiments are logical groups of pipeline or MLflow runs. To test, track, and compare run performance, parameters, and results, create an experiment."
+              description="Home page experiments empty state description"
+            />
+          </Typography.Paragraph>
+          {onCreateExperiment ? (
+            <Button
+              componentId="mlflow.experiment_list_table.create_experiment"
+              data-testid="create-experiment-table-empty-state-button"
+              onClick={onCreateExperiment}
+              type="primary"
+            >
+              <FormattedMessage
+                defaultMessage="Create experiment"
+                description="Home page experiments empty state CTA"
+              />
+            </Button>
+          ) : null}
+        </div>
+      ) : (
         <div
           css={{
             display: 'flex',

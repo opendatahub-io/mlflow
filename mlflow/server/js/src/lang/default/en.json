@@ -235,10 +235,6 @@
     "defaultMessage": "Oops!",
     "description": "Error modal title to rendering errors"
   },
-  "egLFDc": {
-    "defaultMessage": "Create new version",
-    "description": "MCP server detail create version button"
-  },
   "/4Aok8": {
     "defaultMessage": "Run",
     "description": "Column header for the run name in the runs table on the logged model details page"
@@ -834,10 +830,6 @@
   "1l/c+M": {
     "defaultMessage": "User frustration",
     "description": "LLM template option"
-  },
-  "DAnoyO": {
-    "defaultMessage": "MCP registry",
-    "description": "Sidebar link for MCP registry page"
   },
   "1oaTIy": {
     "defaultMessage": "secret",
@@ -3323,6 +3315,10 @@
     "defaultMessage": "Cancel",
     "description": "Button to cancel editing"
   },
+  "DAnoyO": {
+    "defaultMessage": "MCP registry",
+    "description": "Sidebar link for MCP registry page"
+  },
   "DCC164": {
     "defaultMessage": "GenAI",
     "description": "Label for GenAI workflow type option"
@@ -4262,6 +4258,10 @@
   "Hx2WUa": {
     "defaultMessage": "Add",
     "description": "MCP server version detail add metadata button"
+  },
+  "HxCOr/": {
+    "defaultMessage": "Experiments are logical groups of pipeline or MLflow runs. To test, track, and compare run performance, parameters, and results, create an experiment.",
+    "description": "Home page experiments empty state description"
   },
   "HyBP+D": {
     "defaultMessage": "Tags",
@@ -7719,6 +7719,10 @@
     "defaultMessage": "Search metric charts",
     "description": "Run page > Charts tab > Filter metric charts input > placeholder"
   },
+  "XsIyck": {
+    "defaultMessage": "No experiments",
+    "description": "Home page experiments empty state title"
+  },
   "Xt8M9f": {
     "defaultMessage": "Loading workspaces...",
     "description": "Loading workspaces message"
@@ -9278,6 +9282,10 @@
   "efeZ8U": {
     "defaultMessage": "Description",
     "description": "Label for workspace description field"
+  },
+  "egLFDc": {
+    "defaultMessage": "Create new version",
+    "description": "MCP server detail create version button"
   },
   "ega/Za": {
     "defaultMessage": "Hide finished runs",
