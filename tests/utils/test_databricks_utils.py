@@ -1259,7 +1259,9 @@ token = test-token
     assert result.token == "test-token"
 
 
-def test_get_databricks_nfs_temp_dir():
+def test_get_databricks_nfs_temp_dir(monkeypatch):
+    # Production code uses getRepl*TempDir when the user is root; UBI CI is root.
+    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "spark")
     mock_dbutils = mock.MagicMock()
     mock_client = mock.MagicMock()
     mock_client.getUserNFSTempDir.return_value = "/nfs/user/grpc"
@@ -1289,7 +1291,9 @@ def test_get_databricks_nfs_temp_dir():
         mock_dbutils2.entry_point.getUserNFSTempDir.assert_called_once()
 
 
-def test_get_databricks_local_temp_dir():
+def test_get_databricks_local_temp_dir(monkeypatch):
+    # Production code uses getRepl*TempDir when the user is root; UBI CI is root.
+    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "spark")
     mock_dbutils = mock.MagicMock()
     mock_client = mock.MagicMock()
     mock_client.getUserLocalTempDir.return_value = "/local/user/grpc"
