@@ -59,6 +59,18 @@ RUN set -eux; \
         *) rpms="$rpms $line" ;; \
       esac; \
     done < /tmp/konflux-runtime-rpms.txt; \
+    # Hermeto injects local repos with gpgcheck=1 and no gpgkey URL.
+    # UBI packages verify with keys already in ubi-minimal. EPEL re2/thrift
+    # and Stream snappy do not, so import those keys in both hermetic and
+    # non-hermetic builds before microdnf.
+    # Key: Fedora EPEL 9 FF8AD1344597106ECE813B918A3872BF3228467C
+    echo "fcf0eab4f05a1c0de6363ac4b707600a27a9d774e9b491059e59e6921b255a84  /tmp/RPM-GPG-KEY-EPEL-9" \
+      | sha256sum -c; \
+    rpm --import /tmp/RPM-GPG-KEY-EPEL-9; \
+    # Key: CentOS Official 99DB70FAE1D7CE227FB6488205B555B38483C65D
+    echo "5af55449d6c9bc594e2e2fb7222374cb25a8ad2d8ea6ce3de894a3201944daa2  /tmp/RPM-GPG-KEY-centosofficial" \
+      | sha256sum -c; \
+    rpm --import /tmp/RPM-GPG-KEY-centosofficial; \
     if [ -f /cachi2/cachi2.env ]; then \
       . /cachi2/cachi2.env; \
     else \
@@ -66,20 +78,12 @@ RUN set -eux; \
       # EPEL supplies re2/thrift; CentOS Stream BaseOS supplies snappy
       # (includepkgs=snappy). Hermetic Konflux installs those from
       # rpms.lock.yaml via /cachi2 instead.
-      # Key: Fedora EPEL 9 FF8AD1344597106ECE813B918A3872BF3228467C
-      echo "fcf0eab4f05a1c0de6363ac4b707600a27a9d774e9b491059e59e6921b255a84  /tmp/RPM-GPG-KEY-EPEL-9" \
-        | sha256sum -c; \
       cp /tmp/epel.repo /etc/yum.repos.d/epel.repo; \
       sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-EPEL-9|' \
         /etc/yum.repos.d/epel.repo; \
-      rpm --import /tmp/RPM-GPG-KEY-EPEL-9; \
-      # Key: CentOS Official 99DB70FAE1D7CE227FB6488205B555B38483C65D
-      echo "5af55449d6c9bc594e2e2fb7222374cb25a8ad2d8ea6ce3de894a3201944daa2  /tmp/RPM-GPG-KEY-centosofficial" \
-        | sha256sum -c; \
       cp /tmp/centos-stream.repo /etc/yum.repos.d/centos-stream.repo; \
       sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-centosofficial|' \
         /etc/yum.repos.d/centos-stream.repo; \
-      rpm --import /tmp/RPM-GPG-KEY-centosofficial; \
     fi; \
     microdnf install -y --setopt=tsflags=nodocs $rpms && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
