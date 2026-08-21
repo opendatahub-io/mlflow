@@ -48,6 +48,9 @@ COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
 COPY requirements/konflux-runtime-rpms.txt /tmp/konflux-runtime-rpms.txt
 COPY requirements/epel.repo /tmp/epel.repo
+COPY requirements/RPM-GPG-KEY-EPEL-9 /tmp/RPM-GPG-KEY-EPEL-9
+COPY requirements/centos-stream.repo /tmp/centos-stream.repo
+COPY requirements/RPM-GPG-KEY-centosofficial /tmp/RPM-GPG-KEY-centosofficial
 RUN set -eux; \
     rpms=; \
     while IFS= read -r line || [ -n "$line" ]; do \
@@ -60,10 +63,23 @@ RUN set -eux; \
       . /cachi2/cachi2.env; \
     else \
       # Non-hermetic builds (GHA docker build) have no RPM prefetch.
-      # EPEL supplies re2 and thrift for AIPCC pyarrow. Hermetic Konflux
-      # installs those from rpms.lock.yaml via /cachi2 instead.
+      # EPEL supplies re2/thrift; CentOS Stream BaseOS supplies snappy
+      # (includepkgs=snappy). Hermetic Konflux installs those from
+      # rpms.lock.yaml via /cachi2 instead.
+      # Key: Fedora EPEL 9 FF8AD1344597106ECE813B918A3872BF3228467C
+      echo "fcf0eab4f05a1c0de6363ac4b707600a27a9d774e9b491059e59e6921b255a84  /tmp/RPM-GPG-KEY-EPEL-9" \
+        | sha256sum -c; \
       cp /tmp/epel.repo /etc/yum.repos.d/epel.repo; \
-      rpm --import https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9; \
+      sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-EPEL-9|' \
+        /etc/yum.repos.d/epel.repo; \
+      rpm --import /tmp/RPM-GPG-KEY-EPEL-9; \
+      # Key: CentOS Official 99DB70FAE1D7CE227FB6488205B555B38483C65D
+      echo "5af55449d6c9bc594e2e2fb7222374cb25a8ad2d8ea6ce3de894a3201944daa2  /tmp/RPM-GPG-KEY-centosofficial" \
+        | sha256sum -c; \
+      cp /tmp/centos-stream.repo /etc/yum.repos.d/centos-stream.repo; \
+      sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-centosofficial|' \
+        /etc/yum.repos.d/centos-stream.repo; \
+      rpm --import /tmp/RPM-GPG-KEY-centosofficial; \
     fi; \
     microdnf install -y --setopt=tsflags=nodocs $rpms && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
@@ -78,7 +94,9 @@ RUN set -eux; \
         /tmp/dist/starlette-*.whl && \
     microdnf clean all && \
     rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt \
-      /tmp/konflux-runtime-rpms.txt /tmp/epel.repo /etc/yum.repos.d/epel.repo
+      /tmp/konflux-runtime-rpms.txt /tmp/epel.repo /tmp/RPM-GPG-KEY-EPEL-9 \
+      /tmp/centos-stream.repo /tmp/RPM-GPG-KEY-centosofficial \
+      /etc/yum.repos.d/epel.repo /etc/yum.repos.d/centos-stream.repo
 
 # Copy built UI from builder stage
 COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build

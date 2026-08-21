@@ -15,6 +15,7 @@ contentOrigin:
   repofiles:
     - ubi.repo
     - epel.repo
+    - centos-stream.repo
 
 # Keep in sync with requirements/konflux-runtime-rpms.txt
 packages:
@@ -28,6 +29,7 @@ packages:
   - python3.12
   - python3.12-pip
   - re2
+  - snappy
   - sqlite
   - thrift
   - utf8proc

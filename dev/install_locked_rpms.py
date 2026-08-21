@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Download, checksum-verify, and install binary RPMs from rpms.lock.yaml.
 
 Used by the Konflux-pinned python CI job so it installs the same RPM
@@ -19,7 +18,17 @@ import urllib.request
 from pathlib import Path
 
 ARCH_ALIASES = {"arm64": "aarch64", "amd64": "x86_64"}
-EPEL_GPG_KEY = "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+EPEL_GPG_KEY = REPO_ROOT / "requirements" / "RPM-GPG-KEY-EPEL-9"
+# sha256 of requirements/RPM-GPG-KEY-EPEL-9 (Fedora EPEL 9).
+# OpenPGP fingerprint FF8AD1344597106ECE813B918A3872BF3228467C
+# https://fedoraproject.org/security/
+EPEL_GPG_KEY_SHA256 = "fcf0eab4f05a1c0de6363ac4b707600a27a9d774e9b491059e59e6921b255a84"
+CENTOS_GPG_KEY = REPO_ROOT / "requirements" / "RPM-GPG-KEY-centosofficial"
+# sha256 of requirements/RPM-GPG-KEY-centosofficial (CentOS Official).
+# OpenPGP fingerprint 99DB70FAE1D7CE227FB6488205B555B38483C65D
+# https://www.centos.org/keys/
+CENTOS_GPG_KEY_SHA256 = "5af55449d6c9bc594e2e2fb7222374cb25a8ad2d8ea6ce3de894a3201944daa2"
 DOWNLOAD_RETRIES = 3
 
 
@@ -70,8 +79,7 @@ def packages_for_arch(lock_path: Path, arch: str) -> list[dict[str, str]]:
 
     if not packages:
         raise SystemExit(f"No binary packages for arch {arch} in {lock_path}")
-    missing = [pkg.get("name", pkg.get("url", "?")) for pkg in packages if "url" not in pkg]
-    if missing:
+    if missing := [pkg.get("name", pkg.get("url", "?")) for pkg in packages if "url" not in pkg]:
         raise SystemExit(f"Lockfile packages missing url: {missing}")
     return packages
 
@@ -115,8 +123,11 @@ def _verify(pkg: dict[str, str], dest: Path) -> None:
         raise SystemExit(f"{name}: sha256 {actual} != locked {digest}")
 
 
-def _import_epel_gpg() -> None:
-    subprocess.run(["rpm", "--import", EPEL_GPG_KEY], check=True)
+def _import_gpg_key(path: Path, expected_sha256: str) -> None:
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual != expected_sha256:
+        raise SystemExit(f"{path}: sha256 {actual} != vendored {expected_sha256}")
+    subprocess.check_call(["rpm", "--import", str(path)])
 
 
 def _install(rpm_paths: list[Path]) -> None:
@@ -129,7 +140,7 @@ def _install(rpm_paths: list[Path]) -> None:
         "--disablerepo=*",
         *[str(path) for path in rpm_paths],
     ]
-    subprocess.run(cmd, check=True)
+    subprocess.check_call(cmd)
 
 
 def main() -> int:
@@ -155,6 +166,7 @@ def main() -> int:
 
     rpm_paths: list[Path] = []
     needs_epel_key = False
+    needs_centos_key = False
     for pkg in packages:
         url = pkg["url"]
         filename = url.rsplit("/", 1)[-1]
@@ -163,8 +175,11 @@ def main() -> int:
         _download(url, dest)
         _verify(pkg, dest)
         rpm_paths.append(dest)
-        if pkg.get("repoid", "").startswith("epel"):
+        repoid = pkg.get("repoid", "")
+        if repoid.startswith("epel"):
             needs_epel_key = True
+        if "centos" in repoid or "mirror.stream.centos.org" in url:
+            needs_centos_key = True
 
     print(f"Verified {len(rpm_paths)} RPMs for {args.arch}", flush=True)
     if args.no_install:
@@ -172,7 +187,9 @@ def main() -> int:
         return 0
 
     if needs_epel_key:
-        _import_epel_gpg()
+        _import_gpg_key(EPEL_GPG_KEY, EPEL_GPG_KEY_SHA256)
+    if needs_centos_key:
+        _import_gpg_key(CENTOS_GPG_KEY, CENTOS_GPG_KEY_SHA256)
     _install(rpm_paths)
     return 0
 

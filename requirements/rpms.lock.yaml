@@ -207,6 +207,13 @@ arches:
     name: thrift
     evr: 0.15.0-4.el9
     sourcerpm: thrift-0.15.0-4.el9.src.rpm
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/aarch64/os/Packages/snappy-1.1.8-8.el9.aarch64.rpm
+    repoid: centos-stream-9-baseos
+    size: 34827
+    checksum: sha256:02e5739b35acb3874546e98a8c182e1281f5a80604a550f05de2094c38c5e0d7
+    name: snappy
+    evr: 1.1.8-8.el9
+    sourcerpm: snappy-1.1.8-8.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-aarch64-appstream-source-rpms
@@ -352,6 +359,12 @@ arches:
     checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
     name: thrift
     evr: 0.15.0-4.el9
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/snappy-1.1.8-8.el9.src.rpm
+    repoid: centos-stream-9-baseos-source
+    size: 1106026
+    checksum: sha256:cfb1413ddb2b27c16ffb2db8401f3ea6c6b2ac11b1c6f08b85f2d62f36658b78
+    name: snappy
+    evr: 1.1.8-8.el9
   module_metadata: []
 - arch: ppc64le
   packages:
@@ -565,6 +578,13 @@ arches:
     name: thrift
     evr: 0.15.0-4.el9
     sourcerpm: thrift-0.15.0-4.el9.src.rpm
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/ppc64le/os/Packages/snappy-1.1.8-8.el9.ppc64le.rpm
+    repoid: centos-stream-9-baseos
+    size: 36653
+    checksum: sha256:d61689993489e3a370b3814a28b48b30d418bf6c19795208036f5d142ad2a568
+    name: snappy
+    evr: 1.1.8-8.el9
+    sourcerpm: snappy-1.1.8-8.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-ppc64le-appstream-source-rpms
@@ -710,6 +730,12 @@ arches:
     checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
     name: thrift
     evr: 0.15.0-4.el9
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/snappy-1.1.8-8.el9.src.rpm
+    repoid: centos-stream-9-baseos-source
+    size: 1106026
+    checksum: sha256:cfb1413ddb2b27c16ffb2db8401f3ea6c6b2ac11b1c6f08b85f2d62f36658b78
+    name: snappy
+    evr: 1.1.8-8.el9
   module_metadata: []
 - arch: s390x
   packages:
@@ -888,6 +914,13 @@ arches:
     name: libtirpc
     evr: 1.3.3-9.el9
     sourcerpm: libtirpc-1.3.3-9.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/s/snappy-1.1.8-8.el9.s390x.rpm
+    repoid: ubi-9-for-s390x-baseos-rpms
+    size: 37052
+    checksum: sha256:1bc3fed915b6beefcd65484ee54bc6997792f7e6be7a2240b0c7cce6b1e3ce54
+    name: snappy
+    evr: 1.1.8-8.el9
+    sourcerpm: snappy-1.1.8-8.el9.src.rpm
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/s/sqlite-libs-3.34.1-10.el9_8.s390x.rpm
     repoid: ubi-9-for-s390x-baseos-rpms
     size: 652115
@@ -1019,6 +1052,12 @@ arches:
     checksum: sha256:95d684042f4c5f63ac57923639fd1e7d6d278766b4ee99feb24baa5567fe4b7e
     name: libtirpc
     evr: 1.3.3-9.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/s/snappy-1.1.8-8.el9.src.rpm
+    repoid: ubi-9-for-s390x-baseos-source-rpms
+    size: 1106755
+    checksum: sha256:e5cfaaae4882a9ad4ed8749430ead0acb7228a44a20e8aa27eb21dcb1795c1fd
+    name: snappy
+    evr: 1.1.8-8.el9
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-10.el9_8.src.rpm
     repoid: ubi-9-for-s390x-baseos-source-rpms
     size: 25116090
@@ -1250,6 +1289,13 @@ arches:
     name: thrift
     evr: 0.15.0-4.el9
     sourcerpm: thrift-0.15.0-4.el9.src.rpm
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/os/Packages/snappy-1.1.8-8.el9.x86_64.rpm
+    repoid: centos-stream-9-baseos
+    size: 35691
+    checksum: sha256:10facee86b64af91b06292ca9892fd94fe5fc08c068b0baed6a0927d6a64955a
+    name: snappy
+    evr: 1.1.8-8.el9
+    sourcerpm: snappy-1.1.8-8.el9.src.rpm
   source:
   - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/appstream/source/SRPMS/Packages/j/jbigkit-2.1-23.el9.src.rpm
     repoid: ubi-9-for-x86_64-appstream-source-rpms
@@ -1395,4 +1441,10 @@ arches:
     checksum: sha256:dbadf4f2f3127d7263a3fef3e5dd95f2c3de268807060bd83b37ae7a5f38a637
     name: thrift
     evr: 0.15.0-4.el9
+  - url: https://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/snappy-1.1.8-8.el9.src.rpm
+    repoid: centos-stream-9-baseos-source
+    size: 1106026
+    checksum: sha256:cfb1413ddb2b27c16ffb2db8401f3ea6c6b2ac11b1c6f08b85f2d62f36658b78
+    name: snappy
+    evr: 1.1.8-8.el9
   module_metadata: []

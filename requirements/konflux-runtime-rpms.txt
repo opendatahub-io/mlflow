@@ -4,10 +4,9 @@
 # UBI packages come from requirements/ubi.repo (BaseOS, AppStream,
 # CodeReady Builder). re2 and thrift are the EPEL 9 exception so AIPCC
 # pyarrow==20.0.0 can load (libthrift-0.15.0.so and libre2). See
-# requirements/epel.repo.
-#
-# snappy is not in UBI or EPEL (CentOS Stream BaseOS only); add it only
-# if pyarrow still fails to load after thrift/re2.
+# requirements/epel.repo. snappy (libsnappy.so.1) is the CentOS Stream 9
+# BaseOS exception; UBI omits it. See requirements/centos-stream.repo
+# (includepkgs=snappy).
 #
 # Keep requirements/rpms.in.yaml packages in sync with this file.
 # After changing it, regenerate:
@@ -24,6 +23,7 @@ postgresql-libs
 python3.12
 python3.12-pip
 re2
+snappy
 sqlite
 thrift
 utf8proc

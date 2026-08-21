@@ -1,3 +1,6 @@
+# Signing key is requirements/RPM-GPG-KEY-EPEL-9
+# (Fedora EPEL 9 fingerprint FF8AD1344597106ECE813B918A3872BF3228467C).
+# Image/CI imports that file; the URL below is for lockfile generation.
 [epel]
 name = Extra Packages for Enterprise Linux 9 - $basearch
 baseurl = https://dl.fedoraproject.org/pub/epel/9/Everything/$basearch/
