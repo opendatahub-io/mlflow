@@ -632,9 +632,9 @@ def _wait(url: str, timeout: int = 30) -> None:
     t = time.time()
     while time.time() - t < timeout:
         try:
-            if requests.get(f"{url}/health").ok:
+            if requests.get(f"{url}/health", timeout=1).ok:
                 return
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             pass
         time.sleep(0.5)
 
@@ -665,7 +665,7 @@ def test_proxy_log_artifacts(monkeypatch, tmp_path):
             "--gunicorn-opts",
             "--log-level debug",
         ],
-        env={**os.environ, **env},
+        env=os.environ | env,
     ) as prc:
         try:
             url = f"http://{host}:{port}"

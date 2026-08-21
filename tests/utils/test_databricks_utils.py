@@ -1333,11 +1333,12 @@ def test_get_databricks_nfs_temp_dir_root(monkeypatch):
         mock.patch(
             "mlflow.utils.databricks_utils._get_runtime_integration_client",
             return_value=mock_client,
-        ),
+        ) as mock_get_runtime_integration_client,
     ):
         assert databricks_utils.get_databricks_nfs_temp_dir() == "/nfs/repl"
         mock_dbutils.entry_point.getReplNFSTempDir.assert_called_once()
         mock_client.getUserNFSTempDir.assert_not_called()
+        mock_get_runtime_integration_client.assert_not_called()
 
 
 def test_get_databricks_local_temp_dir_root(monkeypatch):
@@ -1350,11 +1351,12 @@ def test_get_databricks_local_temp_dir_root(monkeypatch):
         mock.patch(
             "mlflow.utils.databricks_utils._get_runtime_integration_client",
             return_value=mock_client,
-        ),
+        ) as mock_get_runtime_integration_client,
     ):
         assert databricks_utils.get_databricks_local_temp_dir() == "/local/repl"
         mock_dbutils.entry_point.getReplLocalTempDir.assert_called_once()
         mock_client.getUserLocalTempDir.assert_not_called()
+        mock_get_runtime_integration_client.assert_not_called()
 
 
 def test_get_databricks_host_creds_propagates_workspace_id(monkeypatch):
