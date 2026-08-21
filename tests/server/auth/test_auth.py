@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import os
 import re
 import subprocess
 import sys
@@ -627,7 +628,7 @@ def test_graphql_search_model_versions(client, monkeypatch):
     assert names == [f"gql_mv_model{i}" for i in readable]
 
 
-def _wait(url: str, timeout: int = 10) -> None:
+def _wait(url: str, timeout: int = 30) -> None:
     t = time.time()
     while time.time() - t < timeout:
         try:
@@ -664,7 +665,7 @@ def test_proxy_log_artifacts(monkeypatch, tmp_path):
             "--gunicorn-opts",
             "--log-level debug",
         ],
-        env=env,
+        env={**os.environ, **env},
     ) as prc:
         try:
             url = f"http://{host}:{port}"
