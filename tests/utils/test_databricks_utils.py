@@ -1323,6 +1323,40 @@ def test_get_databricks_local_temp_dir(monkeypatch):
         mock_dbutils2.entry_point.getUserLocalTempDir.assert_called_once()
 
 
+def test_get_databricks_nfs_temp_dir_root(monkeypatch):
+    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "root")
+    mock_dbutils = mock.MagicMock()
+    mock_dbutils.entry_point.getReplNFSTempDir.return_value = "/nfs/repl"
+    mock_client = mock.MagicMock()
+    with (
+        mock.patch("mlflow.utils.databricks_utils._get_dbutils", return_value=mock_dbutils),
+        mock.patch(
+            "mlflow.utils.databricks_utils._get_runtime_integration_client",
+            return_value=mock_client,
+        ),
+    ):
+        assert databricks_utils.get_databricks_nfs_temp_dir() == "/nfs/repl"
+        mock_dbutils.entry_point.getReplNFSTempDir.assert_called_once()
+        mock_client.getUserNFSTempDir.assert_not_called()
+
+
+def test_get_databricks_local_temp_dir_root(monkeypatch):
+    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "root")
+    mock_dbutils = mock.MagicMock()
+    mock_dbutils.entry_point.getReplLocalTempDir.return_value = "/local/repl"
+    mock_client = mock.MagicMock()
+    with (
+        mock.patch("mlflow.utils.databricks_utils._get_dbutils", return_value=mock_dbutils),
+        mock.patch(
+            "mlflow.utils.databricks_utils._get_runtime_integration_client",
+            return_value=mock_client,
+        ),
+    ):
+        assert databricks_utils.get_databricks_local_temp_dir() == "/local/repl"
+        mock_dbutils.entry_point.getReplLocalTempDir.assert_called_once()
+        mock_client.getUserLocalTempDir.assert_not_called()
+
+
 def test_get_databricks_host_creds_propagates_workspace_id(monkeypatch):
     monkeypatch.setenv("MLFLOW_ENABLE_DB_SDK", "true")
     monkeypatch.setenv("DATABRICKS_HOST", "https://spog.databricks.com")
