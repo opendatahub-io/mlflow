@@ -1,5 +1,6 @@
 # OS packages installed in the Konflux runtime image (Dockerfile.konflux
-# final stage) and in the python CI job.
+# final stage). The python CI job live-dnf installs this list except
+# python3.12 / python3.12-pip (setup-python provides those).
 #
 # UBI packages come from requirements/ubi.repo (BaseOS, AppStream,
 # CodeReady Builder). re2 and thrift are the EPEL 9 exception so AIPCC

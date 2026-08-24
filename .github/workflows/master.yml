@@ -81,12 +81,22 @@ jobs:
           submodules: true
       - name: Mark repository as git safe directory
         run: git config --global --add safe.directory "$(pwd)"
-      - name: Install Konflux runtime RPMs
+      - name: Install runtime RPMs
         run: |
-          # Same RPM closure as Konflux hermetic prefetch. Download the
-          # architecture-specific rpms.lock.yaml artifacts, verify checksums,
-          # then install only those files (no live UBI/EPEL resolve).
-          python3 dev/install_locked_rpms.py requirements/rpms.lock.yaml
+          # Live DNF for unit-test CI. Hermetic Konflux still prefetches from
+          # requirements/rpms.lock.yaml. python3.12 is provided by setup-python.
+          rpm --import requirements/RPM-GPG-KEY-EPEL-9 \
+            requirements/RPM-GPG-KEY-centosofficial
+          cp requirements/epel.repo /etc/yum.repos.d/epel.repo
+          cp requirements/centos-stream.repo /etc/yum.repos.d/centos-stream.repo
+          rpms=()
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+              ''|'#'*|python3.12|python3.12-pip) continue ;;
+              *) rpms+=("$line") ;;
+            esac
+          done < requirements/konflux-runtime-rpms.txt
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs "${rpms[@]}"
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/setup-python
         id: setup-python
