@@ -46,46 +46,9 @@ WORKDIR /app
 USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
-COPY requirements/konflux-runtime-rpms.txt /tmp/konflux-runtime-rpms.txt
-COPY requirements/epel.repo /tmp/epel.repo
-COPY requirements/RPM-GPG-KEY-EPEL-9 /tmp/RPM-GPG-KEY-EPEL-9
-COPY requirements/centos-stream.repo /tmp/centos-stream.repo
-COPY requirements/RPM-GPG-KEY-centosofficial /tmp/RPM-GPG-KEY-centosofficial
 RUN set -eux; \
-    rpms=; \
-    while IFS= read -r line || [ -n "$line" ]; do \
-      case "$line" in \
-        ''|'#'*) continue ;; \
-        *) rpms="$rpms $line" ;; \
-      esac; \
-    done < /tmp/konflux-runtime-rpms.txt; \
-    # Hermeto injects local repos with gpgcheck=1 and no gpgkey URL.
-    # UBI packages verify with keys already in ubi-minimal. EPEL re2/thrift
-    # and Stream snappy do not, so import those keys in both hermetic and
-    # non-hermetic builds before microdnf.
-    # Key: Fedora EPEL 9 FF8AD1344597106ECE813B918A3872BF3228467C
-    echo "fcf0eab4f05a1c0de6363ac4b707600a27a9d774e9b491059e59e6921b255a84  /tmp/RPM-GPG-KEY-EPEL-9" \
-      | sha256sum -c; \
-    rpm --import /tmp/RPM-GPG-KEY-EPEL-9; \
-    # Key: CentOS Official 99DB70FAE1D7CE227FB6488205B555B38483C65D
-    echo "5af55449d6c9bc594e2e2fb7222374cb25a8ad2d8ea6ce3de894a3201944daa2  /tmp/RPM-GPG-KEY-centosofficial" \
-      | sha256sum -c; \
-    rpm --import /tmp/RPM-GPG-KEY-centosofficial; \
-    if [ -f /cachi2/cachi2.env ]; then \
-      . /cachi2/cachi2.env; \
-    else \
-      # Non-hermetic builds (GHA docker build) have no RPM prefetch.
-      # EPEL supplies re2/thrift; CentOS Stream BaseOS supplies snappy
-      # (includepkgs=snappy). Hermetic Konflux installs those from
-      # rpms.lock.yaml via /cachi2 instead.
-      cp /tmp/epel.repo /etc/yum.repos.d/epel.repo; \
-      sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-EPEL-9|' \
-        /etc/yum.repos.d/epel.repo; \
-      cp /tmp/centos-stream.repo /etc/yum.repos.d/centos-stream.repo; \
-      sed -i 's|^gpgkey = .*|gpgkey = file:///tmp/RPM-GPG-KEY-centosofficial|' \
-        /etc/yum.repos.d/centos-stream.repo; \
-    fi; \
-    microdnf install -y --setopt=tsflags=nodocs $rpms && \
+    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads sqlite && \
+    if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
         -r /tmp/konflux-aipcc-requirements.txt && \
     python3.12 -m pip install --no-cache-dir --no-deps \
@@ -97,10 +60,7 @@ RUN set -eux; \
         /tmp/dist/psycopg2-*.whl \
         /tmp/dist/starlette-*.whl && \
     microdnf clean all && \
-    rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt \
-      /tmp/konflux-runtime-rpms.txt /tmp/epel.repo /tmp/RPM-GPG-KEY-EPEL-9 \
-      /tmp/centos-stream.repo /tmp/RPM-GPG-KEY-centosofficial \
-      /etc/yum.repos.d/epel.repo /etc/yum.repos.d/centos-stream.repo
+    rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt
 
 # Copy built UI from builder stage
 COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build

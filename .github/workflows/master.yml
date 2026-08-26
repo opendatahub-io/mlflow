@@ -83,20 +83,22 @@ jobs:
         run: git config --global --add safe.directory "$(pwd)"
       - name: Install runtime RPMs
         run: |
-          # Live DNF for unit-test CI. Hermetic Konflux still prefetches from
-          # requirements/rpms.lock.yaml. python3.12 is provided by setup-python.
-          rpm --import requirements/RPM-GPG-KEY-EPEL-9 \
-            requirements/RPM-GPG-KEY-centosofficial
-          cp requirements/epel.repo /etc/yum.repos.d/epel.repo
-          cp requirements/centos-stream.repo /etc/yum.repos.d/centos-stream.repo
-          rpms=()
-          while IFS= read -r line || [ -n "$line" ]; do
-            case "$line" in
-              ''|'#'*|python3.12|python3.12-pip) continue ;;
-              *) rpms+=("$line") ;;
-            esac
-          done < requirements/konflux-runtime-rpms.txt
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs "${rpms[@]}"
+          # Live DNF for unit-test CI only. AIPCC pyarrow needs EPEL
+          # thrift/re2 and Stream snappy. python3.12 comes from setup-python.
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
+            https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+          cat > /etc/yum.repos.d/centos-stream-snappy.repo <<'EOF'
+          [centos-stream-9-baseos]
+          name = CentOS Stream 9 - BaseOS - $basearch
+          baseurl = https://mirror.stream.centos.org/9-stream/BaseOS/$basearch/os/
+          enabled = 1
+          gpgcheck = 1
+          gpgkey = https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official-SHA256
+          includepkgs = snappy
+          EOF
+          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
+            freetype libgomp libjpeg-turbo libtiff openblas-threads openjpeg2 \
+            postgresql-libs re2 snappy sqlite thrift utf8proc
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/setup-python
         id: setup-python
