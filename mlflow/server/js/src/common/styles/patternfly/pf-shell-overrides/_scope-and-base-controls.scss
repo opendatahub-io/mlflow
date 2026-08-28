@@ -427,7 +427,7 @@
 
     label.du-bois-light-radio-button-wrapper,
     label.du-bois-dark-radio-button-wrapper {
-      border: var(--pf-t--global--border--width--control--default) solid var(--pf-t--global--border--color--default) !important;
+      border: 0 !important;
       padding-block: var(--pf-t--global--spacer--xs) !important;
       padding-inline: var(--pf-t--global--spacer--md) !important;
       font-size: var(--pf-t--global--font--size--body--default);
@@ -436,9 +436,35 @@
       background-color: transparent !important;
       box-shadow: none !important;
       border-radius: 0;
+      position: relative;
+
+      --_tg-before-bw: var(--pf-t--global--border--width--control--default);
+
+      &::before,
+      &::after {
+        position: absolute;
+        inset: 0 !important;
+        pointer-events: none;
+        content: '' !important;
+        border-style: solid;
+        border-radius: inherit;
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        background: none !important;
+        padding: 0 !important;
+        transform: none !important;
+      }
 
       &::before {
-        display: none !important;
+        border-width: var(--_tg-before-bw);
+        border-color: var(--pf-t--global--border--color--control--default);
+      }
+
+      &::after {
+        inset: var(--_tg-before-bw) !important;
+        border-color: transparent;
+        border-width: 0;
       }
 
       span {
@@ -454,12 +480,23 @@
       &:hover:not(.du-bois-light-radio-button-wrapper-disabled):not(.du-bois-dark-radio-button-wrapper-disabled):not(
           .du-bois-light-radio-button-wrapper-checked
         ):not(.du-bois-dark-radio-button-wrapper-checked) {
-        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
-        border-color: var(--pf-t--global--border--color--default) !important;
+        background-color: var(--pf-t--global--color--brand--subtle--default) !important;
+        color: var(--pf-t--global--text--color--on-brand--subtle--default) !important;
+        z-index: var(--pf-t--global--z-index--xs);
+
+        &::before {
+          border-color: var(--pf-t--global--border--color--brand--subtle--hover);
+        }
+
+        &::after {
+          border-width: var(--pf-t--global--border--width--high-contrast--regular);
+          border-color: var(--pf-t--global--border--color--brand--subtle--hover);
+        }
       }
 
       &:first-of-type {
-        border-radius: var(--pf-t--global--border--radius--tiny) 0 0 var(--pf-t--global--border--radius--tiny);
+        border-radius: var(--pf-t--global--border--radius--control--default) 0 0
+          var(--pf-t--global--border--radius--control--default);
       }
 
       & + label {
@@ -467,15 +504,25 @@
       }
 
       &:last-of-type {
-        border-radius: 0 var(--pf-t--global--border--radius--tiny) var(--pf-t--global--border--radius--tiny) 0;
+        border-radius: 0 var(--pf-t--global--border--radius--control--default)
+          var(--pf-t--global--border--radius--control--default) 0;
       }
 
       &.du-bois-light-radio-button-wrapper-checked,
       &.du-bois-dark-radio-button-wrapper-checked {
-        background-color: var(--pf-t--global--color--brand--default) !important;
-        border-color: var(--pf-t--global--color--brand--default) !important;
-        color: var(--pf-t--global--text--color--on-brand--default) !important;
-        z-index: 100;
+        --_tg-before-bw: var(--pf-t--global--border--width--high-contrast--regular);
+        background-color: var(--pf-t--global--color--brand--subtle--default) !important;
+        color: var(--pf-t--global--text--color--on-brand--subtle--default) !important;
+        z-index: var(--pf-t--global--z-index--xs);
+
+        &::before {
+          border-color: var(--pf-t--global--border--color--brand--subtle--clicked);
+        }
+
+        &::after {
+          border-color: var(--pf-t--global--border--color--brand--subtle--clicked);
+          border-width: var(--pf-t--global--border--width--control--clicked);
+        }
       }
 
       &.du-bois-light-radio-button-wrapper-disabled,

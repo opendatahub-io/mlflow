@@ -454,7 +454,7 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
   /* Workflow type switch — PF-styled segmented toggle. */
   div:has(> div:first-child:not([role])):has(> div[role='button'][aria-pressed='true']):has(
       > div[role='button'][aria-pressed='false']
-    ):has(> div[role='button']:nth-child(2)):has(> div[role='button']:nth-child(3)):not(:has(> div:nth-child(4))) {
+    ):has(> div[role='button']:nth-child(2)):has(> div[role='button']:nth-child(3)) {
     border: none !important;
     background-color: transparent !important;
 
@@ -465,13 +465,37 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     > div[role='button'] {
       justify-content: center;
       text-align: center;
-      border: var(--pf-t--global--border--width--control--default) solid var(--pf-t--global--border--color--default) !important;
+      border: 0 !important;
       padding-block: var(--pf-t--global--spacer--xs);
       padding-inline: var(--pf-t--global--spacer--md);
       font-size: var(--pf-t--global--font--size--body--default);
       line-height: var(--pf-t--global--font--line-height--body);
       color: var(--pf-t--global--text--color--regular);
       background-color: transparent;
+      position: relative;
+
+      --_tg-before-bw: var(--pf-t--global--border--width--control--default);
+
+      &::before,
+      &::after {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: '';
+        border-style: solid;
+        border-radius: inherit;
+      }
+
+      &::before {
+        border-width: var(--_tg-before-bw);
+        border-color: var(--pf-t--global--border--color--control--default);
+      }
+
+      &::after {
+        inset: var(--_tg-before-bw);
+        border-color: transparent;
+        border-width: 0;
+      }
 
       span,
       .du-bois-light-typography,
@@ -480,27 +504,53 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
       }
 
       &:hover:not([aria-pressed='true']) {
-        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+        background-color: var(--pf-t--global--color--brand--subtle--default) !important;
+        color: var(--pf-t--global--text--color--on-brand--subtle--default) !important;
+        z-index: var(--pf-t--global--z-index--xs);
+
+        &::before {
+          border-color: var(--pf-t--global--border--color--brand--subtle--hover);
+        }
+
+        &::after {
+          border-width: var(--pf-t--global--border--width--high-contrast--regular);
+          border-color: var(--pf-t--global--border--color--brand--subtle--hover);
+        }
       }
     }
 
-    /* Left option */
-    > div[role='button']:nth-child(2) {
-      border-radius: var(--pf-t--global--border--radius--tiny) 0 0 var(--pf-t--global--border--radius--tiny);
+    /* Adjacent toggle buttons overlap borders */
+    > div[role='button'] + div[role='button'] {
+      margin-inline-start: calc(-1 * var(--pf-t--global--border--width--control--default));
     }
 
-    /* Right option */
-    > div[role='button']:nth-child(3) {
-      margin-inline-start: calc(-1 * var(--pf-t--global--border--width--control--default));
-      border-radius: 0 var(--pf-t--global--border--radius--tiny) var(--pf-t--global--border--radius--tiny) 0;
+    /* First toggle button — immediately after the hidden label div */
+    > div:not([role]) + div[role='button'] {
+      border-radius: var(--pf-t--global--border--radius--control--default) 0 0
+        var(--pf-t--global--border--radius--control--default);
+    }
+
+    /* Last toggle button */
+    > div[role='button']:last-child {
+      border-radius: 0 var(--pf-t--global--border--radius--control--default)
+        var(--pf-t--global--border--radius--control--default) 0;
     }
 
     /* Selected state */
     > div[role='button'][aria-pressed='true'] {
-      background-color: var(--pf-t--global--color--brand--default);
-      border-color: var(--pf-t--global--color--brand--default) !important;
-      color: var(--pf-t--global--text--color--on-brand--default);
+      --_tg-before-bw: var(--pf-t--global--border--width--high-contrast--regular);
+      background-color: var(--pf-t--global--color--brand--subtle--default);
+      color: var(--pf-t--global--text--color--on-brand--subtle--default);
       z-index: var(--pf-t--global--z-index--xs);
+
+      &::before {
+        border-color: var(--pf-t--global--border--color--brand--subtle--clicked);
+      }
+
+      &::after {
+        border-color: var(--pf-t--global--border--color--brand--subtle--clicked);
+        border-width: var(--pf-t--global--border--width--control--clicked);
+      }
     }
   }
 
