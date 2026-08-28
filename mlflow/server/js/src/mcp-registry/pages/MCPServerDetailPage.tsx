@@ -267,6 +267,18 @@ const MCPServerDetailPage = () => {
         buttons={
           canUpdate || canDelete ? (
             <>
+              {canUpdate && (
+                <Button
+                  componentId="mlflow.mcp_registry.detail.create_version"
+                  type="primary"
+                  onClick={openCreateVersionModal}
+                >
+                  <FormattedMessage
+                    defaultMessage="Create new version"
+                    description="MCP server detail create version button"
+                  />
+                </Button>
+              )}
               {(canUpdate || canDelete) && (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
@@ -301,18 +313,6 @@ const MCPServerDetailPage = () => {
                     )}
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
-              )}
-              {canUpdate && (
-                <Button
-                  componentId="mlflow.mcp_registry.detail.create_version"
-                  type="primary"
-                  onClick={openCreateVersionModal}
-                >
-                  <FormattedMessage
-                    defaultMessage="Create new version"
-                    description="MCP server detail create version button"
-                  />
-                </Button>
               )}
             </>
           ) : undefined
