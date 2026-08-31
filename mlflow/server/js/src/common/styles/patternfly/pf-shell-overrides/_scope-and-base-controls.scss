@@ -1,4 +1,5 @@
 @use './icons' as icons;
+@use './action-groups' as action-groups;
 
 .pf-shell-container,
 .pf-shell-root.mlflow-federated {
@@ -68,12 +69,16 @@
       .du-bois-light-btn-icon-only
     ):not(.du-bois-light-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
       [aria-label='Remove filter']
-    ):not(.ag-cell *):not(.ag-grid-sticky *),
+    ):not(:has(~ button.du-bois-light-btn-primary, ~ * > button.du-bois-light-btn-primary)):not(.ag-cell *):not(
+      .ag-grid-sticky *
+    ):not(.du-bois-light-modal-footer *):not(.du-bois-dark-modal-footer *),
   button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous):not(
       .du-bois-dark-btn-icon-only
     ):not(.du-bois-dark-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
       [aria-label='Remove filter']
-    ):not(.ag-cell *):not(.ag-grid-sticky *) {
+    ):not(:has(~ button.du-bois-dark-btn-primary, ~ * > button.du-bois-dark-btn-primary)):not(.ag-cell *):not(
+      .ag-grid-sticky *
+    ):not(.du-bois-light-modal-footer *):not(.du-bois-dark-modal-footer *) {
     color: var(--pf-t--global--text--color--brand--default) !important;
     border: none !important; // Remove native border
     box-shadow: inset 0 0 0 var(--pf-t--global--border--width--action--default)
@@ -183,9 +188,75 @@
     border-radius: var(--pf-t--global--border--radius--pill) !important;
   }
 
-  button.du-bois-light-btn.du-bois-light-btn-link,
-  button.du-bois-dark-btn.du-bois-dark-btn-link {
-    background-color: transparent !important;
+  button.du-bois-light-btn.du-bois-light-btn-link:not(.du-bois-light-btn-icon-only),
+  button.du-bois-dark-btn.du-bois-dark-btn-link:not(.du-bois-dark-btn-icon-only) {
+    background-color: var(--pf-t--global--background--color--action--plain--default) !important;
+    color: var(--pf-t--global--text--color--brand--default) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    border-start-start-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    border-start-end-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    border-end-start-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    border-end-end-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    padding-inline-start: var(--pf-t--global--spacer--action--horizontal--plain--default) !important;
+    padding-inline-end: var(--pf-t--global--spacer--action--horizontal--plain--default) !important;
+
+    span > svg,
+    span[role='img'] {
+      color: var(--pf-t--global--icon--color--brand--default) !important;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      color: var(--pf-t--global--text--color--brand--hover) !important;
+
+      span > svg,
+      span[role='img'] {
+        color: var(--pf-t--global--text--color--brand--hover) !important;
+      }
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--pf-t--global--background--color--action--plain--clicked) !important;
+      color: var(--pf-t--global--text--color--brand--clicked) !important;
+    }
+
+    &:disabled {
+      color: var(--pf-t--global--text--color--on-disabled) !important;
+      background-color: var(--pf-t--global--background--color--disabled--default) !important;
+
+      span > svg,
+      span[role='img'] {
+        color: var(--pf-t--global--icon--color--on-disabled) !important;
+      }
+    }
+
+    &.du-bois-light-btn-dangerous,
+    &.du-bois-dark-btn-dangerous {
+      color: var(--pf-t--global--text--color--status--danger--default) !important;
+      background-color: var(--pf-t--global--background--color--action--plain--default) !important;
+
+      span > svg,
+      span[role='img'] {
+        color: var(--pf-t--global--text--color--status--danger--default) !important;
+      }
+
+      &:hover:not(:disabled) {
+        color: var(--pf-t--global--text--color--status--danger--hover) !important;
+        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+
+        span > svg,
+        span[role='img'] {
+          color: var(--pf-t--global--text--color--status--danger--hover) !important;
+        }
+      }
+
+      &:active:not(:disabled) {
+        color: var(--pf-t--global--text--color--status--danger--clicked) !important;
+        background-color: var(--pf-t--global--background--color--action--plain--clicked) !important;
+      }
+    }
   }
 
   button.du-bois-dark-btn.du-bois-dark-btn-icon-only:enabled:not(.du-bois-dark-btn-sm):not(.du-bois-dark-btn-dangerous),
@@ -228,9 +299,9 @@
     color: var(--pf-t--global--text--color--brand--default) !important;
   }
 
-  button.du-bois-light-btn-dangerous:not(.du-bois-light-btn-icon-only),
+  button.du-bois-light-btn-dangerous:not(.du-bois-light-btn-icon-only):not(.du-bois-light-btn-link),
   button.du-bois-light-btn-dangerous.du-bois-light-btn-primary,
-  button.du-bois-dark-btn-dangerous:not(.du-bois-dark-btn-icon-only),
+  button.du-bois-dark-btn-dangerous:not(.du-bois-dark-btn-icon-only):not(.du-bois-dark-btn-link),
   button.du-bois-dark-btn-dangerous.du-bois-dark-btn-primary {
     background-color: var(--pf-t--global--color--status--danger--default) !important;
     color: var(--pf-t--global--text--color--status--on-danger--default) !important;
@@ -257,6 +328,18 @@
         border-color: transparent !important;
       }
     }
+  }
+
+  /* Normalize page and modal action groups, including tooltip-wrapped primary buttons. */
+  :is(div, form):has(> button.du-bois-light-btn:not(.du-bois-light-btn-primary):not(.du-bois-light-btn-dangerous)):has(
+      > button.du-bois-light-btn-primary,
+      > * > button.du-bois-light-btn-primary
+    ),
+  :is(div, form):has(> button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous)):has(
+      > button.du-bois-dark-btn-primary,
+      > * > button.du-bois-dark-btn-primary
+    ) {
+    @include action-groups.pf-action-group;
   }
 
   // Danger icon-only buttons — transparent background, danger-colored icon

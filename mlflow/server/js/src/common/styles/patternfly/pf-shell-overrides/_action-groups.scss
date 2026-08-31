@@ -1,0 +1,43 @@
+@mixin pf-action-group {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: var(--pf-t--global--spacer--gap--action-to-action--default);
+  text-align: left !important;
+
+  .du-bois-light-btn + .du-bois-light-btn:not(.du-bois-light-dropdown-trigger),
+  .du-bois-dark-btn + .du-bois-dark-btn:not(.du-bois-dark-dropdown-trigger) {
+    margin-left: 0 !important;
+  }
+
+  /* PatternFly action groups place the primary or danger action first. */
+  > .du-bois-light-btn-primary,
+  > .du-bois-dark-btn-primary,
+  > .du-bois-light-btn-dangerous.du-bois-light-btn-primary,
+  > .du-bois-dark-btn-dangerous.du-bois-dark-btn-primary,
+  > :has(> button.du-bois-light-btn-primary),
+  > :has(> button.du-bois-dark-btn-primary) {
+    order: -1;
+  }
+
+  /* PatternFly renders secondary actions in a footer as link buttons. */
+  button.du-bois-light-btn:not(.du-bois-light-btn-primary):not(.du-bois-light-btn-dangerous),
+  button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous) {
+    background-color: var(--pf-t--global--background--color--action--plain--default) !important;
+    color: var(--pf-t--global--text--color--brand--default) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    padding-inline: var(--pf-t--global--spacer--action--horizontal--plain--default) !important;
+
+    &:hover:not(:disabled) {
+      background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      color: var(--pf-t--global--text--color--brand--hover) !important;
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--pf-t--global--background--color--action--plain--clicked) !important;
+      color: var(--pf-t--global--text--color--brand--clicked) !important;
+    }
+  }
+}

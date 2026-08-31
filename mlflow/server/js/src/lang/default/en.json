@@ -3655,6 +3655,10 @@
     "defaultMessage": "Capture and debug LLM interactions and agent workflows.",
     "description": "Feature card summary for tracing"
   },
+  "EuvZIb": {
+    "defaultMessage": "Cancel",
+    "description": "Edit server modal cancel button"
+  },
   "Ev4S86": {
     "defaultMessage": "e.g. 512",
     "description": "Placeholder for the max-tokens input on the playground parameters panel"
