@@ -15,10 +15,17 @@ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys ~/.ssh/id_rsa
 
 # sshd authenticates root from /root/.ssh, not $HOME (which may differ).
-mkdir -p /root/.ssh
-chmod 700 /root/.ssh
-cat ~/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
-chmod 600 /root/.ssh/authorized_keys
+# Only mirror when we are root so a local non-root run can still use this
+# helper (master used $(whoami)@localhost).
+if [ "$(id -u)" -eq 0 ]; then
+  mkdir -p /root/.ssh
+  chmod 700 /root/.ssh
+  cat ~/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+  chmod 600 /root/.ssh/authorized_keys
+  ssh_user=root
+else
+  ssh_user=$(whoami)
+fi
 
 # Wait until sshd accepts connections. In the UBI container job, sshd is
 # started in an earlier step and may not be listening yet (or may have died).
@@ -37,8 +44,9 @@ done
 ssh-keyscan -H -t rsa,ecdsa,ed25519 localhost 127.0.0.1 >> ~/.ssh/known_hosts 2>/dev/null || true
 chmod 600 ~/.ssh/known_hosts
 
-# Test as root with the client identity in $HOME/.ssh (not /root/.ssh).
+# Probe with the client identity in $HOME/.ssh. UBI CI is root with
+# HOME=/github/home; local runs use the current account.
 ssh -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes \
   -o PreferredAuthentications=publickey \
-  -i ~/.ssh/id_rsa root@127.0.0.1 exit
+  -i ~/.ssh/id_rsa "${ssh_user}@127.0.0.1" exit
 export LOGNAME=$(whoami)

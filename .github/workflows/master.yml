@@ -83,8 +83,11 @@ jobs:
         run: git config --global --add safe.directory "$(pwd)"
       - name: Install runtime RPMs
         run: |
-          # Live DNF for unit-test CI only. AIPCC pyarrow needs EPEL
-          # thrift/re2 and Stream snappy. python3.12 comes from setup-python.
+          # Live DNF for unit-test CI only. These packages are not in
+          # Dockerfile.konflux / rpms.in.yaml: image RPM expansion is out of
+          # scope for this ticket. AIPCC pyarrow needs EPEL thrift/re2 and
+          # Stream snappy in this job so the overlayed wheel can load.
+          # python3.12 comes from setup-python.
           dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
             https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
           cat > /etc/yum.repos.d/centos-stream-snappy.repo <<'EOF'

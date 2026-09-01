@@ -42,10 +42,7 @@ def main():
     # overlays image pins and does not install extra-ml-requirements.txt.
     failed_to_import = []
     for package in sorted(ml_packages):
-        try:
-            spec = importlib.util.find_spec(package)
-        except (ImportError, ModuleNotFoundError, ValueError):
-            spec = None
+        spec = importlib.util.find_spec(package.split(".", 1)[0])
         if spec is None:
             logger.info("Skipping import check for %s (not installed)", package)
             continue
