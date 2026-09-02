@@ -1,9 +1,12 @@
 approvers:
-  - HumairAK
-  - mprahl
-  - Gkrumbach07
   - DaoDaoNoCode
+  - dbasunag
+  - Gkrumbach07
+  - HumairAK
+  - jonburdo
+  - mprahl
   - nananosirova
+  - sduvvuri1603
 
 reviewers:
   - HumairAK
