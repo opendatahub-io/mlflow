@@ -69,16 +69,16 @@
       .du-bois-light-btn-icon-only
     ):not(.du-bois-light-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
       [aria-label='Remove filter']
-    ):not(:has(~ button.du-bois-light-btn-primary, ~ * > button.du-bois-light-btn-primary)):not(.ag-cell *):not(
-      .ag-grid-sticky *
-    ):not(.du-bois-light-modal-footer *):not(.du-bois-dark-modal-footer *),
+    ):not([data-mlflow-ui='action-bar'] *):not(.ag-cell *):not(.ag-grid-sticky *):not(
+      .du-bois-light-modal-footer *
+    ):not(.du-bois-dark-modal-footer *),
   button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous):not(
       .du-bois-dark-btn-icon-only
     ):not(.du-bois-dark-btn-link):not([type='submit']):not([aria-label='Toggle visibility of rows']):not(
       [aria-label='Remove filter']
-    ):not(:has(~ button.du-bois-dark-btn-primary, ~ * > button.du-bois-dark-btn-primary)):not(.ag-cell *):not(
-      .ag-grid-sticky *
-    ):not(.du-bois-light-modal-footer *):not(.du-bois-dark-modal-footer *) {
+    ):not([data-mlflow-ui='action-bar'] *):not(.ag-cell *):not(.ag-grid-sticky *):not(
+      .du-bois-light-modal-footer *
+    ):not(.du-bois-dark-modal-footer *) {
     color: var(--pf-t--global--text--color--brand--default) !important;
     border: none !important; // Remove native border
     box-shadow: inset 0 0 0 var(--pf-t--global--border--width--action--default)
@@ -330,15 +330,7 @@
     }
   }
 
-  /* Normalize page and modal action groups, including tooltip-wrapped primary buttons. */
-  :is(div, form):has(> button.du-bois-light-btn:not(.du-bois-light-btn-primary):not(.du-bois-light-btn-dangerous)):has(
-      > button.du-bois-light-btn-primary,
-      > * > button.du-bois-light-btn-primary
-    ),
-  :is(div, form):has(> button.du-bois-dark-btn:not(.du-bois-dark-btn-primary):not(.du-bois-dark-btn-dangerous)):has(
-      > button.du-bois-dark-btn-primary,
-      > * > button.du-bois-dark-btn-primary
-    ) {
+  [data-mlflow-ui='action-bar'] {
     @include action-groups.pf-action-group;
   }
 

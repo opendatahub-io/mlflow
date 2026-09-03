@@ -3435,6 +3435,10 @@
     "defaultMessage": "Cancel",
     "description": "Button to cancel editing"
   },
+  "DAnoyO": {
+    "defaultMessage": "MCP registry",
+    "description": "Sidebar link for MCP registry page"
+  },
   "DCC164": {
     "defaultMessage": "GenAI",
     "description": "Label for GenAI workflow type option"

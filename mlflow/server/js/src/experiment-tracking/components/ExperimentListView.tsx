@@ -194,7 +194,7 @@ export const ExperimentListView = () => {
         />
       )}
       <div css={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <TableFilterLayout>
+        <TableFilterLayout actions={isEmbedded ? headerButtons : undefined}>
           <TableFilterInput
             data-testid="search-experiment-input"
             placeholder={intl.formatMessage({
@@ -230,17 +230,6 @@ export const ExperimentListView = () => {
               <ExperimentListViewTagsFilter tagsFilter={tagsFilter} setTagsFilter={setTagsFilter} />
             </Popover.Content>
           </Popover.Root>
-          {isEmbedded && (
-            <div
-              css={{
-                marginLeft: 'auto',
-                display: 'flex',
-                gap: theme.spacing.sm,
-              }}
-            >
-              {headerButtons}
-            </div>
-          )}
         </TableFilterLayout>
         <ExperimentListTable
           experiments={experiments}

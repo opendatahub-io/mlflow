@@ -27,6 +27,7 @@ import { getRouteDefs as getCommonRouteDefs } from './common/route-defs';
 import { getGatewayRouteDefs } from './gateway/route-defs';
 import { getAccountRouteDefs } from './account/route-defs';
 import { getAdminRouteDefs } from './admin/route-defs';
+import { getMCPRegistryRouteDefs } from './mcp-registry/route-defs';
 import { DEV_USER_SWITCHER_ENABLED } from './admin/DevUserSwitcher';
 import { shouldEnableAIGateway } from './common/utils/FeatureUtils';
 import { useInitializeExperimentRunColors } from './experiment-tracking/components/experiment-page/hooks/useExperimentRunColor';
@@ -235,6 +236,7 @@ export const MlflowRouter = () => {
       ...getExperimentTrackingRouteDefs(),
       ...getModelRegistryRouteDefs(),
       ...(shouldEnableAIGateway() ? getGatewayRouteDefs() : []),
+      ...getMCPRegistryRouteDefs(),
       ...getAccountRouteDefs(),
       ...getAdminRouteDefs(),
       ...getCommonRouteDefs(),

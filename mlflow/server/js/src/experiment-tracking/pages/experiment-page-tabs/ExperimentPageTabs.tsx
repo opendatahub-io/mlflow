@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ParagraphSkeleton, useDesignSystemTheme } from '@databricks/design-system';
 import { PredefinedError } from '@databricks/web-shared/errors';
 import invariant from 'invariant';
@@ -28,7 +28,6 @@ import Routes, { RoutePaths } from '../../routes';
 import { useGetExperimentPageActiveTabByRoute } from '../../components/experiment-page/hooks/useGetExperimentPageActiveTabByRoute';
 import { useNavigateToExperimentPageTab } from '../../components/experiment-page/hooks/useNavigateToExperimentPageTab';
 import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
-import { useWorkflowType, WorkflowType } from '@mlflow/mlflow/src/common/contexts/WorkflowTypeContext';
 import { ExperimentPageSideNav, ExperimentPageSideNavSkeleton } from './side-nav/ExperimentPageSideNav';
 import { HeaderVisibilityProvider, useHeaderVisibility } from './ExperimentPageHeaderVisibilityContext';
 import { ExperimentViewSavedViewsButton } from '../../components/experiment-page/components/header/ExperimentViewSavedViewsButton';
@@ -98,7 +97,6 @@ const ExperimentPageTabsImpl = () => {
   const enableWorkflowBasedNavigation = shouldEnableWorkflowBasedNavigation();
   const isEmbedded = useIsIntegrated();
   const showExperimentPageSideNav = !enableWorkflowBasedNavigation || isEmbedded;
-  const { workflowType } = useWorkflowType();
 
   const {
     inferredExperimentKind,
@@ -125,26 +123,6 @@ const ExperimentPageTabsImpl = () => {
     enabled: matchedExperimentPageWithoutTab && !isExperimentKindInferenceEnabled,
     experimentId,
   });
-
-  // In embedded mode, WorkflowTypeProvider can't access experimentId (it sits above
-  // routes), so its navigate-on-change never fires. Handle it here instead: when
-  // the user toggles the workflow type, navigate to the appropriate default tab.
-  const prevWorkflowTypeRef = useRef(workflowType);
-  useEffect(() => {
-    if (prevWorkflowTypeRef.current === workflowType) return;
-    prevWorkflowTypeRef.current = workflowType;
-
-    if (!isEmbedded) return;
-
-    const targetTab =
-      workflowType === WorkflowType.GENAI
-        ? shouldEnableExperimentOverviewTab() && isFileStore === false
-          ? ExperimentPageTabName.Overview
-          : ExperimentPageTabName.Traces
-        : ExperimentPageTabName.Runs;
-
-    navigate(Routes.getExperimentPageTabRoute(experimentId, targetTab), { replace: true });
-  }, [workflowType, isEmbedded, experimentId, navigate, isFileStore]);
 
   useEffect(() => {
     // If the experiment kind is inferred, we want to navigate to the appropriate tab.

@@ -10,6 +10,7 @@
  */
 import React from 'react';
 import { Route, createLazyRouteElement } from '../../common/utils/RoutingUtils';
+import { WorkflowTypeProvider } from '../../common/contexts/WorkflowTypeContext';
 
 /**
  * Returns Route elements for experiment tracking pages.
@@ -26,9 +27,13 @@ export const getExperimentTrackingRouteElements = () => (
     {/* Single experiment with tabs */}
     <Route
       path=":experimentId"
-      element={createLazyRouteElement(
-        () => import('../../experiment-tracking/pages/experiment-page-tabs/ExperimentPageTabs'),
-      )}
+      element={
+        <WorkflowTypeProvider>
+          {createLazyRouteElement(
+            () => import('../../experiment-tracking/pages/experiment-page-tabs/ExperimentPageTabs'),
+          )}
+        </WorkflowTypeProvider>
+      }
     >
       <Route
         path="overview/:overviewTab?"
@@ -59,6 +64,12 @@ export const getExperimentTrackingRouteElements = () => (
         element={createLazyRouteElement(
           () =>
             import('../../experiment-tracking/pages/experiment-chat-sessions/single-chat-view/ExperimentSingleChatSessionPage'),
+        )}
+      />
+      <Route
+        path="review-queue"
+        element={createLazyRouteElement(
+          () => import('../../experiment-tracking/pages/experiment-review-queue/ExperimentReviewQueuePage'),
         )}
       />
       <Route

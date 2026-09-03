@@ -2279,6 +2279,7 @@ module.exports = {
   "mlflow.sidebar.logo_home_link": "",
   "mlflow.sidebar.logout": "",
   "mlflow.sidebar.manage": "",
+  "mlflow.sidebar.mcp_registry_tab_link": "",
   "mlflow.sidebar.models_tab_link": "",
   "mlflow.sidebar.prompts_tab_link": "",
   "mlflow.sidebar.settings_back_link": "",
