@@ -24,6 +24,7 @@ from mlflow.utils.mlflow_tags import (
 from tests.projects.utils import (
     TEST_DOCKER_PROJECT_DIR,
     docker_example_base_image,  # noqa: F401
+    requires_docker,
 )
 
 
@@ -289,6 +290,7 @@ def test_docker_run_args(docker_args):
         assert docker_command[docker_command.index(value) - 1] == f"--{flag}"
 
 
+@requires_docker
 def test_docker_build_image_local(tmp_path):
     client = docker.from_env()
     dockerfile = tmp_path.joinpath("Dockerfile")
@@ -314,6 +316,7 @@ entry_points:
     assert run.data.tags[MLFLOW_DOCKER_IMAGE_URI] == "my-python"
 
 
+@requires_docker
 def test_docker_build_image_remote(tmp_path):
     tmp_path.joinpath("MLproject").write_text(
         """

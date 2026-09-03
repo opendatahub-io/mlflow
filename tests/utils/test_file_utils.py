@@ -41,8 +41,10 @@ def test_mkdir(tmp_path):
     file_utils.mkdir(temp_dir, new_dir_name)
     assert os.listdir(temp_dir) == [new_dir_name]
 
-    with pytest.raises(OSError, match="bad directory"):
-        file_utils.mkdir("/   bad directory @ name ", "ouch")
+    # Root can create this path; the GHA UBI container job runs as root.
+    if not (hasattr(os, "geteuid") and os.geteuid() == 0):
+        with pytest.raises(OSError, match="bad directory"):
+            file_utils.mkdir("/   bad directory @ name ", "ouch")
 
     # does not raise if directory exists already
     file_utils.mkdir(temp_dir, new_dir_name)

@@ -373,6 +373,8 @@ def test_infer_pip_requirements_scopes_databricks_imports():
 
 
 def test_capture_imported_modules_include_deps_by_params():
+    pytest.importorskip("sklearn")
+
     class MyModel(mlflow.pyfunc.PythonModel):
         def predict(self, context, model_input, params=None):
             if params is not None:
@@ -459,7 +461,7 @@ def test_gateway_extra_not_captured_when_importing_deployment_client_only(monkey
 
 
 def test_warn_dependency_requirement_mismatches():
-    import sklearn
+    sklearn = pytest.importorskip("sklearn")
 
     with mock.patch("mlflow.utils.requirements_utils._logger.warning") as mock_warning:
         # Test case: all packages satisfy requirements.
@@ -662,6 +664,7 @@ def test_capture_imported_modules_raises_when_env_var_set(monkeypatch):
 
 
 def test_capture_imported_modules_correct(monkeypatch):
+    pytest.importorskip("sklearn")
     monkeypatch.setenv("MLFLOW_REQUIREMENTS_INFERENCE_RAISE_ERRORS", "true")
 
     class TestModel(mlflow.pyfunc.PythonModel):
