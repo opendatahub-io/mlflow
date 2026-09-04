@@ -15,12 +15,12 @@
 
 **Scaffolding commit:**
 
-| File                                      | Resolution                                                                                                         |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `.github/workflows/*.yml` (modify/delete) | ODH deletes upstream workflows (approval, autoformat, cross-version-tests, slow-tests, helm, etc.). `git rm` all.  |
-| `.github/workflows/master.yml`            | Remove Databricks-specific test steps.                                                                             |
-| `pyproject.toml` `[tool.uv]`              | Keep ODH's `exclude-newer = "P14D"` and extra `exclude-newer-package` entries. Take upstream's `required-version`. |
-| `uv.lock`                                 | Take ODH's `exclude-newer-span = "P14D"`.                                                                          |
+| File                                      | Resolution                                                                                                            |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/*.yml` (modify/delete) | Preserve the policy derived by `audit-workflow-policy.py "$SQUASH_BASE" "$CURRENT_VERSION"`; remove upstream-only CI. |
+| `.github/workflows/master.yml`            | Remove Databricks-specific test steps.                                                                                |
+| `pyproject.toml` `[tool.uv]`              | Keep ODH's `exclude-newer = "P14D"` and extra `exclude-newer-package` entries. Take upstream's `required-version`.    |
+| `uv.lock`                                 | Take ODH's `exclude-newer-span = "P14D"`.                                                                             |
 
 **UI commit:**
 

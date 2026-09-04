@@ -21,6 +21,8 @@ These break CI after every rebase. Fix them proactively before pushing.
 
 6. **Prettier formatting** — Pre-commit uses **prettier v2** (pinned in `.pre-commit-config.yaml`). Do NOT use `npx prettier` (installs v3, formats differently). Use `uv run pre-commit run prettier --files <file>` instead.
 
+7. **Workflow policy drift** — A deletion-only `keep:` commit can be missed while rebuilding the squashed scaffolding commit, and comparing the result only with the new upstream tag does not detect workflows restored from that tag. Run `.claude/skills/rebase-mlflow/audit-workflow-policy.py "$SQUASH_BASE" "$CURRENT_VERSION"` to derive the existing policy from Git history and review every reported workflow.
+
 ---
 
 ## Rebase: v3.14.0 → v3.15.2
@@ -47,6 +49,13 @@ These break CI after every rebase. Fix them proactively before pushing.
 - TypeScript compilation, CSS override audit, and `tests/server/test_gateway_disable.py` passed
 
 ### Post-rebase follow-up
+
+- **Workflow policy restoration:** Removed the new YAML wrappers for auto-close
+  and PR-size automation whose JavaScript implementations were intentionally
+  removed by PR #342. Also removed the upstream-only heads-up workflow, which
+  is explicitly gated to `mlflow/mlflow` and cannot run meaningfully in the ODH
+  fork. The rebase audit now derives these removals from Git history so future
+  rebases preserve them without a hardcoded policy list.
 
 - **Reconciliation and CI fixes:** Reconciled ODH gateway-disable behavior with
   v3.15.2 handler guards while retaining workspace artifact-path scoping.

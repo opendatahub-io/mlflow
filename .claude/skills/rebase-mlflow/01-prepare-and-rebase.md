@@ -176,13 +176,16 @@ Squash `keep:` commits into 3 categories, in this order:
     grep -n 'onWorkspaceChange' mlflow/server/js/src/workspaces/utils/WorkspaceUtils.ts
     ```
 
-10a. **Flag new upstream workflows** that were added by the rebase. Any workflow not relevant to the ODH fork should be deleted and squashed into the scaffolding commit:
+10a. **Audit the ODH workflow policy.** Derive the existing policy by comparing the old upstream release with the ODH master commit captured in `$SQUASH_BASE`, then verify that the rebase preserves it:
 
     ```bash
-    git diff $UPSTREAM_TAG..HEAD --name-only --diff-filter=A -- .github/workflows/
+    python3 .claude/skills/rebase-mlflow/audit-workflow-policy.py \
+      "$SQUASH_BASE" "$CURRENT_VERSION"
     ```
 
-    Review each new workflow — if it's Databricks-specific, upstream-only CI, or not applicable to the fork, `git rm` it and amend the scaffolding commit.
+    This audit has no duplicated workflow allowlist or denylist. It derives downstream-deleted `.github` paths, removed jobs, and removed workflow references from Git history. It also flags workflows absent from pre-rebase ODH master. A workflow restored from the target tag is not an added file relative to that tag, so the previous `git diff --diff-filter=A` check could miss it when a deletion-only `keep:` commit such as [PR #342](https://github.com/opendatahub-io/mlflow/pull/342) was omitted from the squash.
+
+    Review every reported workflow. If it is Databricks-specific, upstream-only CI, or not applicable to the fork, `git rm` it and amend the scaffolding commit. If ODH intentionally changes the workflow policy, make that policy change as a normal `keep:` commit so it becomes the baseline for future rebases.
 
 10b. **Check for files silently dropped by the rebase.** If git determined a squash commit was "empty" (e.g., `uv.lock` changes already in the target tag), it drops the entire commit — including any new files that were grouped into that commit. Compare the rebased branch against `$ODH_REMOTE/master` to find missing downstream files:
 
