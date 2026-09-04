@@ -20,11 +20,15 @@ kubernetes
 
 # Cross-arch constraints: pin packages to versions available on all target
 # architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
+cryptography==46.0.7
 matplotlib==3.10.8
+numpy==2.4.4
 pyarrow<23.0.1
-litellm<2,>=1.0.0
 pydantic==2.13.1
+scikit-learn==1.8.0
+sqlalchemy==2.0.49
 tokenizers==0.22.2
+yarl==1.23.0
 
 # Pillow 12.3.0+ fixes CVE-2026-59199 (and related Pillow CVEs) in the shipped runtime image.
 pillow>=12.3.0

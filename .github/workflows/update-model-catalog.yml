@@ -1,0 +1,84 @@
+name: Update Model Catalog
+
+on:
+  schedule:
+    - cron: "0 0 * * 1-5"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-model-catalog
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    if: github.repository == 'opendatahub-io/mlflow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: true
+
+      - name: Download the upstream model catalog release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          catalog_dir="mlflow/utils/model_catalog"
+          download_dir=$(mktemp -d)
+          trap 'rm -rf "$download_dir"' EXIT
+
+          gh api repos/mlflow/mlflow/releases/tags/model-catalog%2Flatest \
+            --jq '.assets[] | select(.name | endswith(".json")) | [.name, .url] | @tsv' \
+            > "$download_dir/assets.tsv"
+
+          test -s "$download_dir/assets.tsv"
+          while IFS=$'\t' read -r name url; do
+            case "$name" in
+              *[!A-Za-z0-9._-]* | .* | */* | *.json.json) exit 1 ;;
+              *.json) ;;
+              *) exit 1 ;;
+            esac
+            gh api --header 'Accept: application/octet-stream' "$url" > "$download_dir/$name"
+          done < "$download_dir/assets.tsv"
+
+          # Only catalog JSON assets are synchronized. This retains __init__.py and
+          # any other package files while handling upstream additions and removals.
+          rsync -a --delete --include='*.json' --exclude='*' "$download_dir/" "$catalog_dir/"
+
+      - name: Create or update catalog refresh pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          catalog_dir="mlflow/utils/model_catalog"
+          if git diff --quiet -- "$catalog_dir"; then
+            echo "The bundled catalog is already current."
+            exit 0
+          fi
+
+          branch="update-model-catalog"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add "$catalog_dir"
+          git commit -s -m 'Update model catalog from upstream release'
+          git push --force --set-upstream origin "$branch"
+
+          pr_number=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --title 'Update model catalog from upstream release' \
+              --body 'Automated refresh from MLflow model-catalog/latest release assets.' \
+              --reviewer HumairAK \
+              --reviewer mprahl
+          else
+            gh pr edit "$pr_number" --add-reviewer HumairAK --add-reviewer mprahl
+          fi
