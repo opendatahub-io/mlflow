@@ -6,6 +6,7 @@ import os
 import pathlib
 import posixpath
 import re
+import sys
 import tempfile
 import threading
 import time
@@ -78,6 +79,7 @@ from mlflow.entities.webhook import WebhookAction, WebhookEntity, WebhookEvent, 
 from mlflow.environment_variables import (
     MLFLOW_CREATE_MODEL_VERSION_SOURCE_VALIDATION_REGEX,
     MLFLOW_DEPLOYMENTS_TARGET,
+    MLFLOW_ENABLE_AI_GATEWAY,
     MLFLOW_ENABLE_WORKSPACES,
     MLFLOW_PRESIGNED_DOWNLOAD_URL_TTL_SECONDS,
 )
@@ -93,6 +95,7 @@ from mlflow.exceptions import (
 )
 from mlflow.gateway.budget import maybe_refresh_budget_policies
 from mlflow.gateway.budget_tracker import get_budget_tracker
+from mlflow.gateway.constants import GATEWAY_DISABLED_MESSAGE
 from mlflow.gateway.utils import is_valid_endpoint_name
 from mlflow.genai.label_schemas.label_schemas import LabelSchemaType, _input_from_proto
 from mlflow.genai.review_queues import ReviewItemType, ReviewQueueType, ReviewStatus
@@ -107,6 +110,7 @@ from mlflow.protos.databricks_pb2 import (
     INTERNAL_ERROR,
     INVALID_PARAMETER_VALUE,
     INVALID_STATE,
+    NOT_IMPLEMENTED,
     RESOURCE_DOES_NOT_EXIST,
 )
 from mlflow.protos.issues_pb2 import (
@@ -387,6 +391,7 @@ from mlflow.utils.providers import (
     get_provider_config_response,
 )
 from mlflow.utils.server_info import (
+    SERVER_INFO_FEATURES_ENABLED,
     SERVER_INFO_MULTIPART_DOWNLOADS_ENABLED,
     SERVER_INFO_MULTIPART_UPLOADS_ENABLED,
     SERVER_INFO_STORE_TYPE,
@@ -401,6 +406,7 @@ from mlflow.utils.validation import (
     _validate_batch_log_api_req,
     _validate_experiment_artifact_location,
     _validate_experiment_artifact_location_length,
+    _validate_experiment_id,
     _validate_trace_archival_location,
     _validate_trace_archival_retention_string,
     invalid_value,
@@ -1068,6 +1074,27 @@ def _validate_request_json_with_schema(
             )
 
 
+def _raw_request_has_field(field_name: str) -> bool:
+    """Check whether *field_name* was present in the raw HTTP request.
+
+    Protobuf ``repeated`` fields deserialise to ``[]`` whether the caller
+    sent an empty list *or* omitted the field entirely.  For auth-scoping
+    fields (e.g. ``experiment_ids``) the difference matters:
+
+    * absent  → no auth restriction (``None``)
+    * ``[]``  → deny-all (empty authorised set)
+
+    This helper inspects the raw Flask request (query-string for GET,
+    JSON body for POST) to distinguish the two cases.
+    """
+    try:
+        if request.method == "GET":
+            return field_name in request.args
+        return field_name in (request.get_json(force=True, silent=True) or {})
+    except RuntimeError:
+        return False
+
+
 def _get_request_message(request_message, flask_request=request, schema=None):
     if flask_request.method == "GET" and flask_request.args:
         # Convert atomic values of repeated fields to lists before calling protobuf deserialization.
@@ -1341,6 +1368,16 @@ def _disable_if_artifacts_only(func):
                 ),
                 503,
             )
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def _disable_if_gateway_disabled(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not MLFLOW_ENABLE_AI_GATEWAY.get():
+            raise MlflowException(GATEWAY_DISABLED_MESSAGE, NOT_IMPLEMENTED)
         return func(*args, **kwargs)
 
     return wrapper
@@ -3585,15 +3622,21 @@ def _update_webhook(webhook_id: str):
     webhook = _get_model_registry_store().update_webhook(
         webhook_id=webhook_id,
         name=request_message.name or None,
-        description=request_message.description or None,
+        description=(
+            request_message.description if request_message.HasField("description") else None
+        ),
         url=request_message.url or None,
         events=(
             [WebhookEvent.from_proto(e) for e in request_message.events]
             if request_message.events
             else None
         ),
-        secret=request_message.secret or None,
-        status=WebhookStatus.from_proto(request_message.status) if request_message.status else None,
+        secret=request_message.secret if request_message.HasField("secret") else None,
+        status=(
+            WebhookStatus.from_proto(request_message.status)
+            if request_message.HasField("status")
+            else None
+        ),
     )
     response_message = UpdateWebhook.Response(webhook=webhook.to_proto())
     return _wrap_response(response_message)
@@ -4117,9 +4160,21 @@ def _batch_get_traces() -> Response:
     """
     request_message = _get_request_message(
         BatchGetTraces(),
-        schema={"trace_ids": [_assert_array, _assert_required, _assert_item_type_string]},
+        schema={
+            "trace_ids": [_assert_array, _assert_required, _assert_item_type_string],
+            "experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
-    traces = _get_tracking_store().batch_get_traces(request_message.trace_ids, None)
+    store = _get_tracking_store()
+    has_experiment_ids = _raw_request_has_field("experiment_ids")
+    if has_experiment_ids and isinstance(store, DatabricksTracingRestStore):
+        raise MlflowException(
+            "`experiment_ids` is not supported by `batch_get_traces` against the "
+            "Databricks-hosted backend.",
+            error_code=INVALID_PARAMETER_VALUE,
+        )
+    experiment_ids = list(request_message.experiment_ids) if has_experiment_ids else None
+    traces = store.batch_get_traces(request_message.trace_ids, None, experiment_ids=experiment_ids)
     response_message = BatchGetTraces.Response()
     response_message.traces.extend([t.to_proto() for t in traces])
     return _wrap_response(response_message, pretty=False)
@@ -4130,9 +4185,21 @@ def _batch_get_traces() -> Response:
 def _batch_get_trace_infos() -> Response:
     request_message = _get_request_message(
         BatchGetTraceInfos(),
-        schema={"trace_ids": [_assert_array, _assert_required, _assert_item_type_string]},
+        schema={
+            "trace_ids": [_assert_array, _assert_required, _assert_item_type_string],
+            "experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
-    trace_infos = _get_tracking_store().batch_get_trace_infos(request_message.trace_ids)
+    store = _get_tracking_store()
+    if isinstance(store, DatabricksTracingRestStore):
+        raise MlflowNotImplementedException(
+            "`batch_get_trace_infos` is not implemented for the Databricks-hosted backend."
+        )
+    has_experiment_ids = _raw_request_has_field("experiment_ids")
+    experiment_ids = list(request_message.experiment_ids) if has_experiment_ids else None
+    trace_infos = store.batch_get_trace_infos(
+        request_message.trace_ids, experiment_ids=experiment_ids
+    )
     response_message = BatchGetTraceInfos.Response()
     response_message.trace_infos.extend([ti.to_proto() for ti in trace_infos])
     return _wrap_trace_info_response(response_message)
@@ -5744,16 +5811,66 @@ def _register_scorer():
     return response
 
 
+def _search_active_experiment_ids(store):
+    """
+    Workspace-aware paginated walk of ALL ACTIVE experiments via the general
+    ``search_experiments`` search API. Use this only for genuine open-ended
+    enumeration where the result size is unknown ahead of time and must be
+    discovered by paging. For validating a bounded, caller-supplied ID list,
+    use ``store.list_active_experiment_ids`` instead — stuffing an
+    arbitrarily large ID list into a ``search_experiments`` filter string
+    risks the SQLite bound-parameter limit that the narrow batch API avoids
+    by chunking.
+    """
+    experiment_ids: list[str] = []
+    page_token: str | None = None
+    while True:
+        page = store.search_experiments(
+            view_type=ViewType.ACTIVE_ONLY,
+            max_results=1000,
+            page_token=page_token,
+        )
+        experiment_ids.extend(e.experiment_id for e in page)
+        if not (page_token := page.token):
+            break
+    return experiment_ids
+
+
 @catch_mlflow_exception
 @_disable_if_artifacts_only
 def _list_scorers():
     request_message = _get_request_message(
         ListScorers(),
-        schema={"experiment_id": [_assert_string]},
+        schema={
+            "experiment_id": [_assert_string],
+            "experiment_ids": [_assert_array, _assert_item_type_string],
+        },
     )
     response_message = ListScorers.Response()
     store = _get_tracking_store()
-    if request_message.experiment_id:
+    has_experiment_ids = _raw_request_has_field("experiment_ids")
+    if request_message.experiment_id and has_experiment_ids:
+        raise MlflowException(
+            "Cannot specify both 'experiment_id' and 'experiment_ids'. Use "
+            "'experiment_ids' to scope the query to multiple experiments, or "
+            "'experiment_id' to scope it to a single experiment.",
+            error_code=INVALID_PARAMETER_VALUE,
+        )
+    if has_experiment_ids:
+        if isinstance(store, DatabricksTracingRestStore):
+            raise MlflowException(
+                "`experiment_ids` is not supported by `list_scorers` against the "
+                "Databricks-hosted backend.",
+                error_code=INVALID_PARAMETER_VALUE,
+            )
+        if requested_experiment_ids := list(dict.fromkeys(request_message.experiment_ids)):
+            for eid in requested_experiment_ids:
+                _validate_experiment_id(eid)
+            valid_experiment_ids = store.list_active_experiment_ids(requested_experiment_ids)
+        else:
+            valid_experiment_ids = []
+        scorers = store.list_scorers_across_experiments(valid_experiment_ids)
+    elif request_message.experiment_id:
         scorers = store.list_scorers(request_message.experiment_id)
     else:
         # Cross-experiment listing: walk the active workspace's experiments
@@ -5761,18 +5878,7 @@ def _list_scorers():
         # batch the scorer fetch through ``list_scorers_across_experiments``.
         # Auth-side ``filter_list_scorers`` applies per-row RBAC filtering on
         # the response.
-        experiment_ids: list[str] = []
-        page_token: str | None = None
-        while True:
-            page = store.search_experiments(
-                view_type=ViewType.ACTIVE_ONLY,
-                max_results=1000,
-                page_token=page_token,
-            )
-            experiment_ids.extend(e.experiment_id for e in page)
-            if not (page_token := page.token):
-                break
-        scorers = store.list_scorers_across_experiments(experiment_ids)
+        scorers = store.list_scorers_across_experiments(_search_active_experiment_ids(store))
     response_message.scorers.extend([scorer.to_proto() for scorer in scorers])
     response = Response(mimetype="application/json")
     response.set_data(message_to_json(response_message))
@@ -5924,6 +6030,7 @@ def _upsert_online_scoring_config():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_gateway_secret():
     request_message = _get_request_message(
         CreateGatewaySecret(),
@@ -5951,6 +6058,7 @@ def _create_gateway_secret():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_gateway_secret_info():
     request_message = _get_request_message(
         GetGatewaySecretInfo(),
@@ -5966,6 +6074,7 @@ def _get_gateway_secret_info():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _update_gateway_secret():
     request_message = _get_request_message(
         UpdateGatewaySecret(),
@@ -5993,6 +6102,7 @@ def _update_gateway_secret():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_secret():
     request_message = _get_request_message(
         DeleteGatewaySecret(),
@@ -6007,6 +6117,7 @@ def _delete_gateway_secret():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_gateway_secrets():
     request_message = _get_request_message(
         ListGatewaySecretInfos(),
@@ -6049,6 +6160,7 @@ def _assert_linkage_type_specified(model_config, index: int | None = None) -> No
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_gateway_endpoint():
     request_message = _get_request_message(
         CreateGatewayEndpoint(),
@@ -6109,6 +6221,7 @@ def _create_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_gateway_endpoint():
     request_message = _get_request_message(
         GetGatewayEndpoint(),
@@ -6128,6 +6241,7 @@ def _get_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _update_gateway_endpoint():
     request_message = _get_request_message(
         UpdateGatewayEndpoint(),
@@ -6193,6 +6307,7 @@ def _update_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_endpoint():
     request_message = _get_request_message(
         DeleteGatewayEndpoint(),
@@ -6207,6 +6322,7 @@ def _delete_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_gateway_endpoints():
     request_message = _get_request_message(
         ListGatewayEndpoints(),
@@ -6229,6 +6345,7 @@ def _list_gateway_endpoints():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_gateway_model_definition():
     request_message = _get_request_message(
         CreateGatewayModelDefinition(),
@@ -6254,6 +6371,7 @@ def _create_gateway_model_definition():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_gateway_model_definition():
     request_message = _get_request_message(
         GetGatewayModelDefinition(),
@@ -6271,6 +6389,7 @@ def _get_gateway_model_definition():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_gateway_model_definitions():
     request_message = _get_request_message(
         ListGatewayModelDefinitions(),
@@ -6290,6 +6409,7 @@ def _list_gateway_model_definitions():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _update_gateway_model_definition():
     request_message = _get_request_message(
         UpdateGatewayModelDefinition(),
@@ -6317,6 +6437,7 @@ def _update_gateway_model_definition():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_model_definition():
     request_message = _get_request_message(
         DeleteGatewayModelDefinition(),
@@ -6336,6 +6457,7 @@ def _delete_gateway_model_definition():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _attach_model_to_gateway_endpoint():
     request_message = _get_request_message(
         AttachModelToGatewayEndpoint(),
@@ -6362,6 +6484,7 @@ def _attach_model_to_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _detach_model_from_gateway_endpoint():
     request_message = _get_request_message(
         DetachModelFromGatewayEndpoint(),
@@ -6385,6 +6508,7 @@ def _detach_model_from_gateway_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_gateway_endpoint_binding():
     request_message = _get_request_message(
         CreateGatewayEndpointBinding(),
@@ -6408,6 +6532,7 @@ def _create_gateway_endpoint_binding():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_endpoint_binding():
     request_message = _get_request_message(
         DeleteGatewayEndpointBinding(),
@@ -6428,6 +6553,7 @@ def _delete_gateway_endpoint_binding():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_gateway_endpoint_bindings():
     request_message = _get_request_message(
         ListGatewayEndpointBindings(),
@@ -6449,6 +6575,7 @@ def _list_gateway_endpoint_bindings():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _set_gateway_endpoint_tag():
     request_message = _get_request_message(
         SetGatewayEndpointTag(),
@@ -6468,6 +6595,7 @@ def _set_gateway_endpoint_tag():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_endpoint_tag():
     request_message = _get_request_message(
         DeleteGatewayEndpointTag(),
@@ -6490,14 +6618,14 @@ def _delete_gateway_endpoint_tag():
 # =============================================================================
 
 
-_TARGETED_BUDGET_SCOPES = (BudgetTargetScope.ENDPOINT,)
+_TARGETED_BUDGET_SCOPES = (BudgetTargetScope.ENDPOINT, BudgetTargetScope.USER)
 
 
 def _validate_budget_target_scope(target_scope, target_value):
     """Validate the target_value / target_scope relationship for budget policies.
 
-    ENDPOINT-scoped policies must carry a ``target_value`` (the ID of the endpoint
-    to match); policies with any other scope must not.
+    ENDPOINT- and USER-scoped policies must carry a ``target_value`` (the endpoint ID
+    or username to match); policies with any other scope must not.
     """
     if target_scope in _TARGETED_BUDGET_SCOPES:
         if not target_value:
@@ -6507,13 +6635,43 @@ def _validate_budget_target_scope(target_scope, target_value):
             )
     elif target_value:
         raise MlflowException(
-            message="target_value can only be set when target_scope is ENDPOINT.",
+            message="target_value can only be set when target_scope is ENDPOINT or USER.",
+            error_code=INVALID_PARAMETER_VALUE,
+        )
+
+
+def _is_server_auth_enabled() -> bool:
+    """Whether MLflow server authentication is active.
+
+    Checked without importing the auth app (mirrors ``gateway_api``): the gateway
+    only populates ``request.state.username`` when auth is initialized, so USER-scoped
+    budgets cannot attribute spend to a user unless this is True.
+    """
+    auth_mod = sys.modules.get("mlflow.server.auth")
+    return bool(auth_mod and auth_mod.is_auth_enabled())
+
+
+def _assert_user_scope_enforceable(target_scope: BudgetTargetScope) -> None:
+    """Reject USER-scoped budgets when auth is off, since they would never match.
+
+    Without authentication the gateway has no request username, so a USER-scoped
+    policy is silently inert (a REJECT cap never rejects, an ALERT never fires).
+    Fail loudly at write time rather than let an admin create a non-functional cap.
+    """
+    if target_scope == BudgetTargetScope.USER and not _is_server_auth_enabled():
+        raise MlflowException(
+            message=(
+                "USER-scoped budget policies require server authentication to be enabled. "
+                "Without auth the gateway cannot attribute requests to a user, so the "
+                "policy would never take effect."
+            ),
             error_code=INVALID_PARAMETER_VALUE,
         )
 
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_budget_policy():
     request_message = _get_request_message(
         CreateGatewayBudgetPolicy(),
@@ -6559,6 +6717,7 @@ def _create_budget_policy():
         )
     target_value = request_message.target_value or None
     _validate_budget_target_scope(target_scope, target_value)
+    _assert_user_scope_enforceable(target_scope)
     store = _get_tracking_store()
     policy = store.create_budget_policy(
         budget_unit=budget_unit,
@@ -6578,6 +6737,7 @@ def _create_budget_policy():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_budget_policy():
     request_message = _get_request_message(
         GetGatewayBudgetPolicy(),
@@ -6595,6 +6755,7 @@ def _get_budget_policy():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _update_budget_policy():
     request_message = _get_request_message(
         UpdateGatewayBudgetPolicy(),
@@ -6647,10 +6808,11 @@ def _update_budget_policy():
     target_value = (request_message.target_value or None) if target_value_provided else None
     store = _get_tracking_store()
     # Validate the *effective* scope/target_value after the partial update is applied,
-    # so clients that echo back the current scope (or update target_value alone on an
-    # ENDPOINT policy) are not rejected, while updates that would produce an ENDPOINT
-    # policy without a target_value (a silently non-enforcing policy) still are. A
-    # target only carries over within the same scope, so switching scope requires an
+    # mirroring the create-handler guards: clients that echo back the current scope (or
+    # update one field alone) are not rejected, while updates that would produce a
+    # targeted (ENDPOINT/USER) policy without a target_value — a silently non-enforcing
+    # policy — still are. A target only carries over within the same scope: an endpoint
+    # ID is meaningless as a username and vice versa, so switching scope requires an
     # explicit new target_value.
     if target_scope is not None or target_value_provided:
         existing = store.get_budget_policy(budget_policy_id=request_message.budget_policy_id)
@@ -6660,6 +6822,7 @@ def _update_budget_policy():
         )
         effective_target = target_value if target_value_provided else inherited_target
         _validate_budget_target_scope(effective_scope, effective_target)
+        _assert_user_scope_enforceable(effective_scope)
     policy = store.update_budget_policy(
         budget_policy_id=request_message.budget_policy_id,
         budget_unit=budget_unit,
@@ -6681,6 +6844,7 @@ def _update_budget_policy():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_budget_policy():
     request_message = _get_request_message(
         DeleteGatewayBudgetPolicy(),
@@ -6698,6 +6862,7 @@ def _delete_budget_policy():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_budget_policies():
     request_message = _get_request_message(
         ListGatewayBudgetPolicies(),
@@ -6733,6 +6898,7 @@ def _get_request_workspace_for_budget_windows():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_budget_windows():
     _get_request_message(ListGatewayBudgetWindows())
     workspace = _get_request_workspace_for_budget_windows()
@@ -6740,9 +6906,11 @@ def _list_budget_windows():
     maybe_refresh_budget_policies(store)
     windows = get_budget_tracker().get_all_windows()
     if workspace is not None:
-        # GLOBAL policies are always shown; WORKSPACE/ENDPOINT policies are shown
-        # only for the requesting workspace (ENDPOINT policies still carry an
-        # owning workspace even though enforcement matches on endpoint_id).
+        # GLOBAL policies are always shown. Every other scope is filtered to the
+        # requesting workspace by the policy's owning workspace, so current-spend
+        # figures never leak across workspaces. WORKSPACE/ENDPOINT/USER policies all
+        # carry an owning workspace even when enforcement matches on target_value
+        # (an endpoint ID or a username) rather than on the workspace itself.
         windows = [
             w
             for w in windows
@@ -6762,6 +6930,7 @@ def _list_budget_windows():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _create_gateway_guardrail():
     request_message = _get_request_message(
         CreateGatewayGuardrail(),
@@ -6804,6 +6973,7 @@ def _create_gateway_guardrail():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_gateway_guardrail():
     request_message = _get_request_message(
         GetGatewayGuardrail(),
@@ -6819,6 +6989,7 @@ def _get_gateway_guardrail():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _delete_gateway_guardrail():
     request_message = _get_request_message(
         DeleteGatewayGuardrail(),
@@ -6830,6 +7001,7 @@ def _delete_gateway_guardrail():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_gateway_guardrails():
     request_message = _get_request_message(
         ListGatewayGuardrails(),
@@ -6851,6 +7023,7 @@ def _list_gateway_guardrails():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _add_guardrail_to_endpoint():
     request_message = _get_request_message(
         AddGuardrailToEndpoint(),
@@ -6875,6 +7048,7 @@ def _add_guardrail_to_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _remove_guardrail_from_endpoint():
     request_message = _get_request_message(
         RemoveGuardrailFromEndpoint(),
@@ -6892,6 +7066,7 @@ def _remove_guardrail_from_endpoint():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_endpoint_guardrail_configs():
     request_message = _get_request_message(
         ListEndpointGuardrailConfigs(),
@@ -6906,6 +7081,7 @@ def _list_endpoint_guardrail_configs():
 
 
 @catch_mlflow_exception
+@_disable_if_gateway_disabled
 def _update_endpoint_guardrail_config():
     request_message = _get_request_message(
         UpdateEndpointGuardrailConfig(),
@@ -6974,11 +7150,15 @@ def _get_server_info():
         SERVER_INFO_TRACE_ARCHIVAL_ENABLED: trace_archival_enabled,
         SERVER_INFO_MULTIPART_UPLOADS_ENABLED: multipart_uploads_enabled,
         SERVER_INFO_MULTIPART_DOWNLOADS_ENABLED: multipart_downloads_enabled,
+        SERVER_INFO_FEATURES_ENABLED: {
+            "gateway": MLFLOW_ENABLE_AI_GATEWAY.get(),
+        },
     })
 
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_supported_providers():
     try:
         providers = get_all_providers()
@@ -6989,6 +7169,7 @@ def _list_supported_providers():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _list_supported_models():
     try:
         provider_filter = request.args.get("provider")
@@ -7000,6 +7181,7 @@ def _list_supported_models():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_provider_config():
     try:
         provider = request.args.get("provider")
@@ -7011,6 +7193,7 @@ def _get_provider_config():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _get_secrets_config():
     using_default_passphrase = not os.environ.get(CRYPTO_KEK_PASSPHRASE_ENV_VAR)
     return jsonify({

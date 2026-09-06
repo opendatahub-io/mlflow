@@ -214,6 +214,11 @@ class Span:
         return SpanLogLevel(raw)
 
     @property
+    def description(self) -> str | None:
+        """The description of the span."""
+        return self.get_attribute(SpanAttributeKey.DESCRIPTION)
+
+    @property
     def model_name(self) -> str | None:
         """The model name used in the span."""
         return self.get_attribute(SpanAttributeKey.MODEL)
@@ -705,6 +710,10 @@ class LiveSpan(Span):
         """Set the type of the span."""
         self.set_attribute(SpanAttributeKey.SPAN_TYPE, span_type)
 
+    def set_description(self, description: str):
+        """Set the description of the span."""
+        self.set_attribute(SpanAttributeKey.DESCRIPTION, description)
+
     def set_log_level(self, level: SpanLogLevel | str):
         """
         Set the severity level of the span.
@@ -1142,6 +1151,42 @@ class LiveSpan(Span):
             if self.status.status_code != SpanStatusCode.ERROR:
                 self.set_status(SpanStatus(SpanStatusCode.OK))
 
+            try:
+                # Tracking configuration applies to the whole trace regardless
+                # of this span's type or final status.
+                from mlflow.agent.hint import maybe_warn_local_tracking_for_databricks
+
+                maybe_warn_local_tracking_for_databricks()
+            except Exception:
+                # Agent hints are advisory and must never prevent span finalization.
+                pass
+
+            if self.status.status_code != SpanStatusCode.ERROR and self.span_type in (
+                SpanType.LLM,
+                SpanType.TOOL,
+                SpanType.RETRIEVER,
+            ):
+                try:
+                    # Import lazily: most MLflow users never create GenAI spans, and
+                    # agent hints must not add work to their span lifecycle.
+                    from mlflow.agent.hint import maybe_warn_agent
+
+                    if self.inputs is None:
+                        maybe_warn_agent(
+                            "genai-span-missing-inputs",
+                            f"The successful {self.span_type} span {self.name!r} has no recorded "
+                            "inputs.",
+                        )
+                    if self.outputs is None:
+                        maybe_warn_agent(
+                            "genai-span-missing-outputs",
+                            f"The successful {self.span_type} span {self.name!r} has no recorded "
+                            "outputs.",
+                        )
+                except Exception:
+                    # Agent hints are advisory and must never prevent span finalization.
+                    pass
+
             if should_compute_cost_client_side():
                 set_span_cost_attribute(self)
 
@@ -1410,6 +1455,9 @@ class NoOpSpan(Span):
         pass
 
     def set_attribute(self, key: str, value: Any):
+        pass
+
+    def set_description(self, description: str):
         pass
 
     def set_log_level(self, level: SpanLogLevel | int | str):

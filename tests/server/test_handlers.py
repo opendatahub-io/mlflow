@@ -216,6 +216,7 @@ from mlflow.server.handlers import (
     _list_workspaces_handler,
     _log_batch,
     _query_trace_metrics,
+    _raw_request_has_field,
     _register_scorer,
     _rename_registered_model,
     _response_with_file_attachment_headers,
@@ -275,6 +276,7 @@ from mlflow.tracing.constant import SpansLocation, TraceTagKey
 from mlflow.tracing.utils import build_otel_context
 from mlflow.utils.mlflow_tags import MLFLOW_ARTIFACT_LOCATION, MLFLOW_CUSTOM_VIEW_TAG_PREFIX
 from mlflow.utils.proto_json_utils import message_to_json
+from mlflow.utils.rest_utils import MlflowHostCreds
 from mlflow.utils.server_info import (
     SERVER_INFO_MULTIPART_DOWNLOADS_ENABLED,
     SERVER_INFO_MULTIPART_UPLOADS_ENABLED,
@@ -2755,6 +2757,112 @@ def test_list_scorers_cross_experiment(mock_get_request_message, mock_tracking_s
     assert call_args.args[0] == ["1", "2", "3"]
 
 
+def test_list_scorers_rejects_both_experiment_id_and_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = ListScorers(
+        experiment_id="123", experiment_ids=["123", "456"]
+    )
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    assert resp.status_code == 400
+    body = json.loads(resp.get_data())
+    assert body["error_code"] == ErrorCode.Name(INVALID_PARAMETER_VALUE)
+    assert "experiment_id" in body["message"]
+    assert "experiment_ids" in body["message"]
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.list_scorers.assert_not_called()
+    mock_tracking_store.list_scorers_across_experiments.assert_not_called()
+
+
+def test_list_scorers_with_experiment_ids_against_databricks_backend_not_supported(
+    mock_get_request_message,
+):
+    mock_get_request_message.return_value = ListScorers(experiment_ids=["123"])
+    creds = MlflowHostCreds("https://hello")
+    databricks_store = DatabricksTracingRestStore(lambda: creds)
+
+    with (
+        mock.patch("mlflow.server.handlers._get_tracking_store", return_value=databricks_store),
+        mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True),
+    ):
+        resp = _list_scorers()
+
+    assert resp.status_code == 400
+    body = json.loads(resp.get_data())
+    assert body["error_code"] == ErrorCode.Name(INVALID_PARAMETER_VALUE)
+    assert "experiment_ids" in body["message"]
+
+
+def test_list_scorers_with_empty_experiment_ids(mock_get_request_message, mock_tracking_store):
+    mock_get_request_message.return_value = ListScorers(experiment_ids=[])
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.search_experiments.assert_not_called()
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with([])
+    mock_tracking_store.list_scorers.assert_not_called()
+    assert resp.status_code == 200
+
+
+def test_list_scorers_with_experiment_ids_batches_validation(
+    mock_get_request_message, mock_tracking_store
+):
+    # experiment_ids should be validated via a single batched
+    # list_active_experiment_ids call rather than one get_experiment call per
+    # id, and must not go through the general-purpose search_experiments API
+    # (which risks the SQLite bound-parameter limit for large id lists).
+    mock_get_request_message.return_value = ListScorers(experiment_ids=["123"])
+    mock_tracking_store.list_active_experiment_ids.return_value = ["123"]
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.search_experiments.assert_not_called()
+    mock_tracking_store.list_active_experiment_ids.assert_called_once_with(["123"])
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with(["123"])
+    assert resp.status_code == 200
+
+
+def test_list_scorers_with_invalid_experiment_id(mock_get_request_message, mock_tracking_store):
+    mock_get_request_message.return_value = ListScorers(experiment_ids=["123", "invalid id"])
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        resp = _list_scorers()
+
+    assert resp.status_code == 400
+    body = json.loads(resp.get_data())
+    assert body["error_code"] == ErrorCode.Name(INVALID_PARAMETER_VALUE)
+    assert "invalid id" in body["message"]
+    mock_tracking_store.search_experiments.assert_not_called()
+    mock_tracking_store.list_scorers_across_experiments.assert_not_called()
+
+
+def test_list_scorers_with_experiment_ids_drops_inactive_or_missing(
+    mock_get_request_message, mock_tracking_store
+):
+    # Simulates "456" being inactive or nonexistent: list_active_experiment_ids
+    # only resolves "123", and the handler passes along just the surviving id
+    # instead of failing the whole request (best-effort scoping).
+    mock_get_request_message.return_value = ListScorers(experiment_ids=["123", "456"])
+    mock_tracking_store.list_active_experiment_ids.return_value = ["123"]
+    mock_tracking_store.list_scorers_across_experiments.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        _list_scorers()
+
+    mock_tracking_store.get_experiment.assert_not_called()
+    mock_tracking_store.list_active_experiment_ids.assert_called_once_with(["123", "456"])
+    mock_tracking_store.list_scorers_across_experiments.assert_called_once_with(["123"])
+
+
 def test_list_scorer_versions(mock_get_request_message, mock_tracking_store):
     experiment_id = "123"
     name = "accuracy_scorer"
@@ -3313,7 +3421,9 @@ def test_batch_get_traces_handler(mock_get_request_message, mock_tracking_store)
     response = _batch_get_traces()
 
     # Verify the store was called with the correct trace IDs
-    mock_tracking_store.batch_get_traces.assert_called_once_with([trace_id_1, trace_id_2], None)
+    mock_tracking_store.batch_get_traces.assert_called_once_with(
+        [trace_id_1, trace_id_2], None, experiment_ids=None
+    )
 
     # Verify response was created
     assert response is not None
@@ -3333,11 +3443,60 @@ def test_batch_get_traces_handler_empty_list(mock_get_request_message, mock_trac
 
     response = _batch_get_traces()
 
-    mock_tracking_store.batch_get_traces.assert_called_once_with([], None)
+    mock_tracking_store.batch_get_traces.assert_called_once_with([], None, experiment_ids=None)
 
     # Verify response was created
     assert response is not None
     assert response.status_code == 200
+
+
+def test_batch_get_traces_handler_with_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraces(
+        trace_ids=["t1", "t2"], experiment_ids=["exp-1", "exp-2"]
+    )
+    mock_tracking_store.batch_get_traces.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_traces()
+
+    mock_tracking_store.batch_get_traces.assert_called_once_with(
+        ["t1", "t2"], None, experiment_ids=["exp-1", "exp-2"]
+    )
+    assert response.status_code == 200
+
+
+def test_batch_get_traces_handler_with_empty_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraces(trace_ids=["t1"], experiment_ids=[])
+    mock_tracking_store.batch_get_traces.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_traces()
+
+    mock_tracking_store.batch_get_traces.assert_called_once_with(["t1"], None, experiment_ids=[])
+    assert response.status_code == 200
+
+
+def test_batch_get_traces_with_experiment_ids_against_databricks_backend_not_supported(
+    mock_get_request_message,
+):
+    mock_get_request_message.return_value = BatchGetTraces(trace_ids=["t1"], experiment_ids=["123"])
+    creds = MlflowHostCreds("https://hello")
+    databricks_store = DatabricksTracingRestStore(lambda: creds)
+
+    with (
+        mock.patch("mlflow.server.handlers._get_tracking_store", return_value=databricks_store),
+        mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True),
+    ):
+        resp = _batch_get_traces()
+
+    assert resp.status_code == 400
+    body = json.loads(resp.get_data())
+    assert body["error_code"] == ErrorCode.Name(INVALID_PARAMETER_VALUE)
+    assert "experiment_ids" in body["message"]
 
 
 def test_batch_get_trace_infos_handler(mock_get_request_message, mock_tracking_store):
@@ -3368,7 +3527,9 @@ def test_batch_get_trace_infos_handler(mock_get_request_message, mock_tracking_s
 
     response = _batch_get_trace_infos()
 
-    mock_tracking_store.batch_get_trace_infos.assert_called_once_with([trace_id_1, trace_id_2])
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(
+        [trace_id_1, trace_id_2], experiment_ids=None
+    )
 
     assert response is not None
     assert response.status_code == 200
@@ -3376,6 +3537,111 @@ def test_batch_get_trace_infos_handler(mock_get_request_message, mock_tracking_s
     assert len(trace_infos) == 2
     assert trace_infos[0]["trace_id"] == trace_id_1
     assert trace_infos[1]["trace_id"] == trace_id_2
+
+
+def test_batch_get_trace_infos_handler_with_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraceInfos(
+        trace_ids=["t1", "t2"], experiment_ids=["exp-1", "exp-2"]
+    )
+    mock_tracking_store.batch_get_trace_infos.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_trace_infos()
+
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(
+        ["t1", "t2"], experiment_ids=["exp-1", "exp-2"]
+    )
+    assert response.status_code == 200
+
+
+def test_batch_get_trace_infos_handler_with_empty_experiment_ids(
+    mock_get_request_message, mock_tracking_store
+):
+    mock_get_request_message.return_value = BatchGetTraceInfos(trace_ids=["t1"], experiment_ids=[])
+    mock_tracking_store.batch_get_trace_infos.return_value = []
+
+    with mock.patch("mlflow.server.handlers._raw_request_has_field", return_value=True):
+        response = _batch_get_trace_infos()
+
+    mock_tracking_store.batch_get_trace_infos.assert_called_once_with(["t1"], experiment_ids=[])
+    assert response.status_code == 200
+
+
+def test_batch_get_trace_infos_against_databricks_backend_not_implemented(
+    mock_get_request_message,
+):
+    mock_get_request_message.return_value = BatchGetTraceInfos(trace_ids=["t1"])
+    creds = MlflowHostCreds("https://hello")
+    databricks_store = DatabricksTracingRestStore(lambda: creds)
+
+    with mock.patch("mlflow.server.handlers._get_tracking_store", return_value=databricks_store):
+        resp = _batch_get_trace_infos()
+
+    assert resp.status_code == 501
+    body = json.loads(resp.get_data())
+    assert body["error_code"] == ErrorCode.Name(NOT_IMPLEMENTED)
+
+
+def test_raw_request_has_field_get_query_string():
+    with app.test_request_context(method="GET", query_string={"experiment_ids": "1"}):
+        assert _raw_request_has_field("experiment_ids") is True
+
+    with app.test_request_context(method="GET"):
+        assert _raw_request_has_field("experiment_ids") is False
+
+
+def test_raw_request_has_field_post_json_body():
+    with app.test_request_context(
+        method="POST",
+        content_type="application/json",
+        data=json.dumps({"experiment_ids": ["1", "2"]}),
+    ):
+        assert _raw_request_has_field("experiment_ids") is True
+
+    # An explicit empty list is still a present field.
+    with app.test_request_context(
+        method="POST", content_type="application/json", data=json.dumps({"experiment_ids": []})
+    ):
+        assert _raw_request_has_field("experiment_ids") is True
+
+    with app.test_request_context(
+        method="POST", content_type="application/json", data=json.dumps({"trace_ids": ["1"]})
+    ):
+        assert _raw_request_has_field("experiment_ids") is False
+
+
+def test_raw_request_has_field_outside_request_context():
+    assert _raw_request_has_field("experiment_ids") is False
+
+
+def test_batch_get_traces_handler_experiment_ids_field_detection_not_mocked(
+    mock_get_request_message, mock_tracking_store
+):
+    # Unlike the other batch_get_traces experiment_ids tests, this one leaves
+    # `_raw_request_has_field` unmocked to verify the omitted-vs-empty-list
+    # distinction holds through the real Flask request, not just when stubbed.
+    mock_tracking_store.batch_get_traces.return_value = []
+
+    mock_get_request_message.return_value = BatchGetTraces(trace_ids=["t1"], experiment_ids=[])
+    with app.test_request_context(
+        method="POST",
+        content_type="application/json",
+        data=json.dumps({"trace_ids": ["t1"], "experiment_ids": []}),
+    ):
+        response = _batch_get_traces()
+    mock_tracking_store.batch_get_traces.assert_called_once_with(["t1"], None, experiment_ids=[])
+    assert response.status_code == 200
+
+    mock_tracking_store.batch_get_traces.reset_mock()
+    mock_get_request_message.return_value = BatchGetTraces(trace_ids=["t1"])
+    with app.test_request_context(
+        method="POST", content_type="application/json", data=json.dumps({"trace_ids": ["t1"]})
+    ):
+        response = _batch_get_traces()
+    mock_tracking_store.batch_get_traces.assert_called_once_with(["t1"], None, experiment_ids=None)
+    assert response.status_code == 200
 
 
 def test_get_trace_handler(mock_get_request_message, mock_tracking_store):
@@ -6405,6 +6671,7 @@ def _make_endpoint_budget_policy(
     ("target_scope", "target_value"),
     [
         (BudgetTargetScope.ENDPOINT, "ep-1"),
+        (BudgetTargetScope.USER, "alice"),
         (BudgetTargetScope.GLOBAL, None),
         (BudgetTargetScope.WORKSPACE, None),
     ],
@@ -6420,8 +6687,9 @@ def test_validate_budget_target_scope_valid(target_scope, target_value):
     ("target_scope", "target_value", "match"),
     [
         (BudgetTargetScope.ENDPOINT, None, "target_value is required"),
+        (BudgetTargetScope.USER, None, "target_value is required"),
         (BudgetTargetScope.GLOBAL, "ep-1", "target_value can only be set"),
-        (BudgetTargetScope.WORKSPACE, "ep-1", "target_value can only be set"),
+        (BudgetTargetScope.WORKSPACE, "alice", "target_value can only be set"),
     ],
 )
 def test_validate_budget_target_scope_invalid(target_scope, target_value, match):
@@ -6620,6 +6888,29 @@ def test_update_budget_policy_switch_to_endpoint_requires_target_value():
     store.update_budget_policy.assert_not_called()
 
 
+def test_update_budget_policy_scope_switch_does_not_inherit_target():
+    # An endpoint ID is meaningless as a username: switching an ENDPOINT policy to
+    # USER without an explicit new target must be rejected, not inherit "ep-1".
+    store = mock.MagicMock()
+    store.get_budget_policy.return_value = _make_endpoint_budget_policy(target_value="ep-1")
+
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store", return_value=store),
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        mock.patch("mlflow.server.handlers._is_server_auth_enabled", return_value=True),
+    ):
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-ep", "target_scope": "USER"},
+        )
+
+    assert response.status_code == 400
+    assert "target_value is required" in response.json["message"]
+    store.update_budget_policy.assert_not_called()
+
+
 def test_list_budget_windows_workspace_scoped_filters_endpoint_policies():
     tracker = InMemoryBudgetTracker()
     ep_team_a = _make_endpoint_budget_policy(
@@ -6641,6 +6932,251 @@ def test_list_budget_windows_workspace_scoped_filters_endpoint_policies():
     assert response.status_code == 200
     policy_ids = {w["budget_policy_id"] for w in response.json["windows"]}
     assert policy_ids == {"bp-ep-a"}
+
+
+# ==================== Per-user (USER scope) budget policy handler tests ====================
+
+
+def _user_policy(budget_policy_id="bp-user", target_value="alice", last_updated_at=1):
+    return GatewayBudgetPolicy(
+        budget_policy_id=budget_policy_id,
+        budget_unit=BudgetUnit.USD,
+        budget_amount=25.0,
+        duration=BudgetDuration(unit=BudgetDurationUnit.DAYS, value=1),
+        target_scope=BudgetTargetScope.USER,
+        budget_action=BudgetAction.REJECT,
+        created_at=1,
+        last_updated_at=last_updated_at,
+        target_value=target_value,
+    )
+
+
+def test_create_budget_policy_user_scope_success():
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        mock.patch("mlflow.server.handlers._is_server_auth_enabled", return_value=True),
+    ):
+        mock_store.return_value.create_budget_policy.return_value = _user_policy()
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/create",
+            json={
+                "budget_unit": "USD",
+                "budget_amount": 25.0,
+                "duration": {"unit": "DAYS", "value": 1},
+                "target_scope": "USER",
+                "budget_action": "REJECT",
+                "target_value": "alice",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json["budget_policy"]["target_scope"] == "USER"
+    assert response.json["budget_policy"]["target_value"] == "alice"
+    mock_store.return_value.create_budget_policy.assert_called_once()
+    assert mock_store.return_value.create_budget_policy.call_args.kwargs["target_value"] == "alice"
+
+
+def test_create_budget_policy_user_scope_requires_target_value():
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+    ):
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/create",
+            json={
+                "budget_unit": "USD",
+                "budget_amount": 25.0,
+                "duration": {"unit": "DAYS", "value": 1},
+                "target_scope": "USER",
+                "budget_action": "REJECT",
+            },
+        )
+
+    assert response.status_code == 400
+    assert "target_value is required" in response.json["message"]
+    mock_store.return_value.create_budget_policy.assert_not_called()
+
+
+def test_create_budget_policy_user_scope_requires_auth():
+    # A USER-scoped policy on an auth-disabled deployment can never match a request,
+    # so creation is rejected instead of silently producing an inert cap.
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        mock.patch("mlflow.server.handlers._is_server_auth_enabled", return_value=False),
+    ):
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/create",
+            json={
+                "budget_unit": "USD",
+                "budget_amount": 25.0,
+                "duration": {"unit": "DAYS", "value": 1},
+                "target_scope": "USER",
+                "budget_action": "REJECT",
+                "target_value": "alice",
+            },
+        )
+
+    assert response.status_code == 400
+    assert "require server authentication" in response.json["message"]
+    mock_store.return_value.create_budget_policy.assert_not_called()
+
+
+def test_update_budget_policy_user_target():
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        mock.patch("mlflow.server.handlers._is_server_auth_enabled", return_value=True),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = _user_policy(target_value="alice")
+        mock_store.return_value.update_budget_policy.return_value = _user_policy(
+            target_value="bob", last_updated_at=2
+        )
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-user", "target_value": "bob"},
+        )
+
+    assert response.status_code == 200
+    assert response.json["budget_policy"]["target_value"] == "bob"
+    assert mock_store.return_value.update_budget_policy.call_args.kwargs["target_value"] == "bob"
+
+
+def test_update_budget_policy_switch_to_user_requires_target_value():
+    # Switching an existing non-USER policy to USER without a target must be
+    # rejected; otherwise the policy would silently never match (budget bypass).
+    global_policy = _make_budget_policy(budget_policy_id="bp-1")
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = global_policy
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-1", "target_scope": "USER"},
+        )
+
+    assert response.status_code == 400
+    assert "target_value is required" in response.json["message"]
+    mock_store.return_value.update_budget_policy.assert_not_called()
+
+
+def test_update_budget_policy_clearing_target_on_user_rejected():
+    # Clearing the target on a policy that remains USER-scoped is rejected.
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = _user_policy(target_value="alice")
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-user", "target_value": ""},
+        )
+
+    assert response.status_code == 400
+    assert "target_value is required" in response.json["message"]
+    mock_store.return_value.update_budget_policy.assert_not_called()
+
+
+def test_update_budget_policy_target_on_non_user_scope_rejected():
+    # Setting a target on a policy whose effective scope is untargeted is rejected.
+    global_policy = _make_budget_policy(budget_policy_id="bp-1")
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = global_policy
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-1", "target_value": "alice"},
+        )
+
+    assert response.status_code == 400
+    assert "target_value can only be set" in response.json["message"]
+    mock_store.return_value.update_budget_policy.assert_not_called()
+
+
+def test_update_budget_policy_switch_away_from_user_allowed_without_target():
+    # Switching USER -> GLOBAL without a target is allowed (the store clears the
+    # stale target); no target-consistency error is raised.
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = _user_policy(target_value="alice")
+        mock_store.return_value.update_budget_policy.return_value = _make_budget_policy(
+            budget_policy_id="bp-user"
+        )
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-user", "target_scope": "GLOBAL"},
+        )
+
+    assert response.status_code == 200
+    mock_store.return_value.update_budget_policy.assert_called_once()
+
+
+def test_update_budget_policy_switch_to_user_requires_auth():
+    # Switching a policy to USER on an auth-disabled deployment is rejected.
+    global_policy = _make_budget_policy(budget_policy_id="bp-1")
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers._get_tracking_store") as mock_store,
+        mock.patch("mlflow.server.handlers.get_budget_tracker"),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        mock.patch("mlflow.server.handlers._is_server_auth_enabled", return_value=False),
+    ):
+        mock_store.return_value.get_budget_policy.return_value = global_policy
+        response = c.post(
+            "/ajax-api/3.0/mlflow/gateway/budgets/update",
+            json={"budget_policy_id": "bp-1", "target_scope": "USER", "target_value": "alice"},
+        )
+
+    assert response.status_code == 400
+    assert "require server authentication" in response.json["message"]
+    mock_store.return_value.update_budget_policy.assert_not_called()
+
+
+def test_list_budget_windows_workspace_scoped_filters_user_policies():
+    tracker = InMemoryBudgetTracker()
+    global_policy = _make_budget_policy(budget_policy_id="bp-global")
+    same_ws_user_policy = _user_policy(budget_policy_id="bp-user-team-a", target_value="alice")
+    same_ws_user_policy.workspace = "team-a"
+    other_ws_user_policy = _user_policy(budget_policy_id="bp-user-team-b", target_value="alice")
+    other_ws_user_policy.workspace = "team-b"
+    tracker.refresh_policies([global_policy, same_ws_user_policy, other_ws_user_policy])
+
+    with (
+        app.test_client() as c,
+        mock.patch("mlflow.server.handlers.get_budget_tracker", return_value=tracker),
+        mock.patch("mlflow.server.handlers.maybe_refresh_budget_policies"),
+        WorkspaceContext("team-a"),
+    ):
+        response = c.get("/ajax-api/3.0/mlflow/gateway/budgets/windows")
+
+    assert response.status_code == 200
+    policy_ids = {w["budget_policy_id"] for w in response.json["windows"]}
+    # GLOBAL applies everywhere; team-b's USER policy stays hidden under the team-a
+    # workspace context so its current-spend figures don't leak across workspaces,
+    # even though the two policies target the same username.
+    assert policy_ids == {"bp-global", "bp-user-team-a"}
 
 
 def test_create_issue_with_all_fields():
