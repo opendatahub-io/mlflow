@@ -8,8 +8,8 @@
 
 build==1.5.0 \
     --hash=sha256:7f948e63f9f6094d01ea6b9354b226d8bf8e7c9b2d56d5f21b904c6a236cc985
-hatchling==1.29.0 \
-    --hash=sha256:9a3792b32617f6e19cff11058e2f2fcf3befcb7220c7cbafccd9eecee1a74c73
+hatchling==1.30.1 \
+    --hash=sha256:ec4d7c910fd984f7d52f38ada0ab978490d2c36108f91f3f4c0b1cb922900a90
 packaging==26.2 \
     --hash=sha256:31c96589d316a65625213114e0a1c9707c47a620bf0e89c19e6c062c946a760f
 pathspec==1.1.1 \
@@ -18,9 +18,9 @@ pluggy==1.6.0 \
     --hash=sha256:984df28329611bee51530a6c39a6b3267a07abc257ea752a83b40146e1923b87
 pyproject-hooks==1.2.0 \
     --hash=sha256:23f914be06e835a1cac214a3c08daffbdf4d33f685194c76b38b079d8cf1dc62
-setuptools==80.10.2 \
-    --hash=sha256:05ef2ee3d34409715c7d0589a3a0c6064a2b117f8489a5b512aef078173d1faf
-trove-classifiers==2026.4.28.13 \
-    --hash=sha256:dfb9cb476ea0705e542127c2d995a76942f8410f55d2b93aaa27d161950fda32
+setuptools==83.0.0 \
+    --hash=sha256:694ee627d870a25660ec16ffc20ae21c81ec97023b31bc959bc7c1dfb211e1d5
+trove-classifiers==2026.6.1.19 \
+    --hash=sha256:46563a8f495d9439f9f78d5760dbba5c68a24143490ba789b3f0f72c3e6eb421
 wheel==0.47.0 \
     --hash=sha256:8593705d08f649098548a620edff8cceee09e57cb953f78a94c1aa3b9c051704

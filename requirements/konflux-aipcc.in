@@ -20,11 +20,20 @@ kubernetes
 
 # Cross-arch constraints: pin packages to versions available on all target
 # architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
-matplotlib==3.10.8
-pyarrow<23.0.1
+cryptography==46.0.7
+jiter==0.14.0
 litellm<2,>=1.0.0
+matplotlib==3.10.8
+numpy==2.4.4
+pyarrow<23.0.1
 pydantic==2.13.1
+regex==2026.4.4
+rpds-py==0.30.0
+scikit-learn==1.8.0
+sqlalchemy==2.0.49
+tiktoken==0.12.0
 tokenizers==0.22.2
+yarl==1.23.0
 
 # Pillow 12.3.0+ fixes CVE-2026-59199 (and related Pillow CVEs) in the shipped runtime image.
 pillow>=12.3.0
@@ -32,5 +41,5 @@ pillow>=12.3.0
 # pyasn1 0.6.4+ fixes CVE-2026-59884/59885/59886 (DoS via crafted ASN.1 inputs).
 pyasn1>=0.6.4
 
-# GitPython 3.1.51+ fixes CVE-2026-67325 (and CVE-2026-67323) command injection issues in the shipped runtime image.
-gitpython>=3.1.51
+# GitPython 3.1.54+ fixes CVE-2026-73625 (Remote Code Execution via kwarg value smuggling)
+gitpython>=3.1.54
