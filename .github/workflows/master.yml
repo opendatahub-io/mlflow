@@ -41,12 +41,45 @@ env:
   PYTHONUTF8: "1"
   _MLFLOW_TESTING_TELEMETRY: "true"
   MLFLOW_SERVER_ENABLE_JOB_EXECUTION: "false"
+  MLFLOW_KONFLUX_IMAGE: mlflow-konflux:ci
+  MLFLOW_KONFLUX_IMAGE_ARTIFACT: mlflow-konflux-ci-image
 
 permissions: {}
 
 jobs:
+  build-konflux-image:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: ./.github/actions/free-disk-space
+      - name: Build runtime image
+        run: docker build -f Dockerfile.konflux -t "$MLFLOW_KONFLUX_IMAGE" .
+      - name: Smoke-import runtime packages
+        run: |
+          docker run --rm --entrypoint python3.12 "$MLFLOW_KONFLUX_IMAGE" -c \
+            "import mlflow, numpy, pandas"
+      - name: Save runtime image
+        run: |
+          mkdir -p konflux-image
+          docker save -o "konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar" "$MLFLOW_KONFLUX_IMAGE"
+      - name: Upload runtime image
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
+          path: konflux-image/${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}.tar
+          retention-days: 1
+          if-no-files-found: error
+
   python:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
+    needs: [build-konflux-image]
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -55,51 +88,53 @@ jobs:
       fail-fast: false
       matrix:
         group: [1, 2, 3, 4]
-        include:
-          - splits: 4
+        splits: [4]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/untracked
-      - uses: ./.github/actions/free-disk-space
-      - uses: ./.github/actions/setup-python
-      - uses: ./.github/actions/setup-pyenv
-      - uses: ./.github/actions/setup-java
-      - name: Install dependencies
-        run: |
-          uv sync --extra extras --extra gateway --extra mcp --extra genai
-          uv pip install \
-            -r requirements/test-requirements.txt \
-            -r requirements/extra-ml-requirements.txt
-      - uses: ./.github/actions/show-versions
       - uses: ./.github/actions/cache-hf
-      - name: Import check
-        run: |
-          # `-I` is used to avoid importing modules from user-specific site-packages
-          # that might conflict with the built-in modules (e.g. `types`).
-          uv run --no-sync python -I tests/check_mlflow_lazily_imports_ml_packages.py
+      - name: Download Konflux runtime image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
+          path: ${{ runner.temp }}/konflux-image
+      - name: Load Konflux runtime image
+        run: docker load -i "$RUNNER_TEMP/konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar"
       - name: Run tests
         env:
           SPLITS: ${{ matrix.splits }}
           GROUP: ${{ matrix.group }}
+          # Skip extra-ml collection (tests/conftest.py). tensorflow/datasets
+          # are not in the Konflux pin files.
+          MLFLOW_KONFLUX_PINNED_TESTS: "1"
         run: |
-          source dev/setup-ssh.sh
-          COMMON_ARGS=(
-            --splits="$SPLITS" --group="$GROUP"
-            --quiet --requires-ssh --ignore-flavors \
-            --ignore=tests/examples \
-            --ignore=tests/evaluate \
-            --ignore=tests/optuna \
-            --ignore=tests/pyspark/optuna \
-            --ignore=tests/genai \
-            --ignore=tests/docker \
-            --ignore=tests/sagemaker \
-            tests
-          )
-          uv run --no-sync pytest --serial=exclude -n auto --dist loadscope "${COMMON_ARGS[@]}"
-          uv run --no-sync pytest --serial=only "${COMMON_ARGS[@]}"
+          mkdir -p "$HOME/.cache/huggingface"
+          # Test inside Dockerfile.konflux. Do not recreate image RPMs or
+          # overlay AIPCC pins here; install only PyPI test wheels in-image
+          # (dev/run_konflux_python_ci.sh). Two-pass xdist partition:
+          # pytest --serial=exclude then pytest --serial=only.
+          docker run --rm --init --user 0 --shm-size=2g \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
+            -w "$GITHUB_WORKSPACE" \
+            -e HOME=/root \
+            -e CI \
+            -e GITHUB_ACTIONS \
+            -e MLFLOW_HOME="$GITHUB_WORKSPACE" \
+            -e MLFLOW_KONFLUX_PINNED_TESTS \
+            -e PYTHONUTF8 \
+            -e _MLFLOW_TESTING_TELEMETRY \
+            -e MLFLOW_SERVER_ENABLE_JOB_EXECUTION \
+            -e SPARK_LOCAL_IP \
+            -e SPLITS \
+            -e GROUP \
+            -e HF_HOME=/root/.cache/huggingface \
+            --entrypoint /bin/bash \
+            "$MLFLOW_KONFLUX_IMAGE" \
+            "$GITHUB_WORKSPACE/dev/run_konflux_python_ci.sh"
 
   database:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')

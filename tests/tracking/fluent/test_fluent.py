@@ -1955,6 +1955,7 @@ def test_last_logged_model_log_model():
 
 
 def test_last_logged_model_autolog():
+    pytest.importorskip("sklearn")
     try:
         from sklearn.linear_model import LinearRegression
 

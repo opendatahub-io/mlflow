@@ -39,6 +39,7 @@ exclude:
   - ./requirements/lint-requirements.txt
   - ./requirements/skinny-test-requirements.txt
   - ./requirements/test-requirements.txt
+  - ./requirements/konflux-test-opentelemetry-requirements.txt
   - ./requirements/ubi.repo
   - ./mlflow/server/js/custom-eslint-rules/**
   - ./mlflow/server/js/node_modules/**

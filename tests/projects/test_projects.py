@@ -31,7 +31,12 @@ from mlflow.utils.mlflow_tags import (
 )
 from mlflow.utils.process import ShellCommandException
 
-from tests.projects.utils import TEST_PROJECT_DIR, TEST_PROJECT_NAME, validate_exit_status
+from tests.projects.utils import (
+    TEST_PROJECT_DIR,
+    TEST_PROJECT_NAME,
+    requires_conda,
+    validate_exit_status,
+)
 
 MOCK_USER = "janebloggs"
 
@@ -85,6 +90,7 @@ def test_invalid_run_mode():
         mlflow.projects.run(uri=TEST_PROJECT_DIR, backend="some unsupported mode")
 
 
+@requires_conda
 def test_expected_tags_logged_when_using_conda():
     with mock.patch.object(MlflowClient, "set_tag") as tag_mock:
         try:
@@ -366,6 +372,7 @@ def test_create_env_with_mamba(monkeypatch):
             mlflow.utils.conda.get_or_create_conda_env(conda_env_path)
 
 
+@requires_conda
 def test_conda_environment_cleaned_up_when_pip_fails(tmp_path):
     conda_yaml = tmp_path / "conda.yaml"
     content = f"""
@@ -530,6 +537,7 @@ def test_credential_propagation(synchronous, monkeypatch):
         assert env["DATABRICKS_TOKEN"] == "mytoken"
 
 
+@requires_conda
 def test_get_or_create_conda_env_capture_output_mode(tmp_path):
     conda_yaml_file = tmp_path / "conda.yaml"
     conda_yaml_file.write_text(

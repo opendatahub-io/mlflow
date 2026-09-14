@@ -41,9 +41,18 @@ def test_detect_environment_from_env_var(monkeypatch, env_var, expected):
         ("staging", None),
     ],
 )
-def test_detect_environment_deployment_env(monkeypatch, value, expected):
+def test_detect_environment_deployment_env(monkeypatch, tmp_path, value, expected):
     monkeypatch.setenv("MLFLOW_DEPLOYMENT_ENV", value)
-    assert _detect_environment() == expected
+    missing = tmp_path / "absent"
+    with patch("mlflow.telemetry.utils.Path") as mock_path:
+
+        def path_side_effect(p):
+            if p in ("/.dockerenv", "/opt/ml/metadata/resource-metadata.json"):
+                return missing
+            return Path(p)
+
+        mock_path.side_effect = path_side_effect
+        assert _detect_environment() == expected
 
 
 def test_detect_environment_sagemaker_notebook(tmp_path, monkeypatch):
@@ -74,8 +83,17 @@ def test_detect_environment_docker(tmp_path, monkeypatch):
         assert _detect_environment() == Environment.DOCKER
 
 
-def test_detect_environment_none():
-    assert _detect_environment() is None
+def test_detect_environment_none(tmp_path):
+    missing = tmp_path / "absent"
+    with patch("mlflow.telemetry.utils.Path") as mock_path:
+
+        def path_side_effect(p):
+            if p in ("/.dockerenv", "/opt/ml/metadata/resource-metadata.json"):
+                return missing
+            return Path(p)
+
+        mock_path.side_effect = path_side_effect
+        assert _detect_environment() is None
 
 
 def test_is_telemetry_disabled(monkeypatch, bypass_env_check):

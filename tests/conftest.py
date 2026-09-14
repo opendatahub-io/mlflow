@@ -601,6 +601,18 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config):
         outcome.force_result((*rest, f"{status} | {_RESOURCE_USAGE.format()}"))
 
 
+# Paths whose collection imports extra-ml packages that are not in the
+# Konflux pin files (tensorflow, Hugging Face datasets).
+_KONFLUX_UNLOADABLE_ON_UBI = {
+    "tests/data/test_tensorflow_dataset.py",
+    "tests/data/test_huggingface_dataset_and_source.py",
+}
+
+
+def _konflux_pinned_tests_enabled() -> bool:
+    return os.environ.get("MLFLOW_KONFLUX_PINNED_TESTS") == "1"
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_ignore_collect(collection_path, config):
     outcome = yield
@@ -671,6 +683,12 @@ def pytest_ignore_collect(collection_path, config):
 
         if relpath in model_flavors:
             outcome.force_result(True)
+
+    if outcome.get_result() or not _konflux_pinned_tests_enabled():
+        return
+    relpath = os.path.relpath(str(collection_path)).replace(os.sep, posixpath.sep)
+    if relpath in _KONFLUX_UNLOADABLE_ON_UBI:
+        outcome.force_result(True)
 
 
 @pytest.hookimpl(trylast=True)
@@ -1085,8 +1103,11 @@ def clean_up_mlruns_directory(request):
     if os.path.exists(mlruns_dir):
         shutil.rmtree(mlruns_dir, onerror=_log_rmtree_error)
     # In Docker, files may be owned by root. Try sudo as a fallback.
+    # UBI CI images do not ship sudo; check=False does not catch FileNotFoundError.
     if not is_windows() and os.path.exists(mlruns_dir):
-        subprocess.run(["sudo", "rm", "-rf", mlruns_dir], check=False)
+        sudo = shutil.which("sudo")
+        cmd = [sudo, "rm", "-rf", mlruns_dir] if sudo else ["rm", "-rf", mlruns_dir]
+        subprocess.run(cmd, check=False)
 
 
 @pytest.fixture(autouse=not IS_TRACING_SDK_ONLY)
@@ -1113,8 +1134,15 @@ def clean_up_envs():
         from mlflow.utils.virtualenv import _get_mlflow_virtualenv_root
 
         shutil.rmtree(_get_mlflow_virtualenv_root(), ignore_errors=True)
-        if not is_windows():
-            conda_info = json.loads(subprocess.check_output(["conda", "info", "--json"], text=True))
+        # Konflux/UBI CI has no conda. Missing binary must be a no-op: this
+        # autouse fixture otherwise FileNotFoundError's every module teardown.
+        if not is_windows() and shutil.which("conda"):
+            try:
+                conda_info = json.loads(
+                    subprocess.check_output(["conda", "info", "--json"], text=True)
+                )
+            except (OSError, subprocess.CalledProcessError, json.JSONDecodeError):
+                return
             root_prefix = conda_info["root_prefix"]
             regex = re.compile(r"mlflow-\w{32,}")
             for env in conda_info["envs"]:
