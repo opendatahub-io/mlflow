@@ -41,159 +41,13 @@ env:
   PYTHONUTF8: "1"
   _MLFLOW_TESTING_TELEMETRY: "true"
   MLFLOW_SERVER_ENABLE_JOB_EXECUTION: "false"
+  MLFLOW_KONFLUX_IMAGE: mlflow-konflux:ci
+  MLFLOW_KONFLUX_IMAGE_ARTIFACT: mlflow-konflux-ci-image
 
 permissions: {}
 
 jobs:
-  python:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    permissions:
-      contents: read
-    # AIPCC wheels are built for UBI9 and link RHEL sonames
-    # (libopenblasp.so.0, libtiff.so.5). Ubuntu cannot provide those.
-    container:
-      image: registry.access.redhat.com/ubi9/ubi@sha256:e9a31af6530caffa3551f266c51a0d43b602e8f76a0dc12826dbeebceb487c92 # 9.7
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [1, 2, 3, 4]
-        include:
-          - splits: 4
-    steps:
-      - name: Install CI bootstrap packages
-        run: |
-          # git/tar: checkout and actions. gcc/make/libpq-devel: konflux-pypi
-          # pins psycopg2 as an sdist; Dockerfile.konflux wheels it in the
-          # image build. openssh: SFTP artifact-repo tests. Not image RPMs.
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
-            dnf-plugins-core \
-            git tar gzip findutils which procps-ng gcc make \
-            libpq-devel \
-            openssh-server openssh-clients
-          dnf config-manager --set-enabled crb \
-            || dnf config-manager --set-enabled codeready-builder-for-rhel-9-x86_64-rpms \
-            || true
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-          submodules: true
-      - name: Mark repository as git safe directory
-        run: git config --global --add safe.directory "$(pwd)"
-      - name: Install runtime RPMs
-        run: |
-          # Live DNF for unit-test CI only. AIPCC pyarrow needs EPEL
-          # thrift/re2 and Stream snappy. Not image RPMs; Dockerfile.konflux
-          # stays on UBI packages. python3.12 comes from setup-python.
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
-            https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-          cat > /etc/yum.repos.d/centos-stream-snappy.repo <<'EOF'
-          [centos-stream-9-baseos]
-          name = CentOS Stream 9 - BaseOS - $basearch
-          baseurl = https://mirror.stream.centos.org/9-stream/BaseOS/$basearch/os/
-          enabled = 1
-          gpgcheck = 1
-          gpgkey = https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official-SHA256
-          includepkgs = snappy
-          EOF
-          rpms=()
-          while IFS= read -r line || [ -n "$line" ]; do
-            case "$line" in
-              ''|'#'*|python3.12|python3.12-pip) continue ;;
-              *) rpms+=("$line") ;;
-            esac
-          done < requirements/konflux-runtime-rpms.txt
-          dnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs "${rpms[@]}"
-      - uses: ./.github/actions/untracked
-      - uses: ./.github/actions/setup-python
-        id: setup-python
-        with:
-          python-version: "3.12"
-          pin-micro-version: "false"
-      - uses: ./.github/actions/setup-java
-      - name: Install dependencies
-        env:
-          PYTHON_VERSION: ${{ steps.setup-python.outputs.python-version }}
-        run: |
-          uv sync --python "$PYTHON_VERSION" --extra extras --extra gateway --extra mcp --extra genai
-          uv pip install \
-            -r requirements/test-requirements.txt
-
-      - name: Overlay Konflux-pinned dependencies
-        run: |
-          # Konflux pins are curated and may fall outside the rolling-window
-          # exclusion policy set by setup-python. Unset rather than empty:
-          # UV_EXCLUDE_NEWER= is treated as an invalid date by uv.
-          # --no-config ignores pyproject.toml constraint-dependencies
-          # (e.g. xgboost<3.1.0), which break --require-hashes.
-          # --python .venv/bin/python is required in the job container: uv
-          # otherwise honors .python-version (3.10) instead of the 3.12 venv.
-          unset UV_EXCLUDE_NEWER
-          unset PIP_CONSTRAINT
-          export UV_LINK_MODE=copy
-          uv --no-config pip install --python .venv/bin/python --no-cache-dir --require-hashes --no-deps \
-            -r requirements/konflux-aipcc-requirements.txt
-
-          uv --no-config pip install --python .venv/bin/python --no-cache-dir --require-hashes --no-deps \
-            -r requirements/konflux-pypi-requirements.txt
-
-          # test-requirements.txt pulls opentelemetry-exporter-otlp-proto-{grpc,http}
-          # unpinned, resolving newer than the AIPCC-pinned opentelemetry-sdk==1.41.1
-          # and breaking OTLPSpanExporter imports. These exporters are test-only
-          # (lazy, optional at runtime) and are not shipped in Dockerfile.konflux, so
-          # pin them here in CI rather than in the autogenerated Konflux lock files.
-          uv --no-config pip install --python .venv/bin/python --no-cache-dir \
-            --require-hashes --no-deps \
-            -r requirements/konflux-test-opentelemetry-requirements.txt
-
-      - uses: ./.github/actions/show-versions
-      - uses: ./.github/actions/cache-hf
-      - name: Import check
-        run: |
-          # `-I` is used to avoid importing modules from user-specific site-packages
-          # that might conflict with the built-in modules (e.g. `types`).
-          # Native AIPCC wheels (pyarrow, PIL, …) are checked in
-          # konflux-image-import-check against Dockerfile.konflux, not here.
-          # This job's extra RPMs would hide a missing soname in the image.
-          uv run --python .venv/bin/python --no-sync python -I tests/check_mlflow_lazily_imports_ml_packages.py
-      - name: Run tests
-        env:
-          SPLITS: ${{ matrix.splits }}
-          GROUP: ${{ matrix.group }}
-          # Skip extra-ml collection (tests/conftest.py). tensorflow/datasets
-          # are not in the Konflux pin files.
-          MLFLOW_KONFLUX_PINNED_TESTS: "1"
-        run: |
-          # UBI containers do not ship ~/.ssh; ssh-keygen will not create it.
-          mkdir -p ~/.ssh
-          # Start sshd for the SFTP artifact-repo tests; the UBI base image does
-          # not run it. Guarded so a restart is a no-op if it is already up.
-          if ! pgrep -x sshd >/dev/null; then
-            ssh-keygen -A
-            mkdir -p /var/run/sshd /run/sshd
-            /usr/sbin/sshd
-          fi
-          source dev/setup-ssh.sh
-          # --python: overlay used 3.12; .python-version is 3.10 and uv would warn.
-          COMMON_ARGS=(
-            --splits="$SPLITS" --group="$GROUP"
-            --quiet --requires-ssh --ignore-flavors \
-            --ignore=tests/examples \
-            --ignore=tests/evaluate \
-            --ignore=tests/optuna \
-            --ignore=tests/pyspark/optuna \
-            --ignore=tests/genai \
-            --ignore=tests/docker \
-            --ignore=tests/sagemaker \
-            --ignore=tests/projects/test_virtualenv_projects.py \
-            --ignore=tests/metrics/test_metric_definitions.py \
-            tests
-          )
-          uv run --python .venv/bin/python --no-sync pytest --serial=exclude -n auto --dist loadscope "${COMMON_ARGS[@]}"
-          uv run --python .venv/bin/python --no-sync pytest --serial=only "${COMMON_ARGS[@]}"
-
-  konflux-image-import-check:
+  build-konflux-image:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -203,18 +57,84 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+          submodules: true
+      - uses: ./.github/actions/free-disk-space
       - name: Build runtime image
-        run: docker build -f Dockerfile.konflux -t mlflow-konflux:ci .
-      - name: Import AIPCC wheels in the image
+        run: docker build -f Dockerfile.konflux -t "$MLFLOW_KONFLUX_IMAGE" .
+      - name: Smoke-import runtime packages
         run: |
-          # Native pins loaded with the image RPM set only (no CI
-          # EPEL/Stream extras). Skip sklearn/pyarrow: AIPCC pyarrow
-          # needs libthrift from EPEL, which this image does not ship.
-          # No -I: image pip installs to /usr/local, and isolated mode only
-          # searches the RPM prefix (/usr/lib64). The python job still uses
-          # -I because that interpreter is a venv.
-          docker run --rm --entrypoint python3.12 mlflow-konflux:ci -c \
-            "import numpy, pandas, PIL, matplotlib"
+          docker run --rm --entrypoint python3.12 "$MLFLOW_KONFLUX_IMAGE" -c \
+            "import mlflow, numpy, pandas"
+      - name: Save runtime image
+        run: |
+          mkdir -p konflux-image
+          docker save -o "konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar" "$MLFLOW_KONFLUX_IMAGE"
+      - name: Upload runtime image
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
+          path: konflux-image/${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}.tar
+          retention-days: 1
+          if-no-files-found: error
+
+  python:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')
+    needs: [build-konflux-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
+        splits: [4]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: ./.github/actions/untracked
+      - uses: ./.github/actions/cache-hf
+      - name: Download Konflux runtime image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
+          path: ${{ runner.temp }}/konflux-image
+      - name: Load Konflux runtime image
+        run: docker load -i "$RUNNER_TEMP/konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar"
+      - name: Run tests
+        env:
+          SPLITS: ${{ matrix.splits }}
+          GROUP: ${{ matrix.group }}
+          # Skip extra-ml collection (tests/conftest.py). tensorflow/datasets
+          # are not in the Konflux pin files.
+          MLFLOW_KONFLUX_PINNED_TESTS: "1"
+        run: |
+          mkdir -p "$HOME/.cache/huggingface"
+          # Test inside Dockerfile.konflux. Do not recreate image RPMs or
+          # overlay AIPCC pins here; install only PyPI test wheels in-image
+          # (dev/run_konflux_python_ci.sh). Two-pass xdist partition:
+          # pytest --serial=exclude then pytest --serial=only.
+          docker run --rm --init --user 0 --shm-size=2g \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
+            -w "$GITHUB_WORKSPACE" \
+            -e HOME=/root \
+            -e CI \
+            -e GITHUB_ACTIONS \
+            -e MLFLOW_HOME="$GITHUB_WORKSPACE" \
+            -e MLFLOW_KONFLUX_PINNED_TESTS \
+            -e PYTHONUTF8 \
+            -e _MLFLOW_TESTING_TELEMETRY \
+            -e MLFLOW_SERVER_ENABLE_JOB_EXECUTION \
+            -e SPARK_LOCAL_IP \
+            -e SPLITS \
+            -e GROUP \
+            -e HF_HOME=/root/.cache/huggingface \
+            --entrypoint /bin/bash \
+            "$MLFLOW_KONFLUX_IMAGE" \
+            "$GITHUB_WORKSPACE/dev/run_konflux_python_ci.sh"
 
   database:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false || github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.user.type == 'Bot')

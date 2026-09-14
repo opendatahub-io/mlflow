@@ -39,7 +39,7 @@ def main():
     assert imported == set(), f"`mlflow.autolog` imports {imported} but it should not"
 
     # Only require import of packages that are actually installed. Konflux CI
-    # overlays image pins and does not install extra-ml-requirements.txt.
+    # runs inside Dockerfile.konflux and does not install extra-ml-requirements.txt.
     failed_to_import = []
     for package in sorted(ml_packages):
         spec = importlib.util.find_spec(package.split(".", 1)[0])
