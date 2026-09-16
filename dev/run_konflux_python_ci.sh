@@ -15,10 +15,14 @@ microdnf clean all
 
 git config --global --add safe.directory "$(pwd)"
 
-# Keep the image's production pins. Prefer PyPI wheels for test dependencies,
-# but permit PySpark's source archive because it does not publish a wheel and
-# its installation does not compile native code.
-python3.12 -m pip freeze --disable-pip-version-check >/tmp/konflux-runtime-constraints.txt
+# Keep the image's production pins. `pip list` deliberately emits only
+# name==version constraints: unlike `pip freeze`, it cannot retain the
+# file:///tmp/dist provenance of wheels that Dockerfile.konflux deletes.
+# Prefer PyPI wheels for test dependencies, but permit PySpark's source
+# archive because it does not publish a wheel and its installation does not
+# compile native code.
+python3.12 -m pip list --format=freeze --disable-pip-version-check \
+  >/tmp/konflux-runtime-constraints.txt
 python3.12 -m pip install --no-cache-dir --disable-pip-version-check \
   --prefer-binary \
   --upgrade-strategy only-if-needed \
