@@ -4,7 +4,6 @@ import logging
 import numbers
 import os
 import random
-import shutil
 import signal
 import socket
 import subprocess
@@ -28,38 +27,6 @@ from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 from mlflow.utils.os import is_windows
 
 AWS_METADATA_IP = "169.254.169.254"  # Used to fetch AWS Instance and User metadata.
-
-
-def docker_daemon_available(timeout: float = 10) -> bool:
-    """Return True if the Docker CLI can talk to a running daemon."""
-    if shutil.which("docker") is None:
-        return False
-    try:
-        subprocess.run(
-            ["docker", "info"],
-            check=True,
-            capture_output=True,
-            timeout=timeout,
-        )
-        return True
-    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
-
-
-def docker_compose_v2_available(timeout: float = 10) -> bool:
-    """Return True if Docker Compose v2 (`docker compose`) works against a running daemon."""
-    if not docker_daemon_available(timeout=timeout):
-        return False
-    try:
-        subprocess.run(
-            ["docker", "compose", "version"],
-            check=True,
-            capture_output=True,
-            timeout=timeout,
-        )
-        return True
-    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
 
 
 def kill_process_tree(pid: int) -> None:

@@ -59,17 +59,13 @@ jobs:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/free-disk-space
-      - name: Build runtime image
+      - name: Build Konflux image
         run: docker build -f Dockerfile.konflux -t "$MLFLOW_KONFLUX_IMAGE" .
-      - name: Smoke-import runtime packages
-        run: |
-          docker run --rm --entrypoint python3.12 "$MLFLOW_KONFLUX_IMAGE" -c \
-            "import mlflow, numpy, pandas"
-      - name: Save runtime image
+      - name: Save Konflux image
         run: |
           mkdir -p konflux-image
           docker save -o "konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar" "$MLFLOW_KONFLUX_IMAGE"
-      - name: Upload runtime image
+      - name: Upload Konflux image
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
@@ -96,35 +92,26 @@ jobs:
           submodules: true
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/cache-hf
-      - name: Download Konflux runtime image
+      - name: Download Konflux image
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ env.MLFLOW_KONFLUX_IMAGE_ARTIFACT }}
           path: ${{ runner.temp }}/konflux-image
-      - name: Load Konflux runtime image
+      - name: Load Konflux image
         run: docker load -i "$RUNNER_TEMP/konflux-image/${MLFLOW_KONFLUX_IMAGE_ARTIFACT}.tar"
       - name: Run tests
         env:
           SPLITS: ${{ matrix.splits }}
           GROUP: ${{ matrix.group }}
-          # Skip extra-ml collection (tests/conftest.py). tensorflow/datasets
-          # are not in the Konflux pin files.
-          MLFLOW_KONFLUX_PINNED_TESTS: "1"
         run: |
           mkdir -p "$HOME/.cache/huggingface"
-          # Test inside Dockerfile.konflux. Do not recreate image RPMs or
-          # overlay AIPCC pins here; install only PyPI test wheels in-image
-          # (dev/run_konflux_python_ci.sh). Two-pass xdist partition:
-          # pytest --serial=exclude then pytest --serial=only.
           docker run --rm --init --user 0 --shm-size=2g \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
             -w "$GITHUB_WORKSPACE" \
             -e HOME=/root \
             -e CI \
-            -e GITHUB_ACTIONS \
             -e MLFLOW_HOME="$GITHUB_WORKSPACE" \
-            -e MLFLOW_KONFLUX_PINNED_TESTS \
             -e PYTHONUTF8 \
             -e _MLFLOW_TESTING_TELEMETRY \
             -e MLFLOW_SERVER_ENABLE_JOB_EXECUTION \

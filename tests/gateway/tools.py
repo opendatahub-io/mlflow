@@ -14,6 +14,7 @@ import aiohttp
 import requests
 import uvicorn
 import yaml
+from sentence_transformers import SentenceTransformer
 
 import mlflow
 from mlflow.gateway import app
@@ -239,8 +240,6 @@ class ServerInfo(NamedTuple):
 
 
 def log_sentence_transformers_model():
-    from sentence_transformers import SentenceTransformer
-
     model = SentenceTransformer("all-MiniLM-L6-v2")
     artifact_path = "gen_model"
 

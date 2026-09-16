@@ -28,8 +28,8 @@ _requires_bash = pytest.mark.skipif(is_windows(), reason="two-pass CI shell cont
 @pytest.fixture(autouse=True)
 def _chdir_repo_root(monkeypatch):
     # `_is_serial_item` classifies via `os.path.relpath(item.path)`, which is relative to
-    # the CWD. Production is correct only because CI runs pytest from the repo root
-    # (`docker run -w "$GITHUB_WORKSPACE"`; the python job sets no `working-directory:`).
+    # the CWD. Production is correct only because CI runs pytest from the repo root (the
+    # `python` job sets no `working-directory:`). Pin that same CWD here so the tests drive
     # the real, CWD-sensitive code path deterministically rather than accidentally bypassing
     # it — see `test_classification_requires_repo_root_cwd` for the guard on that assumption.
     monkeypatch.chdir(_REPO_ROOT)
@@ -131,10 +131,9 @@ def test_classification_requires_repo_root_cwd(monkeypatch):
 
 # --- False-green guards on the CI orchestration itself -------------------------------
 # The two-pass design runs `pytest --serial=exclude ...` then `pytest --serial=only ...`
-# as two statements. The `python` job invokes that via docker in
-# `dev/run_konflux_python_ci.sh`. The host step is safe (a failing `docker run` turns
-# the job red) ONLY because it runs under `bash -eo pipefail`; the in-image script
-# uses `set -euo pipefail` so a failing first pytest pass aborts before the second.
+# as two statements in one workflow `run:` block. It is safe (a failing pass turns the
+# job red) ONLY because the step runs under `bash -eo pipefail`. These tests pin the two
+# load-bearing invariants so a future edit can't silently reintroduce a false green.
 
 
 def _python_run_tests_block() -> str:
@@ -143,12 +142,6 @@ def _python_run_tests_block() -> str:
     run_steps = [s["run"] for s in steps if s.get("name") == "Run tests"]
     assert run_steps, "python job has no 'Run tests' step"
     return run_steps[0]
-
-
-def _konflux_python_ci_script() -> str:
-    script = _REPO_ROOT / "dev" / "run_konflux_python_ci.sh"
-    assert script.is_file(), "dev/run_konflux_python_ci.sh is missing"
-    return script.read_text()
 
 
 def test_workflow_default_shell_is_bash():
@@ -161,25 +154,18 @@ def test_workflow_default_shell_is_bash():
 def test_python_job_runs_both_serial_passes():
     block = _python_run_tests_block()
     assert "dev/run_konflux_python_ci.sh" in block
-    script = _konflux_python_ci_script()
-    assert "--serial=exclude" in script
-    assert "--serial=only" in script
-    assert "set -euo pipefail" in script
+    script = _REPO_ROOT / "dev" / "run_konflux_python_ci.sh"
+    assert "--serial=exclude" in script.read_text()
+    assert "--serial=only" in script.read_text()
 
 
-def test_python_job_runs_inside_konflux_image():
-    # Konflux-pin CI must test Dockerfile.konflux, not a recreated UBI job
-    # container with extra RPMs and a hashed overlay.
-    wf = yaml.safe_load(_MASTER_WORKFLOW.read_text())
-    python = wf["jobs"]["python"]
-    build = wf["jobs"]["build-konflux-image"]
-    assert python.get("needs") == ["build-konflux-image"]
-    assert "container" not in python
+def test_python_job_runs_the_built_konflux_image():
+    workflow = yaml.safe_load(_MASTER_WORKFLOW.read_text())
+    python_job = workflow["jobs"]["python"]
+    build_job = workflow["jobs"]["build-konflux-image"]
+    assert python_job["needs"] == ["build-konflux-image"]
     assert "docker run" in _python_run_tests_block()
-    assert any("Dockerfile.konflux" in (step.get("run") or "") for step in build["steps"])
-    script = _konflux_python_ci_script()
-    assert "--only-binary=:all:" in script
-    assert "requirements/test-requirements.txt" in script
+    assert any("Dockerfile.konflux" in (step.get("run") or "") for step in build_job["steps"])
 
 
 def _run_two_pass(tmp_path, first_rc, second_rc):

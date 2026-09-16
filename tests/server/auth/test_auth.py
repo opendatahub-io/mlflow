@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import os
 import re
 import subprocess
 import sys
@@ -1507,13 +1506,13 @@ def test_create_model_version_empty_source_id_does_not_bypass(
     assert "Permission denied" in response.text
 
 
-def _wait(url: str, timeout: int = 30) -> None:
+def _wait(url: str, timeout: int = 10) -> None:
     t = time.time()
     while time.time() - t < timeout:
         try:
-            if requests.get(f"{url}/health", timeout=1).ok:
+            if requests.get(f"{url}/health").ok:
                 return
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        except requests.exceptions.ConnectionError:
             pass
         time.sleep(0.5)
 
@@ -1546,7 +1545,7 @@ def test_proxy_log_artifacts(monkeypatch, tmp_path):
             "--gunicorn-opts",
             "--log-level debug",
         ],
-        env=os.environ | env,
+        env=env,
     ) as prc:
         try:
             url = f"http://{host}:{port}"

@@ -22,7 +22,6 @@ from tests.projects.utils import (
     TEST_PROJECT_DIR,
     TEST_VIRTUALENV_PROJECT_DIR,
     docker_example_base_image,  # noqa: F401
-    requires_conda,
 )
 
 _logger = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ skip_if_skinny = pytest.mark.skipif(
 )
 
 
-@requires_conda
 @pytest.mark.parametrize("name", ["friend", "friend=you", "='friend'"])
 def test_run_local_params(name):
     excitement_arg = 2
@@ -60,7 +58,6 @@ def test_run_local_with_docker_args(docker_example_base_image):
     invoke_cli_runner(cli.run, [TEST_DOCKER_PROJECT_DIR, "-A", "tty", "-A", "name=mycontainer"])
 
 
-@requires_conda
 @pytest.mark.parametrize("experiment_name", [b"test-experiment".decode("utf-8"), "test-experiment"])
 def test_run_local_experiment_specification(experiment_name):
     invoke_cli_runner(
@@ -93,7 +90,6 @@ def clean_mlruns_dir():
         shutil.rmtree(dir_path)
 
 
-@requires_conda
 @skip_if_skinny
 def test_run_local_conda_env():
     with open(os.path.join(TEST_PROJECT_DIR, "conda.yaml")) as handle:

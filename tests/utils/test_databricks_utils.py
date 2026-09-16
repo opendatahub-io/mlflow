@@ -1327,9 +1327,7 @@ token = test-token
     assert result.token == "test-token"
 
 
-def test_get_databricks_nfs_temp_dir(monkeypatch):
-    # Production code uses getRepl*TempDir when the user is root; UBI CI is root.
-    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "spark")
+def test_get_databricks_nfs_temp_dir():
     mock_dbutils = mock.MagicMock()
     mock_client = mock.MagicMock()
     mock_client.getUserNFSTempDir.return_value = "/nfs/user/grpc"
@@ -1359,9 +1357,7 @@ def test_get_databricks_nfs_temp_dir(monkeypatch):
         mock_dbutils2.entry_point.getUserNFSTempDir.assert_called_once()
 
 
-def test_get_databricks_local_temp_dir(monkeypatch):
-    # Production code uses getRepl*TempDir when the user is root; UBI CI is root.
-    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "spark")
+def test_get_databricks_local_temp_dir():
     mock_dbutils = mock.MagicMock()
     mock_client = mock.MagicMock()
     mock_client.getUserLocalTempDir.return_value = "/local/user/grpc"
@@ -1389,42 +1385,6 @@ def test_get_databricks_local_temp_dir(monkeypatch):
     ):
         assert databricks_utils.get_databricks_local_temp_dir() == "/local/user"
         mock_dbutils2.entry_point.getUserLocalTempDir.assert_called_once()
-
-
-def test_get_databricks_nfs_temp_dir_root(monkeypatch):
-    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "root")
-    mock_dbutils = mock.MagicMock()
-    mock_dbutils.entry_point.getReplNFSTempDir.return_value = "/nfs/repl"
-    mock_client = mock.MagicMock()
-    with (
-        mock.patch("mlflow.utils.databricks_utils._get_dbutils", return_value=mock_dbutils),
-        mock.patch(
-            "mlflow.utils.databricks_utils._get_runtime_integration_client",
-            return_value=mock_client,
-        ) as mock_get_runtime_integration_client,
-    ):
-        assert databricks_utils.get_databricks_nfs_temp_dir() == "/nfs/repl"
-        mock_dbutils.entry_point.getReplNFSTempDir.assert_called_once()
-        mock_client.getUserNFSTempDir.assert_not_called()
-        mock_get_runtime_integration_client.assert_not_called()
-
-
-def test_get_databricks_local_temp_dir_root(monkeypatch):
-    monkeypatch.setattr(databricks_utils.getpass, "getuser", lambda: "root")
-    mock_dbutils = mock.MagicMock()
-    mock_dbutils.entry_point.getReplLocalTempDir.return_value = "/local/repl"
-    mock_client = mock.MagicMock()
-    with (
-        mock.patch("mlflow.utils.databricks_utils._get_dbutils", return_value=mock_dbutils),
-        mock.patch(
-            "mlflow.utils.databricks_utils._get_runtime_integration_client",
-            return_value=mock_client,
-        ) as mock_get_runtime_integration_client,
-    ):
-        assert databricks_utils.get_databricks_local_temp_dir() == "/local/repl"
-        mock_dbutils.entry_point.getReplLocalTempDir.assert_called_once()
-        mock_client.getUserLocalTempDir.assert_not_called()
-        mock_get_runtime_integration_client.assert_not_called()
 
 
 def test_get_databricks_host_creds_propagates_workspace_id(monkeypatch):

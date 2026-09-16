@@ -13,8 +13,6 @@ from mlflow.environment_variables import (
 )
 from mlflow.tracing.fluent import _flush_pending_async_trace_writes
 
-from tests.helper_functions import docker_daemon_available
-
 
 @pytest.fixture(autouse=True)
 def enable_async_trace_logging(monkeypatch):
@@ -70,8 +68,6 @@ def async_logging_enabled(request, monkeypatch):
 @pytest.fixture
 def otel_collector():
     """Start an OpenTelemetry collector in a Docker container."""
-    if not docker_daemon_available():
-        pytest.skip("docker daemon is not available")
     subprocess.check_call(["docker", "pull", "otel/opentelemetry-collector"])
 
     # Use a random port to avoid conflicts

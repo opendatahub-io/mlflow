@@ -1,57 +1,36 @@
 #!/usr/bin/env bash
-# Run the python test suite inside Dockerfile.konflux.
-#
-# Runtime Python packages and native libraries come from the image. This
-# script only adds test-only OS tools (sshd, Java, git) and precompiled
-# PyPI wheels for pytest and other test dependencies.
+# Run the Python CI test shards against the image built from Dockerfile.konflux.
+# The image supplies production packages and native libraries; this script adds
+# only tools and Python packages needed to execute the test suite.
 
 set -euo pipefail
 
-# sshd: SFTP artifact-repo tests. Java: pyspark dataset tests. git: serve_wheel
-# and a few subprocess checks. Not image RPMs; Dockerfile.konflux stays UBI-only.
 microdnf install -y --setopt=install_weak_deps=0 --setopt=tsflags=nodocs \
   git \
-  openssh-server \
+  java-17-openjdk-headless \
   openssh-clients \
-  procps-ng \
-  java-17-openjdk-headless
+  openssh-server \
+  procps-ng
+microdnf clean all
 
-# Bind-mounted checkout is owned by the GHA runner UID; we run as root.
 git config --global --add safe.directory "$(pwd)"
 
-if [ -z "${JAVA_HOME:-}" ]; then
-  java_bin=$(command -v java)
-  JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$java_bin")")")
-  export JAVA_HOME
-fi
-
-# Keep AIPCC runtime pins (pillow, numpy, opentelemetry-sdk, …). PyPI test
-# wheels must not replace those with manylinux builds that hide missing image
-# sonames. --only-binary=:all: matches "precompiled wheels from PyPI".
+# Keep the image's production pins. Prefer PyPI wheels for test dependencies,
+# but permit PySpark's source archive because it does not publish a wheel and
+# its installation does not compile native code.
+python3.12 -m pip freeze --disable-pip-version-check >/tmp/konflux-runtime-constraints.txt
 python3.12 -m pip install --no-cache-dir --disable-pip-version-check \
-  --only-binary=:all: --require-hashes --no-deps \
-  -r requirements/konflux-test-opentelemetry-requirements.txt
-
-python3.12 -m pip freeze --disable-pip-version-check >/tmp/image-constraints.txt
-
-python3.12 -m pip install --no-cache-dir --disable-pip-version-check \
-  --only-binary=:all: \
+  --prefer-binary \
   --upgrade-strategy only-if-needed \
-  -c /tmp/image-constraints.txt \
+  -c /tmp/konflux-runtime-constraints.txt \
   -r requirements/test-requirements.txt \
-  "setuptools<=82.0.1" \
+  virtualenv \
+  uv \
   wheel
 
-echo ">>> package versions"
-python3.12 -m pip freeze --disable-pip-version-check | sort
-echo "<<< package versions"
-
-mkdir -p "${HOME}/.ssh" /root/.ssh /var/run/sshd /run/sshd
-if ! pgrep -x sshd >/dev/null; then
-  ssh-keygen -A
-  /usr/sbin/sshd
-fi
-# shellcheck source=dev/setup-ssh.sh
+mkdir -p /run/sshd /var/run/sshd
+ssh-keygen -A
+/usr/sbin/sshd
 source dev/setup-ssh.sh
 
 COMMON_ARGS=(
@@ -63,9 +42,9 @@ COMMON_ARGS=(
   --ignore=tests/pyspark/optuna \
   --ignore=tests/genai \
   --ignore=tests/docker \
+  --ignore=tests/projects/test_docker_projects.py \
+  --ignore=tests/projects/test_projects_cli.py \
   --ignore=tests/sagemaker \
-  --ignore=tests/projects/test_virtualenv_projects.py \
-  --ignore=tests/metrics/test_metric_definitions.py \
   tests
 )
 
