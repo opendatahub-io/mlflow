@@ -27,12 +27,12 @@ const mockPrompt = (name: string, modelName?: string): RegisteredPrompt =>
   }) as unknown as RegisteredPrompt;
 
 describe('PromptsListModelSelector', () => {
-  it('shows the "Associated model" label and announces no selection when no model is chosen', () => {
+  it('shows the "Models" label and announces no selection when no model is chosen', () => {
     renderWithDesignSystem(
       <PromptsListModelSelector modelFilter={undefined} setModelFilter={jest.fn()} prompts={[]} />,
     );
-    expect(screen.getByText('Associated model')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Associated model, no option selected' })).toBeInTheDocument();
+    expect(screen.getByText('Models')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Models, no option selected' })).toBeInTheDocument();
   });
 
   it('lists distinct models sorted alphabetically, derived from the latest version of each prompt', async () => {

@@ -59,7 +59,7 @@ const usePromptsTableColumns = () => {
       },
       {
         header: intl.formatMessage({
-          defaultMessage: 'Associated Model',
+          defaultMessage: 'Model',
           description: 'Header for the associated model column in the registered prompts table',
         }),
         id: SORTABLE_COLUMN_ID,

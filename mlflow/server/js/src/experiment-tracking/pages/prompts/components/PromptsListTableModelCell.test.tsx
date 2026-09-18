@@ -19,18 +19,18 @@ describe('PromptsListTableModelCell', () => {
     expect(screen.getByText('gpt-4')).toBeInTheDocument();
   });
 
-  it('should render "Not specified" when no model name', () => {
+  it('should render "-" when no model name', () => {
     renderModelCell(undefined);
-    expect(screen.getByText('Not specified')).toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
   });
 
-  it('should render "Not specified" when model name is empty string', () => {
+  it('should render "-" when model name is empty string', () => {
     renderModelCell('');
-    expect(screen.getByText('Not specified')).toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
   });
 
-  it('should render "Not specified" when model name is not a string', () => {
+  it('should render "-" when model name is not a string', () => {
     renderModelCell({});
-    expect(screen.getByText('Not specified')).toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
   });
 });

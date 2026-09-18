@@ -70,16 +70,16 @@ describe('PromptsPage associated model column', () => {
     });
   };
 
-  it('should render Associated Model column with model name and Not specified', async () => {
+  it('should render Model column with model name and placeholder', async () => {
     renderTestComponent();
     await waitFor(() => {
-      expect(screen.getByText('Associated Model')).toBeInTheDocument();
+      expect(screen.getByText('Model')).toBeInTheDocument();
     });
 
     await waitFor(() => {
       expect(screen.getByText('gpt-4')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Not specified')).toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
   });
 });

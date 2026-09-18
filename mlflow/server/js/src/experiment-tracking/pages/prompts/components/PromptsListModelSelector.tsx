@@ -10,6 +10,9 @@ import { useMemo } from 'react';
 import { useIntl } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
 import { getPromptAssociatedModel } from '../promptModelConfig';
+import { PromptModelName } from './PromptModelName';
+
+const DROPDOWN_WIDTH = 240;
 
 export const PromptsListModelSelector = ({
   modelFilter,
@@ -33,7 +36,7 @@ export const PromptsListModelSelector = ({
     <DialogCombobox
       componentId="mlflow.prompts.list.model-selector"
       label={intl.formatMessage({
-        defaultMessage: 'Associated model',
+        defaultMessage: 'Models',
         description: 'Label for the associated model filter on the registered prompts page',
       })}
       modal={false}
@@ -46,6 +49,7 @@ export const PromptsListModelSelector = ({
           description: 'Placeholder for the associated model filter when no model is selected',
         })}
         onClear={() => setModelFilter(undefined)}
+        maxWidth={DROPDOWN_WIDTH}
       />
       <DialogComboboxContent maxHeight={400} matchTriggerWidth>
         <DialogComboboxOptionList>
@@ -56,8 +60,9 @@ export const PromptsListModelSelector = ({
                 value={model}
                 checked={modelFilter === model}
                 onChange={(value) => setModelFilter(modelFilter === value ? undefined : value)}
+                css={{ '& > label': { flex: 1, width: 0 } }}
               >
-                {model}
+                <PromptModelName modelName={model} componentId="mlflow.prompts.list.model-selector.option-tooltip" />
               </DialogComboboxOptionListSelectItem>
             ))}
           </DialogComboboxOptionListSearch>

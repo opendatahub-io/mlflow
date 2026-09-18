@@ -2147,6 +2147,7 @@ module.exports = {
   "mlflow.prompts.edit_model_config.modal": "",
   "mlflow.prompts.list.empty_state.learn_more_link": "",
   "mlflow.prompts.list.model-selector": "",
+  "mlflow.prompts.list.model-selector.option-tooltip": "",
   "mlflow.prompts.list.model.tooltip": "",
   "mlflow.prompts.list.prompt_name_link": "",
   "mlflow.prompts.list.table.create_prompt": "",
