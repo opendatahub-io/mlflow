@@ -20,7 +20,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "deepseek-v4-flash-0731": {
       "mode": "chat",
@@ -41,7 +41,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "deepseek-v4-pro": {
       "mode": "chat",
@@ -62,7 +62,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "glm-5.1": {
       "mode": "chat",
@@ -83,7 +83,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "glm-5.2": {
       "mode": "chat",
@@ -104,7 +104,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "kimi-k2.7-code": {
       "mode": "chat",
@@ -125,7 +125,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-coder": {
       "mode": "chat",
@@ -145,7 +145,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-flash": {
       "mode": "chat",
@@ -161,7 +161,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-flash-2025-07-28": {
       "mode": "chat",
@@ -177,7 +177,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-image-2.0": {
       "mode": "image_generation",
@@ -188,7 +188,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-05-28"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-image-2.0-pro": {
       "mode": "image_generation",
@@ -199,7 +199,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-05-28"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-image-3.0": {
       "mode": "image_generation",
@@ -210,7 +210,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-08-31"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-image-3.0-pro": {
       "mode": "image_generation",
@@ -221,7 +221,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-08-31"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-max": {
       "mode": "chat",
@@ -241,7 +241,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus": {
       "mode": "chat",
@@ -261,7 +261,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-2025-01-25": {
       "mode": "chat",
@@ -281,7 +281,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-2025-04-28": {
       "mode": "chat",
@@ -301,7 +301,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-2025-07-14": {
       "mode": "chat",
@@ -321,7 +321,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-2025-07-28": {
       "mode": "chat",
@@ -337,7 +337,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-2025-09-11": {
       "mode": "chat",
@@ -353,7 +353,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-plus-latest": {
       "mode": "chat",
@@ -369,7 +369,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-turbo": {
       "mode": "chat",
@@ -389,7 +389,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-turbo-2024-11-01": {
       "mode": "chat",
@@ -409,7 +409,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-turbo-2025-04-28": {
       "mode": "chat",
@@ -429,7 +429,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen-turbo-latest": {
       "mode": "chat",
@@ -449,7 +449,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-30b-a3b": {
       "mode": "chat",
@@ -465,7 +465,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-coder-flash": {
       "mode": "chat",
@@ -481,7 +481,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-coder-flash-2025-07-28": {
       "mode": "chat",
@@ -497,7 +497,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-coder-plus": {
       "mode": "chat",
@@ -513,7 +513,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-coder-plus-2025-07-22": {
       "mode": "chat",
@@ -529,7 +529,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-max": {
       "mode": "chat",
@@ -545,7 +545,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-max-2026-01-23": {
       "mode": "chat",
@@ -561,7 +561,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-max-preview": {
       "mode": "chat",
@@ -577,7 +577,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-next-80b-a3b-instruct": {
       "mode": "chat",
@@ -597,7 +597,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-next-80b-a3b-thinking": {
       "mode": "chat",
@@ -617,7 +617,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-vl-235b-a22b-instruct": {
       "mode": "chat",
@@ -637,7 +637,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-vl-235b-a22b-thinking": {
       "mode": "chat",
@@ -657,7 +657,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-vl-32b-instruct": {
       "mode": "chat",
@@ -677,7 +677,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-vl-32b-thinking": {
       "mode": "chat",
@@ -697,7 +697,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3-vl-plus": {
       "mode": "chat",
@@ -713,7 +713,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3.5-plus": {
       "mode": "chat",
@@ -729,7 +729,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3.7-max": {
       "mode": "chat",
@@ -750,7 +750,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-07-31"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3.7-plus": {
       "mode": "chat",
@@ -766,7 +766,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-07-31"
+      "last_updated_at": "2026-09-02"
     },
     "qwen3.8-max": {
       "mode": "chat",
@@ -787,7 +787,7 @@
         "prompt_caching": true,
         "response_schema": true
       },
-      "last_updated_at": "2026-08-14"
+      "last_updated_at": "2026-09-02"
     },
     "qwq-plus": {
       "mode": "chat",
@@ -807,7 +807,7 @@
         "prompt_caching": false,
         "response_schema": false
       },
-      "last_updated_at": "2026-04-24"
+      "last_updated_at": "2026-09-02"
     }
   }
 }
