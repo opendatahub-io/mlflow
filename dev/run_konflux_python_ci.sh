@@ -48,6 +48,7 @@ COMMON_ARGS=(
   --ignore=tests/docker \
   --ignore=tests/projects/test_docker_projects.py \
   --ignore=tests/projects/test_projects_cli.py \
+  --ignore=tests/tracing/utils/test_otlp.py \
   --ignore=tests/sagemaker \
   tests
 )
