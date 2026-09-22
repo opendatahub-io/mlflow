@@ -38,3 +38,6 @@ pyasn1>=0.6.4
 
 # GitPython 3.1.51+ fixes CVE-2026-67325 (and CVE-2026-67323) command injection issues in the shipped runtime image.
 gitpython>=3.1.51
+
+# sqlparse 0.6.0+ fixes CVE-2026-71491 (quadratic CPU consumption in comment grouping).
+sqlparse>=0.6.0
