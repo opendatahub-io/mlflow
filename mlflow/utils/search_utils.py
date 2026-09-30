@@ -24,6 +24,7 @@ from mlflow.entities import LoggedModel, Metric, RunInfo
 from mlflow.entities.model_registry.model_version_stages import STAGE_DELETED_INTERNAL
 from mlflow.entities.model_registry.prompt_version import IS_PROMPT_TAG_KEY
 from mlflow.exceptions import MlflowException
+from mlflow.prompt.constants import PROMPT_MODEL_CONFIG_TAG_KEY
 from mlflow.protos.databricks_pb2 import INVALID_PARAMETER_VALUE
 from mlflow.store.db.db_types import MSSQL, MYSQL, POSTGRES, SQLITE
 from mlflow.tracing.constant import (
@@ -1275,6 +1276,8 @@ class SearchModelUtils(SearchUtils):
     VALID_ORDER_BY_KEYS_REGISTERED_MODELS = {"name", "creation_timestamp", "last_updated_timestamp"}
     VALID_TAG_COMPARATORS = {"!=", "=", "LIKE", "ILIKE"}
     LIST_SUPPORTED_KEYS = frozenset({"name"})
+    _MODEL_CONFIG_IDENTIFIER = "model_config"
+    VALID_MODEL_CONFIG_KEYS = {"model_name", "provider"}
 
     @classmethod
     def _does_registered_model_match_clauses(cls, model, sed):
@@ -1284,7 +1287,14 @@ class SearchModelUtils(SearchUtils):
         comparator = sed.get("comparator").upper()
 
         # what comparators do we support here?
-        if cls.is_string_attribute(key_type, key, comparator):
+        if key_type == cls._MODEL_CONFIG_IDENTIFIER:
+            if comparator not in cls.VALID_TAG_COMPARATORS:
+                raise MlflowException(
+                    f"Invalid comparator '{comparator}' not one of '{cls.VALID_TAG_COMPARATORS}'",
+                    error_code=INVALID_PARAMETER_VALUE,
+                )
+            lhs = cls._get_model_config_value(model, key)
+        elif cls.is_string_attribute(key_type, key, comparator):
             lhs = getattr(model, key)
         elif cls.is_numeric_attribute(key_type, key, comparator):
             lhs = getattr(model, key)
@@ -1380,20 +1390,31 @@ class SearchModelUtils(SearchUtils):
             identifier = cls._ATTRIBUTE_IDENTIFIER
         else:
             entity_type, key = tokens
-            valid_entity_types = ("attribute", "tag", "tags")
+            valid_entity_types = ("attribute", "tag", "tags", "model_config")
             if entity_type not in valid_entity_types:
                 raise MlflowException.invalid_parameter_value(
                     f"Invalid entity type '{entity_type}'. "
                     f"Valid entity types are {valid_entity_types}"
                 )
-            identifier = (
-                cls._TAG_IDENTIFIER if entity_type in ("tag", "tags") else cls._ATTRIBUTE_IDENTIFIER
-            )
+            if entity_type == "model_config":
+                identifier = cls._MODEL_CONFIG_IDENTIFIER
+            elif entity_type in ("tag", "tags"):
+                identifier = cls._TAG_IDENTIFIER
+            else:
+                identifier = cls._ATTRIBUTE_IDENTIFIER
 
         if identifier == cls._ATTRIBUTE_IDENTIFIER and key not in valid_attributes:
             raise MlflowException.invalid_parameter_value(
                 f"Invalid attribute key '{key}' specified. Valid keys are '{valid_attributes}'"
             )
+
+        if identifier == cls._MODEL_CONFIG_IDENTIFIER:
+            config_key = cls._trim_backticks(cls._strip_quotes(key))
+            if config_key not in cls.VALID_MODEL_CONFIG_KEYS:
+                raise MlflowException.invalid_parameter_value(
+                    f"Invalid model config key '{config_key}' specified. "
+                    f"Valid keys are '{cls.VALID_MODEL_CONFIG_KEYS}'"
+                )
 
         key = cls._trim_backticks(cls._strip_quotes(key))
         return {"type": identifier, "key": key}
@@ -1406,11 +1427,17 @@ class SearchModelUtils(SearchUtils):
         comp = cls._get_model_search_identifier(left.value, cls.VALID_SEARCH_ATTRIBUTE_KEYS)
         comp["comparator"] = comparator.value.upper()
         comp["value"] = cls._get_value(comp.get("type"), comp.get("key"), right)
+        if (
+            comp["type"] == cls._MODEL_CONFIG_IDENTIFIER
+            and isinstance(comp["value"], str)
+            and cls._is_quoted(right.value, "'")
+        ):
+            comp["value"] = comp["value"].replace("''", "'")
         return comp
 
     @classmethod
     def _get_value(cls, identifier_type, key, token):
-        if identifier_type == cls._TAG_IDENTIFIER:
+        if identifier_type in (cls._TAG_IDENTIFIER, cls._MODEL_CONFIG_IDENTIFIER):
             if token.ttype in cls.STRING_VALUE_TYPES or isinstance(token, Identifier):
                 return cls._strip_quotes(token.value, expect_quoted_value=True)
             raise MlflowException(
@@ -1448,6 +1475,49 @@ class SearchModelUtils(SearchUtils):
         ):
             return False
         return True
+
+    @staticmethod
+    def parse_model_config(raw):
+        """Parse a model config tag value, or None if absent or unparsable."""
+        if not raw:
+            return None
+        try:
+            config = json.loads(raw)
+        except (ValueError, TypeError):
+            return None
+        return config if isinstance(config, dict) else None
+
+    @staticmethod
+    def get_model_config_field(config, key):
+        """Return one field of a parsed model config, or None if absent or not a string."""
+        value = (config or {}).get(key)
+        return value if isinstance(value, str) else None
+
+    @classmethod
+    def model_config_matches(cls, raw, model_config_filters):
+        """Whether a model config tag value satisfies every filter."""
+        config = cls.parse_model_config(raw)
+        if config is None:
+            return False
+        for key, comparator, expected in model_config_filters:
+            value = cls.get_model_config_field(config, key)
+            if value is None or not cls.get_comparison_func(comparator)(value, expected):
+                return False
+        return True
+
+    @classmethod
+    def _get_model_config_value(cls, model, key):
+        """Return a model config field from a registered model's latest version, or None."""
+        latest_versions = model.latest_versions or []
+        if not latest_versions:
+            return None
+        # `latest_versions` holds one entry per stage in an order the store does not
+        # guarantee -- the file store builds it from an unordered set of stages -- so pick
+        # the highest version explicitly. This keeps in-memory filtering in agreement with
+        # the SQL store, which ranks non-deleted versions by descending version.
+        latest = max(latest_versions, key=lambda mv: int(mv.version))
+        raw = latest.tags.get(PROMPT_MODEL_CONFIG_TAG_KEY)
+        return cls.get_model_config_field(cls.parse_model_config(raw), key)
 
 
 class SearchModelVersionUtils(SearchUtils):

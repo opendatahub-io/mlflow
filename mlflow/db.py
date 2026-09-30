@@ -1,4 +1,14 @@
+import os
+
 import click
+
+_BACKEND_STORE_URI_ENV_VAR = "MLFLOW_BACKEND_STORE_URI"
+
+
+def _resolve_db_url(url):
+    if env_url := os.environ.get(_BACKEND_STORE_URI_ENV_VAR):
+        return env_url
+    return url
 
 
 @click.group("db")
@@ -30,116 +40,34 @@ def upgrade(url):
         mlflow.store.db.utils._upgrade_db(engine)
 
 
-@commands.command("prepopulate-trace-analytics")
-@click.argument("url", envvar="MLFLOW_TRACKING_URI")
-@click.option(
-    "--batch-size",
-    type=click.IntRange(min=1, max=250),
-    default=250,
-    show_default=True,
-    help=(
-        "Number of rows processed per committed transaction. The 250-row limit keeps each "
-        "transaction below supported-database parameter limits."
-    ),
-)
-def prepopulate_trace_analytics(url, batch_size):
+@commands.command("fix-migration-gap")
+@click.argument("url", required=False, default=None)
+def fix_migration_gap(url):
     """
-    Prepopulate denormalized trace analytics columns before a database upgrade.
+    Detect and fix the RHOAI 3.3 -> 3.4 database migration gap, then run DB upgrade.
 
-    URL may instead be supplied through MLFLOW_TRACKING_URI to keep credentials out of process
-    arguments and shell history.
+    The database URL can be provided as an argument or via the MLFLOW_BACKEND_STORE_URI
+    environment variable (which takes precedence).
 
-    This command is safe to rerun after interruption. A rerun scans from the beginning but skips
-    rows that are already correct. It does not advance the Alembic revision or remove legacy
-    analytics data. The final `mlflow db upgrade` is still required and remains the authoritative
-    validation and cleanup step.
-
-    Do not run this command concurrently with `mlflow db upgrade`. Run it to completion first, then
-    run the upgrade. Prefer a low-traffic period.
-
-    Always take a database backup before changing the schema.
+    This command is safe to run on every startup. It first repairs the special
+    case where a database was upgraded from RHOAI 3.3 to 3.4 without the
+    intermediate migrations being applied, then runs the standard database
+    upgrade so any newer migrations are also applied.
     """
-    import sqlalchemy.exc
-
     import mlflow.store.db.utils
-    from mlflow.store.db.trace_analytics_prepopulation import (
-        prepopulate_trace_analytics as prepopulate,
-    )
+    from mlflow.store.db.migration_gap import fix_migration_gap_if_needed
 
-    engine = None
-    try:
-        engine = mlflow.store.db.utils.create_sqlalchemy_engine_with_retry(url)
-        click.echo("Prepopulating denormalized trace analytics columns...")
-
-        def report_progress(entity, entity_stats):
-            click.echo(
-                f"{entity.capitalize()} progress: "
-                f"scanned={entity_stats.scanned}, updated={entity_stats.updated}"
-            )
-
-        stats = prepopulate(
-            engine,
-            batch_size=batch_size,
-            progress_callback=report_progress,
-        )
-        for entity, entity_stats in (
-            ("Traces", stats.traces),
-            ("Spans", stats.spans),
-            ("Assessments", stats.assessments),
-        ):
-            click.echo(f"{entity}: scanned={entity_stats.scanned}, updated={entity_stats.updated}")
-        click.echo(
-            "Prepopulation completed without advancing the Alembic revision. "
-            "Run `mlflow db upgrade` during the final upgrade."
-        )
-    except (RuntimeError, ValueError) as e:
-        raise click.ClickException(str(e)) from e
-    except sqlalchemy.exc.SQLAlchemyError as e:
-        # Driver messages can contain the supplied DSN, including credentials. Keep the CLI error
-        # credential-safe; the chained exception remains available to callers that log tracebacks.
-        raise click.ClickException(f"Database operation failed ({type(e).__name__}).") from e
-    finally:
-        if engine is not None:
-            engine.dispose()
-
-
-@commands.command("delete-trace-rollups")
-@click.argument("url", envvar="MLFLOW_TRACKING_URI")
-@click.option(
-    "--yes",
-    "confirm_delete",
-    is_flag=True,
-    help="Delete without prompting for confirmation.",
-)
-def delete_trace_rollups(url, confirm_delete):
-    """Delete all SQL trace rollups and queued rebuild state.
-
-    This recovery command removes derived rollup data only; authoritative traces, spans, and
-    assessments are preserved. Stop all MLflow servers that use this database before running it.
-    If rollups are enabled again later, maintenance rebuilds them from the authoritative tables.
-    """
-    import sqlalchemy.exc
-
-    import mlflow.store.db.utils
-    from mlflow.store.db.trace_rollups import delete_sql_trace_rollups
-
-    if not confirm_delete:
-        click.confirm(
-            "Delete all SQL trace rollups and queued rebuild state? Raw trace data is preserved.",
-            abort=True,
+    resolved_url = _resolve_db_url(url)
+    if not resolved_url:
+        raise click.UsageError(
+            f"No database URL provided. Pass it as an argument or set {_BACKEND_STORE_URI_ENV_VAR}."
         )
 
     engine = None
     try:
-        engine = mlflow.store.db.utils.create_sqlalchemy_engine_with_retry(url)
-        stats = delete_sql_trace_rollups(engine)
-        click.echo(
-            "Deleted SQL trace rollups: "
-            f"trace_metric={stats.trace_metric}, span_cost={stats.span_cost}, "
-            f"assessment={stats.assessment}, rebuild_queue={stats.rebuild_queue}."
-        )
-    except sqlalchemy.exc.SQLAlchemyError as e:
-        raise click.ClickException(f"Database operation failed ({type(e).__name__}).") from e
+        engine = mlflow.store.db.utils.create_sqlalchemy_engine_with_retry(resolved_url)
+        if fix_migration_gap_if_needed(engine):
+            mlflow.store.db.utils._upgrade_db(engine)
     finally:
         if engine is not None:
             engine.dispose()

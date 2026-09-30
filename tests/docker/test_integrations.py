@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta
 
@@ -6,6 +7,8 @@ from testcontainers.compose import DockerCompose
 from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 import mlflow
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(

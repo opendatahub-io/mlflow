@@ -255,10 +255,10 @@ docs = [
 ]
 
 [tool.uv]
-exclude-newer = "P7D"
+exclude-newer = "P14D"
 # TODO: Remove `sqlalchemy = false` once SQLAlchemy 2.1.0 (released 2026-09-24) clears the 7-day
 # cooldown, so the `database` CI job exercises the psycopg v3 default driver.
-exclude-newer-package = { torch = false, torchvision = false, sqlalchemy = false }
+exclude-newer-package = { torch = false, torchvision = false, sqlalchemy = false, mlflow-kubernetes-plugins = false, starlette = false }
 required-version = ">=0.12.16"
 constraint-dependencies = [
   # xgboost 3.1.0 changed base_score format to vector for multi-output models, breaking shap compatibility
@@ -421,6 +421,7 @@ ignore = [
 "examples/*" = ["T20", "RET504", "E501"]
 "docs/*" = ["T20", "RET504", "E501"]
 "mlflow/*" = ["PT018"]
+"requirements/*" = ["T201", "TID251"]
 
 [tool.ruff.lint.flake8-pytest-style]
 mark-parentheses = false
@@ -522,6 +523,8 @@ extend-exclude = [
   "mlflow/utils/gorilla.py",
   # Submodule (typos should be fixed upstream)
   "mlflow/assistant/skills/**/*",
+  # ODH fork history (contains upstream commit hashes and names)
+  "FORK_HISTORY.md",
 ]
 
 [tool.typos.default]

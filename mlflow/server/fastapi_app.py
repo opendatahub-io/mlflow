@@ -16,6 +16,7 @@ import typing
 from contextlib import asynccontextmanager
 
 import anyio
+from anyio import from_thread
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -23,8 +24,7 @@ from flask import Flask
 from starlette.middleware.wsgi import WSGIResponder, build_environ
 from starlette.types import Receive, Scope, Send
 
-from mlflow.assistant.providers.base import assistant_sandbox_enabled
-from mlflow.environment_variables import MLFLOW_ENABLE_REMOTE_ASSISTANT
+from mlflow.environment_variables import MLFLOW_ENABLE_ASSISTANT
 from mlflow.exceptions import MlflowException
 from mlflow.gateway.constants import MLFLOW_GATEWAY_DURATION_HEADER, MLFLOW_GATEWAY_OVERHEAD_HEADER
 from mlflow.gateway.providers.utils import provider_call_duration_ms
@@ -87,6 +87,42 @@ class _EfficientWSGIResponder(WSGIResponder):
                 await anyio.to_thread.run_sync(self.wsgi, environ, self.start_response)
         if self.exc_info is not None:
             raise self.exc_info[0].with_traceback(self.exc_info[1], self.exc_info[2])
+
+    def start_response(
+        self,
+        status: str,
+        response_headers: list[tuple[str, str]],
+        exc_info: typing.Any = None,
+    ) -> None:
+        self.exc_info = exc_info
+        if not self.response_started:  # pragma: no branch
+            self.response_started = True
+            status_code_string, _ = status.split(" ", 1)
+            headers = [
+                (name.strip().encode("ascii").lower(), value.strip().encode("ascii"))
+                for name, value in response_headers
+            ]
+            from_thread.run(
+                self.stream_send.send,
+                {
+                    "type": "http.response.start",
+                    "status": int(status_code_string),
+                    "headers": headers,
+                },
+            )
+
+    def wsgi(
+        self,
+        environ: dict[str, typing.Any],
+        start_response: typing.Callable[..., typing.Any],
+    ) -> None:
+        for chunk in self.app(environ, start_response):
+            from_thread.run(
+                self.stream_send.send,
+                {"type": "http.response.body", "body": chunk, "more_body": True},
+            )
+
+        from_thread.run(self.stream_send.send, {"type": "http.response.body", "body": b""})
 
 
 class _EfficientWSGIMiddleware:
@@ -286,7 +322,8 @@ def create_fastapi_app(flask_app: Flask = flask_app):
 
     # Include Assistant API router for AI-powered trace analysis
     # This provides /ajax-api/3.0/mlflow/assistant/* endpoints (localhost only)
-    fastapi_app.include_router(assistant_router, prefix=static_prefix)
+    if MLFLOW_ENABLE_ASSISTANT.get():
+        fastapi_app.include_router(assistant_router)
 
     # Include native artifact upload/download router for ASGI streaming
     # This provides /api/2.0/mlflow-artifacts/artifacts/* and /ajax-api/2.0/... routes

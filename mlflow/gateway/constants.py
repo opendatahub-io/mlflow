@@ -53,5 +53,5 @@ MLFLOW_SERVING_RESPONSE_KEY = "predictions"
 MLFLOW_AI_GATEWAY_MOSAICML_CHAT_SUPPORTED_MODEL_PREFIXES = ["llama2"]
 
 GATEWAY_DISABLED_MESSAGE = (
-    "The AI Gateway feature is disabled. Set MLFLOW_ENABLE_AI_GATEWAY=true to enable it."
+    "The AI Gateway feature is not yet available in this distribution of MLflow."
 )

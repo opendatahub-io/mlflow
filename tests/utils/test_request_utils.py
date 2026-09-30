@@ -66,6 +66,37 @@ def test_download_chunk_incomplete_read(tmp_path):
             )
 
 
+def test_download_chunk_forwards_tls_verification(tmp_path):
+    response = mock.MagicMock()
+    response.headers = {}
+    response.content = b"data"
+    response.__enter__.return_value = response
+
+    with mock.patch.object(
+        request_utils, "cloud_storage_http_request", return_value=response
+    ) as mock_request:
+        download_path = tmp_path / "chunk"
+        download_path.touch()
+        request_utils.download_chunk(
+            range_start=0,
+            range_end=3,
+            headers={},
+            download_path=download_path,
+            http_uri="https://example.com",
+            verify=False,
+        )
+
+    mock_request.assert_called_once_with(
+        "get",
+        "https://example.com",
+        stream=False,
+        headers={"Range": "bytes=0-3"},
+        timeout=10,
+        verify=False,
+    )
+    assert download_path.read_bytes() == b"data"
+
+
 @pytest.mark.parametrize("env_value", ["0", "false", "False", "FALSE"])
 def test_redirects_disabled_if_env_var_set(monkeypatch, env_value):
     monkeypatch.setenv("MLFLOW_ALLOW_HTTP_REDIRECTS", env_value)

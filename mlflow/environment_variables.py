@@ -202,6 +202,14 @@ MLFLOW_SANDBOX_EGRESS_PROXY = _EnvironmentVariable("MLFLOW_SANDBOX_EGRESS_PROXY"
 #: (default: ``True``)
 MLFLOW_RBAC_SEED_DEFAULT_ROLES = _BooleanEnvironmentVariable("MLFLOW_RBAC_SEED_DEFAULT_ROLES", True)
 
+#: Enables MLflow Assistant UI and server endpoints.
+#: (default: ``True``)
+MLFLOW_ENABLE_ASSISTANT = _BooleanEnvironmentVariable("MLFLOW_ENABLE_ASSISTANT", True)
+
+#: Enables AI Gateway endpoints and UI.
+#: (default: ``True``)
+MLFLOW_ENABLE_AI_GATEWAY = _BooleanEnvironmentVariable("MLFLOW_ENABLE_AI_GATEWAY", True)
+
 #: Specifies the active workspace for client operations.
 #: (default: ``None``)
 MLFLOW_WORKSPACE = _EnvironmentVariable("MLFLOW_WORKSPACE", str, None)

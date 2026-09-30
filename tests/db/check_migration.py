@@ -131,11 +131,12 @@ def log_everything():
                 last_updated_by="user",
             )
         )
+        job_name_column = "job_name" if "job_name" in jobs_table.columns else "function_fullname"
         conn.execute(
             sa.insert(jobs_table).values(
                 id=uuid.uuid4().hex,
                 creation_time=0,
-                job_name="tests.db.check_migration.log_everything",
+                **{job_name_column: "tests.db.check_migration.log_everything"},
                 params="{}",
                 timeout=None,
                 status=0,

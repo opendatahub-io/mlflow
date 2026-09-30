@@ -580,15 +580,11 @@ class ModelRegistryStoreRegistryWrapper(ModelRegistryStoreRegistry):
     @classmethod
     def _get_databricks_uc_rest_store(cls, store_uri):
         from mlflow.environment_variables import MLFLOW_TRACKING_URI
-        from mlflow.store._unity_catalog.registry.utils import (
-            get_uc_model_registry_store_class,
-        )
+        from mlflow.store._unity_catalog.registry.rest_store import UcModelRegistryStore
 
         # Get tracking URI from environment or use "databricks-uc" as default
         tracking_uri = MLFLOW_TRACKING_URI.get() or "databricks-uc"
-        # The native /api/2.1 store and the legacy /api/2.0 store are separate classes; select
-        # which one to instantiate based on MLFLOW_ENABLE_UC_NATIVE_MODEL_REGISTRY.
-        return get_uc_model_registry_store_class()(store_uri, tracking_uri)
+        return UcModelRegistryStore(store_uri, tracking_uri)
 
 
 _tracking_store_registry = TrackingStoreRegistryWrapper()
@@ -1481,6 +1477,16 @@ def _get_artifact_repository_for_uri(artifact_uri: str) -> ArtifactRepository:
     """
     validate_artifact_uri_host(artifact_uri)
     return get_artifact_repository(artifact_uri)
+
+
+def _disable_gateway(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not MLFLOW_ENABLE_AI_GATEWAY.get():
+            return jsonify(detail=GATEWAY_DISABLED_MESSAGE), 501
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 def _validate_storage_location_uri(value: str, field_name: str) -> str:
@@ -4204,10 +4210,7 @@ def _create_presigned_upload_url():
 @catch_mlflow_exception
 @_disable_if_artifacts_only
 def _create_presigned_download_url():
-    """
-    Handler for POST /api/2.0/mlflow/artifacts/presigned-download-url.
-    Generates a presigned URL for downloading an artifact directly from cloud storage.
-    """
+    """Generate a presigned URL for downloading an artifact from cloud storage."""
     request_message = _get_request_message(
         CreatePresignedDownloadUrl(),
         schema={
@@ -4223,10 +4226,6 @@ def _create_presigned_download_url():
         if request_message.HasField("expiration")
         else MLFLOW_PRESIGNED_DOWNLOAD_URL_TTL_SECONDS.get()
     )
-    # Cloud providers cap signed-URL lifetimes at 7 days (604800 seconds) and reject
-    # out-of-range values only when the URL is used, so an out-of-range value — whether
-    # from the request or from MLFLOW_PRESIGNED_DOWNLOAD_URL_TTL_SECONDS — would mint a
-    # URL that is dead on arrival. Fail fast here instead.
     if not 1 <= expiration <= 604800:
         raise MlflowException(
             f"expiration must be between 1 and 604800 seconds (got {expiration}).",
@@ -4234,8 +4233,7 @@ def _create_presigned_download_url():
         )
 
     run = _get_tracking_store().get_run(run_id)
-    artifact_uri = run.info.artifact_uri
-    artifact_uri_scheme = urllib.parse.urlparse(artifact_uri).scheme
+    artifact_uri_scheme = urllib.parse.urlparse(run.info.artifact_uri).scheme
     if artifact_uri_scheme in ("http", "https", "mlflow-artifacts"):
         raise MlflowException(
             "Presigned download is not supported for runs with proxied artifact storage "
@@ -5534,6 +5532,7 @@ def _validate_trace_ids_in_experiment(
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _invoke_issue_detection_handler():
     """
     Invoke issue detection on traces asynchronously.
@@ -5577,7 +5576,7 @@ def _invoke_issue_detection_handler():
             "Either 'endpoint_name' or both 'provider' and 'model' must be provided"
         )
 
-    # Fail fast when no credential source exists, instead of submitting a job doomed to fail
+    # Fail before submitting a job that cannot acquire provider credentials.
     if not endpoint_name and not secret_id:
         from mlflow.utils.providers import _CORE_PROVIDER_ENV_VARS
 
@@ -5587,12 +5586,13 @@ def _invoke_issue_detection_handler():
                 f"Unsupported provider '{provider}'. Choose a supported provider or "
                 "AI Gateway endpoint."
             )
-        if isinstance(env_config, dict):
-            env_vars = (
-                [env_config["api_key"]] if "api_key" in env_config else list(env_config.values())
-            )
-        else:
-            env_vars = [env_config]
+        env_vars = (
+            [env_config["api_key"]]
+            if isinstance(env_config, dict) and "api_key" in env_config
+            else list(env_config.values())
+            if isinstance(env_config, dict)
+            else [env_config]
+        )
         if not any(os.environ.get(env_var) for env_var in env_vars):
             env_var_hint = env_vars[0] if len(env_vars) == 1 else f"one of {', '.join(env_vars)}"
             raise MlflowException.invalid_parameter_value(
@@ -5645,6 +5645,7 @@ def _invoke_issue_detection_handler():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _invoke_genai_evaluate_handler():
     """
     Run mlflow.genai.evaluate(...) against the chosen traces + scorers as an
@@ -7161,6 +7162,7 @@ def _update_budget_policy():
                 message=f"Invalid budget_action: {request_message.budget_action}",
                 error_code=INVALID_PARAMETER_VALUE,
             )
+    store = _get_tracking_store()
     target_value_provided = request_message.HasField("target_value")
     target_value = (request_message.target_value or None) if target_value_provided else None
     store = _get_tracking_store()
@@ -7564,6 +7566,7 @@ def _get_secrets_config():
 
 @catch_mlflow_exception
 @_disable_if_artifacts_only
+@_disable_if_gateway_disabled
 def _invoke_scorer_handler():
     """
     Invoke a scorer on traces asynchronously.

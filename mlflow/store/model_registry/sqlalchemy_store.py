@@ -18,6 +18,7 @@ from mlflow.entities.model_registry.model_version_stages import (
 from mlflow.entities.model_registry.prompt_version import IS_PROMPT_TAG_KEY
 from mlflow.entities.webhook import Webhook, WebhookEvent, WebhookStatus
 from mlflow.exceptions import MlflowException
+from mlflow.prompt.constants import PROMPT_MODEL_CONFIG_TAG_KEY
 from mlflow.prompt.registry_utils import handle_resource_already_exist_error, has_prompt_tag
 from mlflow.protos.databricks_pb2 import (
     INVALID_PARAMETER_VALUE,
@@ -589,6 +590,7 @@ class SqlAlchemyStore(AbstractStore):
     def _get_search_registered_model_filter_query(self, session, parsed_filters, dialect):
         attribute_filters = []
         tag_filters = {}
+        model_config_filters = []
         tag_where_clauses = self._get_workspace_clauses(SqlRegisteredModelTag)
         for f in parsed_filters:
             type_ = f["type"]
@@ -624,10 +626,20 @@ class SqlAlchemyStore(AbstractStore):
                     SqlRegisteredModelTag.value, value
                 )
                 tag_filters[key].append(val_filter)
+            elif type_ == "model_config":
+                if comparator not in SearchModelUtils.VALID_TAG_COMPARATORS:
+                    raise MlflowException.invalid_parameter_value(
+                        f"Invalid comparator for model config: {comparator}"
+                    )
+                model_config_filters.append((key, comparator, value))
             else:
                 raise MlflowException(
                     f"Invalid token type: {type_}", error_code=INVALID_PARAMETER_VALUE
                 )
+
+        if model_config_filters:
+            matching_names = self._find_models_matching_model_config(session, model_config_filters)
+            attribute_filters.append(SqlRegisteredModel.name.in_(matching_names))
 
         attribute_filters.extend(self._get_workspace_clauses(SqlRegisteredModel))
 
@@ -1793,3 +1805,50 @@ class SqlAlchemyStore(AbstractStore):
             return webhook
 
         raise MlflowException(f"Webhook with ID {webhook_id} not found.", RESOURCE_DOES_NOT_EXIST)
+
+    @staticmethod
+    def _rank_by_latest_version(partition_by):
+        """Row-number expression ranking `SqlModelVersion` rows by version desc per group."""
+        return (
+            sqlalchemy.func
+            .row_number()
+            .over(partition_by=partition_by, order_by=SqlModelVersion.version.desc())
+            .label("rn")
+        )
+
+    def _find_models_matching_model_config(self, session, model_config_filters):
+        """
+        Names of models whose latest version's model config matches every filter.
+        The JSON is serialized differently by different clients, so it cannot be matched in SQL.
+        """
+        row_num = self._rank_by_latest_version([SqlModelVersion.workspace, SqlModelVersion.name])
+        latest_versions = (
+            select(
+                SqlModelVersion.workspace, SqlModelVersion.name, SqlModelVersion.version, row_num
+            )
+            .where(
+                *self._get_workspace_clauses(SqlModelVersion),
+                SqlModelVersion.current_stage != STAGE_DELETED_INTERNAL,
+            )
+            .subquery()
+        )
+        rows = session.execute(
+            select(latest_versions.c.name, SqlModelVersionTag.value)
+            .select_from(latest_versions)
+            .outerjoin(
+                SqlModelVersionTag,
+                sqlalchemy.and_(
+                    SqlModelVersionTag.workspace == latest_versions.c.workspace,
+                    SqlModelVersionTag.name == latest_versions.c.name,
+                    SqlModelVersionTag.version == latest_versions.c.version,
+                    SqlModelVersionTag.key == PROMPT_MODEL_CONFIG_TAG_KEY,
+                ),
+            )
+            .where(latest_versions.c.rn == 1)
+        ).all()
+
+        return [
+            name
+            for name, value in rows
+            if SearchModelUtils.model_config_matches(value, model_config_filters)
+        ]
