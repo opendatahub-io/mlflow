@@ -70,7 +70,15 @@ export const RunViewSourceBox = ({
               componentId="mlflow.run_details.overview.source.commit_hash"
               css={{ marginRight: 0, '&>div': { paddingRight: 0 } }}
             >
-              <div css={{ display: 'flex', gap: theme.spacing.xs, whiteSpace: 'nowrap', alignContent: 'center' }}>
+              <div
+                css={{
+                  display: 'flex',
+                  gap: theme.spacing.xs,
+                  whiteSpace: 'nowrap',
+                  alignContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
                 <GitCommitIcon />
                 {commitHash.slice(0, 7)}
               </div>

@@ -90,7 +90,12 @@ export const GatewaySideNav = ({ activeTab }: GatewaySideNavProps) => {
         const isActive = activeTab === item.tab;
 
         return (
-          <Link componentId="mlflow.gateway.side_nav.tab_link" key={item.tab} to={item.to}>
+          <Link
+            componentId="mlflow.gateway.side_nav.tab_link"
+            key={item.tab}
+            to={item.to}
+            css={{ textDecoration: 'none' }}
+          >
             <div
               css={{
                 display: 'flex',
@@ -100,7 +105,6 @@ export const GatewaySideNav = ({ activeTab }: GatewaySideNavProps) => {
                 borderRadius: theme.borders.borderRadiusSm,
                 cursor: 'pointer',
                 backgroundColor: isActive ? theme.colors.actionDefaultBackgroundHover : undefined,
-                color: isActive ? theme.colors.actionDefaultIconHover : theme.colors.actionDefaultIconDefault,
                 height: theme.typography.lineHeightBase,
                 boxSizing: 'content-box',
                 ':hover': { backgroundColor: theme.colors.actionDefaultBackgroundHover },

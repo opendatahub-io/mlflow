@@ -59,7 +59,7 @@ export const TraceTokenStatsChart: React.FC<TraceTokenStatsChartProps> = ({ titl
       <OverviewChartHeader
         icon={<BarChartIcon />}
         title={
-          title ?? <FormattedMessage defaultMessage="Tokens per Trace" description="Title for the token stats chart" />
+          title ?? <FormattedMessage defaultMessage="Tokens per trace" description="Title for the token stats chart" />
         }
         value={avgTokens !== undefined ? formatCount(Math.round(avgTokens)) : undefined}
         subtitle={

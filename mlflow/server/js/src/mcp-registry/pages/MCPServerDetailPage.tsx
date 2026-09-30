@@ -21,6 +21,7 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
+import { isIntegrated } from '../../common/utils/embedUtils';
 import { Link, useNavigate, useParams } from '../../common/utils/RoutingUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
@@ -169,7 +170,10 @@ const MCPServerDetailPage = () => {
     serverName: serverName,
   });
 
-  const breadcrumbs = (
+  // Hidden when embedded: the host builds its own breadcrumb from the
+  // segments reported via McpRegistryBreadcrumbReporter (see src/odh),
+  // so we don't want to double up on breadcrumbs here.
+  const breadcrumbs = isIntegrated() ? undefined : (
     <Breadcrumb>
       <Breadcrumb.Item>
         <Link componentId="mlflow.mcp_registry.detail.breadcrumb_back" to={MCPRegistryRoutes.mcpRegistryPageRoute}>
@@ -182,7 +186,7 @@ const MCPServerDetailPage = () => {
   if (serverLoading) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header
           breadcrumbs={breadcrumbs}
           title={<GenericSkeleton css={{ height: theme.general.heightBase, width: 200 }} />}
@@ -204,7 +208,7 @@ const MCPServerDetailPage = () => {
   if (serverError || !server) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header breadcrumbs={breadcrumbs} title="" />
         <Alert
           componentId="mlflow.mcp_registry.detail.error"
@@ -226,7 +230,7 @@ const MCPServerDetailPage = () => {
 
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Spacer shrinks={false} />
+      {!isIntegrated() && <Spacer shrinks={false} />}
       <Header
         breadcrumbs={breadcrumbs}
         title={
@@ -263,6 +267,18 @@ const MCPServerDetailPage = () => {
         buttons={
           canUpdate || canDelete ? (
             <>
+              {canUpdate && (
+                <Button
+                  componentId="mlflow.mcp_registry.detail.create_version"
+                  type="primary"
+                  onClick={openCreateVersionModal}
+                >
+                  <FormattedMessage
+                    defaultMessage="Create new version"
+                    description="MCP server detail create version button"
+                  />
+                </Button>
+              )}
               {(canUpdate || canDelete) && (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild>
@@ -297,18 +313,6 @@ const MCPServerDetailPage = () => {
                     )}
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
-              )}
-              {canUpdate && (
-                <Button
-                  componentId="mlflow.mcp_registry.detail.create_version"
-                  type="primary"
-                  onClick={openCreateVersionModal}
-                >
-                  <FormattedMessage
-                    defaultMessage="Create new version"
-                    description="MCP server detail create version button"
-                  />
-                </Button>
               )}
             </>
           ) : undefined

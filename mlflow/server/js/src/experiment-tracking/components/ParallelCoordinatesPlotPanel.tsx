@@ -83,7 +83,7 @@ export class ParallelCoordinatesPlotPanel extends React.Component<
           <div css={styles.noValuesSelected} data-testid="no-values-selected">
             <Typography.Title level={2}>
               <FormattedMessage
-                defaultMessage="Nothing to compare!"
+                defaultMessage="No comparisons available"
                 description="Header displayed in the metrics and params compare plot when no values are selected"
               />
             </Typography.Title>

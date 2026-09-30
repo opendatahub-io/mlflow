@@ -166,7 +166,7 @@ describe('TraceTokenUsageChart', () => {
       renderComponent();
 
       // Check that actual chart content is not rendered during loading
-      expect(screen.queryByText('Token Usage')).not.toBeInTheDocument();
+      expect(screen.queryByText('Token usage')).not.toBeInTheDocument();
     });
   });
 
@@ -256,13 +256,13 @@ describe('TraceTokenUsageChart', () => {
       });
     });
 
-    it('should display the "Token Usage" title', async () => {
+    it('should display the "Token usage" title', async () => {
       setupTraceMetricsHandler(mockInputDataPoints, mockOutputDataPoints, mockTotalDataPoints);
 
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Token Usage')).toBeInTheDocument();
+        expect(screen.getByText('Token usage')).toBeInTheDocument();
       });
     });
 

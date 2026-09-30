@@ -35,8 +35,28 @@ import { AddToolsModal } from './AddToolsModal';
 import { useDeleteVersionModal } from '../hooks/useDeleteVersionModal';
 import { useUpdateMCPServerVersion } from '../hooks/useMCPServerVersionMutations';
 import Utils from '../../common/utils/Utils';
+import {
+  useMCPRegistryIntegration,
+  type MCPRegistryIntegrationContextValue,
+} from '../contexts/MCPRegistryIntegrationContext';
+import { isIntegrated } from '../../common/utils/embedUtils';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const STATUS_OPTIONS = [MCPStatus.DRAFT, MCPStatus.ACTIVE, MCPStatus.DEPRECATED, MCPStatus.DELETED];
+
+// Rendered as a child of ErrorBoundary so the renderDetailActions() call itself happens
+// during this component's render (a descendant render ErrorBoundary can catch), rather
+// than during MCPServerDetailPage's own render where a throw would bypass the boundary
+// entirely and hit the page-level withErrorBoundary wrapper instead.
+const IntegrationDetailActions = ({
+  renderDetailActions,
+  server,
+  version,
+}: {
+  renderDetailActions: MCPRegistryIntegrationContextValue['renderDetailActions'];
+  server: MCPServer;
+  version?: MCPServerVersion;
+}) => <>{renderDetailActions?.(server, version)}</>;
 
 export const MCPServerVersionDetail = ({
   server,
@@ -78,6 +98,8 @@ export const MCPServerVersionDetail = ({
   const isEditingStatus = editingStatusVersion === version?.version;
   const versionNumber = version?.version;
   const versionStatus = version?.status;
+  const integrated = isIntegrated();
+  const { renderDetailActions } = useMCPRegistryIntegration();
 
   useEffect(() => {
     setEditingStatusVersion(undefined);
@@ -141,6 +163,20 @@ export const MCPServerVersionDetail = ({
     );
   };
 
+  // renderDetailActions is host-provided code running inside MLflow's render tree (across
+  // the Module Federation boundary), so an error boundary keeps a throw scoped to the
+  // integration actions rather than taking down the whole detail page. resetKeys clears a
+  // caught error when the server/version selection changes, so a failure on one version
+  // doesn't permanently blank the actions slot after navigating to a working one.
+  // fallback must be a valid element (not null/undefined) -- react-error-boundary calls
+  // isValidElement() on it and throws "requires either a fallback, fallbackRender, or
+  // FallbackComponent prop" otherwise, which would escape to the page-level error boundary.
+  const integrationActions = integrated ? (
+    <ErrorBoundary fallback={<></>} resetKeys={[server.name, version?.version]}>
+      <IntegrationDetailActions renderDetailActions={renderDetailActions} server={server} version={version} />
+    </ErrorBoundary>
+  ) : null;
+
   return (
     <div
       css={{
@@ -165,6 +201,7 @@ export const MCPServerVersionDetail = ({
             <Typography.Hint css={{ marginTop: theme.spacing.xs }}>{version.server_json.description}</Typography.Hint>
           )}
         </div>
+        {integrationActions}
         {canDelete && (
           <div css={{ display: 'flex', gap: theme.spacing.sm, ...noShrinkStyles }}>
             <Button

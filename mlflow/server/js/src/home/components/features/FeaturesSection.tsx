@@ -5,6 +5,7 @@ import { LaunchDemoCard } from './LaunchDemoCard';
 import { FeatureCard } from './FeatureCard';
 import { useLocalStorage } from '@databricks/web-shared/hooks';
 import { SERVER_FEATURE_KEYS, useFeatureEnabled } from '../../../experiment-tracking/hooks/useServerInfo';
+import { shouldEnableAIGateway } from '../../../common/utils/FeatureUtils';
 
 const COLLAPSED_KEY = 'mlflow.home.getting-started.collapsed';
 const COLLAPSED_KEY_VERSION = 1;
@@ -47,6 +48,7 @@ export const FeaturesSection = () => {
         <div css={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: theme.spacing.md }}>
           <LaunchDemoCard />
           <div
+            className="mlflow-home-feature-cards"
             css={{
               display: 'flex',
               gap: theme.spacing.sm,

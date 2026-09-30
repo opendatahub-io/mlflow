@@ -14,6 +14,7 @@ import {
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { ScrollablePageWrapper } from '../../common/components/ScrollablePageWrapper';
+import { isIntegrated } from '../../common/utils/embedUtils';
 import { withErrorBoundary } from '../../common/utils/withErrorBoundary';
 import ErrorUtils from '../../common/utils/ErrorUtils';
 import { useNavigate } from '../../common/utils/RoutingUtils';
@@ -67,23 +68,29 @@ const MCPRegistryPage = () => {
     </Button>
   ) : null;
 
+  const integrated = isIntegrated();
+
   return (
     <>
       <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <Spacer shrinks={false} />
-        <Header
-          title={
-            <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-              <span css={headerIconStyles(theme)}>
-                <McpIcon />
-              </span>
-              <FormattedMessage defaultMessage="MCP Registry" description="MCP Registry page title" />
-              <MCPRegistryBetaTag />
-            </span>
-          }
-          buttons={createButton}
-        />
-        <Spacer shrinks={false} />
+        {!integrated && (
+          <>
+            <Spacer shrinks={false} />
+            <Header
+              title={
+                <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+                  <span css={headerIconStyles(theme)}>
+                    <McpIcon />
+                  </span>
+                  <FormattedMessage defaultMessage="MCP Registry" description="MCP Registry page title" />
+                  <MCPRegistryBetaTag />
+                </span>
+              }
+              buttons={createButton}
+            />
+            <Spacer shrinks={false} />
+          </>
+        )}
         <div css={flexColumnContainerStyles}>
           <div
             css={{
@@ -104,29 +111,32 @@ const MCPRegistryPage = () => {
                 componentId="mlflow.mcp_registry.search"
               />
             </div>
-            <SegmentedControlGroup
-              name="mcp-registry-view-mode"
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as ViewMode)}
-              componentId="mlflow.mcp_registry.view_toggle"
-            >
-              <SegmentedControlButton
-                value="list"
-                icon={<ListIcon />}
-                aria-label={intl.formatMessage({
-                  defaultMessage: 'List view',
-                  description: 'Aria label for list view toggle',
-                })}
-              />
-              <SegmentedControlButton
-                value="grid"
-                icon={<GridIcon />}
-                aria-label={intl.formatMessage({
-                  defaultMessage: 'Grid view',
-                  description: 'Aria label for grid view toggle',
-                })}
-              />
-            </SegmentedControlGroup>
+            <div css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+              {integrated && createButton}
+              <SegmentedControlGroup
+                name="mcp-registry-view-mode"
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                componentId="mlflow.mcp_registry.view_toggle"
+              >
+                <SegmentedControlButton
+                  value="list"
+                  icon={<ListIcon />}
+                  aria-label={intl.formatMessage({
+                    defaultMessage: 'List view',
+                    description: 'Aria label for list view toggle',
+                  })}
+                />
+                <SegmentedControlButton
+                  value="grid"
+                  icon={<GridIcon />}
+                  aria-label={intl.formatMessage({
+                    defaultMessage: 'Grid view',
+                    description: 'Aria label for grid view toggle',
+                  })}
+                />
+              </SegmentedControlGroup>
+            </div>
           </div>
           {error?.message && (
             <Alert

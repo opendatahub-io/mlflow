@@ -38,6 +38,8 @@ defaults:
   run:
     shell: bash
 
+cache-mode: none
+
 jobs:
   syft-requirements:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false

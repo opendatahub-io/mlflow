@@ -85,7 +85,7 @@ export const EvaluationCreatePromptRunModalExamples = ({
           >
             <Typography.Title level={4}>
               <FormattedMessage
-                defaultMessage="Prompt Template"
+                defaultMessage="Prompt template"
                 description="Experiment page > new run modal > prompt examples > prompt template title"
               />
               <Button

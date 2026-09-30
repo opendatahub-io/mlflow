@@ -15,21 +15,30 @@ import { PromptPageErrorHandler } from './components/PromptPageErrorHandler';
 import { useDebounce } from 'use-debounce';
 import { shouldEnableWorkspaces } from '../../../common/utils/FeatureUtils';
 import { extractWorkspaceFromSearchParams } from '../../../workspaces/utils/WorkspaceUtils';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 
 const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
   const { theme } = useDesignSystemTheme();
   const [searchParams] = useSearchParams();
+  const isEmbedded = useIsIntegrated();
   const workspacesEnabled = shouldEnableWorkspaces();
   const workspaceFromUrl = extractWorkspaceFromSearchParams(searchParams);
 
   const [searchFilter, setSearchFilter] = useState('');
+  const [modelFilter, setModelFilter] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const componentId = experimentId ? 'mlflow.prompts.experiment.list' : 'mlflow.prompts.global.list';
 
   const [debouncedSearchFilter] = useDebounce(searchFilter, 500);
 
   const { data, error, refetch, hasNextPage, hasPreviousPage, isLoading, onNextPage, onPreviousPage } =
-    usePromptsListQuery({ experimentId, searchFilter: debouncedSearchFilter });
+    usePromptsListQuery({ experimentId, searchFilter: debouncedSearchFilter, modelFilter });
+
+  const { data: unfilteredPrompts } = usePromptsListQuery({
+    experimentId,
+    searchFilter: debouncedSearchFilter,
+    fetchAllPages: true,
+  });
 
   const { EditTagsModal, showEditPromptTagsModal } = useUpdateRegisteredPromptTags({ onSuccess: refetch });
   const { CreatePromptModal, openModal: openCreateVersionModal } = useCreatePromptModal({
@@ -60,7 +69,7 @@ const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
 
   return (
     <Wrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1 }}>
-      {!experimentId && (
+      {!experimentId && !isEmbedded && (
         <>
           <Spacer shrinks={false} />
           <Header
@@ -90,7 +99,15 @@ const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
             <PromptsListFilters
               searchFilter={searchFilter}
               onSearchFilterChange={setSearchFilter}
+              modelFilter={modelFilter}
+              setModelFilter={setModelFilter}
+              prompts={unfilteredPrompts ?? []}
               componentId={`${componentId}.search`}
+              actions={
+                isEmbedded && !experimentId && createButton ? (
+                  <div css={{ marginLeft: 'auto', display: 'flex', gap: theme.spacing.sm }}>{createButton}</div>
+                ) : undefined
+              }
             />
           </div>
           {experimentId && createButton}
@@ -107,7 +124,7 @@ const PromptsPage = ({ experimentId }: { experimentId?: string } = {}) => {
           hasNextPage={hasNextPage}
           hasPreviousPage={hasPreviousPage}
           isLoading={isLoading}
-          isFiltered={Boolean(searchFilter)}
+          isFiltered={Boolean(searchFilter || modelFilter)}
           onNextPage={onNextPage}
           onPreviousPage={onPreviousPage}
           onEditTags={showEditPromptTagsModal}

@@ -1,9 +1,14 @@
 import React, { useCallback, useRef } from 'react';
 import { DesignSystemProvider, DesignSystemThemeProvider } from '@databricks/design-system';
 import { ColorsPaletteDatalist } from './ColorsPaletteDatalist';
+import { Theme } from '@emotion/react';
+import { PATTERN_FLY_TOKEN_TRANSLATION } from '../styles/patternfly/patternflyTokenTranslation';
+import { ThemeProvider as EmotionThemeProvider } from '@emotion/react';
+import '../styles/patternfly/pf-shell-overrides.scss';
 
-const isInsideShadowDOM = (element: HTMLDivElement | null): boolean =>
-  element instanceof window.Node && element.getRootNode() !== document;
+const PF_SHELL_CONTAINER_CLASS_NAME = 'pf-shell-container';
+const PF_SHELL_ROOT_CLASS_NAME = 'pf-shell-root';
+const DARK_MODE_CLASS_NAME = 'dark-mode';
 
 type DesignSystemContainerProps = {
   isDarkTheme?: boolean;
@@ -20,28 +25,23 @@ export const MLflowImagePreviewContainer = React.createContext({
 });
 
 /**
- * MFE-safe DesignSystemProvider that checks if the application is
- * in the context of the Shadow DOM and if true, provides dedicated
- * DOM element for the purpose of housing modals/popups there.
+ * MFE-safe DesignSystemProvider that keeps portal content inside a dedicated
+ * MLflow-owned shell node so PatternFly-scoped overrides apply consistently.
+ * When mounted in a Shadow DOM, that node remains inside the same shadow root.
  */
 export const DesignSystemContainer = (props: DesignSystemContainerProps) => {
   const modalContainerElement = useRef<HTMLDivElement | null>(null);
   const { isDarkTheme = false, children } = props;
+  const shellRootClassName = `${PF_SHELL_ROOT_CLASS_NAME}${isDarkTheme ? ` ${DARK_MODE_CLASS_NAME}` : ''}`;
 
-  const getPopupContainer = useCallback(() => {
-    const modelContainerEle = modalContainerElement.current;
-    if (modelContainerEle !== null && isInsideShadowDOM(modelContainerEle)) {
-      return modelContainerEle;
-    }
-    return document.body;
-  }, []);
+  const getPopupContainer = useCallback(() => modalContainerElement.current ?? document.body, []);
 
   // Specialized container for antd image previews, always rendered near MLflow
   // to maintain prefixed CSS classes and styles.
   const getImagePreviewPopupContainer = useCallback(() => {
-    const modelContainerEle = modalContainerElement.current;
-    if (modelContainerEle !== null) {
-      return modelContainerEle;
+    const modalContainerEle = modalContainerElement.current;
+    if (modalContainerEle !== null) {
+      return modalContainerEle;
     }
     return document.body;
   }, []);
@@ -50,8 +50,10 @@ export const DesignSystemContainer = (props: DesignSystemContainerProps) => {
     <ThemeProvider isDarkTheme={isDarkTheme}>
       <DesignSystemProvider getPopupContainer={getPopupContainer} {...props}>
         <MLflowImagePreviewContainer.Provider value={{ getImagePreviewPopupContainer }}>
-          {children}
-          <div ref={modalContainerElement} />
+          <EmotionThemeProvider theme={(baseTheme) => PATTERN_FLY_TOKEN_TRANSLATION(baseTheme)}>
+            <div className={`${PF_SHELL_CONTAINER_CLASS_NAME} ${shellRootClassName}`}>{children}</div>
+            <div ref={modalContainerElement} className={shellRootClassName} />
+          </EmotionThemeProvider>
         </MLflowImagePreviewContainer.Provider>
       </DesignSystemProvider>
       <ColorsPaletteDatalist />

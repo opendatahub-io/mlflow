@@ -1,0 +1,160 @@
+@use './icons' as icons;
+
+$frames: icons.$pf-spinner-dash-frames;
+$sprite-width: ($frames + 1) * 100%;
+
+@keyframes pf-shell-spinner-dash {
+  from {
+    mask-position: 0% center;
+    -webkit-mask-position: 0% center;
+  }
+
+  to {
+    mask-position: 100% center;
+    -webkit-mask-position: 100% center;
+  }
+}
+
+@keyframes pf-shell-spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  6.3% {
+    transform: rotate(44.9deg);
+  }
+  12.5% {
+    transform: rotate(138deg);
+  }
+  18.8% {
+    transform: rotate(278.3deg);
+  }
+  25% {
+    transform: rotate(450deg);
+  }
+  31.3% {
+    transform: rotate(621.7deg);
+  }
+  37.5% {
+    transform: rotate(762deg);
+  }
+  43.8% {
+    transform: rotate(855.1deg);
+  }
+  50% {
+    transform: rotate(900deg);
+  }
+  56.3% {
+    transform: rotate(944.9deg);
+  }
+  62.5% {
+    transform: rotate(1038deg);
+  }
+  68.8% {
+    transform: rotate(1178.3deg);
+  }
+  75% {
+    transform: rotate(1350deg);
+  }
+  81.3% {
+    transform: rotate(1521.7deg);
+  }
+  87.5% {
+    transform: rotate(1662deg);
+  }
+  93.8% {
+    transform: rotate(1755.1deg);
+  }
+  100% {
+    transform: rotate(1800deg);
+  }
+}
+
+@keyframes pf-shell-spinner-visible {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
+@mixin pf-spinner-mask {
+  background-color: var(--pf-t--global--icon--color--brand--default);
+  mask-image: icons.$pf-spinner-dash-sprite;
+  -webkit-mask-image: icons.$pf-spinner-dash-sprite;
+  mask-size: $sprite-width 100%;
+  -webkit-mask-size: $sprite-width 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+}
+
+/* Du Bois small spinner */
+.pf-shell-root {
+  .du-bois-light-spin .du-bois-light-spin-dot,
+  .du-bois-dark-spin .du-bois-dark-spin-dot {
+    @include pf-spinner-mask;
+
+    background-color: var(--pf-t--global--icon--color--brand--default) !important;
+    animation-name: pf-shell-spinner-dash, pf-shell-spinner-rotate !important;
+    animation-duration: 1.4s, 2.8s !important;
+    animation-timing-function: steps(#{$frames}), linear !important;
+    animation-iteration-count: infinite, infinite !important;
+
+    > svg {
+      display: none;
+    }
+  }
+
+  /* MLflow page spinner */
+  img[alt='Page loading...'] {
+    @include pf-spinner-mask;
+
+    content: icons.$pf-blank-image;
+    width: var(--pf-t--global--icon--size--2xl);
+    height: var(--pf-t--global--icon--size--2xl);
+    margin-top: calc(var(--pf-t--global--icon--size--2xl) / -2);
+    margin-left: calc(var(--pf-t--global--icon--size--2xl) / -2);
+    animation-name: pf-shell-spinner-dash, pf-shell-spinner-rotate, pf-shell-spinner-visible;
+    animation-duration: 1.4s, 2.8s, 1.4s;
+    animation-timing-function: steps(#{$frames}), linear, linear;
+    animation-iteration-count: infinite, infinite, infinite;
+  }
+
+  div:has(> img[alt='Page loading...'])::before {
+    content: 'Loading';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    margin-top: calc(var(--pf-t--global--icon--size--2xl) / -2 - var(--pf-t--global--spacer--sm));
+    white-space: nowrap;
+    font-size: var(--pf-t--global--font--size--heading--lg);
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+    color: var(--pf-t--global--text--color--regular);
+    opacity: 0;
+    animation: pf-shell-spinner-visible 1.4s linear infinite;
+    animation-delay: 0.5s;
+  }
+
+  /* Runs table overlay */
+  .ag-overlay-loading-wrapper {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-block-start: var(--pf-t--global--spacer--3xl);
+
+    .ag-react-container {
+      flex: 0 0 auto !important;
+    }
+
+    .du-bois-light-spin-dot,
+    .du-bois-dark-spin-dot {
+      font-size: var(--pf-t--global--icon--size--2xl);
+    }
+
+    &::before {
+      content: 'Loading';
+      margin-block-end: var(--pf-t--global--spacer--sm);
+      font-size: var(--pf-t--global--font--size--heading--sm);
+      font-weight: var(--pf-t--global--font--weight--body--bold);
+      color: var(--pf-t--global--text--color--regular);
+    }
+  }
+}

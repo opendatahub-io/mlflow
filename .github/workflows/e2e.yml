@@ -23,6 +23,8 @@ defaults:
   run:
     shell: bash
 
+cache-mode: none
+
 jobs:
   gate:
     if: >-

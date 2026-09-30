@@ -5,6 +5,7 @@ import moment from 'moment';
 
 import type { IntlShape } from '@databricks/i18n';
 import type { ModelTraceInfoV3 } from '../../model-trace-explorer/ModelTrace.types';
+import { createMLflowRoutePath } from './RoutingUtils';
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- TODO(FEINF-4274)
 class MlflowUtils {
@@ -101,15 +102,15 @@ class MlflowUtils {
   }
 
   static getExperimentChatSessionPageRoute(experimentId: string, sessionId: string) {
-    return `/experiments/${experimentId}/chat-sessions/${sessionId}`;
+    return createMLflowRoutePath(`/experiments/${experimentId}/chat-sessions/${sessionId}`);
   }
 
   static getRunPageRoute(experimentId: string, runUuid: string) {
-    return `/experiments/${experimentId}/runs/${runUuid}`;
+    return createMLflowRoutePath(`/experiments/${experimentId}/runs/${runUuid}`);
   }
 
   static getLoggedModelPageRoute(experimentId: string, loggedModelId: string) {
-    return `/experiments/${experimentId}/models/${loggedModelId}`;
+    return createMLflowRoutePath(`/experiments/${experimentId}/models/${loggedModelId}`);
   }
 
   /**

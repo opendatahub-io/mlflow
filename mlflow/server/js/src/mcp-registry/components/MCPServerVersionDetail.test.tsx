@@ -8,10 +8,20 @@ import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/util
 import { MCPServerVersionDetail } from './MCPServerVersionDetail';
 import { createMockMCPServer, createMockMCPServerVersion } from '../test-utils';
 import { MCPStatus, type TransportType } from '../types';
+import { isIntegrated } from '../../common/utils/embedUtils';
+import { MCPRegistryIntegrationProvider } from '../contexts/MCPRegistryIntegrationContext';
+import type { MCPRegistryIntegrationContextValue } from '../contexts/MCPRegistryIntegrationContext';
 
 jest.mock('../hooks/useServerState', () => ({
   useServerState: jest.fn(),
 }));
+
+// Defaults to standalone mode (false); individual tests opt into federated/integrated mode.
+jest.mock('../../common/utils/embedUtils', () => ({
+  ...jest.requireActual<Record<string, unknown>>('../../common/utils/embedUtils'),
+  isIntegrated: jest.fn(() => false),
+}));
+const mockedIsIntegrated = jest.mocked(isIntegrated);
 
 jest.mock('../hooks/useAddAccessEndpointModal', () => ({
   useAddAccessEndpointModal: () => ({ AddAccessEndpointModal: null, openAddEndpoint: jest.fn() }),
@@ -112,9 +122,27 @@ const renderDetail = (props: Partial<React.ComponentProps<typeof MCPServerVersio
     </Wrapper>,
   );
 
+const renderDetailWithIntegration = (
+  props: Partial<React.ComponentProps<typeof MCPServerVersionDetail>> = {},
+  renderDetailActions?: MCPRegistryIntegrationContextValue['renderDetailActions'],
+) =>
+  render(
+    <Wrapper>
+      <MCPRegistryIntegrationProvider renderDetailActions={renderDetailActions}>
+        <MCPServerVersionDetail
+          server={serverWithRemotes}
+          version={versionWithRemotes}
+          aliasesByVersion={{}}
+          {...props}
+        />
+      </MCPRegistryIntegrationProvider>
+    </Wrapper>,
+  );
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpdateVersionMutation();
+  mockedIsIntegrated.mockReturnValue(false);
 });
 
 describe('Auto-discover tools button', () => {
@@ -201,5 +229,49 @@ describe('Status editor', () => {
 
     expect(screen.queryByRole('combobox', { name: 'Version status' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Edit version status')).toBeInTheDocument();
+  });
+});
+
+describe('host-provided detail actions (renderDetailActions)', () => {
+  it('renders host-provided actions next to the version heading when integrated', async () => {
+    mockPermissions();
+    mockedIsIntegrated.mockReturnValue(true);
+    renderDetailWithIntegration({}, (server, version) => (
+      <button>{`Deploy ${server.name}@${version?.version ?? 'latest'}`}</button>
+    ));
+    expect(
+      await screen.findByText(`Deploy ${serverWithRemotes.name}@${versionWithRemotes.version}`),
+    ).toBeInTheDocument();
+  });
+
+  it('does not invoke renderDetailActions when standalone (not integrated)', () => {
+    mockPermissions();
+    mockedIsIntegrated.mockReturnValue(false);
+    const renderDetailActions = jest.fn(() => <button>Deploy</button>);
+    renderDetailWithIntegration({}, renderDetailActions);
+    expect(screen.queryByText('Deploy')).not.toBeInTheDocument();
+    expect(renderDetailActions).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke renderDetailActions when no version is selected, even when integrated', () => {
+    mockPermissions();
+    mockedIsIntegrated.mockReturnValue(true);
+    const renderDetailActions = jest.fn(() => <button>Deploy</button>);
+    renderDetailWithIntegration({ version: undefined }, renderDetailActions);
+    expect(screen.getByText('Select a version to view details.')).toBeInTheDocument();
+    expect(screen.queryByText('Deploy')).not.toBeInTheDocument();
+    expect(renderDetailActions).not.toHaveBeenCalled();
+  });
+
+  it('isolates a throwing renderDetailActions instead of crashing the version detail view', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockPermissions();
+    mockedIsIntegrated.mockReturnValue(true);
+    renderDetailWithIntegration({}, () => {
+      throw new Error('boom from host-provided renderDetailActions');
+    });
+    expect(await screen.findByText(`Viewing version ${versionWithRemotes.version}`)).toBeInTheDocument();
+    expect(screen.queryByText('boom from host-provided renderDetailActions')).not.toBeInTheDocument();
+    consoleErrorSpy.mockRestore();
   });
 });

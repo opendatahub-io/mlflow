@@ -13,6 +13,7 @@ type Props = {
   isOpen: boolean;
   handleSubmit: (...args: any[]) => any;
   onClose: (...args: any[]) => any;
+  onCancel?: () => void;
   title: React.ReactNode;
   helpText: React.ReactNode;
   confirmButtonText: React.ReactNode;
@@ -30,16 +31,23 @@ export class ConfirmModal extends Component<Props, State> {
 
   state = {
     isSubmitting: false,
+    submitAttempted: false,
   };
 
   onRequestCloseHandler() {
     if (!this.state.isSubmitting) {
-      this.props.onClose();
+      try {
+        if (!this.state.submitAttempted) {
+          this.props.onCancel?.();
+        }
+      } finally {
+        this.props.onClose();
+      }
     }
   }
 
   handleSubmitWrapper() {
-    this.setState({ isSubmitting: true });
+    this.setState({ isSubmitting: true, submitAttempted: true });
     return this.props.handleSubmit().finally(() => {
       this.props.onClose();
       this.setState({ isSubmitting: false });

@@ -14,6 +14,8 @@ import { connect } from 'react-redux';
 import type { NavigateFunction } from '../../../common/utils/RoutingUtils';
 import { getUUID } from '../../../common/utils/ActionUtils';
 import { withRouterNext } from '../../../common/utils/withRouterNext';
+import { fireFormTrackingEvent, getTrackingError } from '../../../odh/analytics/segmentUtils';
+import { TrackingOutcome, MLflowEventNames } from '../../../odh/analytics/trackingProperties';
 
 type Props = {
   isOpen: boolean;
@@ -34,7 +36,11 @@ export class DeleteExperimentModalImpl extends Component<Props> {
     const deletePromise = this.props
       .deleteExperimentApi(experimentId, deleteExperimentRequestId)
       .then(() => {
-        // reload the page if an active experiment was deleted
+        fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+          outcome: TrackingOutcome.submit,
+          success: true,
+          experimentCount: 1,
+        });
         if (activeExperimentIds?.includes(experimentId)) {
           if (activeExperimentIds.length === 1) {
             // send it to root
@@ -51,10 +57,23 @@ export class DeleteExperimentModalImpl extends Component<Props> {
       })
       .then(() => this.props.onExperimentDeleted())
       .catch((e: any) => {
+        fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+          outcome: TrackingOutcome.submit,
+          success: false,
+          error: getTrackingError(e),
+          experimentCount: 1,
+        });
         Utils.logErrorAndNotifyUser(e);
       });
 
     return deletePromise;
+  };
+
+  handleCancel = () => {
+    fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+      outcome: TrackingOutcome.cancel,
+      experimentCount: 1,
+    });
   };
 
   render() {
@@ -62,8 +81,9 @@ export class DeleteExperimentModalImpl extends Component<Props> {
       <ConfirmModal
         isOpen={this.props.isOpen}
         onClose={this.props.onClose}
+        onCancel={this.handleCancel}
         handleSubmit={this.handleSubmit}
-        title={`Delete Experiment "${this.props.experimentName}"`}
+        title={`Delete experiment "${this.props.experimentName}"`}
         helpText={
           <div>
             <p>

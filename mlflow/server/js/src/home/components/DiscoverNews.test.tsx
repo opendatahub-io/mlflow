@@ -28,7 +28,7 @@ describe('DiscoverNews', () => {
 
     expect(
       screen.getByRole('link', {
-        name: 'View all',
+        name: 'View all features',
       }),
     ).toBeInTheDocument();
   });

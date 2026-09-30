@@ -10,18 +10,28 @@ import {
   TableSkeletonRows,
   useDesignSystemTheme,
 } from '@databricks/design-system';
-import type { ColumnDef } from '@tanstack/react-table';
-import { flexRender, getCoreRowModel } from '@tanstack/react-table';
-import { useMemo } from 'react';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { RegisteredPrompt } from '../types';
 import { PromptsListTableTagsCell } from './PromptsListTableTagsCell';
 import { PromptsListTableNameCell } from './PromptsListTableNameCell';
+import { PromptsListTableModelCell } from './PromptsListTableModelCell';
 import Utils from '../../../../common/utils/Utils';
 import { PromptsListTableVersionCell } from './PromptsListTableVersionCell';
 import { PromptsListEmptyState } from './PromptsListEmptyState';
 import type { PromptsTableMetadata } from '../utils';
+import { getPromptAssociatedModel } from '../promptModelConfig';
 import { first, isEmpty } from 'lodash';
+
+const coreRowModel = getCoreRowModel<RegisteredPrompt>();
+const sortedRowModel = getSortedRowModel<RegisteredPrompt>();
+const EMPTY_DATA: RegisteredPrompt[] = [];
+
+// The only column whose header exposes a sort affordance. Sorting is client-side and therefore
+// only orders the rows on the current (server-paginated) page; this is a known limitation.
+const SORTABLE_COLUMN_ID = 'associatedModel';
 
 type PromptsTableColumnDef = ColumnDef<RegisteredPrompt>;
 
@@ -46,6 +56,17 @@ const usePromptsTableColumns = () => {
         cell: PromptsListTableVersionCell,
         accessorFn: ({ latest_versions }) => first(latest_versions)?.version,
         id: 'latestVersion',
+      },
+      {
+        header: intl.formatMessage({
+          defaultMessage: 'Model',
+          description: 'Header for the associated model column in the registered prompts table',
+        }),
+        id: SORTABLE_COLUMN_ID,
+        accessorFn: getPromptAssociatedModel,
+        cell: PromptsListTableModelCell,
+        sortingFn: 'alphanumeric',
+        sortUndefined: 'last',
       },
       {
         header: intl.formatMessage({
@@ -98,12 +119,16 @@ export const PromptsListTable = ({
 }) => {
   const { theme } = useDesignSystemTheme();
   const columns = usePromptsTableColumns();
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // prettier-ignore
   const table = useReactTable('mlflow/server/js/src/experiment-tracking/pages/prompts/components/PromptsListTable.tsx', {
-    data: prompts ?? [],
+    data: prompts ?? EMPTY_DATA,
     columns,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: coreRowModel,
+    getSortedRowModel: sortedRowModel,
+    onSortingChange: setSorting,
+    state: { sorting },
     getRowId: (row, index) => row.name ?? index.toString(),
     meta: { onEditTags, experimentId } satisfies PromptsTableMetadata,
   });
@@ -148,11 +173,20 @@ export const PromptsListTable = ({
       empty={getEmptyState()}
     >
       <TableRow isHeader>
-        {table.getLeafHeaders().map((header) => (
-          <TableHeader componentId={`${componentId}.table.header`} key={header.id}>
-            {flexRender(header.column.columnDef.header, header.getContext())}
-          </TableHeader>
-        ))}
+        {table.getLeafHeaders().map((header) => {
+          const isSortable = header.column.id === SORTABLE_COLUMN_ID;
+          return (
+            <TableHeader
+              componentId={`${componentId}.table.header`}
+              key={header.id}
+              sortable={isSortable}
+              sortDirection={isSortable ? header.column.getIsSorted() || 'none' : undefined}
+              onToggleSort={isSortable ? header.column.getToggleSortingHandler() : undefined}
+            >
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </TableHeader>
+          );
+        })}
       </TableRow>
       {isLoading ? (
         <TableSkeletonRows table={table} />

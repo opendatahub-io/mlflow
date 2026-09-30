@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Button, PageWrapper, ParagraphSkeleton, useDesignSystemTheme } from '@databricks/design-system';
+import { ParagraphSkeleton, useDesignSystemTheme } from '@databricks/design-system';
 import { PredefinedError } from '@databricks/web-shared/errors';
 import invariant from 'invariant';
 import { useNavigate, useParams, Outlet, useLocation, matchPath } from '../../../common/utils/RoutingUtils';
@@ -27,7 +27,7 @@ import { ExperimentViewInferredKindModal } from '../../components/experiment-pag
 import Routes, { RoutePaths } from '../../routes';
 import { useGetExperimentPageActiveTabByRoute } from '../../components/experiment-page/hooks/useGetExperimentPageActiveTabByRoute';
 import { useNavigateToExperimentPageTab } from '../../components/experiment-page/hooks/useNavigateToExperimentPageTab';
-
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 import { ExperimentPageSideNav, ExperimentPageSideNavSkeleton } from './side-nav/ExperimentPageSideNav';
 import { HeaderVisibilityProvider, useHeaderVisibility } from './ExperimentPageHeaderVisibilityContext';
 import { ExperimentViewSavedViewsButton } from '../../components/experiment-page/components/header/ExperimentViewSavedViewsButton';
@@ -95,6 +95,8 @@ const ExperimentPageTabsImpl = () => {
   // We won't try to infer the experiment kind if it's already set, but we also wait for experiment to load
   const isExperimentKindInferenceEnabled = Boolean(experiment && !experimentKind);
   const enableWorkflowBasedNavigation = shouldEnableWorkflowBasedNavigation();
+  const isEmbedded = useIsIntegrated();
+  const showExperimentPageSideNav = !enableWorkflowBasedNavigation || isEmbedded;
 
   const {
     inferredExperimentKind,
@@ -227,7 +229,7 @@ const ExperimentPageTabsImpl = () => {
           }
         />
       )}
-      {!enableWorkflowBasedNavigation ? (
+      {!enableWorkflowBasedNavigation || showExperimentPageSideNav ? (
         <div css={{ display: 'flex', flex: 1, minWidth: 0, minHeight: 0 }}>
           {loadingExperiment || inferringExperimentType ? (
             <ExperimentPageSideNavSkeleton />

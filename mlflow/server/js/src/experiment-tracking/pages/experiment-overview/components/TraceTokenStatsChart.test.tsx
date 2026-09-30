@@ -118,7 +118,7 @@ describe('TraceTokenStatsChart', () => {
       renderComponent();
 
       // Check that actual chart content is not rendered during loading
-      expect(screen.queryByText('Tokens per Trace')).not.toBeInTheDocument();
+      expect(screen.queryByText('Tokens per trace')).not.toBeInTheDocument();
     });
   });
 
@@ -204,13 +204,13 @@ describe('TraceTokenStatsChart', () => {
       });
     });
 
-    it('should display the "Tokens per Trace" title', async () => {
+    it('should display the "Tokens per trace" title', async () => {
       setupTraceMetricsHandler(mockPercentileDataPoints, mockAvgDataPoints);
 
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Tokens per Trace')).toBeInTheDocument();
+        expect(screen.getByText('Tokens per trace')).toBeInTheDocument();
       });
     });
 

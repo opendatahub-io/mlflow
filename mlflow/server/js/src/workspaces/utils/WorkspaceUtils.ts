@@ -22,6 +22,14 @@ const subscribeToActiveWorkspace = (listener: () => void): (() => void) => {
   };
 };
 
+type WorkspaceChangeListener = (workspace: string | null) => void;
+const workspaceChangeListeners: Set<WorkspaceChangeListener> = new Set();
+
+export const onWorkspaceChange = (listener: WorkspaceChangeListener): (() => void) => {
+  workspaceChangeListeners.add(listener);
+  return () => workspaceChangeListeners.delete(listener);
+};
+
 export const getActiveWorkspace = () => activeWorkspace;
 
 export const setActiveWorkspace = (workspace: string | null) => {
@@ -33,6 +41,7 @@ export const setActiveWorkspace = (workspace: string | null) => {
     setLastUsedWorkspace(workspace);
   }
   activeWorkspaceListeners.forEach((listener) => listener());
+  Array.from(workspaceChangeListeners).forEach((l) => l(workspace));
 };
 
 /**

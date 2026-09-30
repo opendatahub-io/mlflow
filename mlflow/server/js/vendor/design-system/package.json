@@ -173,7 +173,6 @@
     "@radix-ui/react-toast": "1.1.5",
     "@radix-ui/react-toggle": "1.0.3",
     "@radix-ui/react-toolbar": "1.0.4",
-    "@radix-ui/react-tooltip-patch": "patch:@radix-ui/react-tooltip@npm%3A1.0.7#../js/yarn/patches/@radix-ui-react-tooltip-npm-1.0.7-c7378e5c03.patch",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",

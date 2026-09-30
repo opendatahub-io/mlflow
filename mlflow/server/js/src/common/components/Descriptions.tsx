@@ -71,6 +71,7 @@ const styles = {
   }),
   descriptionItem: (span: number) => ({
     display: 'flex',
+    alignItems: 'center',
     gridColumn: `span ${span}`,
   }),
   colon: {

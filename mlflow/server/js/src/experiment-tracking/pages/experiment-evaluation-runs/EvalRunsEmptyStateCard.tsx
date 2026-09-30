@@ -3,6 +3,7 @@ import { useDesignSystemTheme } from '@databricks/design-system';
 import { AggregationType, MetricViewType, TraceMetricKey } from '@databricks/web-shared/model-trace-explorer';
 import { FormattedMessage } from 'react-intl';
 
+import { enableScorersUI } from '../../../common/utils/FeatureUtils';
 import { AgentActionCard } from '../../components/onboarding/AgentActionCard';
 import { useTraceMetricsQuery } from '../experiment-overview/hooks/useTraceMetricsQuery';
 
@@ -47,7 +48,7 @@ export const EvalRunsEmptyStateCard = ({ experimentId }: { experimentId: string 
     isLoading: hasOpenedPythonTab && isTraceMetricsLoading,
   };
 
-  const header = (
+  const header = enableScorersUI() ? (
     <>
       <div css={{ display: 'flex', justifyContent: 'center' }}>
         <RunEvaluationButton experimentId={experimentId} />
@@ -69,7 +70,7 @@ export const EvalRunsEmptyStateCard = ({ experimentId }: { experimentId: string 
         <div css={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
       </div>
     </>
-  );
+  ) : undefined;
 
   return (
     <div css={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>

@@ -431,7 +431,9 @@ const ExperimentReviewQueuePage = () => {
           experimentId
             ? () =>
                 window.open(
-                  `/#${Routes.getExperimentPageTracesTabRoute(experimentId)}`,
+                  `${window.location.origin}${window.location.pathname}#${Routes.getExperimentPageTracesTabRoute(
+                    experimentId,
+                  )}`,
                   '_blank',
                   'noopener,noreferrer',
                 )

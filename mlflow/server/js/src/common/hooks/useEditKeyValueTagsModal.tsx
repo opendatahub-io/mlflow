@@ -211,7 +211,7 @@ export const useEditKeyValueTagsModal = <T extends { tags?: KeyValueEntity[] }>(
         css={{ display: 'flex', alignItems: 'flex-end', gap: theme.spacing.md }}
       >
         <div css={{ minWidth: 0, display: 'flex', gap: theme.spacing.md, flex: 1 }}>
-          <div css={{ flex: 1 }}>
+          <div css={{ flex: 1 }} data-pf-tag-key-select-error={form.formState.errors.key ? 'true' : undefined}>
             <FormUI.Label htmlFor="key">
               {intl.formatMessage({
                 defaultMessage: 'Key',

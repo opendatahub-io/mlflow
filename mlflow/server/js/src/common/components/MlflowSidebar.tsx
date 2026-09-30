@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
   Avatar,
   BeakerIcon,
@@ -8,12 +9,16 @@ import {
   GearIcon,
   HomeIcon,
   ModelsIcon,
+  Tag,
   TextBoxIcon,
   Typography,
   useDesignSystemTheme,
+  DesignSystemEventProviderComponentTypes,
+  DesignSystemEventProviderAnalyticsEventTypes,
   SidebarCollapseIcon,
   SidebarExpandIcon,
   InfoBookIcon,
+  Tooltip,
   NewWindowIcon,
   McpIcon,
 } from '@databricks/design-system';
@@ -31,8 +36,22 @@ import { useCurrentUserIsAdmin, useCurrentUserQuery, useIsBasicAuth } from '../.
 import { performLogout } from '../../account/auth-utils';
 import { GatewayLabel, GatewayNewTag } from './GatewayNewTag';
 import { FormattedMessage } from 'react-intl';
+import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
 import { useWorkflowType, WorkflowType } from '../contexts/WorkflowTypeContext';
-import { shouldEnableWorkflowBasedNavigation, shouldEnableWorkspaces } from '../utils/FeatureUtils';
+import {
+  getExperimentPageSideNavSectionLabel,
+  type ExperimentPageSideNavSectionKey,
+  useExperimentPageSideNavConfig,
+} from '../../experiment-tracking/pages/experiment-page-tabs/side-nav/constants';
+import { ExperimentPageTabName } from '../../experiment-tracking/constants';
+import {
+  shouldEnableAIGateway,
+  shouldEnableWorkflowBasedNavigation,
+  shouldEnableWorkspaces,
+} from '../utils/FeatureUtils';
+import { AssistantSparkleIcon } from '../../assistant/AssistantIconButton';
+import { useAssistant } from '../../assistant/AssistantContext';
+import { isAssistantEnabled } from '../../assistant/assistantFlags';
 import { SERVER_FEATURE_KEYS, useFeatureEnabled } from '../../experiment-tracking/hooks/useServerInfo';
 import { extractWorkspaceFromSearchParams, useActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 import { SETTINGS_RETURN_TO_PARAM, SETTINGS_SECTION_GENERAL } from '../../settings/settingsSectionConstants';
@@ -98,11 +117,13 @@ export function MlflowSidebar({
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { theme } = useDesignSystemTheme();
+  const viewId = useMemo(() => uuidv4(), []);
   const enableWorkflowBasedNavigation = shouldEnableWorkflowBasedNavigation();
   const gatewayEnabled = useFeatureEnabled(SERVER_FEATURE_KEYS.GATEWAY);
   // WorkflowType context is always available, but UI is guarded by feature flag
   const { workflowType, setWorkflowType } = useWorkflowType();
   const { experimentId } = useParams();
+  const logTelemetryEvent = useLogTelemetryEvent();
   const toggleSidebar = useCallback(() => {
     setShowSidebar(!showSidebar);
   }, [setShowSidebar, showSidebar]);
@@ -145,10 +166,28 @@ export function MlflowSidebar({
   const isAdmin = useCurrentUserIsAdmin();
   const canManage = isAdmin;
 
+  const { openPanel, closePanel, isPanelOpen, isLocalServer } = useAssistant();
+  const [isAssistantHovered, setIsAssistantHovered] = useState(false);
+
   // Radix restores focus to the trigger on dismiss, but the browser
   // keeps ``:focus-visible`` - leaving a stale outline. Skip auto-focus
   // return on pointer dismiss; keyboard dismiss still restores focus.
   const accountDropdownClosedByPointerRef = useRef(false);
+
+  const handleAssistantToggle = useCallback(() => {
+    if (isPanelOpen) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+    logTelemetryEvent({
+      componentId: 'mlflow.sidebar.assistant_button',
+      componentViewId: viewId,
+      componentType: DesignSystemEventProviderComponentTypes.Button,
+      componentSubType: null,
+      eventType: DesignSystemEventProviderAnalyticsEventTypes.OnClick,
+    });
+  }, [isPanelOpen, closePanel, openPanel, logTelemetryEvent, viewId]);
 
   const menuItems: MenuItemWithNested[] = useMemo(
     () => [
@@ -380,6 +419,56 @@ export function MlflowSidebar({
             ))}
         </ul>
         <div>
+          {isLocalServer && isAssistantEnabled() && (
+            <Tooltip
+              componentId="mlflow.sidebar.assistant_tooltip"
+              content={<FormattedMessage defaultMessage="Assistant" description="Tooltip for assistant button" />}
+              open={isAssistantHovered && !showSidebar}
+              side="right"
+              delayDuration={0}
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                aria-pressed={isPanelOpen}
+                css={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: theme.spacing.sm,
+                  paddingInline: showSidebar ? theme.spacing.sm : theme.spacing.xs,
+                  paddingBlock: theme.spacing.sm,
+                  borderRadius: theme.borders.borderRadiusMd - 2,
+                  justifyContent: showSidebar ? 'flex-start' : 'center',
+                  cursor: 'pointer',
+                  color: isPanelOpen ? theme.colors.actionDefaultIconHover : theme.colors.actionDefaultIconDefault,
+                  '&:hover': {
+                    color: theme.colors.actionLinkHover,
+                    backgroundColor: theme.colors.actionDefaultBackgroundHover,
+                  },
+                }}
+                onClick={handleAssistantToggle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleAssistantToggle();
+                  }
+                }}
+                onMouseEnter={() => setIsAssistantHovered(true)}
+                onMouseLeave={() => setIsAssistantHovered(false)}
+              >
+                <AssistantSparkleIcon isHovered={isAssistantHovered} />
+                {showSidebar && (
+                  <>
+                    <Typography.Text color="primary">
+                      <FormattedMessage defaultMessage="Assistant" description="Sidebar button for AI assistant" />
+                    </Typography.Text>
+                    <Tag componentId="mlflow.sidebar.assistant_beta_tag" color="turquoise" css={{ marginLeft: 'auto' }}>
+                      Beta
+                    </Tag>
+                  </>
+                )}
+              </div>
+            </Tooltip>
+          )}
           <MlflowSidebarLink
             disableWorkspacePrefix
             css={{ paddingBlock: theme.spacing.sm }}

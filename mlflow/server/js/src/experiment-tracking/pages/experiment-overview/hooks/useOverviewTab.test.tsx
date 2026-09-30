@@ -16,6 +16,9 @@ function mockGeneratePath(pattern: string, params: Record<string, string>): stri
 }
 
 jest.mock('@mlflow/mlflow/src/common/utils/RoutingUtils', () => ({
+  ...jest.requireActual<typeof import('@mlflow/mlflow/src/common/utils/RoutingUtils')>(
+    '@mlflow/mlflow/src/common/utils/RoutingUtils',
+  ),
   useNavigate: () => mockNavigate,
   useParams: () => mockUseParams(),
   useLocation: () => mockUseLocation(),

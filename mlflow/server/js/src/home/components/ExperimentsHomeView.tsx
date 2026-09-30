@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   BeakerIcon,
@@ -12,11 +12,11 @@ import {
 import type { RowSelectionState, SortingState } from '@tanstack/react-table';
 import { FormattedMessage } from 'react-intl';
 import { ExperimentListTable } from '../../experiment-tracking/components/ExperimentListTable';
+import { useUpdateExperimentTags } from '../../experiment-tracking/components/experiment-page/hooks/useUpdateExperimentTags';
 import Routes from '../../experiment-tracking/routes';
 import { Link } from '../../common/utils/RoutingUtils';
 import type { ExperimentEntity } from '../../experiment-tracking/types';
 import { isDemoExperiment } from '../../experiment-tracking/utils/isDemoExperiment';
-import { useUpdateExperimentTags } from '../../experiment-tracking/components/experiment-page/hooks/useUpdateExperimentTags';
 
 type ExperimentsHomeViewProps = {
   experiments?: ExperimentEntity[];
@@ -91,8 +91,51 @@ export const ExperimentsHomeView = ({
   }, [experiments]);
   const shouldShowEmptyState = !isLoading && !error && topExperiments.length === 0;
 
+  const cardWidthPx = 320;
+  const cardGapPx = theme.spacing.sm + theme.spacing.xs;
+  const containerRef = useRef<HTMLElement | null>(null);
+  const [columns, setColumns] = useState(1);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    let rafId: number | null = null;
+
+    const computeColumns = () => {
+      const w = el.getBoundingClientRect().width;
+      const nextColumns = w ? Math.max(1, Math.floor((w + cardGapPx) / (cardWidthPx + cardGapPx))) : 1;
+      setColumns((prev) => (prev === nextColumns ? prev : nextColumns));
+    };
+
+    computeColumns();
+
+    const ro = new ResizeObserver(() => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(computeColumns);
+    });
+
+    ro.observe(el);
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      ro.disconnect();
+    };
+  }, [cardGapPx]);
+
+  const snappedWidth = columns === 1 ? '100%' : cardWidthPx * columns + cardGapPx * (columns - 1);
+
   return (
-    <section css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+    <section
+      ref={containerRef}
+      aria-label="Recent experiments"
+      data-component-id="mlflow.home.experiments-section"
+      css={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}
+    >
       <div
         css={{
           display: 'flex',
@@ -115,6 +158,7 @@ export const ExperimentsHomeView = ({
           borderRadius: theme.general.borderRadiusBase,
           overflow: 'hidden',
           backgroundColor: theme.colors.backgroundPrimary,
+          width: snappedWidth,
         }}
       >
         {error ? (

@@ -23,7 +23,7 @@ export const AssistantAwareActionBar = forwardRef<HTMLDivElement, ComponentProps
     useImperativeHandle(forwardedRef, () => ref.current as HTMLDivElement);
     useRegisterFloatingBottomObstruction(ref);
     return (
-      <div ref={ref} {...rest}>
+      <div ref={ref} {...rest} data-mlflow-ui="action-bar">
         {children}
       </div>
     );

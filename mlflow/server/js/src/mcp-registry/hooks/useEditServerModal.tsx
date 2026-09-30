@@ -92,6 +92,7 @@ export const useEditServerModal = ({ serverName }: { serverName: string }) => {
       destroyOnClose
       confirmLoading={mutation.isLoading}
       okText={<FormattedMessage defaultMessage="Save" description="Edit server modal save button" />}
+      cancelText={<FormattedMessage defaultMessage="Cancel" description="Edit server modal cancel button" />}
       onOk={handleSave}
       onCancel={handleCancel}
     >

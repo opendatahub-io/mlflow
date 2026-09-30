@@ -1,5 +1,5 @@
 import { jest, describe, it, expect } from '@jest/globals';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import PromptsPage from './PromptsPage';
 import { QueryClientProvider, QueryClient } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
 import { setupServer } from '../../../common/utils/setup-msw';
@@ -83,7 +83,7 @@ describe('PromptsPage', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByRole('combobox'), 'new_tag');
+    await userEvent.type(within(screen.getByRole('dialog')).getByRole('combobox'), 'new_tag');
     await userEvent.click(screen.getByText('Add tag "new_tag"'));
 
     await userEvent.type(screen.getByPlaceholderText('Type a value'), 'new_value');
@@ -114,8 +114,8 @@ describe('PromptsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
-    await userEvent.type(screen.getByLabelText('Name:'), 'prompt7');
-    await userEvent.type(screen.getByLabelText('Prompt:'), 'lorem ipsum');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'prompt7');
+    await userEvent.type(screen.getByLabelText('Prompt:*'), 'lorem ipsum');
     await userEvent.type(screen.getByLabelText('Commit message (optional):'), 'commit message');
     await userEvent.click(screen.getByText('Create'));
 
@@ -157,7 +157,7 @@ describe('PromptsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
-    await userEvent.type(screen.getByLabelText('Name:'), 'prompt8');
+    await userEvent.type(screen.getByLabelText('Name:*'), 'prompt8');
     await userEvent.click(screen.getByRole('radio', { name: 'Chat' }));
 
     const firstContent = document.querySelector('textarea[name="chatMessages.0.content"]') as HTMLTextAreaElement;
@@ -209,16 +209,17 @@ describe('PromptsPage', () => {
 
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Name:'), 'my-prompt');
+    await userEvent.type(screen.getByPlaceholderText('Provide an unique prompt name'), 'my-prompt');
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Prompt:'), 'hello');
+    const content = document.querySelector('textarea[name="draftValue"]') as HTMLTextAreaElement;
+    await userEvent.type(content, 'hello');
     expect(createButton).toBeEnabled();
 
-    await userEvent.clear(screen.getByLabelText('Name:'));
+    await userEvent.clear(screen.getByPlaceholderText('Provide an unique prompt name'));
     expect(createButton).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText('Name:'), '   ');
+    await userEvent.type(screen.getByPlaceholderText('Provide an unique prompt name'), '   ');
     expect(createButton).toBeDisabled();
   });
 
@@ -234,7 +235,7 @@ describe('PromptsPage', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByLabelText('Name:'), 'my-chat-prompt');
+    await userEvent.type(screen.getByPlaceholderText('Provide an unique prompt name'), 'my-chat-prompt');
     await userEvent.click(screen.getByRole('radio', { name: 'Chat' }));
 
     const createButton = screen.getByRole('button', { name: 'Create' });
@@ -339,8 +340,8 @@ describe('PromptsPage', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      await userEvent.type(screen.getByLabelText('Name:'), 'exp-prompt');
-      await userEvent.type(screen.getByLabelText('Prompt:'), 'test content');
+      await userEvent.type(screen.getByLabelText('Name:*'), 'exp-prompt');
+      await userEvent.type(screen.getByLabelText('Prompt:*'), 'test content');
       await userEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
@@ -405,8 +406,8 @@ describe('PromptsPage', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      await userEvent.type(screen.getByLabelText('Name:'), 'global-prompt');
-      await userEvent.type(screen.getByLabelText('Prompt:'), 'test content');
+      await userEvent.type(screen.getByLabelText('Name:*'), 'global-prompt');
+      await userEvent.type(screen.getByLabelText('Prompt:*'), 'test content');
       await userEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {

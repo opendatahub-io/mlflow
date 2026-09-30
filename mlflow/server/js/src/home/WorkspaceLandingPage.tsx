@@ -3,10 +3,10 @@ import { Header, TableSkeleton, TitleSkeleton, useDesignSystemTheme } from '@dat
 import { FormattedMessage } from 'react-intl';
 import { ScrollablePageWrapper } from '../common/components/ScrollablePageWrapper';
 import { useCreateWorkspaceModal } from './components/CreateWorkspaceModal';
+import { FeaturesSection } from './components/features';
 import { setLastUsedWorkspace, WORKSPACE_QUERY_PARAM } from '../workspaces/utils/WorkspaceUtils';
 // Loaders and lazy imports for expensive components
 import LogTracesDrawerLoader from './components/LogTracesDrawerLoader';
-import { TelemetryInfoAlert } from '../telemetry/TelemetryInfoAlert';
 const WorkspacesHomeView = React.lazy(() => import('./components/WorkspacesHomeView'));
 
 const WorkspaceLandingPage = () => {
@@ -34,7 +34,7 @@ const WorkspaceLandingPage = () => {
       <Header
         title={<FormattedMessage defaultMessage="Welcome to MLflow" description="Workspace landing page title" />}
       />
-      <TelemetryInfoAlert />
+      <FeaturesSection />
       <React.Suspense fallback={<HomePageSectionSkeleton />}>
         <WorkspacesHomeView onCreateWorkspace={openModal} />
       </React.Suspense>

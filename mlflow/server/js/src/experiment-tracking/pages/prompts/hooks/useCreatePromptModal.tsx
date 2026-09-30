@@ -209,7 +209,9 @@ export const useCreatePromptModal = ({
         )}
         {isCreatingNewPrompt && (
           <>
-            <FormUI.Label htmlFor="mlflow.prompts.create.name">Name:</FormUI.Label>
+            <FormUI.Label htmlFor="mlflow.prompts.create.name" required>
+              Name:
+            </FormUI.Label>
             <RHFControlledComponents.Input
               control={form.control}
               id="mlflow.prompts.create.name"
@@ -275,7 +277,9 @@ export const useCreatePromptModal = ({
           )}
         />
         <Spacer />
-        <FormUI.Label htmlFor="mlflow.prompts.create.content">Prompt:</FormUI.Label>
+        <FormUI.Label htmlFor="mlflow.prompts.create.content" required>
+          Prompt:
+        </FormUI.Label>
         {form.watch('promptType') === PROMPT_TYPE_CHAT ? (
           <ChatMessageCreator name="chatMessages" />
         ) : (

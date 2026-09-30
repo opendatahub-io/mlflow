@@ -11,6 +11,11 @@ import { mount, shallow } from 'enzyme';
 import AppErrorBoundary from './AppErrorBoundary';
 import { SupportPageUrl } from '../../constants';
 import Utils from '../../utils/Utils';
+import { handleChunkLoadError } from '../../utils/fetchWithSessionExpiry';
+
+jest.mock('../../utils/fetchWithSessionExpiry', () => ({
+  handleChunkLoadError: jest.fn(),
+}));
 
 describe('AppErrorBoundary', () => {
   let wrapper: any;
@@ -37,6 +42,7 @@ describe('AppErrorBoundary', () => {
     const instance = wrapper.instance();
     instance.componentDidCatch('testError', 'testInfo');
     instance.forceUpdate();
+    expect(handleChunkLoadError).toHaveBeenCalledWith('testError');
     expect(wrapper.find('.mlflow-error-image').length).toBe(1);
     expect(wrapper.text()).not.toMatch('testChild');
     expect(wrapper.find({ href: SupportPageUrl }).length).toBe(1);

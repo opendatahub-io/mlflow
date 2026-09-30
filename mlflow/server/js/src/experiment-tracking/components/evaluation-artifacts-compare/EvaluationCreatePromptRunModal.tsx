@@ -47,6 +47,8 @@ import { EvaluationCreatePromptRunOutput } from './components/EvaluationCreatePr
 import { useExperimentPageViewMode } from '../experiment-page/hooks/useExperimentPageViewMode';
 import { searchAllPromptLabAvailableEndpoints } from '../../actions/PromptEngineeringActions';
 import { getPromptEngineeringErrorMessage } from './utils/PromptEngineeringErrorUtils';
+import { fireFormTrackingEvent, getTrackingError } from '../../../odh/analytics/segmentUtils';
+import { TrackingOutcome, MLflowEventNames } from '../../../odh/analytics/trackingProperties';
 
 const { TextArea } = Input;
 type Props = {
@@ -191,12 +193,21 @@ export const EvaluationCreatePromptRunModal = ({
       }),
     )
       .then(() => {
+        fireFormTrackingEvent(MLflowEventNames.NEW_RUN_CREATED, {
+          outcome: TrackingOutcome.submit,
+          success: true,
+        });
         refreshRuns();
         closeModal();
         setIsCreatingRun(false);
         setViewMode('ARTIFACT');
       })
       .catch((e) => {
+        fireFormTrackingEvent(MLflowEventNames.NEW_RUN_CREATED, {
+          outcome: TrackingOutcome.submit,
+          success: false,
+          error: getTrackingError(e),
+        });
         Utils.logErrorAndNotifyUser(e?.message || e);
         // NB: Not using .finally() due to issues with promise implementation in the Jest
         setIsCreatingRun(false);
@@ -269,13 +280,20 @@ export const EvaluationCreatePromptRunModal = ({
       });
   }, [inputVariableValues, modelRoutesUnified, parameters, promptTemplate, selectedModel, intl]);
 
-  // create a handleCancel function to terminate the evaluation if it is in progress
   const handleCancel = useCallback(() => {
     if (cancelTokenRef.current) {
       setIsEvaluating(false);
       cancelTokenRef.current = null;
     }
   }, [setIsEvaluating]);
+
+  const handleCancelModal = useCallback(() => {
+    fireFormTrackingEvent(MLflowEventNames.NEW_RUN_CREATED, {
+      outcome: TrackingOutcome.cancel,
+    });
+    handleCancel();
+    closeModal();
+  }, [closeModal, handleCancel]);
 
   const selectModelLabel = intl.formatMessage({
     defaultMessage: 'Served LLM model',
@@ -433,13 +451,13 @@ export const EvaluationCreatePromptRunModal = ({
       componentId="codegen_mlflow_app_src_experiment-tracking_components_evaluation-artifacts-compare_evaluationcreatepromptrunmodal.tsx_541"
       verticalSizing="maxed_out"
       visible={isOpen}
-      onCancel={closeModal}
+      onCancel={handleCancelModal}
       onOk={closeModal}
       footer={
         <div css={{ display: 'flex', gap: theme.spacing.sm, justifyContent: 'flex-end' }}>
           <Button
             componentId="codegen_mlflow_app_src_experiment-tracking_components_evaluation-artifacts-compare_evaluationcreatepromptrunmodal.tsx_589"
-            onClick={closeModal}
+            onClick={handleCancelModal}
           >
             <FormattedMessage
               defaultMessage="Cancel"
@@ -546,7 +564,7 @@ export const EvaluationCreatePromptRunModal = ({
               <div css={{ display: 'flex', justifyContent: 'space-between' }}>
                 <FormUI.Label htmlFor="prompt_template">
                   <FormattedMessage
-                    defaultMessage="Prompt Template"
+                    defaultMessage="Prompt template"
                     description="Experiment page > new run modal > prompt template input label"
                   />
                 </FormUI.Label>
@@ -557,7 +575,7 @@ export const EvaluationCreatePromptRunModal = ({
                   size="small"
                 >
                   <FormattedMessage
-                    defaultMessage="View Examples"
+                    defaultMessage="View examples"
                     description="Experiment page > new run modal > prompt examples button"
                   />
                 </Button>

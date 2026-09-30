@@ -43,6 +43,7 @@ import { ExperimentPageTabName } from '../../constants';
 import { PromptFilteredTracesView } from './components/PromptFilteredTracesView';
 import { ForkHorizontalIcon } from '@databricks/design-system';
 import { useRegisterAssistantContext } from '@mlflow/mlflow/src/assistant';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 
 const getAliasesModalTitle = (version: string) => (
   <FormattedMessage
@@ -56,6 +57,7 @@ const PromptsDetailsPage = ({ experimentId }: { experimentId?: string } = {}) =>
   const { promptName } = useParams<{ promptName: string }>();
   const { theme } = useDesignSystemTheme();
   const navigate = useNavigate();
+  const isEmbedded = useIsIntegrated();
 
   const dispatch = useDispatch<ThunkDispatch>();
 
@@ -162,15 +164,16 @@ const PromptsDetailsPage = ({ experimentId }: { experimentId?: string } = {}) =>
     return <PromptNotFoundView promptName={promptName} />;
   }
 
-  const breadcrumbs = !experimentId ? (
-    <Breadcrumb>
-      <Breadcrumb.Item>
-        <Link componentId="mlflow.prompts.details.breadcrumb_link" to={Routes.promptsPageRoute}>
-          Prompts
-        </Link>
-      </Breadcrumb.Item>
-    </Breadcrumb>
-  ) : undefined;
+  const breadcrumbs =
+    !experimentId && !isEmbedded ? (
+      <Breadcrumb>
+        <Breadcrumb.Item>
+          <Link componentId="mlflow.prompts.details.breadcrumb_link" to={Routes.promptsPageRoute}>
+            Prompts
+          </Link>
+        </Breadcrumb.Item>
+      </Breadcrumb>
+    ) : undefined;
 
   if (isLoading) {
     return (

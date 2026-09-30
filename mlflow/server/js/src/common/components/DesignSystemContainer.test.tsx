@@ -38,23 +38,43 @@ describe('DesignSystemContainer', () => {
     },
   );
 
-  test('should not attach additional container while in document.body', () => {
+  test('should use the dedicated popup container while in document.body', () => {
     render(
       <DesignSystemContainer>
         <span>hello</span>
       </DesignSystemContainer>,
     );
     expect(screen.getByText('hello')).toBeInTheDocument();
-    expect(mockGetPopupContainerFn()).toBe(document.body);
+    expect(screen.getByText('hello').closest('.pf-shell-container')).toHaveClass('pf-shell-root');
+    expect(mockGetPopupContainerFn()).not.toBe(document.body);
+    expect(mockGetPopupContainerFn()).toHaveClass('pf-shell-root');
   });
 
-  test('should attach additional container while in shadow DOM', () => {
+  test('should use the dedicated popup container while in shadow DOM', () => {
     const customElement = window.document.createElement('demo-shadow-dom');
     window.document.body.appendChild(customElement);
 
     expect(mockGetPopupContainerFn()).not.toBe(document.body);
     expect(mockGetPopupContainerFn().tagName).toBe('DIV');
+    expect(mockGetPopupContainerFn()).toHaveClass('pf-shell-root');
 
     expect(1).toBe(1);
+  });
+
+  test('should mirror dark mode classes onto standalone shell containers', () => {
+    const shadowHost = window.document.createElement('div');
+    const shadowRoot = shadowHost.attachShadow({ mode: 'open' });
+    window.document.body.appendChild(shadowHost);
+
+    render(
+      <DesignSystemContainer isDarkTheme>
+        <span>hello in dark mode</span>
+      </DesignSystemContainer>,
+      {
+        baseElement: shadowRoot,
+      },
+    );
+
+    expect(mockGetPopupContainerFn()).toHaveClass('pf-shell-root', 'dark-mode');
   });
 });

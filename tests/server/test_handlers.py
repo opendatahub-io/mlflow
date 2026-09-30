@@ -183,6 +183,7 @@ from mlflow.server.handlers import (
     _create_gateway_secret,
     _create_issue,
     _create_model_version,
+    _create_presigned_download_url,
     _create_presigned_upload_url,
     _create_prompt_optimization_job,
     _create_registered_model,

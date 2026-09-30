@@ -2,6 +2,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { Link, useNavigate } from '../../../common/utils/RoutingUtils';
 import Routes from '../../routes';
 import { PageHeader } from '../../../shared/building_blocks/PageHeader';
+import { useIsIntegrated } from '../../../common/utils/embedUtils';
 import {
   Button,
   DropdownMenu,
@@ -34,6 +35,7 @@ export const ExperimentLoggedModelDetailsHeader = ({
   onSuccess?: () => void;
 }) => {
   const { theme } = useDesignSystemTheme();
+  const isEmbedded = useIsIntegrated();
   const modelDisplayName = loggedModel?.info?.name;
   const navigate = useNavigate();
   const intl = useIntl();
@@ -58,25 +60,27 @@ export const ExperimentLoggedModelDetailsHeader = ({
     return experimentId;
   };
 
-  const breadcrumbs = [
-    // eslint-disable-next-line react/jsx-key
-    <Link
-      componentId="mlflow.logged_models.details_header.experiment_link"
-      to={Routes.getExperimentPageTabRoute(experimentId, ExperimentPageTabName.Models)}
-    >
-      {getExperimentName()}
-    </Link>,
-    // eslint-disable-next-line react/jsx-key
-    <Link
-      componentId="mlflow.logged_models.details_header.models_tab_link"
-      to={Routes.getExperimentPageTabRoute(experimentId, ExperimentPageTabName.Models)}
-    >
-      <FormattedMessage
-        defaultMessage="Models"
-        description="Breadcrumb for models tab of experiments page on the logged model details page"
-      />
-    </Link>,
-  ];
+  const breadcrumbs = isEmbedded
+    ? []
+    : [
+        // eslint-disable-next-line react/jsx-key
+        <Link
+          componentId="mlflow.logged_models.details_header.experiment_link"
+          to={Routes.getExperimentPageTabRoute(experimentId, ExperimentPageTabName.Models)}
+        >
+          {getExperimentName()}
+        </Link>,
+        // eslint-disable-next-line react/jsx-key
+        <Link
+          componentId="mlflow.logged_models.details_header.models_tab_link"
+          to={Routes.getExperimentPageTabRoute(experimentId, ExperimentPageTabName.Models)}
+        >
+          <FormattedMessage
+            defaultMessage="Models"
+            description="Breadcrumb for models tab of experiments page on the logged model details page"
+          />
+        </Link>,
+      ];
 
   return (
     <div css={{ flexShrink: 0 }}>

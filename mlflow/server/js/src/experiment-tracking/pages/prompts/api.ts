@@ -37,7 +37,13 @@ const defaultErrorHandler = async ({
 };
 
 export const RegisteredPromptsApi = {
-  listRegisteredPrompts: (searchFilter?: string, pageToken?: string, experimentId?: string) => {
+  listRegisteredPrompts: (
+    searchFilter?: string,
+    pageToken?: string,
+    experimentId?: string,
+    modelFilter?: string,
+    maxResults?: number,
+  ) => {
     const params = new URLSearchParams();
     const searchClause = buildSearchFilterClause(searchFilter);
 
@@ -53,11 +59,19 @@ export const RegisteredPromptsApi = {
       filter += ` AND ${searchClause}`;
     }
 
+    if (modelFilter) {
+      filter += ` AND model_config.model_name = '${modelFilter.replace(/'/g, "''")}'`;
+    }
+
     if (pageToken) {
       params.append('page_token', pageToken);
     }
 
     params.append('filter', filter);
+
+    if (maxResults) {
+      params.append('max_results', String(maxResults));
+    }
 
     const relativeUrl = ['ajax-api/2.0/mlflow/registered-models/search', params.toString()].join('?');
     return fetchEndpoint({

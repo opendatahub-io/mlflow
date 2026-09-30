@@ -64,7 +64,7 @@ export const ToolPerformanceSummary: React.FC = () => {
         icon={<WrenchIcon />}
         title={
           <FormattedMessage
-            defaultMessage="Tool Performance Summary"
+            defaultMessage="Tool performance summary"
             description="Title for the tool performance summary section"
           />
         }

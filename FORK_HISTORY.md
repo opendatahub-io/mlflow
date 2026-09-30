@@ -25,6 +25,48 @@ These break CI after every rebase. Fix them proactively before pushing.
 
 ---
 
+## Scale-testing rebase: v3.15.2 → 3.16.2.dev0
+
+**Date:** 2026-09-30
+**Upstream commit:** `34c75beb57e0cecf3556df2ebc5f29689cf2e15c`
+**ODH base:** `a721e22361b5161ee45d1639372d82c2cfbd5c59`
+**Local branch:** `db-optimization/mlflow-openshift-scale-testing`
+
+This is a local feature branch for OpenShift database scale testing. No default
+branch, remote branch, tag, or published image was changed.
+
+- Squashed the final downstream tree delta from `v3.15.2` into scaffolding,
+  backend, and UI commits. Verified the squash tree exactly matched the captured
+  ODH base before rebasing. Original commits remain on the local backup branch
+  `db-optimization/mlflow-scale-testing-base` and in the linked ODH history.
+- Accepted upstream gateway feature flags, handler guards, decompression limits,
+  reactive UI feature checks, and security fixes. Retained the ODH assistant
+  toggle, extra gateway-dependent job guards, Starlette streaming compatibility,
+  workspace listeners, prompt model filters, and database migration-gap command.
+  Preserved upstream trace analytics prepopulation and rollup recovery commands.
+- Removed conflicting downstream-deleted workflows and new upstream automation
+  absent from the ODH baseline. Preserved ODH model catalog release synchronization.
+  Updated downstream workflow cache defaults and concurrency for upstream policy.
+- Merged navigation imports and translated messages; regenerated the Yarn lock
+  with both dependency sets, pruned i18n keys, and retained Python's `P14D` cooldown
+  and upstream uv minimum. No ODH-only files were lost.
+- Local validation: TypeScript, 103 focused UI tests, 342 plugin tests, backend
+  tests, workflow policy, conftest, Prettier, and CSS selector audit passed.
+  The CSS audit reports 31 existing baseline issues; visual verification remains
+  pending. Full remote GitHub CI requires publication authorization.
+
+The image builds the plugin from commit
+`8e1d9c6fbc063a137326d17e6f16dc3d5d59a7ed` using a separate unhashed Git wheel
+step. An in-context local wheel can override `MLFLOW_KUBERNETES_PLUGINS_SOURCE`
+until that commit is published. The release pin and its hashes were removed.
+Konflux hermetic Git prefetch remains a follow-up.
+
+Detailed conflict lists, commands, logs, image provenance, and phase boundaries
+are recorded in the workspace handoff under
+`ai_assist_files/db-optimization/mlflow-openshift-scale-testing-handoff.md`.
+
+---
+
 ## Rebase: v3.14.0 → v3.15.2
 
 **Date:** 2026-09-02

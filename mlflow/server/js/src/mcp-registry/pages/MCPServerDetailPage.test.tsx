@@ -415,7 +415,7 @@ describe('MCPServerDetailPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Edit server details')).toBeInTheDocument();
       });
-    });
+    }, 10_000);
   });
 
   describe('server tags', () => {

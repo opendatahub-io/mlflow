@@ -103,10 +103,10 @@ describe('ToolCallStatistics', () => {
       renderComponent();
 
       // Should show stat card labels but values should be replaced with skeletons
-      expect(screen.getByText('Total Tool Calls')).toBeInTheDocument();
-      expect(screen.getByText('Success Rate')).toBeInTheDocument();
-      expect(screen.getByText('Avg Latency')).toBeInTheDocument();
-      expect(screen.getByText('Failed Calls')).toBeInTheDocument();
+      expect(screen.getByText('Total tool calls')).toBeInTheDocument();
+      expect(screen.getByText('Success rate')).toBeInTheDocument();
+      expect(screen.getByText('Avg latency')).toBeInTheDocument();
+      expect(screen.getByText('Failed calls')).toBeInTheDocument();
 
       // Values should not be displayed during loading (replaced with skeletons)
       expect(screen.queryByText('0')).not.toBeInTheDocument();
@@ -124,10 +124,10 @@ describe('ToolCallStatistics', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Total Tool Calls')).toBeInTheDocument();
-        expect(screen.getByText('Success Rate')).toBeInTheDocument();
-        expect(screen.getByText('Avg Latency')).toBeInTheDocument();
-        expect(screen.getByText('Failed Calls')).toBeInTheDocument();
+        expect(screen.getByText('Total tool calls')).toBeInTheDocument();
+        expect(screen.getByText('Success rate')).toBeInTheDocument();
+        expect(screen.getByText('Avg latency')).toBeInTheDocument();
+        expect(screen.getByText('Failed calls')).toBeInTheDocument();
       });
     });
 

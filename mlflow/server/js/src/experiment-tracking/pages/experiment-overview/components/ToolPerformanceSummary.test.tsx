@@ -109,7 +109,7 @@ describe('ToolPerformanceSummary', () => {
       renderComponent();
 
       // Check that actual chart content is not rendered during loading
-      expect(screen.queryByText('Tool Performance Summary')).not.toBeInTheDocument();
+      expect(screen.queryByText('Tool performance summary')).not.toBeInTheDocument();
     });
   });
 
@@ -162,7 +162,7 @@ describe('ToolPerformanceSummary', () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText('Tool Performance Summary')).toBeInTheDocument();
+        expect(screen.getByText('Tool performance summary')).toBeInTheDocument();
       });
     });
 

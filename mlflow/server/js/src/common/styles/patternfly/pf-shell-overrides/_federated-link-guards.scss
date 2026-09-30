@@ -1,0 +1,36 @@
+// Federated mode: disable links to routes outside experiment tracking.
+// Applied to both .mlflow-federated (inline content), the dedicated MLflow
+// portal container, and MLflow-owned fallback portals on body.
+.mlflow-federated,
+body > [data-mlflow-federated-portal-container='true'],
+body > [data-mlflow-federated-portal-root='true'] {
+  a[data-mlflow-embedded-link-guard='true'] {
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href*='/models/']:not([href*='/experiments/']) {
+    pointer-events: none !important;
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href*='/jobs/'] {
+    pointer-events: none !important;
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href*='mlflow.org'] {
+    pointer-events: none !important;
+    cursor: default !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    svg {
+      display: none !important;
+    }
+  }
+}

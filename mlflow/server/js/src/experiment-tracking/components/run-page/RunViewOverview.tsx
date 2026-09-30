@@ -43,6 +43,7 @@ import {
   shouldEnableRunDetailsMetadataBoxOnRunDetailsPage,
   shouldEnableArtifactsOnRunDetailsPage,
 } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
+import { useIsIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 const EmptyValue = () => <Typography.Hint>—</Typography.Hint>;
 
@@ -80,6 +81,7 @@ export const RunViewOverview = ({
   const { theme } = useDesignSystemTheme();
   const { search } = useLocation();
   const intl = useIntl();
+  const isEmbedded = useIsIntegrated();
 
   const loggedModelsFromTags = useMemo(() => Utils.getLoggedModelsFromTags(tags), [tags]);
   const parentRunIdTag = tags[EXPERIMENT_PARENT_ID_TAG];
@@ -377,8 +379,7 @@ export const RunViewOverview = ({
         </>
       )}
       {!usingSidebarLayout && <Spacer />}
-      {/* Add a spacer so the page doesn't jump when searching params / metrics */}
-      <div css={{ height: 500 }} />
+      {!isEmbedded && <div data-testid="run-view-overview-bottom-spacer" css={{ height: 500 }} />}
     </DetailsPageLayout>
   );
 };

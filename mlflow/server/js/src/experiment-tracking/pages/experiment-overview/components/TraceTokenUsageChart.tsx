@@ -64,7 +64,7 @@ export const TraceTokenUsageChart: React.FC = () => {
     <OverviewChartContainer componentId="mlflow.charts.trace_token_usage">
       <OverviewChartHeader
         icon={<LightningIcon />}
-        title={<FormattedMessage defaultMessage="Token Usage" description="Title for the token usage chart" />}
+        title={<FormattedMessage defaultMessage="Token usage" description="Title for the token usage chart" />}
         value={formatCount(totalTokens)}
         subtitle={(() => {
           const parts = [`${formatCount(totalInputTokens)} input`, `${formatCount(totalOutputTokens)} output`];

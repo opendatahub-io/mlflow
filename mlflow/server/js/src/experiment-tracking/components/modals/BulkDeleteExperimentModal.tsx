@@ -6,6 +6,8 @@ import { useDispatch } from 'react-redux';
 import type { ThunkDispatch } from '@mlflow/mlflow/src/redux-types';
 import Utils from '@mlflow/mlflow/src/common/utils/Utils';
 import { FormattedMessage } from 'react-intl';
+import { fireFormTrackingEvent, getTrackingError } from '../../../odh/analytics/segmentUtils';
+import { TrackingOutcome, MLflowEventNames } from '../../../odh/analytics/trackingProperties';
 
 type Props = {
   isOpen: boolean;
@@ -19,18 +21,41 @@ export const BulkDeleteExperimentModal = ({ isOpen, onClose, experiments, onExpe
 
   const handleSubmit = () => {
     return Promise.all(experiments.map((experiment) => dispatch(deleteExperimentApi(experiment.experimentId))))
-      .then(onExperimentsDeleted)
-      .catch((e: any) => Utils.logErrorAndNotifyUser(e));
+      .then(() => {
+        fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+          outcome: TrackingOutcome.submit,
+          success: true,
+          experimentCount: experiments.length,
+        });
+        onExperimentsDeleted();
+      })
+      .catch((e: any) => {
+        fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+          outcome: TrackingOutcome.submit,
+          success: false,
+          error: getTrackingError(e),
+          experimentCount: experiments.length,
+        });
+        Utils.logErrorAndNotifyUser(e);
+      });
+  };
+
+  const handleCancel = () => {
+    fireFormTrackingEvent(MLflowEventNames.EXPERIMENT_DELETED, {
+      outcome: TrackingOutcome.cancel,
+      experimentCount: experiments.length,
+    });
   };
 
   return (
     <ConfirmModal
       isOpen={isOpen}
       onClose={onClose}
+      onCancel={handleCancel}
       handleSubmit={handleSubmit}
       title={
         <FormattedMessage
-          defaultMessage="Delete {count, plural, one {# Experiment} other {# Experiments}}"
+          defaultMessage="Delete {count, plural, one {# experiment} other {# experiments}}"
           description="Experiments page list, delete bulk experiments modal title"
           values={{
             count: experiments.length,
