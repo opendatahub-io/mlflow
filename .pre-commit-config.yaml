@@ -1,4 +1,5 @@
 minimum_pre_commit_version: 4.0.1
+exclude: '^(\.tekton/.*|requirements/rpms\.lock\.yaml)$'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: c4a0b883114b00d8d76b479c820ce7950211c99b # v4.5.0
@@ -15,7 +16,7 @@ repos:
     rev: "50c5478ed9e10bf360335449280cf2a67f4edb7a" # v2.7.1
     hooks:
       - id: prettier
-        files: '^(?!docs/|mlflow/server/js/|libs/typescript/).+\.(js|ts|md|json|ya?ml)$'
+        files: '^(?!docs/|mlflow/server/js/|libs/typescript/|\.tekton/).+\.(js|ts|md|json|ya?ml)$'
         require_serial: true
 
   - repo: local

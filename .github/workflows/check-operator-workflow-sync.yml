@@ -1,0 +1,74 @@
+name: Check Operator Workflow Sync
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/operator-integration-tests.yml
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-sync:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resolve operator ref
+        id: ref
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          TARGET_REF: ${{ github.base_ref || github.ref_name }}
+        run: |
+          if [[ "$REPOSITORY_OWNER" == "opendatahub-io" && "$TARGET_REF" == "master" ]]; then
+            operator_branch="main"
+          else
+            operator_branch="$TARGET_REF"
+          fi
+          echo "operator_repository=${REPOSITORY_OWNER}/mlflow-operator" >> "$GITHUB_OUTPUT"
+          echo "operator_branch=$operator_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout operator repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ${{ steps.ref.outputs.operator_repository }}
+          ref: ${{ steps.ref.outputs.operator_branch }}
+          sparse-checkout: |
+            mlflow-tests/ci
+            mlflow-tests/images
+          persist-credentials: false
+
+      - name: Verify shared files exist
+        env:
+          OPERATOR_BRANCH: ${{ steps.ref.outputs.operator_branch }}
+          OPERATOR_REPOSITORY: ${{ steps.ref.outputs.operator_repository }}
+        run: |
+          ok=true
+
+          if [[ ! -f mlflow-tests/ci/integration-matrix.json ]]; then
+            echo "::error::Shared matrix file mlflow-tests/ci/integration-matrix.json not found in $OPERATOR_REPOSITORY@$OPERATOR_BRANCH"
+            ok=false
+          elif ! jq empty mlflow-tests/ci/integration-matrix.json 2>/dev/null; then
+            echo "::error::mlflow-tests/ci/integration-matrix.json is not valid JSON"
+            ok=false
+          else
+            echo "integration-matrix.json: OK"
+          fi
+
+          if [[ ! -x mlflow-tests/images/run-integration-tests.sh ]]; then
+            echo "::error::Shared test runner mlflow-tests/images/run-integration-tests.sh not found or not executable in $OPERATOR_REPOSITORY@$OPERATOR_BRANCH"
+            ok=false
+          else
+            echo "run-integration-tests.sh: OK"
+          fi
+
+          if [[ "$ok" != "true" ]]; then
+            echo ""
+            echo "The operator-integration-tests workflow depends on shared files from the operator repo."
+            echo "Ensure the operator branch $OPERATOR_BRANCH has both files."
+            exit 1
+          fi

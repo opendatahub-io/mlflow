@@ -443,7 +443,7 @@ any_job_has_repo_check(jobs) if {
 }
 
 job_has_repo_check(job) if {
-	regex.match(`github\.repository\s*==\s*'mlflow/`, job["if"])
+	regex.match(`^github\.repository\s*==\s*'[^/]+/mlflow'\s*$`, job["if"])
 }
 
 deny_secrets_in_top_level_env contains msg if {

@@ -982,6 +982,7 @@ module.exports = {
   "mlflow.experiment-page.header.back-icon-button": "",
   "mlflow.experiment-page.header.docs-link": "",
   "mlflow.experiment-page.header.docs-link-button": "",
+  "mlflow.experiment-page.side-nav": "",
 
   // -- mlflow.experiment-review-queue --
   "mlflow.experiment-review-queue.delete-queue-confirm": "",
@@ -1023,7 +1024,6 @@ module.exports = {
   "mlflow.experiment-scorers.new-scorer-button": "",
   "mlflow.experiment-scorers.output-type-select": "",
   "mlflow.experiment-scorers.scorer-status-tag": "",
-  "mlflow.experiment-scorers.switch-to-endpoint-link": "",
   "mlflow.experiment-scorers.switch-to-manual-link": "",
   "mlflow.experiment-scorers.traces-view-create-judge": "",
   "mlflow.experiment-scorers.traces-view-judge-error": "",
@@ -1487,6 +1487,7 @@ module.exports = {
   "mlflow.home.create_workspace_modal.workspace_name_input": "",
   "mlflow.home.create_workspace_modal.workspace_settings": "",
   "mlflow.home.demo-banner.launch": "",
+  "mlflow.home.experiments-section": "",
   "mlflow.home.experiments.create": "",
   "mlflow.home.experiments.error": "",
   "mlflow.home.experiments.retry": "",
@@ -1924,6 +1925,9 @@ module.exports = {
   "mlflow.prompts.edit_model_config.error": "",
   "mlflow.prompts.edit_model_config.modal": "",
   "mlflow.prompts.list.empty_state.learn_more_link": "",
+  "mlflow.prompts.list.model-selector": "",
+  "mlflow.prompts.list.model-selector.option-tooltip": "",
+  "mlflow.prompts.list.model.tooltip": "",
   "mlflow.prompts.list.prompt_name_link": "",
   "mlflow.prompts.list.table.create_prompt": "",
   "mlflow.prompts.list.tag.add": "",
@@ -2046,6 +2050,9 @@ module.exports = {
 
   // -- mlflow.sidebar --
   "mlflow.sidebar.account": "",
+  "mlflow.sidebar.assistant_beta_tag": "",
+  "mlflow.sidebar.assistant_button": "",
+  "mlflow.sidebar.assistant_tooltip": "",
   "mlflow.sidebar.docs_link": "",
   "mlflow.sidebar.experiments_tab_link": "",
   "mlflow.sidebar.gateway_budgets_tab_link": "",

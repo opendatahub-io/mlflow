@@ -1,0 +1,45 @@
+name: Resolve base image
+description: Resolve the single BASE_IMAGE argument from a canonical Dockerfile.
+
+inputs:
+  repository:
+    description: Repository containing the canonical Dockerfile.
+    required: true
+  ref:
+    description: Ref containing the canonical Dockerfile.
+    required: true
+  dockerfile:
+    description: Path to the canonical Dockerfile.
+    required: true
+  token:
+    description: GitHub token used for the raw-file API request.
+    required: true
+
+outputs:
+  base_image:
+    description: Value of the Dockerfile's single ARG BASE_IMAGE declaration.
+    value: ${{ steps.resolve.outputs.base_image }}
+  source:
+    description: Canonical Dockerfile source of the base-image reference.
+    value: ${{ steps.resolve.outputs.source }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ inputs.repository }}
+        REF: ${{ inputs.ref }}
+        DOCKERFILE: ${{ inputs.dockerfile }}
+      run: |
+        base_image="$(gh api -H 'Accept: application/vnd.github.raw+json' \
+          "repos/${REPOSITORY}/contents/${DOCKERFILE}?ref=${REF}" \
+          | sed -n 's/^ARG BASE_IMAGE=//p')"
+        if [[ -z "$base_image" || "$(printf '%s\n' "$base_image" | sed '/^$/d' | wc -l)" != 1 ]]; then
+          echo "::error::Expected exactly one ARG BASE_IMAGE declaration in ${REPOSITORY}/${DOCKERFILE} at ${REF}."
+          exit 1
+        fi
+        echo "base_image=$base_image" >> "$GITHUB_OUTPUT"
+        echo "source=${REPOSITORY}/${DOCKERFILE} at ${REF} (ARG BASE_IMAGE)" >> "$GITHUB_OUTPUT"

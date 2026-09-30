@@ -1,0 +1,27 @@
+name: Remove ok-to-test label on new commits
+
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  remove-label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove ok-to-test label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/${REPO}/issues/${PR_NUMBER}/labels/ok-to-test" \
+            -X DELETE 2>/dev/null || true

@@ -1,0 +1,114 @@
+name: ODH Bug Report
+description: Report a bug in the downstream Open Data Hub / Red Hat OpenShift AI MLflow fork
+title: "[BUG][ODH] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug in `opendatahub-io/mlflow`.
+
+        Use this form for downstream issues in Open Data Hub / Red Hat OpenShift AI integrations, packaging, or UI behavior.
+
+        If the problem reproduces in upstream `mlflow/mlflow` without any downstream-specific code or deployment differences, please file it in the upstream project instead:
+        - https://github.com/mlflow/mlflow/issues
+
+        Common downstream-specific areas include:
+        - PatternFly CSS and downstream UI styling
+        - module federation integration
+        - Kubernetes MLflow plugins for workspaces and authorization
+
+        Please include enough detail for agent-assisted debugging: reproduction steps, expected behavior, actual behavior, environment details, and logs or error output.
+  - type: dropdown
+    id: upstream_check
+    attributes:
+      label: Upstream reproduction status
+      description: Tell us whether this also reproduces against upstream MLflow.
+      options:
+        - No, this appears specific to ODH / OpenShift AI
+        - Yes, it also reproduces in upstream MLflow
+        - Not tested yet
+    validations:
+      required: true
+  - type: input
+    id: upstream_issue
+    attributes:
+      label: Upstream issue link (if applicable)
+      description: If you already filed or found an upstream MLflow issue, link it here.
+      placeholder: https://github.com/mlflow/mlflow/issues/12345
+    validations:
+      required: false
+  - type: dropdown
+    id: affected_area
+    attributes:
+      label: Which downstream area best matches the bug?
+      options:
+        - PatternFly CSS / downstream UI styling
+        - Module federation integration
+        - Kubernetes MLflow plugins for workspaces / authorization
+        - Downstream packaging, image, or deployment behavior
+        - Other downstream MLflow behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and version details
+      description: Share the environment where you saw the bug. Redact secrets.
+      value: |
+        - Open Data Hub / Red Hat OpenShift AI version:
+        - `opendatahub-io/mlflow` image tag, release, or commit:
+        - Upstream MLflow version (if known):
+        - Deployment method (operator, custom deployment, local dev, other):
+        - OpenShift / Kubernetes version:
+        - Browser version (if UI-related):
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the shortest sequence of steps that reliably reproduces the bug.
+      placeholder: |
+        1. Deploy ...
+        2. Open ...
+        3. Run ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, console output, or error messages
+      description: Paste relevant MLflow server logs, browser console output, operator/plugin logs, or exact error messages. If there are no logs, write `N/A`.
+      render: shell
+      placeholder: |
+        Traceback (most recent call last):
+        ...
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context or repro assets
+      description: Share screenshots, a minimal repro repo, configuration snippets, or anything else that would help.
+      placeholder: |
+        - Screenshot(s):
+        - Minimal repro repo:
+        - Relevant configuration:
+    validations:
+      required: false

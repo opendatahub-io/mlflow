@@ -9,6 +9,8 @@ on:
     branches:
       - master
       - branch-[0-9]+.[0-9]+
+      - main
+      - rhoai-*
     paths:
       - "mlflow/protos/**"
       - .github/workflows/protobuf-cross-test.yml
@@ -78,24 +80,6 @@ jobs:
           SPLITS: ${{ matrix.splits }}
           GROUP: ${{ matrix.group }}
         run: |
-          # NB: test_mlflow_artifacts.py is excluded because it runs docker-compose with fresh
-          # container builds. The protobuf version in the test environment has no effect on the
-          # containers, making cross-version testing unnecessary and wasteful of disk space.
-          # The deselected job integration tests validate subprocess timing and job scheduling,
-          # not protobuf compatibility, and their fixed deadlines are unreliable in this broad
-          # matrix.
-          uv run --no-sync pytest --splits=$SPLITS --group=$GROUP \
-            --deselect=tests/server/jobs/test_jobs.py::test_job_queue_parallelism \
-            --deselect=tests/server/jobs/test_jobs.py::test_job_retry_on_transient_error \
-            --deselect=tests/server/jobs/test_endpoint.py::test_job_submit \
-            --ignore-flavors \
-            --ignore=tests/projects \
-            --ignore=tests/examples \
-            --ignore=tests/evaluate \
-            --ignore=tests/optuna \
-            --ignore=tests/pyspark/optuna \
-            --ignore=tests/genai \
-            --ignore=tests/telemetry \
-            --ignore=tests/gateway \
-            --ignore=tests/tracking/test_mlflow_artifacts.py \
-            tests
+          # NB: Docker-based tests are excluded because they run docker-compose with fresh container
+          # builds. The protobuf version in the test environment has no effect on the containers,
+          # making cross-version testing unnecessary and wasteful of disk space.

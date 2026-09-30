@@ -1,0 +1,43 @@
+# Extra dependencies for the Konflux (RHOAI) container build that are
+# not declared in pyproject.toml.
+#
+# To regenerate the lock file (requirements/konflux-aipcc-requirements.txt), run:
+#
+#   python requirements/compile.py
+#
+# pyproject.toml is used as input because it contains all mlflow dependencies
+# inline (unlike pyproject.release.toml which references mlflow-skinny and
+# mlflow-tracing as separate packages that may not yet be on the AIPCC index).
+# mlflow is excluded from the output (--no-emit-package) because it is built
+# from source in the Dockerfile using pyproject.release.toml.
+#
+# Packages not on the AIPCC Python package index (psycopg2, prometheus-flask-exporter)
+# are installed separately in the Dockerfile via Cachi2 prefetch.
+
+boto3
+prometheus-client
+kubernetes
+
+# Cross-arch constraints: pin packages to versions available on all target
+# architectures (aarch64, ppc64le, x86_64) on the AIPCC index.
+cryptography==46.0.7
+matplotlib==3.10.8
+numpy==2.4.4
+pyarrow<23.0.1
+pydantic==2.13.1
+scikit-learn==1.8.0
+sqlalchemy==2.0.49
+tokenizers==0.22.2
+yarl==1.23.0
+
+# Pillow 12.3.0+ fixes CVE-2026-59199 (and related Pillow CVEs) in the shipped runtime image.
+pillow>=12.3.0
+
+# pyasn1 0.6.4+ fixes CVE-2026-59884/59885/59886 (DoS via crafted ASN.1 inputs).
+pyasn1>=0.6.4
+
+# GitPython 3.1.51+ fixes CVE-2026-67325 (and CVE-2026-67323) command injection issues in the shipped runtime image.
+gitpython>=3.1.51
+
+# sqlparse 0.6.0+ fixes CVE-2026-71491 (quadratic CPU consumption in comment grouping).
+sqlparse>=0.6.0

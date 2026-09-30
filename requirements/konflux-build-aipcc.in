@@ -1,0 +1,12 @@
+# Build-time dependencies installed from the AIPCC Python package index
+# before compiling mlflow wheels or installing runtime packages.
+#
+# To regenerate the lock file (requirements/konflux-build-aipcc-requirements.txt), run:
+#
+#   python requirements/compile.py
+
+build
+hatchling
+# Keep this compatible with the PEP 517 build-system constraint in pyproject.toml.
+setuptools<=82.0.1
+wheel
