@@ -22,8 +22,12 @@ tests
 !tests/resources/mlflow-test-plugin/
 
 node_modules
+**/node_modules
+**/.venv
 coverage
 build
+**/build
+**/.yarn/install-state.gz
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -32,3 +36,6 @@ __pycache__
 ~*
 *.swp
 *.pyc
+
+# Keep Yarn settings in the UI build context.
+!mlflow/server/js/.yarnrc.yml

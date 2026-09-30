@@ -10,7 +10,7 @@
 #
 #   python requirements/compile.py
 
-mlflow-kubernetes-plugins==1.6.0
+# The scale-testing Dockerfile builds the Kubernetes plugin from pinned Git source.
 psycopg2
 prometheus-flask-exporter
 # Installed via the Konflux PyPI wheel side-channel (see Dockerfile.konflux).
