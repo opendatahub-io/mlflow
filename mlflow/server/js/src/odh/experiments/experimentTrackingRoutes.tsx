@@ -94,7 +94,14 @@ export const getExperimentTrackingRouteElements = () => (
         path="datasets"
         element={createLazyRouteElement(
           () =>
-            import('../../experiment-tracking/pages/experiment-evaluation-datasets/ExperimentEvaluationDatasetsPage'),
+            import('../../experiment-tracking/pages/experiment-evaluation-datasets-v2/ExperimentEvaluationDatasetsRouter'),
+        )}
+      />
+      <Route
+        path="datasets/:datasetId"
+        element={createLazyRouteElement(
+          () =>
+            import('../../experiment-tracking/pages/experiment-evaluation-datasets-v2/ExperimentEvaluationDatasetDetailPage'),
         )}
       />
       <Route
