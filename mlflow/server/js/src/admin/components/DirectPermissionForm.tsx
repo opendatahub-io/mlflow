@@ -39,6 +39,7 @@ export const DIRECT_GRANT_RESOURCE_TYPES = [
   'scorer_version',
   'gateway_secret',
   'gateway_endpoint',
+  'skill',
 ] as const;
 
 export type DirectGrantResourceType = (typeof DIRECT_GRANT_RESOURCE_TYPES)[number];
