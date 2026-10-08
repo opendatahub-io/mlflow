@@ -3,24 +3,12 @@ name: JS
 on:
   workflow_dispatch:
   push:
-    paths:
-      - mlflow/server/js/**
-      - .github/actions/check-component-ids/**
-      - .github/actions/js-build-cache-key/**
-      - .github/actions/setup-node/**
-      - .github/workflows/js.yml
     branches:
       - master
       - branch-[0-9]+.[0-9]+
       - main
       - rhoai-*
   pull_request:
-    paths:
-      - mlflow/server/js/**
-      - .github/actions/check-component-ids/**
-      - .github/actions/js-build-cache-key/**
-      - .github/actions/setup-node/**
-      - .github/workflows/js.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
