@@ -44,7 +44,7 @@ def get_current_py_version() -> str:
     match = re.search(r'VERSION = "(.+)"', text)
     if match is None:
         raise ValueError("Could not find VERSION in mlflow/version.py")
-    return Version(match.group(1)).base_version
+    return Version(match.group(1)).public
 
 
 def get_java_py_version_pattern(version: str) -> str:

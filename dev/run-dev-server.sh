@@ -6,7 +6,7 @@ set -e
 function kill_matching_processes {
   local pattern="$1"
   local description="$2"
-
+  
   if pgrep -f "$pattern" > /dev/null; then
     echo "Stopping existing $description..."
     pkill -f "$pattern" || true

@@ -81,6 +81,24 @@ old_version = Version(get_current_py_version())
 _NEW_PY_VERSION = f"{old_version.major}.{old_version.minor}.{old_version.micro + 1}"
 
 
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [
+        ("3.17.0", "3.17.0"),
+        ("3.17.0.dev0", "3.17.0.dev0"),
+        ("3.17.0rc1", "3.17.0rc1"),
+        ("3.17.0+rhaiv.1", "3.17.0"),
+        ("3.17.0.dev0+rhaiv.1", "3.17.0.dev0"),
+    ],
+)
+def test_get_current_py_version_preserves_release_stage(monkeypatch, tmp_path, version, expected):
+    monkeypatch.chdir(tmp_path)
+    Path("mlflow").mkdir()
+    Path("mlflow/version.py").write_text(f'VERSION = "{version}"\n')
+
+    assert get_current_py_version() == expected
+
+
 def copy_and_run_change_func(monkeypatch, tmp_path, paths_to_copy, replace_func, new_version):
     for path in paths_to_copy:
         copy_path = tmp_path / path

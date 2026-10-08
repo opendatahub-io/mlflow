@@ -3,12 +3,13 @@ set -e
 
 cd tests/db
 
-# Run the pre-migration step with the latest mlflow from PyPI in an isolated environment, pinning
-# its dependencies to the locked versions
+# Keep the historical MLflow dependencies compatible with the pre-workspace baseline.
+# Pin the DB test tools separately instead of imposing the current MLflow dependency lock.
 locked=$(mktemp)
-uv export --quiet --locked --no-default-groups --extra db --group db-test \
+trap 'rm -f "$locked"' EXIT
+uv export --quiet --locked --only-group db-test \
   --no-emit-workspace --no-hashes --output-file "$locked" > /dev/null
-uv run --quiet --isolated --no-project --with mlflow==3.10.1 --with-requirements "$locked" \
+uv run --quiet --isolated --no-project --with 'mlflow[db]==3.10.1' --with-requirements "$locked" \
   python check_migration.py pre-migration
 # Run the post-migration step with mlflow from the repository
 uv run --no-sync mlflow db upgrade $MLFLOW_TRACKING_URI

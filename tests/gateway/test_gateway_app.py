@@ -7,6 +7,7 @@ from mlflow.exceptions import MlflowException
 from mlflow.gateway.app import create_app_from_config, create_app_from_env
 from mlflow.gateway.config import GatewayConfig
 from mlflow.gateway.constants import (
+    GATEWAY_DISABLED_MESSAGE,
     MLFLOW_GATEWAY_CRUD_ENDPOINT_V3_BASE,
     MLFLOW_GATEWAY_CRUD_ROUTE_BASE,
     MLFLOW_GATEWAY_CRUD_ROUTE_V3_BASE,
@@ -90,15 +91,13 @@ def test_health(client: TestClient):
     assert response.json() == {"status": "OK"}
 
 
-def test_runtime_feature_toggle_does_not_disable_legacy_standalone_app(
-    client: TestClient, monkeypatch
-):
+def test_runtime_feature_toggle_disables_legacy_standalone_app(client: TestClient, monkeypatch):
     monkeypatch.setenv("MLFLOW_ENABLE_AI_GATEWAY", "false")
 
     response = client.get("/health")
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "OK"}
+    assert response.status_code == 501
+    assert response.json() == {"detail": GATEWAY_DISABLED_MESSAGE}
 
 
 def test_favicon(client: TestClient):

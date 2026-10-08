@@ -84,6 +84,17 @@ These break CI after every rebase. Fix them proactively before pushing.
 
 Remote CI, Kubernetes/OpenShift integration tests, and browser visual verification remain follow-up steps. No CSS versions are marked visually verified by this local rebase.
 
+### Post-rebase CI fixes
+
+- Restored the original whitespace in `dev/run-dev-server.sh` and made the new empty TypeSafe test package marker zero bytes, eliminating whitespace-only PR changes without bypassing lint.
+- Preserved development and release-candidate suffixes in `get_current_py_version()` while still stripping downstream local-version labels. The previous use of `base_version` caused release-ordering tests to treat a development version as a final release.
+- Removed the orphaned test for the upstream `push-images.yml` publishing workflow, which ODH intentionally does not carry. Kept the workflow policy unchanged.
+- Updated the legacy standalone gateway test to assert ODH's existing HTTP 501 behavior when `MLFLOW_ENABLE_AI_GATEWAY=false`; production gateway guards and job execution settings are unchanged.
+- Derived the expected default service name from the installed OpenTelemetry SDK, so the resource-attribute test works with both the 1.27 protobuf matrix and newer SDKs while still checking MLflow attributes and explicit environment overrides.
+- Kept MLflow 3.10.1 as the pre-workspace migration baseline, exporting only locked DB test tools for its isolated environment. The current application lock pins PyArrow 25, which conflicts with the baseline's PyArrow <24 requirement; the baseline's own dependencies now resolve independently, with the DB drivers provided by its `db` extra and the DB test group.
+- Local verification: 66 focused Python tests passed, the tracing test also passed with an isolated OpenTelemetry 1.27 overlay, and all four ResponseFormatForm tests passed in about four seconds without timeout changes. Baseline dependency resolution and shell syntax checks passed. No database, E2E, integration, or full-suite tests were run for these fixes.
+- The operator runtime-image failure was repeated HTTP 503 responses from packages.redhat.com while downloading opentelemetry-sdk. Konflux passed; no dependency or container-build change was made for the package-server failure. The ResponseFormatForm timeout did not reproduce locally.
+
 ---
 
 ## Rebase: v3.14.0 → v3.15.2
