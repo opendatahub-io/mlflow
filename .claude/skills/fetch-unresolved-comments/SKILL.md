@@ -1,8 +1,6 @@
 ---
 name: fetch-unresolved-comments
 description: Fetch unresolved PR review comments using GitHub GraphQL API, filtering out resolved feedback.
-allowed-tools:
-  - Bash(uv run --package skills skills fetch-unresolved-comments:*)
 ---
 
 # Fetch Unresolved PR Review Comments

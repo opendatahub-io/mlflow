@@ -20,6 +20,11 @@ on:
   workflow_dispatch:
 
 permissions: {}
+cache-mode: none
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -47,7 +52,7 @@ jobs:
   resolve-operator-ref:
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       operator_repository: ${{ steps.resolve.outputs.operator_repository }}
@@ -74,13 +79,13 @@ jobs:
     needs: [resolve-operator-ref]
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Checkout operator CI config
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ needs.resolve-operator-ref.outputs.operator_repository }}
           ref: ${{ needs.resolve-operator-ref.outputs.operator_branch }}
@@ -94,11 +99,11 @@ jobs:
   build-mlflow-runtime-image:
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout MLflow source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -151,7 +156,7 @@ jobs:
           docker save -o "runtime-image/${MLFLOW_RUNTIME_ARTIFACT}.tar" "$MLFLOW_RUNTIME_IMAGE"
 
       - name: Upload MLflow image artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.MLFLOW_RUNTIME_ARTIFACT }}
           path: runtime-image/${{ env.MLFLOW_RUNTIME_ARTIFACT }}.tar
@@ -162,18 +167,18 @@ jobs:
     needs: [resolve-operator-ref]
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout operator repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ needs.resolve-operator-ref.outputs.operator_repository }}
           ref: ${{ needs.resolve-operator-ref.outputs.operator_branch }}
           persist-credentials: false
 
       - name: Checkout MLflow pyproject.toml
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: pyproject.toml
           path: mlflow-source
@@ -237,7 +242,7 @@ jobs:
           docker save -o "operator-image/${OPERATOR_RUNTIME_ARTIFACT}.tar" "$OPERATOR_RUNTIME_IMAGE"
 
       - name: Upload MLflow operator image artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.OPERATOR_RUNTIME_ARTIFACT }}
           path: operator-image/${{ env.OPERATOR_RUNTIME_ARTIFACT }}.tar
@@ -248,11 +253,11 @@ jobs:
     needs: [resolve-operator-ref]
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout operator repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ needs.resolve-operator-ref.outputs.operator_repository }}
           ref: ${{ needs.resolve-operator-ref.outputs.operator_branch }}
@@ -265,7 +270,7 @@ jobs:
           docker save -o "test-image/${MLFLOW_TESTS_RUNTIME_ARTIFACT}.tar" "$MLFLOW_TESTS_RUNTIME_IMAGE"
 
       - name: Upload MLflow tests image artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.MLFLOW_TESTS_RUNTIME_ARTIFACT }}
           path: test-image/${{ env.MLFLOW_TESTS_RUNTIME_ARTIFACT }}.tar
@@ -283,7 +288,7 @@ jobs:
       ]
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       matrix: ${{ fromJSON(needs.load-ci-config.outputs.matrix) }}
@@ -292,7 +297,7 @@ jobs:
 
     steps:
       - name: Checkout operator repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ needs.resolve-operator-ref.outputs.operator_repository }}
           ref: ${{ needs.resolve-operator-ref.outputs.operator_branch }}
@@ -358,7 +363,7 @@ jobs:
         run: mlflow-tests/images/run-integration-tests.sh
 
       - name: Upload test results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: "!cancelled()"
         with:
           name: integration-test-results-${{ matrix.k8s_version }}-${{ matrix.backend_store }}-${{ matrix.registry_store }}-${{ matrix.artifact_backends }}-${{ matrix.serve_artifacts }}-postgres_tls_${{ matrix.postgres_tls || 'false' }}-seaweedfs_tls_${{ matrix.seaweedfs_tls || 'false' }}
@@ -375,7 +380,7 @@ jobs:
             --output-dir debug-logs
 
       - name: Upload debug logs
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && !cancelled()
         with:
           name: debug-logs-${{ matrix.k8s_version }}-${{ matrix.backend_store }}-${{ matrix.registry_store }}-${{ matrix.artifact_backends }}-${{ matrix.serve_artifacts }}-postgres_tls_${{ matrix.postgres_tls || 'false' }}-seaweedfs_tls_${{ matrix.seaweedfs_tls || 'false' }}

@@ -11,7 +11,7 @@ These break CI after every rebase. Fix them proactively before pushing.
 
 1. **i18n key drift** — Conflict resolution keeps i18n entries from both sides, but some upstream keys reference components removed in the same release. Run `cd mlflow/server/js && yarn i18n` to remove orphaned keys from `en.json`.
 
-2. **`UV_EXCLUDE_NEWER` env var** — `.github/actions/setup-python/action.yml` hardcodes `UV_EXCLUDE_NEWER=P7D`. ODH needs `P14D` (matching `pyproject.toml`). The env var overrides the config file, causing `uv lock` drift in the version-sync CI check. Update it after every rebase.
+2. **`UV_EXCLUDE_NEWER` env var** — `.github/actions/setup-python/action.yml` hardcodes `UV_EXCLUDE_NEWER=P7D`. Keep this aligned with `pyproject.toml` and the current repository cooldown guidance (`P7D` for this rebase; older rebases used `P14D`). The env var overrides the config file, so a mismatch causes `uv lock` drift in the version-sync CI check.
 
 3. **Conftest lint for composite actions** — The repo's conftest policy forbids `${{ }}` interpolation directly in `run:` blocks of composite actions. ODH files (e.g., `.github/actions/build-image/action.yml`) may violate this. Move values to `env:` blocks.
 
@@ -22,6 +22,80 @@ These break CI after every rebase. Fix them proactively before pushing.
 6. **Prettier formatting** — Pre-commit uses **prettier v2** (pinned in `.pre-commit-config.yaml`). Do NOT use `npx prettier` (installs v3, formats differently). Use `uv run pre-commit run prettier --files <file>` instead.
 
 7. **Workflow policy drift** — A deletion-only `keep:` commit can be missed while rebuilding the squashed scaffolding commit, and comparing the result only with the new upstream tag does not detect workflows restored from that tag. Run `.claude/skills/rebase-mlflow/audit-workflow-policy.py "$SQUASH_BASE" "$CURRENT_VERSION"` to derive the existing policy from Git history and review every reported workflow.
+
+---
+
+## Rebase: v3.15.2 → v3.17.0
+
+**Date:** 2026-10-08
+**Upstream tag:** `v3.17.0` (`6dd94c6de2932d22767769eec5b644e48c457ce8`)
+**ODH snapshot:** `92ab3c5ea45ffa528124146e1f9ea098f9e71584`
+
+### Preparation and retained changes
+
+- Preserved the original ODH tip in local branch `backup/odh-master-before-v3.17.0` and the reconstructed squash in `backup/odh-squashed-before-v3.17.0`.
+- Reconstructed three commits (fork scaffolding, backend, UI) from the net downstream snapshot against v3.15.2. This includes deletion-only commits and the final state of superseded fixes across previous merges, without replaying old prototype implementations.
+- Preserved Konflux scaffolding, security constraints, workflow removals, RHOAI migration-gap repair, prompt model filtering, PatternFly overrides, module federation, embedded routing, session-expiry handling, and workspace change callbacks.
+- No downstream-only added files were lost. Files removed by upstream, including the old permission-denied view, follow the upstream removal.
+
+### Dropped upstream backports
+
+- `92ab3c5ea4`: dataset navigation highlighting; upstream `2c8b58b43b` ([PR 26187](https://github.com/mlflow/mlflow/pull/26187)).
+- `9687946a0f`: RustFS artifact example; upstream `ca40661cb5` ([PR 25808](https://github.com/mlflow/mlflow/pull/25808)). Its replacement of MinIO also supersedes the downstream MinIO image-registry fix `06b3f8506a`.
+- `0f17139428`: trace archival test isolation; upstream `0ace11b56d` ([PR 24874](https://github.com/mlflow/mlflow/pull/24874)).
+- Older backports already reconciled by the previous rebase are represented only by their remaining net differences. Original history remains in the backup and squash messages.
+
+### Conflict resolutions and compatibility fixes
+
+- Preserved ODH workflow removals, including newly introduced upstream automation and Helm publishing workflows. Retained the downstream model-catalog release-asset synchronization.
+- Reconciled retained workflows with 3.17 policy: explicit cache permissions and concurrency, supported runner names, consistent action pins, and removal of references to deleted workflows.
+- Used upstream gateway guards and server feature reporting, retaining ODH guards on issue detection and scorer invocation and the downstream unavailable-feature message. Preserved upstream artifact-host validation, trace ownership checks, and budget validation.
+- Preserved the Assistant flag with upstream static-prefix handling and the Starlette 1.3.1 WSGI streaming adaptation. Added httpx2 to test requirements because Starlette 1.x uses it for TestClient.
+- Preserved all upstream database commands alongside the RHOAI migration-gap command. Retained the migration compatibility test's MLflow 3.10.1 baseline using upstream's isolated dependency installation.
+- Kept upstream server-feature subscriptions together with ODH gateway build flags. Preserved embedded sidebar sections, routing, and both workspace listener mechanisms.
+- Preserved the host's single-chat-session routing guard when upstream session grouping maps those URLs to the Traces tab. The guard still reports them as unsupported in Model training and permits them in GenAI.
+- Exported the markdown artifact viewer props interface so federated type declarations can name it.
+- Regenerated translations, accepted upstream sanitize-html 2.x, and added a Jest 27 alias for htmlparser2's exports-only `entities/decode` dependency instead of carrying the old sanitize-html downgrade.
+- Restored the small GitHub client helpers needed by the retained unresolved-comments command and removed obsolete skill permission metadata to satisfy upstream lint.
+
+### Dependency updates
+
+- Pinned `mlflow-kubernetes-plugins==2.0.0`, whose [release](https://github.com/kubeflow/mlflow-integration/releases/tag/v2.0.0) supports MLflow 3.17. The plugin requires Python 3.12; the Konflux image and lock compilation use Python 3.12.
+- Pinned pandas 3.0.2 for consistent AIPCC resolution across amd64, arm64, ppc64le, and s390x. The unpinned index resolves 3.0.3 only on s390x.
+- Used the current repository guidance of `P7D` for Python cooldown in pyproject, uv.lock, and CI, superseding the historical rebase skill's `P14D` instructions. Retained downstream exceptions for the auth plugin and Starlette.
+
+### Late addition to ODH master
+
+- Reapplied `ce140990e1` (SimpleSelect PatternFly dropdown styling) after linking the updated ODH history. It merged after the initial snapshot; its two stylesheet changes are retained in a separate signed-off commit.
+
+### Local validation
+
+- Focused downstream Python tests: 183 passed.
+- Server-handler, FastAPI, and model-registry workspace reconciliation tests: 629 passed, 1 skipped.
+- Final combined Python run, including artifact upload/download and migration-gap coverage: 812 passed, 1 skipped with the resolved Starlette 1.7.0 test environment.
+- Multi-architecture runtime/build locks and PyPI side-channel lock regenerated successfully; security floors and auth plugin 2.0.0 retained.
+- Version regeneration at 3.17.0 produced no drift.
+- Workflow-policy audit and missing-downstream-file check passed.
+- CSS override audit passed with 31 existing baseline issues; a drift checklist was generated for browser review.
+- TypeScript and production federation build passed, including generation of federated type declarations. The build retains its bundle-size warning.
+- All pre-commit hooks passed for the rebase changes; the subsequent session-routing fix also passed pre-commit, ESLint, TypeScript, and its 40-test guard suite.
+- Full UI ESLint passed with seven existing disabled-test warnings; the translation check passed with 4,044 synchronized keys.
+- Full JavaScript run: 749 of 752 suites passed initially (7,212 tests passed, six failed, eight skipped). One failure exposed the session-routing regression fixed above. The other five failures were in the two unchanged upstream TracesV4 suites, primarily under concurrent build/test load; both suites passed when rerun serially without a build (72 passed, three skipped). Together with the 40-test guard rerun, every initially failing suite now passes without changing upstream assertions or timeouts.
+
+Remote CI, Kubernetes/OpenShift integration tests, and browser visual verification remain follow-up steps. No CSS versions are marked visually verified by this local rebase.
+
+### Post-rebase CI fixes
+
+- Restored the original whitespace in `dev/run-dev-server.sh` and made the new empty TypeSafe test package marker zero bytes, eliminating whitespace-only PR changes without bypassing lint.
+- Preserved development and release-candidate suffixes in `get_current_py_version()` while still stripping downstream local-version labels. The previous use of `base_version` caused release-ordering tests to treat a development version as a final release.
+- Removed the orphaned test for the upstream `push-images.yml` publishing workflow, which ODH intentionally does not carry. Kept the workflow policy unchanged.
+- Updated the legacy standalone gateway test to assert ODH's existing HTTP 501 behavior when `MLFLOW_ENABLE_AI_GATEWAY=false`; production gateway guards and job execution settings are unchanged.
+- Derived the expected default service name from the installed OpenTelemetry SDK, so the resource-attribute test works with both the 1.27 protobuf matrix and newer SDKs while still checking MLflow attributes and explicit environment overrides.
+- Kept MLflow 3.10.1 as the pre-workspace migration baseline, exporting only locked DB test tools for its isolated environment. The current application lock pins PyArrow 25, which conflicts with the baseline's PyArrow <24 requirement; the baseline's own dependencies now resolve independently, with the DB drivers provided by its `db` extra and the DB test group.
+- Local verification: 66 focused Python tests passed, the tracing test also passed with an isolated OpenTelemetry 1.27 overlay, and all four ResponseFormatForm tests passed in about four seconds without timeout changes. Baseline dependency resolution and shell syntax checks passed. No database, E2E, integration, or full-suite tests were run for these fixes.
+- The operator runtime-image failure was repeated HTTP 503 responses from packages.redhat.com while downloading opentelemetry-sdk. Konflux passed; no dependency or container-build change was made for the package-server failure. The ResponseFormatForm timeout did not reproduce locally.
+- Follow-up migration checks reached the snapshot comparison on all four databases but failed because pandas 3 inferred string columns and column names as StringDtype, while the pandas 2 baseline pickle used object. Disable future string inference within both snapshot-reading phases, retaining strict frame equality and workspace-backfill checks. A small in-memory SQL probe reproduced the mismatch and verified that the fix still rejects changed data and NULL workspaces; no full migrations were run locally.
+- The follow-up TracesV4 exactly-full-page pagination test exceeded its 30-second CI allowance but passed locally in a focused serial run (one test, about 14 seconds). Leave the upstream test and timeout unchanged and retry the CI job if it recurs.
 
 ---
 

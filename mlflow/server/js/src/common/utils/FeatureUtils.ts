@@ -3,7 +3,11 @@
  * In the OSS version, you can override them in local development by manually changing the return values.
  */
 
-import { getWorkspacesEnabledSync } from '../../experiment-tracking/hooks/useServerInfo';
+import {
+  getFeatureEnabledSync,
+  getWorkspacesEnabledSync,
+  SERVER_FEATURE_KEYS,
+} from '../../experiment-tracking/hooks/useServerInfo';
 
 // Returns the current workspaces enabled state from the cached server features.
 // This is synchronous and returns the cached value (false if not yet loaded).
@@ -34,6 +38,7 @@ export const shouldUseRegexpBasedAutoRunsSearchFilter = () => false;
 export const shouldUseRunRowsVisibilityMap = () => true;
 export const isUnstableNestedComponentsMigrated = () => true;
 export const shouldUsePredefinedErrorsInExperimentTracking = () => true;
+export const shouldUseTracesV4Tab = () => true;
 
 /**
  * Determines if logged models UI (part of model-centric IA shift) is enabled
@@ -236,6 +241,8 @@ export const isScorerModelSelectionEnabled = () => {
 
 /**
  * Determines if issue detection feature is enabled in the traces table toolbar.
+ * Issue detection currently uses AI Gateway endpoints and stored secrets, so it is hidden with
+ * Gateway until those dependencies are decoupled.
  */
 export const shouldEnableIssueDetection = () => {
   return shouldEnableAIGateway();
@@ -264,7 +271,7 @@ export const shouldSupportRunningDatabricksProviderJudgesFromUI = () => {
  */
 export const shouldEnableAIGateway = () => {
   const val = process.env['MLFLOW_ENABLE_AI_GATEWAY'];
-  if (val === undefined) return true;
+  if (val === undefined) return getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
   const normalized = val.toLowerCase();
-  return normalized === 'true' || normalized === '1';
+  return (normalized === 'true' || normalized === '1') && getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
 };

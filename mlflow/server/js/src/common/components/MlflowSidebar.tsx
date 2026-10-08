@@ -38,6 +38,7 @@ import { GatewayLabel, GatewayNewTag } from './GatewayNewTag';
 import { FormattedMessage } from 'react-intl';
 import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
 import { useWorkflowType, WorkflowType } from '../contexts/WorkflowTypeContext';
+import { SERVER_FEATURE_KEYS, useFeatureEnabled } from '../../experiment-tracking/hooks/useServerInfo';
 import {
   getExperimentPageSideNavSectionLabel,
   type ExperimentPageSideNavSectionKey,
@@ -118,6 +119,7 @@ export function MlflowSidebar({
   const { theme } = useDesignSystemTheme();
   const viewId = useMemo(() => uuidv4(), []);
   const enableWorkflowBasedNavigation = shouldEnableWorkflowBasedNavigation();
+  const gatewayEnabled = useFeatureEnabled(SERVER_FEATURE_KEYS.GATEWAY);
   // WorkflowType context is always available, but UI is guarded by feature flag
   const { workflowType, setWorkflowType } = useWorkflowType();
   const { experimentId } = useParams();
@@ -272,7 +274,9 @@ export function MlflowSidebar({
             },
           ]
         : []),
-      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType) && shouldEnableAIGateway()
+      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType) &&
+      gatewayEnabled &&
+      shouldEnableAIGateway()
         ? [
             {
               key: 'gateway',
@@ -302,6 +306,7 @@ export function MlflowSidebar({
       workflowType,
       clearLastSelectedExperiment,
       enableWorkflowBasedNavigation,
+      gatewayEnabled,
       location,
       showSidebar,
     ],

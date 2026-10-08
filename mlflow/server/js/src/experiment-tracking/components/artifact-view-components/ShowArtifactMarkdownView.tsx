@@ -20,7 +20,10 @@ import { defaultUrlTransform } from 'react-markdown-10';
 
 const LARGE_MARKDOWN_SIZE = 100 * 1024;
 
-interface ShowArtifactMarkdownViewProps extends Omit<LoggedModelArtifactViewerProps, 'experimentId' | 'entityTags'> {
+export interface ShowArtifactMarkdownViewProps extends Omit<
+  LoggedModelArtifactViewerProps,
+  'experimentId' | 'entityTags'
+> {
   runUuid: string;
   path: string;
   size?: number;
