@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import timedelta
 
@@ -7,8 +6,6 @@ from testcontainers.compose import DockerCompose
 from testcontainers.core.wait_strategies import HttpWaitStrategy
 
 import mlflow
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
@@ -33,14 +30,6 @@ def test_backend_and_artifact_store_integration(compose_file):
 
     try:
         compose.start()
-    except BaseException:
-        stdout, stderr = compose.get_logs()
-        logger.error("Docker Compose stdout:\n%s", stdout)
-        logger.error("Docker Compose stderr:\n%s", stderr)
-        compose.stop()
-        raise
-
-    try:
         base_url = "http://localhost:5000"
 
         mlflow.set_tracking_uri(base_url)
@@ -58,5 +47,10 @@ def test_backend_and_artifact_store_integration(compose_file):
                 python_model=predict,
                 input_example=["a", "b", "c"],
             )
+    except BaseException:
+        # Container logs aren't shown on failure and `stop()` deletes them, so dump them first.
+        stdout, stderr = compose.get_logs()
+        print(f"docker compose logs:\n{stdout}\n{stderr}")  # noqa: T201
+        raise
     finally:
         compose.stop()

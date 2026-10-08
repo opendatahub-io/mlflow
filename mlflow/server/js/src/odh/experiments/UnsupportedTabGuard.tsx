@@ -40,11 +40,13 @@ export const UnsupportedTabGuard = ({
   const { pathname, search, hash } = useLocation();
   const navigate = useNavigate();
   const { tabName: tabNameByRoute } = useGetExperimentPageActiveTabByRoute();
-  const tabName =
-    tabNameByRoute ??
-    (matchPath(RoutePaths.experimentPageTabbed, pathname)?.params['tabName'] === ExperimentPageTabName.Overview
-      ? ExperimentPageTabName.Overview
-      : undefined);
+  // Session grouping maps this route to Traces, but the host still handles session pages separately.
+  const tabName = matchPath(RoutePaths.experimentPageTabSingleChatSession, pathname)
+    ? ExperimentPageTabName.SingleChatSession
+    : (tabNameByRoute ??
+      (matchPath(RoutePaths.experimentPageTabbed, pathname)?.params['tabName'] === ExperimentPageTabName.Overview
+        ? ExperimentPageTabName.Overview
+        : undefined));
   const matchedExperimentId = matchPath({ path: RoutePaths.experimentPage, end: false }, pathname)?.params[
     'experimentId'
   ];

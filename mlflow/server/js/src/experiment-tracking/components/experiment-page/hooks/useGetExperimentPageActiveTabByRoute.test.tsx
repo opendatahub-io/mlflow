@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { useGetExperimentPageActiveTabByRoute } from './useGetExperimentPageActiveTabByRoute';
 import { ExperimentPageTabName } from '../../../constants';
 import { useLocation } from '../../../../common/utils/RoutingUtils';
+import { shouldEnableSessionGrouping } from '@databricks/web-shared/genai-traces-table';
 
 jest.mock('../../../../common/utils/RoutingUtils', () => ({
   useLocation: jest.fn(),
@@ -18,7 +19,15 @@ jest.mock('../../../../common/utils/RoutingUtils', () => ({
   createMLflowRoutePath: jest.fn((path) => path),
 }));
 
+jest.mock('@databricks/web-shared/genai-traces-table', () => ({
+  shouldEnableSessionGrouping: jest.fn(() => true),
+}));
+
 describe('useGetExperimentPageActiveTabByRoute', () => {
+  beforeEach(() => {
+    jest.mocked(shouldEnableSessionGrouping).mockReturnValue(true);
+  });
+
   const testCases = [
     {
       name: 'should return Runs tab when on runs route',
@@ -62,6 +71,12 @@ describe('useGetExperimentPageActiveTabByRoute', () => {
       expectedTabName: undefined,
       expectedTopLevelTabName: undefined,
     },
+    {
+      name: 'should return Traces tab for a single chat session route when session grouping is enabled',
+      pathname: '/experiments/123/chat-sessions/session-1',
+      expectedTabName: ExperimentPageTabName.Traces,
+      expectedTopLevelTabName: ExperimentPageTabName.Traces,
+    },
   ];
 
   test.each(testCases)('$name', ({ pathname, expectedTabName, expectedTopLevelTabName }) => {
@@ -71,5 +86,20 @@ describe('useGetExperimentPageActiveTabByRoute', () => {
 
     expect(result.current.tabName).toBe(expectedTabName);
     expect(result.current.topLevelTabName).toBe(expectedTopLevelTabName);
+  });
+
+  test('should keep the SingleChatSession tab when session grouping is disabled', () => {
+    jest.mocked(shouldEnableSessionGrouping).mockReturnValue(false);
+    jest.mocked(useLocation).mockReturnValue({
+      pathname: '/experiments/123/chat-sessions/session-1',
+      state: undefined,
+      search: '',
+      hash: '',
+      key: '',
+    });
+
+    const { result } = renderHook(() => useGetExperimentPageActiveTabByRoute());
+
+    expect(result.current.tabName).toBe(ExperimentPageTabName.SingleChatSession);
   });
 });

@@ -14,6 +14,7 @@ on:
         type: string
 
 permissions: {}
+cache-mode: none
 
 concurrency:
   group: e2e-${{ github.event.workflow_run.head_repository.full_name || github.repository }}-${{ github.event.workflow_run.head_branch || github.ref }}
@@ -29,7 +30,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'pull_request' &&
        github.event.workflow_run.conclusion == 'success')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       issues: read
@@ -91,12 +92,13 @@ jobs:
           fi
 
   e2e:
+    cache-mode: write
     needs: gate
     if: needs.gate.outputs.should-run == 'true'
     permissions:
       contents: read
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: mlflow/server/js
@@ -104,7 +106,7 @@ jobs:
       MLFLOW_E2E_BASE_URL: http://localhost:5000
       MLFLOW_IMAGE: quay.io/opendatahub/mlflow:${{ github.event_name == 'workflow_dispatch' && inputs.image_tag || format('odh-pr-{0}', needs.gate.outputs.pr-number) }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.gate.outputs.head-sha }}
           persist-credentials: false
@@ -130,7 +132,7 @@ jobs:
         run: echo "version=$(npx playwright --version)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ hashFiles('mlflow/server/js/yarn.lock') }}
@@ -212,7 +214,7 @@ jobs:
         run: yarn test:e2e
 
       - name: Upload test report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: e2e-test-report
@@ -221,7 +223,7 @@ jobs:
           retention-days: 14
 
       - name: Upload test results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: e2e-test-results
@@ -235,7 +237,7 @@ jobs:
         run: docker compose logs --no-color --tail=500 2>&1 | tee docker-compose-logs.txt
 
       - name: Upload docker compose logs
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: docker-compose-logs
@@ -256,7 +258,7 @@ jobs:
       - e2e
     permissions:
       statuses: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Set status on PR

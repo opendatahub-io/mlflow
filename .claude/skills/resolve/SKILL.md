@@ -2,7 +2,6 @@
 name: resolve
 description: Resolve PR review comments by fetching unresolved feedback and making necessary code changes
 disable-model-invocation: true
-allowed-tools: Skill, Read, Edit, Write, Glob, Grep, Bash
 argument-hint: "[extra_context]"
 ---
 

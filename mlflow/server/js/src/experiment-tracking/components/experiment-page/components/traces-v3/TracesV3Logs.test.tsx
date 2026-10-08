@@ -7,6 +7,8 @@ import { TracesV3Logs } from './TracesV3Logs';
 import { IntlProvider } from '@databricks/i18n';
 import { QueryClient, QueryClientProvider, type UseMutateAsyncFunction } from '@databricks/web-shared/query-client';
 import { DesignSystemProvider } from '@databricks/design-system';
+import { shouldEnableModelTraceExplorerCustomTraceView } from '@databricks/web-shared/model-trace-explorer';
+import { CustomViewDefinitionProvider } from '@databricks/web-shared/model-trace-explorer/custom-view/CustomViewDefinitionContext';
 import {
   useMlflowTracesTableMetadata,
   useSearchMlflowTraces,
@@ -26,10 +28,13 @@ import { useSetInitialTimeFilter } from './hooks/useSetInitialTimeFilter';
 import { useDeleteTracesMutation } from '../../../evaluations/hooks/useDeleteTraces';
 import { useEditExperimentTraceTags } from '../../../traces/hooks/useEditExperimentTraceTags';
 import { TracesV3EmptyState } from './TracesV3EmptyState';
+import { useAssessmentCountMetrics } from './hooks/useAssessmentCountMetrics';
 import { useMarkdownConverter } from '@mlflow/mlflow/src/common/utils/MarkdownUtils';
 import { GenericNetworkRequestError } from '@mlflow/mlflow/src/shared/web-shared/errors/PredefinedErrors';
 import { TestRouter, testRoute, waitForRoutesToBeRendered } from '@mlflow/mlflow/src/common/utils/RoutingTestUtils';
 import * as useCountInfoModule from './hooks/useCountInfo';
+
+const mockExperimentCustomViewProvider = jest.fn(({ children }: { children: React.ReactNode }) => children);
 
 // Overriding default timeout for OSS tests
 // eslint-disable-next-line no-restricted-syntax
@@ -53,6 +58,17 @@ jest.mock('@databricks/web-shared/genai-traces-table', () => {
     shouldUseInfinitePaginatedTraces: jest.fn(),
   };
 });
+
+jest.mock('@databricks/web-shared/model-trace-explorer', () => ({
+  ...jest.requireActual<typeof import('@databricks/web-shared/model-trace-explorer')>(
+    '@databricks/web-shared/model-trace-explorer',
+  ),
+  shouldEnableModelTraceExplorerCustomTraceView: jest.fn(),
+}));
+
+jest.mock('./ExperimentCustomViewProvider', () => ({
+  ExperimentCustomViewProvider: (props: { children: React.ReactNode }) => mockExperimentCustomViewProvider(props),
+}));
 
 jest.mock('./hooks/useAssessmentCountMetrics', () => ({
   useAssessmentCountMetrics: jest.fn(() => undefined),
@@ -109,11 +125,12 @@ jest.mock('../../../../pages/experiment-evaluation-datasets/components/ExportTra
 }));
 
 jest.mock('../../../../hooks/useServerInfo', () => ({
+  ...jest.requireActual<typeof import('../../../../hooks/useServerInfo')>('../../../../hooks/useServerInfo'),
   getWorkspacesEnabledSync: () => false,
   useWorkspacesEnabled: () => false,
 }));
 
-const renderComponent = (props = {}) => {
+const renderComponent = (props = {}, initialEntries?: string[], withCustomViewProvider = false) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -128,7 +145,13 @@ const renderComponent = (props = {}) => {
             <QueryClientProvider client={queryClient}>
               <DesignSystemProvider>
                 <GenAITracesTableProvider isGroupedBySession={false}>
-                  <TracesV3Logs experimentIds={['test-experiment']} endpointName="test-endpoint" {...props} />
+                  {withCustomViewProvider ? (
+                    <CustomViewDefinitionProvider views={[]} isLoaded>
+                      <TracesV3Logs experimentIds={['test-experiment']} endpointName="test-endpoint" {...props} />
+                    </CustomViewDefinitionProvider>
+                  ) : (
+                    <TracesV3Logs experimentIds={['test-experiment']} endpointName="test-endpoint" {...props} />
+                  )}
                 </GenAITracesTableProvider>
               </DesignSystemProvider>
             </QueryClientProvider>
@@ -143,6 +166,7 @@ describe('TracesV3Logs', () => {
   beforeEach(() => {
     // Default mock implementations
     jest.mocked(useMarkdownConverter).mockReturnValue((markdown?: string) => markdown || '');
+    jest.mocked(shouldEnableModelTraceExplorerCustomTraceView).mockReturnValue(false);
 
     jest.mocked(useSelectedColumns).mockReturnValue({
       selectedColumns: [
@@ -178,6 +202,33 @@ describe('TracesV3Logs', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('reuses an outer Custom View definition instead of mounting a nested experiment provider', async () => {
+    jest.mocked(shouldEnableModelTraceExplorerCustomTraceView).mockReturnValue(true);
+    jest.mocked(useMlflowTracesTableMetadata).mockReturnValue({
+      assessmentInfos: [],
+      allColumns: [],
+      totalCount: 0,
+      isLoading: false,
+      error: null,
+      isEmpty: true,
+      tableFilterOptions: { source: [] },
+      evaluatedTraces: [],
+      otherEvaluatedTraces: [],
+    });
+    jest.mocked(useSetInitialTimeFilter).mockReturnValue({ isInitialTimeFilterLoading: false });
+    jest.mocked(useSearchMlflowTraces).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    } as any);
+
+    renderComponent({}, undefined, true);
+    await waitForRoutesToBeRendered();
+
+    expect(mockExperimentCustomViewProvider).not.toHaveBeenCalled();
   });
 
   /**
@@ -510,6 +561,7 @@ describe('TracesV3Logs', () => {
       expect(useCountInfoSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           countSessions: false,
+          loggedModelId: undefined,
         }),
       );
 
@@ -522,10 +574,27 @@ describe('TracesV3Logs', () => {
       expect(useCountInfoSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           countSessions: true,
+          loggedModelId: undefined,
         }),
       );
 
+      useCountInfoSpy.mockClear();
+      jest.mocked(useAssessmentCountMetrics).mockClear();
+
+      const loggedModelView = renderComponent({ loggedModelId: 'model-123' });
+      await waitForRoutesToBeRendered();
+
+      expect(useCountInfoSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          loggedModelId: 'model-123',
+        }),
+      );
+      expect(jest.mocked(useAssessmentCountMetrics)).toHaveBeenCalledWith(
+        expect.objectContaining({ loggedModelId: 'model-123' }),
+      );
+
       chatSessionsView.unmount();
+      loggedModelView.unmount();
       useCountInfoSpy.mockRestore();
     });
   });

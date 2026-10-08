@@ -15,11 +15,8 @@ import {
   UserGroupIcon,
 } from '@databricks/design-system';
 import { FormattedMessage } from 'react-intl';
-import {
-  enableScorersUI,
-  shouldEnableAIGateway,
-  shouldEnableExperimentOverviewTab,
-} from '@mlflow/mlflow/src/common/utils/FeatureUtils';
+import { SERVER_FEATURE_KEYS, useFeatureEnabled } from '../../../hooks/useServerInfo';
+import { shouldEnableAIGateway, shouldEnableExperimentOverviewTab } from '@mlflow/mlflow/src/common/utils/FeatureUtils';
 import { isIntegrated } from '@mlflow/mlflow/src/common/utils/embedUtils';
 
 export const FULL_WIDTH_CLASS_NAME = 'mlflow-experiment-page-side-nav-full';
@@ -99,21 +96,19 @@ const ExperimentPageSideNavGenAIConfig = {
     },
   ],
   'prompts-versions': [
-    ...(shouldEnableAIGateway()
-      ? [
-          {
-            label: (
-              <FormattedMessage
-                defaultMessage="Playground"
-                description="Label for the playground tab in the MLflow experiment navbar"
-              />
-            ),
-            icon: <PlayIcon />,
-            tabName: ExperimentPageTabName.Playground,
-            componentId: 'mlflow.experiment-side-nav.genai.playground',
-          },
-        ]
-      : []),
+    ...[
+      {
+        label: (
+          <FormattedMessage
+            defaultMessage="Playground"
+            description="Label for the playground tab in the MLflow experiment navbar"
+          />
+        ),
+        icon: <PlayIcon />,
+        tabName: ExperimentPageTabName.Playground,
+        componentId: 'mlflow.experiment-side-nav.genai.playground',
+      },
+    ],
     ...(isIntegrated()
       ? []
       : [
@@ -224,6 +219,8 @@ export const useExperimentPageSideNavConfig = ({
   hasTrainingRuns?: boolean;
   hasV4Location?: boolean;
 }): ExperimentPageSideNavConfig => {
+  const gatewayEnabled = useFeatureEnabled(SERVER_FEATURE_KEYS.GATEWAY) && shouldEnableAIGateway();
+
   if (
     experimentKind === ExperimentKind.GENAI_DEVELOPMENT ||
     experimentKind === ExperimentKind.GENAI_DEVELOPMENT_INFERRED
@@ -262,7 +259,13 @@ export const useExperimentPageSideNavConfig = ({
           : []),
       ],
       ...ExperimentPageSideNavGenAIConfig,
-      evaluation: enableScorersUI()
+      'prompts-versions': gatewayEnabled
+        ? ExperimentPageSideNavGenAIConfig['prompts-versions']
+        : ExperimentPageSideNavGenAIConfig['prompts-versions'].filter(
+            ({ tabName }) => tabName !== ExperimentPageTabName.Playground,
+          ),
+      // Scorers remain coupled to Gateway until those dependencies are decoupled.
+      evaluation: gatewayEnabled
         ? [
             {
               label: (

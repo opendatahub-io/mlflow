@@ -112,6 +112,7 @@ describe('UnsupportedTabGuard', () => {
     ['/123/models', WorkflowType.GENAI],
     ['/123/runs', WorkflowType.GENAI],
     ['/123/chat-sessions', WorkflowType.GENAI],
+    ['/123/chat-sessions/session-1', WorkflowType.GENAI],
   ])('does not treat %s under %s as unsupported', (path, workflowType) => {
     const onUnsupportedTab = jest.fn();
     renderGuard(path, workflowType, onUnsupportedTab);
