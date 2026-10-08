@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code when working with the MLflow frontend code in this directory.
 
+## ODH Midstream (read first)
+
+This is the Open Data Hub fork of MLflow. The UI also ships as a Module Federation remote embedded in
+odh-dashboard, and Du Bois components are restyled to PatternFly. Before implementing, overriding, or
+reviewing anything here, follow the midstream guide, which takes precedence over the upstream guidance below:
+
+@src/odh/MIDSTREAM.md
+
 ## Consistency is Critical
 
 **IMPORTANT**: Always be consistent with the rest of the repository. This is extremely important!
