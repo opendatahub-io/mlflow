@@ -38,6 +38,7 @@ import { GatewayLabel, GatewayNewTag } from './GatewayNewTag';
 import { FormattedMessage } from 'react-intl';
 import { useLogTelemetryEvent } from '../../telemetry/hooks/useLogTelemetryEvent';
 import { useWorkflowType, WorkflowType } from '../contexts/WorkflowTypeContext';
+import { shouldEnableWorkflowBasedNavigation, shouldEnableWorkspaces } from '../utils/FeatureUtils';
 import { SERVER_FEATURE_KEYS, useFeatureEnabled } from '../../experiment-tracking/hooks/useServerInfo';
 import {
   getExperimentPageSideNavSectionLabel,
@@ -45,11 +46,6 @@ import {
   useExperimentPageSideNavConfig,
 } from '../../experiment-tracking/pages/experiment-page-tabs/side-nav/constants';
 import { ExperimentPageTabName } from '../../experiment-tracking/constants';
-import {
-  shouldEnableAIGateway,
-  shouldEnableWorkflowBasedNavigation,
-  shouldEnableWorkspaces,
-} from '../utils/FeatureUtils';
 import { AssistantSparkleIcon } from '../../assistant/AssistantIconButton';
 import { useAssistant } from '../../assistant/AssistantContext';
 import { isAssistantEnabled } from '../../assistant/assistantFlags';
@@ -274,9 +270,7 @@ export function MlflowSidebar({
             },
           ]
         : []),
-      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType) &&
-      gatewayEnabled &&
-      shouldEnableAIGateway()
+      ...(shouldShowGenAIFeatures(enableWorkflowBasedNavigation, workflowType) && gatewayEnabled
         ? [
             {
               key: 'gateway',

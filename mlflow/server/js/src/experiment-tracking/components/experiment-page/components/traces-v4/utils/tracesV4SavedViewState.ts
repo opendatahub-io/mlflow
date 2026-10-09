@@ -1,6 +1,7 @@
 import { type TraceColumnId, type TraceFilterModel } from '@databricks/web-shared/traces-table';
 import Routes from '@mlflow/mlflow/src/experiment-tracking/routes';
 import { ExperimentPageTabName } from '@mlflow/mlflow/src/experiment-tracking/constants';
+import { getActiveWorkspace, WORKSPACE_QUERY_PARAM } from '@mlflow/mlflow/src/workspaces/utils/WorkspaceUtils';
 
 /**
  * Pure serialization for V4 saved views.
@@ -150,6 +151,11 @@ export const buildV4ViewQuery = (state: CapturedV4ViewState, viewId: string): st
     (values ?? []).forEach((value) => params.append(key, value));
   });
   params.set(TRACE_V4_SHARE_URL_PARAM_KEY, viewId);
+  // The rebuilt query replaces the whole URL search on apply; keep the workspace or the page loses it.
+  const workspace = getActiveWorkspace();
+  if (workspace) {
+    params.set(WORKSPACE_QUERY_PARAM, workspace);
+  }
   return params.toString();
 };
 
@@ -157,8 +163,13 @@ export const getTraceV4SavedViewShareUrl = (
   experimentId: string,
   state: CapturedV4ViewState,
   viewId: string,
+  // Builds the absolute URL from the router (basename / hash prefix); see `useAbsoluteRouterHref`.
+  toAbsoluteHref?: (routerPath: string) => string,
 ): string => {
   const route = Routes.getExperimentPageTabRoute(experimentId, ExperimentPageTabName.Traces);
+  if (toAbsoluteHref) {
+    return toAbsoluteHref(`${route}?${buildV4ViewQuery(state, viewId)}`);
+  }
   return `${window.location.origin}${window.location.pathname}#${route}?${buildV4ViewQuery(state, viewId)}`;
 };
 

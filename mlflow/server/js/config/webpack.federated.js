@@ -139,7 +139,6 @@ module.exports = {
       DEPLOYMENT_MODE: process.env.DEPLOYMENT_MODE || 'federated',
       MLFLOW_API_BASE_URL: process.env.MLFLOW_API_BASE_URL || '/mlflow',
       MLFLOW_ENABLE_ASSISTANT: 'false',
-      MLFLOW_ENABLE_AI_GATEWAY: 'false',
       MLFLOW_SHOW_GDPR_PURGING_MESSAGES: 'false',
       MLFLOW_USE_ABSOLUTE_AJAX_URLS: 'false',
     }),

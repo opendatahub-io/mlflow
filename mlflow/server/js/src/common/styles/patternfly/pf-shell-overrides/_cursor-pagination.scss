@@ -1,5 +1,76 @@
 @use './icons' as icons;
 
+// PF plain previous/next pagination button with a PF angle icon (right-pointing; callers mirror it on
+// the previous-page button with pf-pagination-prev-icon).
+@mixin pf-pagination-nav-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--pf-t--global--font--size--body--default) + var(--pf-t--global--spacer--md)) !important;
+  min-height: calc(var(--pf-t--global--font--size--body--default) + var(--pf-t--global--spacer--md)) !important;
+  padding: var(--pf-t--global--spacer--xs) !important;
+  border: 0 !important;
+  border-radius: var(--pf-t--global--border--radius--small) !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  color: var(--pf-t--global--text--color--regular) !important;
+  transition: background-color var(--pf-t--global--motion--duration--fade--default)
+    var(--pf-t--global--motion--timing-function--default) !important;
+
+  > span {
+    font-size: 0 !important;
+  }
+
+  span[role='img'] {
+    position: relative;
+    font-size: var(--pf-t--global--font--size--body--default) !important;
+    color: inherit !important;
+
+    svg {
+      visibility: hidden !important;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0.75em;
+      height: 0.75em;
+      transform: translate(-50%, -50%);
+      background-color: currentColor;
+      @include icons.pf-mask-icon(icons.$pf-icon-angle-right);
+    }
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+    color: var(--pf-t--global--text--color--regular) !important;
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--pf-t--global--background--color--action--plain--clicked) !important;
+    transition-duration: 0s !important;
+  }
+
+  &:focus-visible {
+    outline: var(--pf-t--global--border--width--action--hover) solid var(--pf-t--global--border--color--brand--hover) !important;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    background-color: transparent !important;
+    color: var(--pf-t--global--text--color--disabled) !important;
+  }
+}
+
+@mixin pf-pagination-prev-icon {
+  span[role='img']::after {
+    transform: translate(-50%, -50%) rotate(180deg);
+  }
+}
+
 .pf-shell-root {
   [data-component-id$='.page_size']:has(> button[data-component-id$='.previous_page']):has(
       > button[data-component-id$='.next_page']
@@ -51,70 +122,10 @@
 
     > button.du-bois-light-btn.du-bois-light-btn-link,
     > button.du-bois-dark-btn.du-bois-dark-btn-link {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: calc(var(--pf-t--global--font--size--body--default) + var(--pf-t--global--spacer--md)) !important;
-      min-height: calc(var(--pf-t--global--font--size--body--default) + var(--pf-t--global--spacer--md)) !important;
-      padding: var(--pf-t--global--spacer--xs) !important;
-      border: 0 !important;
-      border-radius: var(--pf-t--global--border--radius--small) !important;
-      box-shadow: none !important;
-      background-color: transparent !important;
-      color: var(--pf-t--global--text--color--regular) !important;
-      transition: background-color var(--pf-t--global--motion--duration--fade--default)
-        var(--pf-t--global--motion--timing-function--default) !important;
+      @include pf-pagination-nav-button;
 
-      > span {
-        font-size: 0 !important;
-      }
-
-      span[role='img'] {
-        position: relative;
-        font-size: var(--pf-t--global--font--size--body--default) !important;
-        color: inherit !important;
-
-        svg {
-          visibility: hidden !important;
-        }
-
-        &::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0.75em;
-          height: 0.75em;
-          transform: translate(-50%, -50%);
-          background-color: currentColor;
-          @include icons.pf-mask-icon(icons.$pf-icon-angle-right);
-        }
-      }
-
-      &:hover:not(:disabled) {
-        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
-        color: var(--pf-t--global--text--color--regular) !important;
-      }
-
-      &:active:not(:disabled) {
-        background-color: var(--pf-t--global--background--color--action--plain--clicked) !important;
-        transition-duration: 0s !important;
-      }
-
-      &:focus-visible {
-        outline: var(--pf-t--global--border--width--action--hover) solid
-          var(--pf-t--global--border--color--brand--hover) !important;
-        outline-offset: 2px;
-      }
-
-      &:disabled {
-        background-color: transparent !important;
-        color: var(--pf-t--global--text--color--disabled) !important;
-      }
-
-      &[data-component-id$='.previous_page'] span[role='img']::after {
-        transform: translate(-50%, -50%) rotate(180deg);
+      &[data-component-id$='.previous_page'] {
+        @include pf-pagination-prev-icon;
       }
 
       &[data-component-id$='.previous_page'] > span[role='img'] + span {
@@ -124,6 +135,54 @@
       &[data-component-id$='.next_page'] > span > .anticon-btn-end-icon > span[role='img'] {
         margin-left: 0 !important;
       }
+    }
+  }
+
+  // Traces table (TracesV4) pagination bar: same plain page-size toggle and prev/next buttons.
+  .du-bois-light-selectv2:has(> button[data-component-id='web-shared.traces-table.page-size']),
+  .du-bois-dark-selectv2:has(> button[data-component-id='web-shared.traces-table.page-size']) {
+    width: auto !important;
+
+    > button {
+      width: auto !important;
+      min-width: max-content;
+      gap: var(--pf-t--global--spacer--sm);
+      padding-inline-start: var(--pf-t--global--spacer--xs) !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      background-color: transparent !important;
+      color: var(--pf-t--global--text--color--regular) !important;
+
+      &:hover,
+      &[aria-expanded='true'] {
+        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      }
+
+      &:focus,
+      &:active {
+        border: 0 !important;
+      }
+
+      &:focus-visible {
+        outline: var(--pf-t--global--border--width--action--hover) solid
+          var(--pf-t--global--border--color--brand--hover) !important;
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  // Mirrors the icon-only button selector in _scope-and-base-controls (brand-colored icons) so this
+  // later partial wins on source order.
+  button.du-bois-light-btn.du-bois-light-btn-icon-only[data-component-id^='web-shared.traces-table.pagination.']:not(
+      .du-bois-light-btn-sm
+    ):not(.du-bois-light-btn-dangerous),
+  button.du-bois-dark-btn.du-bois-dark-btn-icon-only[data-component-id^='web-shared.traces-table.pagination.']:not(
+      .du-bois-dark-btn-sm
+    ):not(.du-bois-dark-btn-dangerous) {
+    @include pf-pagination-nav-button;
+
+    &[data-component-id$='.pagination.prev'] {
+      @include pf-pagination-prev-icon;
     }
   }
 }

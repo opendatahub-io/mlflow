@@ -16,6 +16,7 @@ import type { SpanFilterState } from '../ModelTrace.types';
 import { type TimelineTreeMetric, useModelTraceExplorerPreferences } from '../ModelTraceExplorerPreferencesContext';
 import { getDisplayNameForSpanType } from '../ModelTraceExplorer.utils';
 import { useModelTraceExplorerViewState } from '../ModelTraceExplorerViewStateContext';
+import { useBodyPopupContainer } from '@mlflow/mlflow/src/odh/utils/portalContainer';
 
 const DISPLAY_METRIC_OPTIONS = ['duration', 'tokens', 'cost'] as const satisfies readonly TimelineTreeMetric[];
 
@@ -33,6 +34,7 @@ export const TimelineTreeFilterButton = ({
   showGraph?: boolean;
   onToggleGraph?: () => void;
 }): JSX.Element => {
+  const getBodyPopupContainer = useBodyPopupContainer();
   const intl = useIntl();
   const { addSnack } = useSnackBar();
   const { timelineTreeMetrics, setTimelineTreeMetrics } = useModelTraceExplorerPreferences();
@@ -64,7 +66,7 @@ export const TimelineTreeFilterButton = ({
   const selectedMetricSet = new Set(timelineTreeMetrics);
 
   return (
-    <ApplyDesignSystemContextOverrides getPopupContainer={() => document.body}>
+    <ApplyDesignSystemContextOverrides getPopupContainer={getBodyPopupContainer}>
       <DropdownMenu.Root>
         <Tooltip componentId="shared.model-trace-explorer.settings-tooltip" content={settingsLabel}>
           <DropdownMenu.Trigger asChild aria-label={settingsLabel}>

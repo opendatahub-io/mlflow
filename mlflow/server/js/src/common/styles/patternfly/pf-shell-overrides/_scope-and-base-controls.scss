@@ -330,7 +330,9 @@
     }
   }
 
-  [data-mlflow-ui='action-bar'] {
+  // The traces table pagination bar is also wrapped in an action bar; it is not a footer action group
+  // (its own pagination styles live in _cursor-pagination.scss).
+  [data-mlflow-ui='action-bar']:not(:has([data-component-id^='web-shared.traces-table.pagination'])) {
     @include action-groups.pf-action-group;
   }
 

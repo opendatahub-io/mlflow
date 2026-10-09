@@ -12,6 +12,7 @@ import { FormattedMessage, useIntl } from '@databricks/i18n';
 
 import type { ModelTraceExplorerDisplayMode } from './ModelTraceExplorerContext';
 import { useOptionalCustomViewDefinition } from '../custom-view/CustomViewDefinitionContext';
+import { useBodyPopupContainer } from '@mlflow/mlflow/src/odh/utils/portalContainer';
 
 const DEFAULT_VIEW_VALUE = 'default';
 const CUSTOM_VIEW_VALUE_PREFIX = 'custom:';
@@ -38,6 +39,7 @@ export const ModelTraceExplorerCustomViewSelector = ({
   compact?: boolean;
   componentId?: string;
 }): JSX.Element => {
+  const getBodyPopupContainer = useBodyPopupContainer();
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
   const customViewDefinition = useOptionalCustomViewDefinition();
@@ -83,7 +85,7 @@ export const ModelTraceExplorerCustomViewSelector = ({
   };
 
   return (
-    <ApplyDesignSystemContextOverrides getPopupContainer={() => document.body}>
+    <ApplyDesignSystemContextOverrides getPopupContainer={getBodyPopupContainer}>
       <DropdownMenu.Root>
         <Tooltip componentId={`${componentId}.tooltip`} content={selectViewLabel}>
           <DropdownMenu.Trigger asChild>

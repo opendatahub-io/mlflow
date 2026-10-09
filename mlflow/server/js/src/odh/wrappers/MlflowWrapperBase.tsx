@@ -20,16 +20,12 @@ import { BrowserRouter, MemoryRouter, useSearchParams } from '../../common/utils
 import { ApolloProvider } from '@mlflow/mlflow/src/common/utils/graphQLHooks';
 import { extractWorkspaceFromSearchParams, setActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 
-// CSS required by MLflow components. In standalone mode these are loaded by
-// app.tsx; in federated mode we must import them here since app.tsx is not
-// in the bundle.
-import 'font-awesome/css/font-awesome.css';
-import '@databricks/design-system/dist/index.css';
-import '@databricks/design-system/dist/index-dark.css';
+import './federatedGlobalStyles';
 
 import { RawIntlProvider } from 'react-intl';
 import { Provider } from 'react-redux';
-import { QueryClient, QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
+import { QueryClientProvider } from '@mlflow/mlflow/src/common/utils/reactQueryHooks';
+import { createMlflowQueryClient } from '@mlflow/mlflow/src/shared/web-shared/query-client/createMlflowQueryClient';
 import {
   DesignSystemProvider,
   DesignSystemThemeProvider,
@@ -50,6 +46,8 @@ import { useEmbeddedLinkInterceptor } from '../../common/hooks/useEmbeddedLinkIn
 import { HostWorkflowTypeProvider } from '../contexts/ForcedWorkflowTypeProvider';
 import type { WorkflowType } from '../../common/contexts/WorkflowTypeContext';
 import AppErrorBoundary from '../../common/components/error-boundaries/AppErrorBoundary';
+import { FederatedPortalContainerContext } from '../utils/portalContainer';
+import { ServerInfoGate } from './ServerInfoGate';
 
 export interface MlflowFederatedShellProps {
   /** Required when using BrowserRouter (page mode). Ignored in MemoryRouter mode. */
@@ -139,7 +137,7 @@ const MlflowWrapperBase: React.FC<MlflowFederatedShellProps> = ({
 
   const intl = useI18nInit();
   const apolloClient = useMemo(() => createApolloClient(), []);
-  const queryClient = useMemo(() => new QueryClient(), []);
+  const queryClient = useMemo(() => createMlflowQueryClient(), []);
   const [isDarkTheme, setIsDarkTheme] = useMLflowDarkTheme();
   const getPopupContainer = useCallback(() => portalContainerRef.current ?? document.body, []);
   const logObservabilityEvent = useCallback((event: any) => {
@@ -152,6 +150,12 @@ const MlflowWrapperBase: React.FC<MlflowFederatedShellProps> = ({
 
   if (!intl) return <LegacySkeleton />;
 
+  const gatedChildren = (
+    <ServerInfoGate>
+      <React.Suspense fallback={<LegacySkeleton />}>{children}</React.Suspense>
+    </ServerInfoGate>
+  );
+
   const routedContent = (
     <AppErrorBoundary>
       <EmotionThemeProvider theme={PATTERN_FLY_TOKEN_TRANSLATION}>
@@ -160,11 +164,11 @@ const MlflowWrapperBase: React.FC<MlflowFederatedShellProps> = ({
             <ServerInfoProvider>
               <HostWorkflowTypeProvider workflowType={workflowType}>
                 {memoryRouterEntries ? (
-                  <React.Suspense fallback={<LegacySkeleton />}>{children}</React.Suspense>
+                  gatedChildren
                 ) : (
                   <WorkspaceSync>
                     {breadcrumbReporter}
-                    <React.Suspense fallback={<LegacySkeleton />}>{children}</React.Suspense>
+                    {gatedChildren}
                   </WorkspaceSync>
                 )}
               </HostWorkflowTypeProvider>
@@ -184,15 +188,17 @@ const MlflowWrapperBase: React.FC<MlflowFederatedShellProps> = ({
               <DesignSystemEventProvider callback={logObservabilityEvent}>
                 <ThemeProvider isDarkTheme={isDarkTheme}>
                   <DesignSystemProvider getPopupContainer={getPopupContainer}>
-                    {/*
-                     * AppErrorBoundary renders the global notification holder. Keep it under
-                     * MLflow's router so notification content can safely use v6 routing context.
-                     */}
-                    {memoryRouterEntries ? (
-                      <MemoryRouter initialEntries={memoryRouterEntries}>{routedContent}</MemoryRouter>
-                    ) : (
-                      <BrowserRouter basename={basename}>{routedContent}</BrowserRouter>
-                    )}
+                    <FederatedPortalContainerContext.Provider value={getPopupContainer}>
+                      {/*
+                       * AppErrorBoundary renders the global notification holder. Keep it under
+                       * MLflow's router so notification content can safely use v6 routing context.
+                       */}
+                      {memoryRouterEntries ? (
+                        <MemoryRouter initialEntries={memoryRouterEntries}>{routedContent}</MemoryRouter>
+                      ) : (
+                        <BrowserRouter basename={basename}>{routedContent}</BrowserRouter>
+                      )}
+                    </FederatedPortalContainerContext.Provider>
                   </DesignSystemProvider>
                 </ThemeProvider>
               </DesignSystemEventProvider>

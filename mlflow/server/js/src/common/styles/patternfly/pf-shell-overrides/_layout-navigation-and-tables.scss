@@ -51,10 +51,6 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     }
   }
 
-  button[data-component-id='mlflow_sidebar.new_button'] {
-    width: 100%;
-  }
-
   button.du-bois-dark-btn[aria-label='Search'],
   button.du-bois-light-btn[aria-label='Search'] {
     color: var(--pf-v6-c-content--Color) !important;
@@ -178,6 +174,12 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     div[role='row'].table-isHeader {
       div[role='columnheader'] {
         border: none !important;
+      }
+      /* Unroled spacer cells (e.g. the traces table's grouped-by-session toggle spacer) still get the
+         Emotion "row > *" border-bottom, which floats above the header padding as a stray underline.
+         Session group rows are also `isHeader` rows but hold cells; keep their borders. */
+      &:not(:has(> [role='cell'])) > div:not([role]) {
+        border-bottom: none !important;
       }
       padding-block-start: var(--pf-t--global--spacer--sm);
       padding-block-end: var(--pf-t--global--spacer--sm);

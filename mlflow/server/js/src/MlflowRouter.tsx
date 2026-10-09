@@ -33,7 +33,6 @@ import { getAccountRouteDefs } from './account/route-defs';
 import { getAdminRouteDefs } from './admin/route-defs';
 import { getMCPRegistryRouteDefs } from './mcp-registry/route-defs';
 import { DEV_USER_SWITCHER_ENABLED } from './admin/DevUserSwitcher';
-import { shouldEnableAIGateway } from './common/utils/FeatureUtils';
 import { useInitializeExperimentRunColors } from './experiment-tracking/components/experiment-page/hooks/useExperimentRunColor';
 import { MlflowSidebar } from './common/components/MlflowSidebar';
 import { AssistantProvider, AssistantRouteContextProvider } from './assistant';
@@ -241,7 +240,7 @@ export const MlflowRouter = () => {
     () => [
       ...getExperimentTrackingRouteDefs(),
       ...getModelRegistryRouteDefs(),
-      ...(gatewayEnabled && shouldEnableAIGateway() ? getGatewayRouteDefs() : []),
+      ...(gatewayEnabled ? getGatewayRouteDefs() : []),
       ...getMCPRegistryRouteDefs(),
       ...getAccountRouteDefs(),
       ...getAdminRouteDefs(),

@@ -31,6 +31,7 @@ import { useSetReviewQueueItemStatusMutation } from './hooks/useSetReviewQueueIt
 import { canDeleteQueue, canManageQueue, canRemoveQueueItems, sameUser } from './queuePermissions';
 import { useHeaderVisibility } from '../experiment-page-tabs/ExperimentPageHeaderVisibilityContext';
 import type { ReviewQueueItem, ReviewStatus } from './types';
+import { useAbsoluteRouterHref } from '../../../odh/utils/useAbsoluteRouterHref';
 
 /**
  * Review tab — a master/detail surface modeled on the labeling-session page:
@@ -41,6 +42,7 @@ import type { ReviewQueueItem, ReviewStatus } from './types';
  * The left list of visible queues lives in `ReviewQueueSidebar`.
  */
 const ExperimentReviewQueuePage = () => {
+  const toAbsoluteHref = useAbsoluteRouterHref();
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
   const { experimentId } = useParams<{ experimentId: string }>();
@@ -282,7 +284,7 @@ const ExperimentReviewQueuePage = () => {
     const path = getReviewQueuePageRoute(experimentId, selectedQueue.queue_id, { startReview });
     // `copyToClipboard` falls back to execCommand on insecure-HTTP contexts and
     // reports whether the copy actually landed — only confirm success when it did.
-    const copied = await copyToClipboard(`${window.location.origin}${window.location.pathname}#${path}`);
+    const copied = await copyToClipboard(toAbsoluteHref(path));
     if (copied) {
       Utils.displayGlobalInfoNotification(
         intl.formatMessage({
@@ -431,9 +433,7 @@ const ExperimentReviewQueuePage = () => {
           experimentId
             ? () =>
                 window.open(
-                  `${window.location.origin}${window.location.pathname}#${Routes.getExperimentPageTracesTabRoute(
-                    experimentId,
-                  )}`,
+                  toAbsoluteHref(Routes.getExperimentPageTracesTabRoute(experimentId)),
                   '_blank',
                   'noopener,noreferrer',
                 )

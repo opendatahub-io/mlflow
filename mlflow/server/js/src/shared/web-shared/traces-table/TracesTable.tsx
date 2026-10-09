@@ -49,6 +49,7 @@ import type {
 import { getVisibleColumnDefs, type TracesTableMeta } from './columns';
 import { getContentColumnMaxSizes } from './getColumnMaxSizes';
 import { TraceColumnHeader } from './TraceColumnHeader';
+import { useRouterHref } from '@mlflow/mlflow/src/odh/utils/useAbsoluteRouterHref';
 
 // No-op sort handlers for non-sortable columns (their header menu omits the sort items anyway).
 const noop = () => {};
@@ -365,6 +366,8 @@ export const TracesTable: React.MemoExoticComponent<(props: TracesTableProps) =>
   }: TracesTableProps) {
     const { theme } = useDesignSystemTheme();
     const intl = useIntl();
+    // `getTraceHref` is router-relative; a new tab needs the router's basename / `#` prefix.
+    const toRouterHref = useRouterHref();
     // Keep the checkbox centered and leave a full spacing token before the first data column.
     const selectCellCss = {
       '.table-row-select-cell': { alignItems: 'center', paddingRight: theme.spacing.sm },
@@ -684,7 +687,7 @@ export const TracesTable: React.MemoExoticComponent<(props: TracesTableProps) =>
             if ((event.ctrlKey || event.metaKey) && traceHref) {
               event.preventDefault();
               window.open(
-                typeof traceHref === 'string' ? traceHref : createPath(traceHref),
+                toRouterHref(typeof traceHref === 'string' ? traceHref : createPath(traceHref)),
                 '_blank',
                 'noopener,noreferrer',
               );

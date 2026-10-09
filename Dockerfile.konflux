@@ -11,7 +11,6 @@ RUN yarn_cjs=$(ls yarn/releases/yarn-*.cjs | head -1) && \
     chmod +x /usr/local/bin/yarn
 USER 1001
 ENV MLFLOW_ENABLE_ASSISTANT=false
-ENV MLFLOW_ENABLE_AI_GATEWAY=false
 RUN if [ -f /cachi2/cachi2.env ]; then \
         . /cachi2/cachi2.env && \
         export YARN_ENABLE_GLOBAL_CACHE=true && \

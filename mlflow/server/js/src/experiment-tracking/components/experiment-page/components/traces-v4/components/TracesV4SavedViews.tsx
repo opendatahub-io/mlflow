@@ -57,6 +57,8 @@ import {
   type V3SavedViewState,
 } from '../utils/tracesV3ViewCompat';
 import { DEFAULT_TRACES_V4_TIME_LABEL } from '../utils/timeRange';
+import { useAbsoluteRouterHref } from '@mlflow/mlflow/src/odh/utils/useAbsoluteRouterHref';
+import { getActiveWorkspace, WORKSPACE_QUERY_PARAM } from '@mlflow/mlflow/src/workspaces/utils/WorkspaceUtils';
 
 /**
  * Saved views for the V4 traces tab. Reuses the shared tag-envelope codec and the
@@ -149,6 +151,7 @@ export const useTracesV4SavedViews = ({
   const intl = useIntl();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: experiment, refetch } = useGetExperimentQuery({ experimentId });
+  const toAbsoluteHref = useAbsoluteRouterHref();
 
   // Validate a stored filter model against the live field set: drop clauses whose field/operator no
   // longer exists (a since-removed field, or an assessment name not on this page) so a restored view
@@ -373,7 +376,13 @@ export const useTracesV4SavedViews = ({
   // Return to the default state: drop every view param, clear the non-URL surfaces (columns +
   // popover filters). Time-range label is kept (not dropped) so the default has a window, not empty.
   const resetToDefaultView = useCallback(() => {
-    setSearchParams(new URLSearchParams({ startTimeLabel: DEFAULT_TRACES_V4_TIME_LABEL }));
+    const defaultParams = new URLSearchParams({ startTimeLabel: DEFAULT_TRACES_V4_TIME_LABEL });
+    // Keep the workspace: dropping it sends the standalone app to Home and the dashboard to no project.
+    const workspace = getActiveWorkspace();
+    if (workspace) {
+      defaultParams.set(WORKSPACE_QUERY_PARAM, workspace);
+    }
+    setSearchParams(defaultParams);
     resetColumns();
     setFilterModel(EMPTY_FILTER_MODEL);
   }, [setSearchParams, resetColumns, setFilterModel]);
@@ -402,9 +411,9 @@ export const useTracesV4SavedViews = ({
   const buildShareUrl = useCallback(
     async (id: string): Promise<string | null> => {
       const state = await decodeViewState(id);
-      return state ? getTraceV4SavedViewShareUrl(experimentId, state, id) : null;
+      return state ? getTraceV4SavedViewShareUrl(experimentId, state, id, toAbsoluteHref) : null;
     },
-    [decodeViewState, experimentId],
+    [decodeViewState, experimentId, toAbsoluteHref],
   );
 
   const activeShareKey = searchParams.get(TRACE_V4_SHARE_URL_PARAM_KEY);
@@ -617,6 +626,7 @@ const SaveTraceV4ViewModal = ({
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
+  const toAbsoluteHref = useAbsoluteRouterHref();
 
   const reset = useCallback(() => {
     setName('');
@@ -640,7 +650,7 @@ const SaveTraceV4ViewModal = ({
       }
       // Activate from the captured state directly — the refetched tags aren't in cache yet this render.
       onSaved(result.id, result.state);
-      setSavedUrl(getTraceV4SavedViewShareUrl(experimentId, result.state, result.id));
+      setSavedUrl(getTraceV4SavedViewShareUrl(experimentId, result.state, result.id, toAbsoluteHref));
       Utils.displayGlobalInfoNotification(
         intl.formatMessage(
           {
@@ -662,7 +672,7 @@ const SaveTraceV4ViewModal = ({
     } finally {
       setSaving(false);
     }
-  }, [name, saving, atCap, saveView, onSaved, experimentId, intl]);
+  }, [name, saving, atCap, saveView, onSaved, experimentId, intl, toAbsoluteHref]);
 
   return (
     <Modal

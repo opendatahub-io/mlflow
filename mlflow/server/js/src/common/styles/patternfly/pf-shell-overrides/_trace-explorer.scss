@@ -1,0 +1,38 @@
+// Trace explorer drawer overrides.
+//
+// The trace drawers (`ModelTraceExplorerDrawer`, `TracesV4TraceDrawer`) wrap their
+// content in `ApplyDesignSystemContextOverrides`, which mounts a fresh Du Bois
+// Emotion theme and drops `PATTERN_FLY_TOKEN_TRANSLATION`. Buttons that read
+// `theme.colors.actionPrimary*` then fall back to Du Bois blue. Re-apply the PF
+// primary button colors inside drawers; drawers that keep the PF theme already
+// resolve to the same values. Du Bois button styles are `!important`, hence the
+// `!important` here.
+
+.pf-shell-root [data-component-type='drawer_content'] {
+  button.du-bois-light-btn.du-bois-light-btn-primary:not(.du-bois-light-btn-dangerous):not(:disabled),
+  button.du-bois-dark-btn.du-bois-dark-btn-primary:not(.du-bois-dark-btn-dangerous):not(:disabled) {
+    color: var(--pf-t--global--text--color--on-brand--default) !important;
+    background-color: var(--pf-t--global--color--brand--default) !important;
+
+    &:hover {
+      color: var(--pf-t--global--text--color--on-brand--hover) !important;
+      background-color: var(--pf-t--global--color--brand--hover) !important;
+    }
+
+    &:active {
+      color: var(--pf-t--global--text--color--on-brand--clicked) !important;
+      background-color: var(--pf-t--global--color--brand--clicked) !important;
+    }
+  }
+}
+
+// The linked-prompts popover also mounts a fresh Du Bois theme, so Du Bois
+// `Popover.Content` paints its links with the Du Bois tertiary blue (!important).
+.pf-shell-root [data-component-id='shared.model-trace-explorer.linked-prompts-popover'] a {
+  color: var(--pf-t--global--text--color--link--default) !important;
+
+  &:hover,
+  &:focus {
+    color: var(--pf-t--global--text--color--link--hover) !important;
+  }
+}

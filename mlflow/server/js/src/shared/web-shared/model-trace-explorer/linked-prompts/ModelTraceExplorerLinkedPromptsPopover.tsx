@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import type { ModelTraceInfoV3 } from '../ModelTrace.types';
 import { Link, useParams } from '../RoutingUtils';
 import { getLinkedPromptRoute, MLFLOW_LINKED_PROMPTS_TAG, parseLinkedPrompts } from './utils';
+import { useBodyPopupContainer } from '@mlflow/mlflow/src/odh/utils/portalContainer';
 
 export interface ModelTraceExplorerLinkedPromptsPopoverProps {
   experimentId?: string;
@@ -22,6 +23,7 @@ export const ModelTraceExplorerLinkedPromptsPopover = ({
   experimentId,
   traceInfo,
 }: ModelTraceExplorerLinkedPromptsPopoverProps): JSX.Element | null => {
+  const getBodyPopupContainer = useBodyPopupContainer();
   const { theme } = useDesignSystemTheme();
   const intl = useIntl();
   const { experimentId: experimentIdFromParams } = useParams();
@@ -54,7 +56,7 @@ export const ModelTraceExplorerLinkedPromptsPopover = ({
   );
 
   return (
-    <ApplyDesignSystemContextOverrides getPopupContainer={() => document.body}>
+    <ApplyDesignSystemContextOverrides getPopupContainer={getBodyPopupContainer}>
       <Popover.Root componentId="shared.model-trace-explorer.linked-prompts-popover">
         <Popover.Trigger asChild>
           <Button

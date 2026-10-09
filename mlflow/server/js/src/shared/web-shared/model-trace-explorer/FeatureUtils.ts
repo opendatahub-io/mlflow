@@ -1,3 +1,5 @@
+import { getFeatureEnabledSync, SERVER_FEATURE_KEYS } from '@mlflow/mlflow/src/experiment-tracking/hooks/useServerInfo';
+
 export const shouldBlockLargeTraceDisplay = () => {
   return false;
 };
@@ -56,7 +58,8 @@ export const shouldUseUnifiedModelTraceComparisonUI = () => {
  * Determines if running scorers from trace details drawer is enabled
  */
 export const isEvaluatingTracesInDetailsViewEnabled = () => {
-  return true;
+  // ODH: LLM judges run through the AI Gateway, so hide every "run judge" entry point when it is disabled.
+  return getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
 };
 
 /**

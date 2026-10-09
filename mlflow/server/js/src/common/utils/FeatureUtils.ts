@@ -54,16 +54,6 @@ export const shouldEnableGraphQLSampledMetrics = () => false;
 export const shouldEnableGraphQLModelVersionsForRunDetails = () => false;
 
 /**
- * Feature flag to enable Scorers UI (Judges tab) in experiment page.
- * Judges rely on running scorers via jobs / the AI Gateway, which are
- * disabled downstream, so gate this behind shouldEnableAIGateway() to avoid
- * showing a "Judges" tab that can't actually run anything.
- */
-export const enableScorersUI = () => {
-  return shouldEnableAIGateway();
-};
-
-/**
  * Determines if the new GenAI experiment creation modal with table prefix onboarding is enabled.
  * When enabled, the observatory shows a create modal with UC storage selection and table prefix,
  * and the inline UC schema selector in the traces toolbar is hidden.
@@ -245,7 +235,7 @@ export const isScorerModelSelectionEnabled = () => {
  * Gateway until those dependencies are decoupled.
  */
 export const shouldEnableIssueDetection = () => {
-  return shouldEnableAIGateway();
+  return getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
 };
 
 /**
@@ -263,15 +253,4 @@ export const shouldShowEvalRunsIssuesPanel = () => {
  */
 export const shouldSupportRunningDatabricksProviderJudgesFromUI = () => {
   return false;
-};
-
-/**
- * Determines if the AI Gateway feature is enabled.
- * Controlled by the MLFLOW_ENABLE_AI_GATEWAY environment variable (default: true).
- */
-export const shouldEnableAIGateway = () => {
-  const val = process.env['MLFLOW_ENABLE_AI_GATEWAY'];
-  if (val === undefined) return getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
-  const normalized = val.toLowerCase();
-  return (normalized === 'true' || normalized === '1') && getFeatureEnabledSync(SERVER_FEATURE_KEYS.GATEWAY);
 };

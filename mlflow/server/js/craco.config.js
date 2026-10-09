@@ -339,6 +339,7 @@ module.exports = function () {
         jestConfig.setupFilesAfterEnv.push('<rootDir>/scripts/setup-jest-dom-matchers.js');
         jestConfig.setupFilesAfterEnv.push('<rootDir>/scripts/setup-testing-library.js');
         jestConfig.setupFilesAfterEnv.push('<rootDir>/src/setupTests.js');
+        jestConfig.setupFilesAfterEnv.push('<rootDir>/src/odh/setupTests.js');
         // Adjust config to work with dependencies using ".mjs" file extensions
         jestConfig.moduleFileExtensions.push('mjs');
         // Remove when this issue is resolved: https://github.com/gsoft-inc/craco/issues/393
@@ -517,7 +518,6 @@ module.exports = function () {
       plugins: [
         new webpack.EnvironmentPlugin({
           MLFLOW_ENABLE_ASSISTANT: process.env.MLFLOW_ENABLE_ASSISTANT ?? 'true',
-          MLFLOW_ENABLE_AI_GATEWAY: process.env.MLFLOW_ENABLE_AI_GATEWAY ?? 'true',
           MLFLOW_SHOW_GDPR_PURGING_MESSAGES: process.env.MLFLOW_SHOW_GDPR_PURGING_MESSAGES ? 'true' : 'false',
           MLFLOW_USE_ABSOLUTE_AJAX_URLS: process.env.MLFLOW_USE_ABSOLUTE_AJAX_URLS ? 'true' : 'false',
           DEPLOYMENT_MODE: process.env.DEPLOYMENT_MODE ?? 'standalone',
