@@ -153,8 +153,19 @@ def test_workflow_default_shell_is_bash():
 
 def test_python_job_runs_both_serial_passes():
     block = _python_run_tests_block()
-    assert "--serial=exclude" in block
-    assert "--serial=only" in block
+    assert "dev/run_konflux_python_ci.sh" in block
+    script = _REPO_ROOT / "dev" / "run_konflux_python_ci.sh"
+    assert "--serial=exclude" in script.read_text()
+    assert "--serial=only" in script.read_text()
+
+
+def test_python_job_runs_the_built_konflux_image():
+    workflow = yaml.safe_load(_MASTER_WORKFLOW.read_text())
+    python_job = workflow["jobs"]["python"]
+    build_job = workflow["jobs"]["build-konflux-image"]
+    assert python_job["needs"] == ["build-konflux-image"]
+    assert "docker run" in _python_run_tests_block()
+    assert any("Dockerfile.konflux" in (step.get("run") or "") for step in build_job["steps"])
 
 
 def _run_two_pass(tmp_path, first_rc, second_rc):
