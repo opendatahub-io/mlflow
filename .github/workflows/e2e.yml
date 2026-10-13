@@ -96,6 +96,7 @@ jobs:
     needs: gate
     if: needs.gate.outputs.should-run == 'true'
     permissions:
+      checks: read
       contents: read
     timeout-minutes: 45
     runs-on: ubuntu-24.04
@@ -104,7 +105,7 @@ jobs:
         working-directory: mlflow/server/js
     env:
       MLFLOW_E2E_BASE_URL: http://localhost:5000
-      MLFLOW_IMAGE: quay.io/opendatahub/mlflow:${{ github.event_name == 'workflow_dispatch' && inputs.image_tag || format('odh-pr-{0}', needs.gate.outputs.pr-number) }}
+      MLFLOW_IMAGE: quay.io/opendatahub/mlflow:${{ github.event_name == 'workflow_dispatch' && inputs.image_tag || format('odh-pr-{0}', needs.gate.outputs.head-sha) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -153,13 +154,16 @@ jobs:
           STATUS="pending"
           CONCLUSION=""
           for i in $(seq 1 40); do
-            if ! RESPONSE=$(timeout 15 gh api "repos/${REPO}/commits/${COMMIT_SHA}/check-runs" 2>/dev/null); then
+            if ! RESPONSE=$(timeout 15 gh api --paginate --slurp "repos/${REPO}/commits/${COMMIT_SHA}/check-runs?per_page=100" 2>/dev/null); then
               echo "API call failed, retrying in 30s... (attempt $i/40)"
               sleep 30
               continue
             fi
             RESULT=$(echo "$RESPONSE" | jq -c '
-              [.check_runs[] | select(.name | startswith("mlflow-on-pull-request"))]
+              [.[].check_runs[] | select(
+                .app.slug == "red-hat-konflux" and
+                .name == "Red Hat Konflux / mlflow-on-pull-request"
+              )]
               | sort_by(.started_at)
               | last // {}
             ')
