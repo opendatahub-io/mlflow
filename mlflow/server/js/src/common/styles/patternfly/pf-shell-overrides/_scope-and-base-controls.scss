@@ -178,6 +178,43 @@
     align-items: center;
   }
 
+  // Native file pickers (Skill Registry folder upload) — PF secondary button
+  input[type='file'] {
+    color: var(--pf-t--global--text--color--subtle);
+    font-size: var(--pf-t--global--font--size--body--default);
+
+    &::file-selector-button {
+      margin-inline-end: var(--pf-t--global--spacer--sm);
+      padding-block: var(--pf-t--global--spacer--xs);
+      padding-inline: var(--pf-t--global--spacer--md);
+      font-family: inherit;
+      font-size: var(--pf-t--global--font--size--body--default);
+      line-height: var(--pf-t--global--font--line-height--body);
+      color: var(--pf-t--global--text--color--brand--default);
+      background-color: transparent;
+      border: 0;
+      border-radius: var(--pf-t--global--border--radius--pill);
+      box-shadow: inset 0 0 0 var(--pf-t--global--border--width--action--default)
+        var(--pf-t--global--border--color--brand--default);
+      cursor: pointer;
+    }
+
+    &:hover::file-selector-button {
+      color: var(--pf-t--global--text--color--brand--hover);
+      box-shadow: inset 0 0 0 var(--pf-t--global--border--width--action--hover)
+        var(--pf-t--global--border--color--brand--hover);
+    }
+
+    &:focus-visible {
+      outline: none;
+
+      &::file-selector-button {
+        outline: var(--pf-t--global--border--width--strong) solid var(--pf-t--global--focus-ring--color--default);
+        outline-offset: var(--pf-t--global--spacer--xs);
+      }
+    }
+  }
+
   button.du-bois-light-btn.du-bois-light-btn-link:not(.du-bois-light-btn-icon-only)[data-component-id*='.tag_']:not(
       [data-component-id*='add_tag']
     ),

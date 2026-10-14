@@ -110,6 +110,15 @@ $mlflow-form-status-icon-offset: 0.2em;
     }
   }
 
+  /* Snippets with a copy button overlaid on their top-right corner (MCP and Skill Registry) reserve room for it
+     with an inline right padding, which the codeblock padding above overrides. The PF CodeBlock font size keeps
+     one-line commands clear of the button instead of scrolling under it. */
+  .du-bois-light-btn-icon-only + pre,
+  .du-bois-dark-btn-icon-only + pre {
+    padding-inline-end: calc(var(--pf-t--global--spacer--xl) + var(--pf-t--global--spacer--sm)) !important;
+    font-size: var(--pf-t--global--font--size--xs) !important;
+  }
+
   /* Plotly dark mode */
   &.dark-mode {
     .plot-container {
