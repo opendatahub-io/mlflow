@@ -181,7 +181,7 @@ const RegisterSkillDialog = ({ onClose, skill, sourceVersion, onRegistered }: Re
   // Bumped by every folder selection and source switch, so a slow SKILL.md read cannot apply to a later choice.
   const folderSelectionRef = useRef(0);
   const submitErrorRef = useRef<HTMLDivElement>(null);
-  const submission = useRegisterSkillSubmission({ onClose, onRegistered, onNameTaken: setTakenIdentity });
+  const submission = useRegisterSkillSubmission({ onClose, onRegistered });
 
   useEffect(() => {
     if (!validationError && !submission.failed) return;
