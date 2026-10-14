@@ -209,6 +209,9 @@ export const createMLflowRoutePath = (routePath: string) => {
     if (routePath.startsWith('/mcp-registry')) {
       return routePath.slice('/mcp-registry'.length) || '/';
     }
+    if (routePath.startsWith('/skills')) {
+      return routePath.slice('/skills'.length) || '/';
+    }
   }
   return routePath;
 };

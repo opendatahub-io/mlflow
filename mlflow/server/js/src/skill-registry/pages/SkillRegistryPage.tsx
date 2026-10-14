@@ -32,6 +32,7 @@ import { flexColumnContainerStyles, headerIconStyles } from '../styles';
 import SkillRegistryRoutes from '../routes';
 import { hasSkillCatalogFilters } from '../utils';
 import type { SkillSourceType } from '../types';
+import { isIntegrated } from '../../common/utils/embedUtils';
 
 type ViewMode = 'list' | 'grid';
 
@@ -78,6 +79,13 @@ const SkillRegistryPage = () => {
   // until the list shows there is something to add to, so it doesn't flash while the first page loads.
   const showHeaderCreate = Boolean(error) || hasActiveFilters || hasPreviousPage || Boolean(skills?.length);
   const openRegister = () => setRegisterOpen(true);
+  // Embedded in the dashboard, the host renders the page title, so Create moves next to the view toggle.
+  const integrated = isIntegrated();
+  const createButton = showHeaderCreate ? (
+    <Button componentId="mlflow.skill_registry.create" type="primary" icon={<PlusIcon />} onClick={openRegister}>
+      <FormattedMessage defaultMessage="Create skill" description="Button that opens skill registration" />
+    </Button>
+  ) : undefined;
 
   useEffect(() => {
     let added = false;
@@ -94,31 +102,24 @@ const SkillRegistryPage = () => {
 
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <Spacer shrinks={false} />
-      <Header
-        title={
-          <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-            <span css={headerIconStyles(theme)}>
-              <PuzzleIcon />
-            </span>
-            <FormattedMessage defaultMessage="Skills" description="Skill Registry page title" />
-            <SkillRegistryBetaTag />
-          </span>
-        }
-        buttons={
-          showHeaderCreate ? (
-            <Button
-              componentId="mlflow.skill_registry.create"
-              type="primary"
-              icon={<PlusIcon />}
-              onClick={openRegister}
-            >
-              <FormattedMessage defaultMessage="Create skill" description="Button that opens skill registration" />
-            </Button>
-          ) : undefined
-        }
-      />
-      <Spacer shrinks={false} />
+      {!integrated && (
+        <>
+          <Spacer shrinks={false} />
+          <Header
+            title={
+              <span css={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+                <span css={headerIconStyles(theme)}>
+                  <PuzzleIcon />
+                </span>
+                <FormattedMessage defaultMessage="Skills" description="Skill Registry page title" />
+                <SkillRegistryBetaTag />
+              </span>
+            }
+            buttons={createButton}
+          />
+          <Spacer shrinks={false} />
+        </>
+      )}
       <div css={flexColumnContainerStyles}>
         <div css={{ flexShrink: 0, width: '100%' }}>
           <SkillListFilters
@@ -132,29 +133,32 @@ const SkillRegistryPage = () => {
             sourceType={sourceType}
             onSourceTypeChange={setSourceType}
             actions={
-              <SegmentedControlGroup
-                name="skill-registry-view-mode"
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as ViewMode)}
-                componentId="mlflow.skill_registry.view_toggle"
-              >
-                <SegmentedControlButton
-                  value="list"
-                  icon={<ListIcon />}
-                  aria-label={intl.formatMessage({
-                    defaultMessage: 'List view',
-                    description: 'Aria label for Skill Registry list view toggle',
-                  })}
-                />
-                <SegmentedControlButton
-                  value="grid"
-                  icon={<GridIcon />}
-                  aria-label={intl.formatMessage({
-                    defaultMessage: 'Grid view',
-                    description: 'Aria label for Skill Registry grid view toggle',
-                  })}
-                />
-              </SegmentedControlGroup>
+              <>
+                {integrated && createButton}
+                <SegmentedControlGroup
+                  name="skill-registry-view-mode"
+                  value={viewMode}
+                  onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                  componentId="mlflow.skill_registry.view_toggle"
+                >
+                  <SegmentedControlButton
+                    value="list"
+                    icon={<ListIcon />}
+                    aria-label={intl.formatMessage({
+                      defaultMessage: 'List view',
+                      description: 'Aria label for Skill Registry list view toggle',
+                    })}
+                  />
+                  <SegmentedControlButton
+                    value="grid"
+                    icon={<GridIcon />}
+                    aria-label={intl.formatMessage({
+                      defaultMessage: 'Grid view',
+                      description: 'Aria label for Skill Registry grid view toggle',
+                    })}
+                  />
+                </SegmentedControlGroup>
+              </>
             }
           />
         </div>

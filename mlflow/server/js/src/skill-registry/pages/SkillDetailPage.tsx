@@ -49,8 +49,11 @@ import { useDeleteSkillVersionModal } from '../hooks/useDeleteSkillVersionModal'
 import { useSkillMetadataEditors } from '../hooks/useSkillMetadataEditors';
 import { SkillRegistryEmptyState } from '../components/SkillRegistryEmptyState';
 import { SkillStatus, type Skill } from '../types';
+import { isIntegrated } from '../../common/utils/embedUtils';
 
-const breadcrumbs = (
+// Hidden when embedded: the host builds its own breadcrumb from the segments reported by
+// SkillRegistryBreadcrumbReporter (see src/odh).
+const breadcrumbs = isIntegrated() ? undefined : (
   <Breadcrumb>
     <Breadcrumb.Item>
       <Link componentId="mlflow.skill_registry.detail.breadcrumb_back" to={SkillRegistryRoutes.skillRegistryPageRoute}>
@@ -241,7 +244,7 @@ const SkillDetailPage = () => {
   if (skillLoading && name) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header
           breadcrumbs={breadcrumbs}
           title={<GenericSkeleton css={{ height: theme.general.heightBase, width: 200 }} />}
@@ -262,7 +265,7 @@ const SkillDetailPage = () => {
   if (isPermissionDeniedError(skillError)) {
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header breadcrumbs={breadcrumbs} title="" />
         <SkillRegistryEmptyState
           image={<LockIcon />}
@@ -289,7 +292,7 @@ const SkillDetailPage = () => {
     const missing = isNotFoundError(skillError) || !skillError;
     return (
       <ScrollablePageWrapper>
-        <Spacer shrinks={false} />
+        {!isIntegrated() && <Spacer shrinks={false} />}
         <Header breadcrumbs={breadcrumbs} title="" />
         {missing ? (
           <SkillRegistryEmptyState
@@ -331,7 +334,7 @@ const SkillDetailPage = () => {
 
   return (
     <ScrollablePageWrapper css={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Spacer shrinks={false} />
+      {!isIntegrated() && <Spacer shrinks={false} />}
       <SkillDetailHeader
         skill={skill}
         canUpdate={permissions.canUpdate}
