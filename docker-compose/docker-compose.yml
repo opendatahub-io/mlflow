@@ -100,9 +100,18 @@ services:
       - -c
       - |
         set -e
-        if ! python -c 'import psycopg, psycopg2, boto3'; then
-          python -m pip install --no-cache-dir "psycopg[binary]" psycopg2-binary boto3
-        fi
+        case "${MLFLOW_BACKEND_STORE_URI}" in
+          postgresql+psycopg://*)
+            if ! python -c 'import psycopg, boto3'; then
+              python -m pip install --no-cache-dir "psycopg[binary]" boto3
+            fi
+            ;;
+          *)
+            if ! python -c 'import psycopg2, boto3'; then
+              python -m pip install --no-cache-dir psycopg2-binary boto3
+            fi
+            ;;
+        esac
         mlflow server \
           --backend-store-uri "${MLFLOW_BACKEND_STORE_URI}" \
           --artifacts-destination "${MLFLOW_ARTIFACTS_DESTINATION}" \

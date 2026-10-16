@@ -66,6 +66,8 @@ No release or operator version bumps were performed.
   added required `python-multipart==0.0.32` while preserving security constraints and P7D cooldown.
   Subsequently pinned released `mlflow-kubernetes-plugins==2.1.0` and regenerated requirements
   to resolve the Skills Registry authorization failure during operator-managed startup.
+  Compose startup checks the PostgreSQL driver selected by its backend URI, avoiding an
+  unnecessary psycopg installation that fails in the non-root ODH image.
 
 ### Validation
 
