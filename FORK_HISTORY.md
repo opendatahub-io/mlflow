@@ -64,20 +64,23 @@ No release or operator version bumps were performed.
 - **Dependencies:** retained conditional/fail-fast Compose installs plus upstream's psycopg
   driver. Regenerated runtime/build locks for all four architectures and the PyPI lock;
   added required `python-multipart==0.0.32` while preserving security constraints and P7D cooldown.
+  Subsequently pinned released `mlflow-kubernetes-plugins==2.1.0` and regenerated requirements
+  to resolve the Skills Registry authorization failure during operator-managed startup.
 
 ### Validation
 
 - Registry/API, workspace, migration, artifact, feature-guard, and CLI checks:
   **1,680 passed, 14 skipped**; SQLite downgrade/re-upgrade included.
-- Full plugin suite: **446 passed, 1 skipped**, both against rebased source and installed
-  snapshot wheels on Python 3.12 with production dependencies. Authorization audit covers
-  all **66 registry** and **147 native application** route/method pairs, plus Flask compilation.
+- Plugin suite against rebased source: **446 passed, 1 skipped**. Released 2.1.0 wheel
+  against installed snapshot wheels on Python 3.12: **452 passed, 1 skipped**. Authorization
+  audit covers all **66 registry** and **147 native application** route/method pairs, plus
+  Flask compilation; released-wheel startup authorization validation also passes.
 - Frontend: **793 suites, 7,676 tests, 23 snapshots passed; 7 tests skipped**.
 - Python packaging, Konflux Python builder, standalone/federated UI builds, TypeScript,
   lint, formatting, translations, required pre-commit hooks, and workflow/file-retention audits pass.
 - CSS selector audit passes against its existing baseline. Browser visual checks, remote CI,
-  the complete final image, other database engines, OpenShift, and released-plugin validation
-  remain outstanding. CSS versions were not marked visually verified.
+  the complete final image, other database engines, and OpenShift remain outstanding.
+  CSS versions were not marked visually verified.
 
 ### Base for the later 3.18 rebase
 
