@@ -2,14 +2,6 @@ name: MLflow tests
 
 on:
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "dev/clint/**"
-      - "mlflow/server/js/**"
-      - ".github/workflows/js.yml"
-      - "libs/typescript/**"
-      - ".claude/**"
   push:
     branches:
       - master
