@@ -474,7 +474,9 @@ export class ArtifactViewImpl extends Component<ArtifactViewImplProps, ArtifactV
 
   getActiveNodeRealPath() {
     if (this.state.activeNodeId) {
-      return `${this.props.artifactRootUri}/${this.state.activeNodeId}`;
+      return this.props.artifactRootUri
+        ? `${this.props.artifactRootUri}/${this.state.activeNodeId}`
+        : this.state.activeNodeId;
     }
     return this.props.artifactRootUri;
   }
@@ -616,7 +618,9 @@ const mapStateToProps = (state: any, ownProps: any) => {
   const { apis } = state;
   const artifactNode =
     isLoggedModelsMode && loggedModelId ? getArtifacts(loggedModelId, state) : getArtifacts(runUuid, state);
-  const artifactRootUri = ownProps?.artifactRootUri ?? getArtifactRootUri(runUuid, state);
+  const artifactRootUri =
+    ownProps?.artifactRootUri ??
+    (isLoggedModelsMode || ownProps?.isFallbackToLoggedModelArtifacts ? undefined : getArtifactRootUri(runUuid, state));
   const modelVersions = getAllModelVersions(state);
   const modelVersionsWithNormalizedSource = flatMap(modelVersions, (version) => {
     // @ts-expect-error TS(2698): Spread types may only be created from object types... Remove this comment to see the full error message
