@@ -65,6 +65,21 @@ RUN set -eux; \
     microdnf clean all && \
     rm -rf /tmp/dist /tmp/konflux-aipcc-requirements.txt
 
+# Fail if the installed packages' declared requirements conflict.
+RUN python3.12 -m pip check
+
+# Exercise CMD's import phase; --help exits before the server starts.
+RUN python3.12 -m mlflow server --help > /dev/null
+
+# Load the plugin entry points CMD depends on (kubernetes-auth app and
+# kubernetes:// workspace store) so missing dependencies, broken entry
+# points, or native import crashes fail the build instead of the server.
+RUN python3.12 - <<'PY'
+from importlib.metadata import entry_points
+entry_points(group="mlflow.workspace_provider")["kubernetes"].load()
+entry_points(group="mlflow.app")["kubernetes-auth"].load()
+PY
+
 # Copy built UI from builder stage
 COPY --from=ui-builder /opt/app-root/src/build /tmp/mlflow-ui-build
 
