@@ -10,7 +10,7 @@
 #
 #   python requirements/compile.py
 
-mlflow-kubernetes-plugins==2.1.0
+mlflow-kubernetes-plugins==2.1.1
 psycopg2
 prometheus-flask-exporter
 # Installed via the Konflux PyPI wheel side-channel (see Dockerfile.konflux).
