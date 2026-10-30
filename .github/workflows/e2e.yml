@@ -49,6 +49,8 @@ jobs:
           WF_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
           EVENT_NAME: ${{ github.event_name }}
           FALLBACK_SHA: ${{ github.sha }}
+          HEAD_REPO_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             echo "pr_number=" >> "$GITHUB_OUTPUT"
@@ -60,6 +62,17 @@ jobs:
           PR_NUMBER="$WF_PR_NUMBER"
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             echo "pull_requests array is empty (likely a fork PR), resolving via API..."
+            # The commit-association endpoint below only indexes PRs in the repo where
+            # the head branch lives, so resolve fork PRs by head owner:branch first.
+            #
+            # GET fields let gh URL-encode special characters in branch names.
+            # gh --jq can access environment variables like env.HEAD_SHA:
+            # https://github.com/cli/go-gh/blob/v2.13.0/pkg/jq/jq.go#L41-L45
+            PR_NUMBER=$(gh api --method GET "repos/${REPO}/pulls" \
+              -f "head=${HEAD_REPO_OWNER}:${HEAD_BRANCH}" -f state=open \
+              --jq 'map(select(.head.sha == env.HEAD_SHA)) | first | .number // empty' 2>/dev/null || echo "")
+          fi
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             PR_NUMBER=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls" \
               --jq '[.[] | select(.state == "open")][0].number' 2>/dev/null || echo "")
           fi
@@ -269,7 +282,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          STATUS_SHA: ${{ needs.gate.outputs.head-sha }}
+          STATUS_SHA: ${{ needs.gate.outputs.head-sha || github.event.workflow_run.head_sha }}
           PR_NUMBER: ${{ needs.gate.outputs.pr-number }}
           GATE_RESULT: ${{ needs.gate.result }}
           GATE_SHOULD_RUN: ${{ needs.gate.outputs.should-run }}
@@ -296,6 +309,11 @@ jobs:
           else
             STATE="failure"
             DESC="E2E tests failed"
+          fi
+
+          if [ -z "$STATUS_SHA" ]; then
+            echo "::warning::No head SHA available; skipping status report."
+            exit 0
           fi
 
           gh api "repos/${REPO}/statuses/${STATUS_SHA}" \
