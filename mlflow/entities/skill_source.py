@@ -13,6 +13,7 @@ class SkillSourceType(str, Enum):
     OCI = "oci"
     ZIP = "zip"
     MLFLOW = "mlflow"
+    ASSEMBLED = "assembled"
 
     def __str__(self):
         return self.value
@@ -121,6 +122,7 @@ def build_source(
 
     git -> GitSource(url, ref, subpath); oci -> OCISource(image, subpath);
     zip -> ZipSource(url, subpath); mlflow -> MlflowSource(artifact_path, subpath);
+    assembled -> the plain string pointer.
     """
     if source is None:
         return None
