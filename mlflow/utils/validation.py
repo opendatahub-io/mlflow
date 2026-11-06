@@ -14,7 +14,8 @@ import urllib.parse
 from fnmatch import fnmatch
 from typing import Any, Iterator
 
-from mlflow.entities import Dataset, DatasetInput, InputTag, Param, RunTag
+from mlflow.entities import Dataset, DatasetInput, InputTag, MCPAccessEndpoint, Param, RunTag
+from mlflow.entities.mcp_server import validate_mcp_server_name
 from mlflow.entities.model_registry.prompt_version import PROMPT_TEXT_TAG_KEY
 from mlflow.entities.webhook import WebhookEvent
 from mlflow.environment_variables import (
@@ -766,9 +767,14 @@ def _validate_alias_name_reserved(alias):
 
 MAX_SKILL_NAME_LENGTH = 64
 MAX_AGENT_PLUGIN_NAME_LENGTH = 64
+MAX_MCP_MEMBER_NAME_LENGTH = 128
 MAX_ORGANIZATION_NAME_LENGTH = 64
 MAX_SKILL_VERSION = 2_147_483_647
 _MAX_BULK_REGISTER_SKILLS = 500
+
+_ASCII_SPACE_CODEPOINT = 32  # ASCII control characters fall below the space character.
+_ASCII_DELETE_CODEPOINT = 127  # DEL is a separate ASCII control character.
+_LATIN1_MAX_CODEPOINT = 255  # Largest character value representable in one Latin-1 byte.
 
 # Skill names: lowercase ASCII letters, digits, and single hyphens; alphanumeric first
 # and last characters; no consecutive hyphens.
@@ -776,6 +782,12 @@ _SKILL_NAME_REGEX = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # Agent plugin (and organization) names: additionally allow single periods between
 # alphanumeric groups (so SemVer-looking names like "1.0.0" are permitted).
 _AGENT_PLUGIN_NAME_REGEX = re.compile(r"^[a-z0-9]+([-.][a-z0-9]+)*$")
+# HTTP header names are nonempty tokens; whitespace and separators such as ':' are invalid.
+_HTTP_HEADER_NAME_REGEX = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+# Bracketed URL hosts may only be followed by an optional numeric port.
+_BRACKETED_URL_AUTHORITY_REGEX = re.compile(r"\[[^\[\]]+\](?::[0-9]*)?")
+# Every percent escape must contain exactly two hexadecimal digits.
+_INVALID_URL_PERCENT_ESCAPE_REGEX = re.compile(r"%(?![0-9A-Fa-f]{2})")
 
 
 def _validate_skill_name(name):
@@ -800,6 +812,212 @@ def _validate_agent_plugin_name(name):
             "cannot contain consecutive hyphens or periods."
         )
     _validate_length_limit("Agent plugin name", MAX_AGENT_PLUGIN_NAME_LENGTH, name)
+
+
+def _validate_agent_plugin_mcp_servers(
+    mcp_servers: dict[str, MCPAccessEndpoint] | None,
+) -> None:
+    """Validate plugin MCP submissions without resolving references or changing their values."""
+    if mcp_servers is None:
+        return
+    if not isinstance(mcp_servers, dict):
+        raise MlflowException.invalid_parameter_value("mcp_servers must be a dictionary")
+
+    for name, endpoint in mcp_servers.items():
+        if not isinstance(name, str) or len(name) > MAX_MCP_MEMBER_NAME_LENGTH:
+            raise MlflowException.invalid_parameter_value(
+                "mcp_servers keys must be strings of at most "
+                f"{MAX_MCP_MEMBER_NAME_LENGTH} characters"
+            )
+        try:
+            if not isinstance(endpoint, MCPAccessEndpoint):
+                raise MlflowException.invalid_parameter_value("must be an MCPAccessEndpoint")
+            _validate_agent_plugin_mcp_member(endpoint)
+        except MlflowException as e:
+            raise MlflowException.invalid_parameter_value(
+                f"mcp_servers[{name!r}]: {e.message}"
+            ) from None
+
+
+def _validate_agent_plugin_mcp_member(endpoint: MCPAccessEndpoint) -> None:
+    if endpoint.id is not None:
+        if not isinstance(endpoint.id, str) or not endpoint.id:
+            raise MlflowException.invalid_parameter_value("id must be a nonempty string")
+        # Fetched configuration is not an update to the referenced endpoint.
+        return
+
+    if endpoint.server_version is not None and endpoint.server_alias is not None:
+        raise MlflowException.invalid_parameter_value(
+            "server_version and server_alias are mutually exclusive"
+        )
+    if endpoint.server_name is not None:
+        if not isinstance(endpoint.server_name, str):
+            raise MlflowException.invalid_parameter_value("server_name must be a string")
+        validate_mcp_server_name(endpoint.server_name)
+
+    for field, value in (
+        ("server_version", endpoint.server_version),
+        ("server_alias", endpoint.server_alias),
+    ):
+        if value is None:
+            continue
+        if endpoint.server_name is None:
+            raise MlflowException.invalid_parameter_value(f"{field} requires server_name")
+        if not isinstance(value, str) or not value:
+            raise MlflowException.invalid_parameter_value(f"{field} must be a nonempty string")
+    if endpoint.server_alias is not None:
+        _validate_alias_name(endpoint.server_alias, resource_type="MCP server")
+
+    config = endpoint.client_config
+    if config is None:
+        config = {"type": endpoint.transport_type, "url": endpoint.url}
+    if not isinstance(config, dict):
+        raise MlflowException.invalid_parameter_value("client_config must be a dictionary")
+
+    # Agent Plugins v1: https://agent-plugins.org/specification#72-mcp-servers
+    transport = config.get("type")
+    if transport in ("streamable-http", "sse"):
+        _validate_agent_plugin_mcp_remote(config)
+    elif transport == "stdio":
+        _validate_agent_plugin_mcp_stdio(config)
+    else:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.type must be streamable-http, sse, or stdio"
+        )
+
+    if endpoint.url is not None and endpoint.url != config.get("url"):
+        raise MlflowException.invalid_parameter_value("url conflicts with client_config")
+    if endpoint.transport_type is not None and endpoint.transport_type != transport:
+        raise MlflowException.invalid_parameter_value("transport_type conflicts with client_config")
+
+
+def _validate_agent_plugin_mcp_remote(config):
+    _validate_agent_plugin_mcp_url(config.get("url"))
+    if config.keys() - {"type", "url", "headers"}:
+        raise MlflowException.invalid_parameter_value("client_config contains unsupported fields")
+
+    _validate_agent_plugin_mcp_headers(config.get("headers", {}))
+
+
+def _validate_agent_plugin_mcp_headers(headers):
+    if not isinstance(headers, dict) or any(
+        not isinstance(name, str) or not isinstance(value, str) for name, value in headers.items()
+    ):
+        raise MlflowException.invalid_parameter_value(
+            "client_config.headers must be an object of strings"
+        )
+    seen_names = set()
+    for name, value in headers.items():
+        normalized_name = name.lower()
+        if not _HTTP_HEADER_NAME_REGEX.fullmatch(name) or normalized_name in seen_names:
+            raise MlflowException.invalid_parameter_value(
+                "client_config.headers must have valid, case-insensitively unique names"
+            )
+        if value != value.strip(" \t") or any(
+            (ord(char) < _ASCII_SPACE_CODEPOINT and char != "\t")
+            or ord(char) == _ASCII_DELETE_CODEPOINT
+            or ord(char) > _LATIN1_MAX_CODEPOINT
+            for char in value
+        ):
+            raise MlflowException.invalid_parameter_value(
+                "client_config.headers must contain valid HTTP header values"
+            )
+        seen_names.add(normalized_name)
+
+
+def _validate_agent_plugin_mcp_stdio(config):
+    command = config.get("command")
+    valid_command = False
+    if isinstance(command, str) and command:
+        plugin_relative = command.startswith("./")
+        bare_executable = not any(char.isspace() or char in "/\\" for char in command)
+        valid_command = plugin_relative or bare_executable
+    if not valid_command:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.command must be a bare executable or ./ plugin-relative path"
+        )
+
+    if "args" in config:
+        args = config["args"]
+        if not isinstance(args, list) or any(not isinstance(arg, str) for arg in args):
+            raise MlflowException.invalid_parameter_value(
+                "client_config.args must be a list of strings"
+            )
+    if "cwd" in config:
+        cwd = config["cwd"]
+        valid_cwd = isinstance(cwd, str) and (
+            cwd.startswith(("./", "${PLUGIN_ROOT}/", "${PLUGIN_DATA}/"))
+            or cwd in ("${PLUGIN_ROOT}", "${PLUGIN_DATA}")
+        )
+        if not valid_cwd:
+            raise MlflowException.invalid_parameter_value(
+                "client_config.cwd must be rooted at ./, ${PLUGIN_ROOT}, or ${PLUGIN_DATA}"
+            )
+    if config.keys() - {"type", "command", "args", "env", "cwd"}:
+        raise MlflowException.invalid_parameter_value("client_config contains unsupported fields")
+
+    env = config.get("env", {})
+    if not isinstance(env, dict) or any(
+        not isinstance(name, str) or not isinstance(value, str) for name, value in env.items()
+    ):
+        raise MlflowException.invalid_parameter_value(
+            "client_config.env must be an object of strings"
+        )
+    if {"PLUGIN_ROOT", "PLUGIN_DATA"} & env.keys():
+        raise MlflowException.invalid_parameter_value(
+            "client_config.env must not override PLUGIN_ROOT or PLUGIN_DATA"
+        )
+
+
+def _validate_agent_plugin_mcp_url(url):
+    if not isinstance(url, str) or not url:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must be an absolute HTTP(S) URL"
+        )
+    invalid_characters = "\\" in url or any(
+        char.isspace() or ord(char) < _ASCII_SPACE_CODEPOINT or ord(char) == _ASCII_DELETE_CODEPOINT
+        for char in url
+    )
+    if invalid_characters:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must be an absolute HTTP(S) URL"
+        )
+    if _INVALID_URL_PERCENT_ESCAPE_REGEX.search(url):
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must contain valid percent escapes"
+        )
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        host = parsed.hostname
+        _ = parsed.port
+    except ValueError:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must be a valid HTTP(S) URL"
+        ) from None
+    if parsed.scheme not in ("http", "https") or not host:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must be an absolute HTTP(S) URL"
+        )
+    if parsed.username is not None or parsed.password is not None or "#" in url:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must not contain userinfo or a fragment"
+        )
+    if (
+        "[" in parsed.netloc or "]" in parsed.netloc
+    ) and not _BRACKETED_URL_AUTHORITY_REGEX.fullmatch(parsed.netloc):
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must be a valid HTTP(S) URL"
+        )
+    if parsed.scheme != "http" or host == "localhost":
+        return
+    try:
+        loopback = ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        loopback = False
+    if not loopback:
+        raise MlflowException.invalid_parameter_value(
+            "client_config.url must use HTTPS except for loopback hosts"
+        )
 
 
 def _validate_organization_name(organization):
