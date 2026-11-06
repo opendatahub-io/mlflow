@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import SkillStatus
 from mlflow.entities.skill_source import (
     GitSource,
@@ -35,6 +36,8 @@ class AgentPluginVersion:
     last_updated_by: str | None = None
     creation_timestamp: int | None = None
     last_updated_timestamp: int | None = None
+    status_reason: str | None = None
+    mcp_servers: dict[str, MCPAccessEndpoint] = field(default_factory=dict)
 
     def __post_init__(self):
         self.workspace = resolve_entity_workspace_name(self.workspace)
@@ -46,6 +49,21 @@ class AgentPluginVersion:
                 "Failed to parse AgentPluginVersion response: expected a dictionary"
             )
         try:
+            status_reason = data.get("status_reason")
+            if status_reason is not None and not isinstance(status_reason, str):
+                raise TypeError("status_reason must be a string or null")
+            skills = data.get("skills")
+            if skills is None:
+                skills = []
+            if not isinstance(skills, list) or any(not isinstance(skill, str) for skill in skills):
+                raise TypeError("skills must be a list of strings")
+            mcp_servers = data.get("mcp_servers")
+            if mcp_servers is None:
+                mcp_servers = {}
+            if not isinstance(mcp_servers, dict) or any(
+                not isinstance(name, str) for name in mcp_servers
+            ):
+                raise TypeError("mcp_servers must be a dictionary with string keys")
             plugin_json = data["plugin_json"]
             if not isinstance(plugin_json, dict):
                 raise TypeError("plugin_json must be a dictionary")
@@ -63,13 +81,18 @@ class AgentPluginVersion:
                 source_type=source_type,
                 status=SkillStatus(data["status"]) if data.get("status") else SkillStatus.ACTIVE,
                 tags=data.get("tags") or {},
-                skills=data.get("skills") or [],
+                skills=skills,
+                mcp_servers={
+                    name: MCPAccessEndpoint.from_dict(endpoint)
+                    for name, endpoint in mcp_servers.items()
+                },
                 aliases=data.get("aliases") or [],
                 workspace=data.get("workspace"),
                 created_by=data.get("created_by"),
                 last_updated_by=data.get("last_updated_by"),
                 creation_timestamp=data.get("creation_timestamp"),
                 last_updated_timestamp=data.get("last_updated_timestamp"),
+                status_reason=status_reason,
             )
         except KeyError as e:
             raise MlflowException.invalid_parameter_value(

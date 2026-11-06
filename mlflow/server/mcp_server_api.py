@@ -305,9 +305,9 @@ class AliasResponse(BaseModel):
 
 class MCPAccessEndpointSummaryResponse(BaseModel):
     id: str
-    server_name: str
-    url: str
-    transport_type: str = "streamable-http"
+    server_name: str | None = None
+    url: str | None = None
+    transport_type: str | None = None
     workspace: str | None = None
     server_version: str | None = None
     server_alias: str | None = None
@@ -319,11 +319,14 @@ class MCPAccessEndpointSummaryResponse(BaseModel):
 
     @classmethod
     def from_entity(cls, entity: MCPAccessEndpoint) -> MCPAccessEndpointSummaryResponse:
+        transport_type = None
+        if entity.transport_type is not None:
+            transport_type = entity.transport_type.value
         return cls(
             id=entity.id,
             server_name=entity.server_name,
             url=entity.url,
-            transport_type=str(entity.transport_type),
+            transport_type=transport_type,
             workspace=entity.workspace,
             server_version=entity.server_version,
             server_alias=entity.server_alias,
@@ -425,9 +428,9 @@ class MCPServerVersionResponse(BaseModel):
 
 class MCPAccessEndpointResponse(BaseModel):
     id: str
-    server_name: str
-    url: str
-    transport_type: str = "streamable-http"
+    server_name: str | None = None
+    url: str | None = None
+    transport_type: str | None = None
     workspace: str | None = None
     tools: list[MCPToolResponsePayload] | None = None
     server_version: str | None = None
@@ -440,6 +443,9 @@ class MCPAccessEndpointResponse(BaseModel):
 
     @classmethod
     def from_entity(cls, entity: MCPAccessEndpoint) -> MCPAccessEndpointResponse:
+        transport_type = None
+        if entity.transport_type is not None:
+            transport_type = entity.transport_type.value
         tools = None
         if entity.resolved_version is not None and entity.resolved_version.tools is not None:
             tools = [MCPToolResponsePayload(**t.to_dict()) for t in entity.resolved_version.tools]
@@ -447,7 +453,7 @@ class MCPAccessEndpointResponse(BaseModel):
             id=entity.id,
             server_name=entity.server_name,
             url=entity.url,
-            transport_type=str(entity.transport_type),
+            transport_type=transport_type,
             workspace=entity.workspace,
             tools=tools,
             server_version=entity.server_version,

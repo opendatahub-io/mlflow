@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import pytest
 
 from mlflow.entities.skill import SkillStatus
@@ -17,6 +19,7 @@ def test_skill_version_defaults():
     sv = SkillVersion(name="code-review", version=1)
     assert sv.organization == ""
     assert sv.status == SkillStatus.ACTIVE
+    assert sv.status_reason is None
     assert sv.aliases == []
     assert sv.workspace == resolve_entity_workspace_name(None)
 
@@ -91,3 +94,21 @@ def test_skill_version_from_dict_invalid_source_type_raises_mlflow_exception():
 def test_skill_version_from_dict_missing_field():
     with pytest.raises(MlflowException, match="missing required field"):
         SkillVersion.from_dict({"name": "code-review"})
+
+
+@pytest.mark.parametrize("reason", [None, "", "Ready for review"])
+def test_skill_version_status_reason_roundtrip(reason):
+    version = SkillVersion.from_dict({
+        "name": "skill",
+        "version": 1,
+        "status": "draft",
+        "status_reason": reason,
+    })
+    assert version.status == SkillStatus.DRAFT
+    assert version.status_reason == reason
+    assert SkillVersion.from_dict(asdict(version)) == version
+
+
+def test_skill_version_invalid_status_reason():
+    with pytest.raises(MlflowException, match="status_reason must be a string or null"):
+        SkillVersion.from_dict({"name": "skill", "version": 1, "status_reason": 1})
