@@ -1,3 +1,6 @@
+from copy import deepcopy
+from dataclasses import asdict
+
 import pytest
 
 from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
@@ -143,6 +146,82 @@ def test_mcp_access_endpoint_from_dict():
     })
     assert endpoint.transport_type == MCPRemoteTransportType.STREAMABLE_HTTP
     assert endpoint.resolved_version.version == "1.0.0"
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"id": "ae-reference"},
+        {"client_config": {"type": "stdio", "command": "./bin/server"}},
+        {"client_config": {"type": "streamable-http", "url": "https://example.com/mcp"}},
+    ],
+)
+def test_mcp_access_endpoint_configuration_and_reference_forms(data):
+    endpoint = MCPAccessEndpoint(**data)
+    assert endpoint.id == data.get("id")
+    assert endpoint.client_config == data.get("client_config")
+    assert endpoint.server_name is None
+    assert endpoint.url is None
+    assert endpoint.transport_type is None
+    assert MCPAccessEndpoint.from_dict(data) == endpoint
+    assert MCPAccessEndpoint.from_dict(asdict(endpoint)) == endpoint
+
+
+@pytest.mark.parametrize(
+    ("fields", "expected"),
+    [
+        ({}, MCPRemoteTransportType.STREAMABLE_HTTP),
+        ({"transport_type": None}, MCPRemoteTransportType.STREAMABLE_HTTP),
+        ({"transport_type": MCPRemoteTransportType.SSE}, MCPRemoteTransportType.SSE),
+    ],
+)
+def test_mcp_access_endpoint_legacy_transport_default(fields, expected):
+    endpoint = MCPAccessEndpoint("ae-123", "test/server", "https://example.com/mcp", **fields)
+    assert endpoint.transport_type is expected
+    data = {
+        "id": "ae-123",
+        "server_name": "test/server",
+        "url": "https://example.com/mcp",
+        **fields,
+    }
+    if fields.get("transport_type") is not None:
+        data["transport_type"] = fields["transport_type"].value
+    assert MCPAccessEndpoint.from_dict(data) == endpoint
+
+
+def test_mcp_access_endpoint_fetched_configuration_roundtrip():
+    data = {
+        "id": "ae-123",
+        "server_name": "test/server",
+        "server_alias": "production",
+        "url": None,
+        "transport_type": None,
+        "workspace": "custom",
+        "created_by": "publisher",
+        "creation_timestamp": 123,
+        "resolved_version": {
+            "name": "test/server",
+            "version": "1.0.0",
+            "server_json": {},
+        },
+        "client_config": {
+            "type": "stdio",
+            "command": "./bin/server",
+            "args": ["${PLUGIN_DATA}/state"],
+            "env": {"CONFIG": "${PLUGIN_ROOT}/config.json"},
+        },
+    }
+    original = deepcopy(data)
+    endpoint = MCPAccessEndpoint.from_dict(data)
+    assert data == original
+    assert endpoint.client_config == original["client_config"]
+    assert endpoint.transport_type is None
+    assert endpoint.resolved_version.version == "1.0.0"
+    assert endpoint.server_alias == "production"
+    assert endpoint.workspace == "custom"
+    assert endpoint.created_by == "publisher"
+    assert endpoint.creation_timestamp == 123
+    assert MCPAccessEndpoint.from_dict(asdict(endpoint)) == endpoint
 
 
 @pytest.mark.parametrize(
