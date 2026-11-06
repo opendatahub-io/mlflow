@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 @experimental(version="3.15.0")
 @dataclass
 class MCPAccessEndpoint:
-    id: str
-    server_name: str
-    url: str
-    transport_type: MCPRemoteTransportType = MCPRemoteTransportType.STREAMABLE_HTTP
+    id: str | None = None
+    server_name: str | None = None
+    url: str | None = None
+    transport_type: MCPRemoteTransportType | None = None
     server_version: str | None = None
     server_alias: str | None = None
     resolved_version: MCPServerVersion | None = field(default=None, repr=False)
@@ -27,8 +27,11 @@ class MCPAccessEndpoint:
     last_updated_by: str | None = None
     creation_timestamp: int | None = None
     last_updated_timestamp: int | None = None
+    client_config: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
+        if self.transport_type is None and self.url is not None and self.client_config is None:
+            self.transport_type = MCPRemoteTransportType.STREAMABLE_HTTP
         self.workspace = resolve_entity_workspace_name(self.workspace)
 
     @classmethod
@@ -41,13 +44,14 @@ class MCPAccessEndpoint:
         try:
             from mlflow.entities.mcp_server_version import MCPServerVersion
 
+            transport_type = None
+            if data.get("transport_type") is not None:
+                transport_type = MCPRemoteTransportType(data["transport_type"])
             return cls(
-                id=data["id"],
-                server_name=data["server_name"],
-                url=data["url"],
-                transport_type=MCPRemoteTransportType(
-                    data.get("transport_type", "streamable-http")
-                ),
+                id=data.get("id"),
+                server_name=data.get("server_name"),
+                url=data.get("url"),
+                transport_type=transport_type,
                 workspace=data.get("workspace"),
                 server_version=data.get("server_version"),
                 server_alias=data.get("server_alias"),
@@ -60,6 +64,7 @@ class MCPAccessEndpoint:
                 last_updated_by=data.get("last_updated_by"),
                 creation_timestamp=data.get("creation_timestamp"),
                 last_updated_timestamp=data.get("last_updated_timestamp"),
+                client_config=data.get("client_config"),
             )
         except KeyError as e:
             raise MlflowException.invalid_parameter_value(

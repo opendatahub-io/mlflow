@@ -34,6 +34,7 @@ class SkillVersion:
     last_updated_by: str | None = None
     creation_timestamp: int | None = None
     last_updated_timestamp: int | None = None
+    status_reason: str | None = None
 
     def __post_init__(self):
         self.workspace = resolve_entity_workspace_name(self.workspace)
@@ -45,6 +46,9 @@ class SkillVersion:
                 "Failed to parse SkillVersion response: expected a dictionary"
             )
         try:
+            status_reason = data.get("status_reason")
+            if status_reason is not None and not isinstance(status_reason, str):
+                raise TypeError("status_reason must be a string or null")
             source_type = SkillSourceType(data["source_type"]) if data.get("source_type") else None
             return cls(
                 name=data["name"],
@@ -63,6 +67,7 @@ class SkillVersion:
                 last_updated_by=data.get("last_updated_by"),
                 creation_timestamp=data.get("creation_timestamp"),
                 last_updated_timestamp=data.get("last_updated_timestamp"),
+                status_reason=status_reason,
             )
         except KeyError as e:
             raise MlflowException.invalid_parameter_value(
