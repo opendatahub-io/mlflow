@@ -10,7 +10,8 @@ import pytest
 from fastapi import FastAPI
 from starlette.testclient import TestClient
 
-from mlflow.entities.mcp_server import MCPStatus, MCPTool
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
+from mlflow.entities.mcp_server import MCPRemoteTransportType, MCPStatus, MCPTool
 from mlflow.exceptions import MlflowException
 from mlflow.protos.databricks_pb2 import (
     PERMISSION_DENIED,
@@ -23,6 +24,8 @@ from mlflow.server.auth.permissions import get_permission
 from mlflow.server.fastapi_app import add_registry_exception_handlers
 from mlflow.server.mcp_server_api import (
     CreateMCPServerRequest,
+    MCPAccessEndpointResponse,
+    MCPAccessEndpointSummaryResponse,
     UpdateMCPServerRequest,
     _ensure_version_create_parent_access,
     create_mcp_server,
@@ -1860,6 +1863,25 @@ def test_delete_version(client):
     )
     r = client.delete(f"{PREFIX}/{_encode_path_param('com.example/dv')}" + "/versions/1.0.0")
     assert r.status_code == 200
+
+
+@pytest.mark.parametrize("model", [MCPAccessEndpointResponse, MCPAccessEndpointSummaryResponse])
+@pytest.mark.parametrize("transport", list(MCPRemoteTransportType))
+def test_endpoint_response_preserves_remote_transport(model, transport):
+    endpoint = MCPAccessEndpoint("ae-1", "test/server", "https://example.com", transport)
+    result = model.from_entity(endpoint)
+    assert result.transport_type == transport.value
+    assert result.server_name == "test/server"
+    assert result.url == "https://example.com"
+
+
+@pytest.mark.parametrize("model", [MCPAccessEndpointResponse, MCPAccessEndpointSummaryResponse])
+def test_endpoint_response_allows_null_fields(model):
+    result = model.from_entity(MCPAccessEndpoint(id="ae-1")).model_dump(mode="json")
+    assert result["id"] == "ae-1"
+    assert result["server_name"] is None
+    assert result["url"] is None
+    assert result["transport_type"] is None
 
 
 def test_create_endpoint_with_version(client):
