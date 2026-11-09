@@ -161,6 +161,7 @@ def test_agent_plugin_version_empty_members(fields):
         {"mcp_servers": []},
         {"mcp_servers": {1: {}}},
         {"mcp_servers": {"x": 1}},
+        {"mcp_servers": {"x": {"id": "ae-1", "client_config": []}}},
     ],
 )
 def test_agent_plugin_version_invalid_members(fields):

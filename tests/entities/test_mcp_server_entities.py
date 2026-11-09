@@ -152,6 +152,8 @@ def test_mcp_access_endpoint_from_dict():
     "data",
     [
         {"id": "ae-reference"},
+        {"client_config": None},
+        {"client_config": {}},
         {"client_config": {"type": "stdio", "command": "./bin/server"}},
         {"client_config": {"type": "streamable-http", "url": "https://example.com/mcp"}},
     ],
@@ -165,6 +167,18 @@ def test_mcp_access_endpoint_configuration_and_reference_forms(data):
     assert endpoint.transport_type is None
     assert MCPAccessEndpoint.from_dict(data) == endpoint
     assert MCPAccessEndpoint.from_dict(asdict(endpoint)) == endpoint
+
+
+@pytest.mark.parametrize("client_config", [[], "", 0])
+def test_mcp_access_endpoint_from_dict_rejects_invalid_client_config(client_config):
+    with pytest.raises(
+        MlflowException,
+        match=(
+            "Failed to parse MCP access endpoint response: "
+            "client_config must be a dictionary or null"
+        ),
+    ):
+        MCPAccessEndpoint.from_dict({"client_config": client_config})
 
 
 @pytest.mark.parametrize(
