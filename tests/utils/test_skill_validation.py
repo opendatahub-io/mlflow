@@ -174,6 +174,7 @@ def test_plugin_mcp_members_preserve_new_and_fetched_values():
                     "X-Tenant": "public tenant",
                     "X-Empty": "",
                     "X-Tab": "internal\ttab",
+                    "Cookie": "locale=en",
                 },
             }
         ),
@@ -300,6 +301,24 @@ def test_plugin_mcp_invalid_creation(fields, error):
 def test_plugin_mcp_invalid_configuration(config, field):
     with pytest.raises(MlflowException, match=rf"mcp_servers\['search'\].*{field}") as exc:
         _validate_agent_plugin_mcp_servers({"search": MCPAccessEndpoint(client_config=config)})
+    assert "private-value" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "name", ["Authorization", "aUtHoRiZaTiOn", "Proxy-Authorization", "pRoXy-AuThOrIzAtIoN"]
+)
+def test_plugin_mcp_rejects_denied_headers(name):
+    config = {
+        "type": "streamable-http",
+        "url": "https://example.com/mcp",
+        "headers": {name: "Bearer private-value"},
+    }
+    with pytest.raises(
+        MlflowException,
+        match=r"mcp_servers\['search'\].*authentication must be managed by the client",
+    ) as exc:
+        _validate_agent_plugin_mcp_servers({"search": MCPAccessEndpoint(client_config=config)})
+    assert name in str(exc.value)
     assert "private-value" not in str(exc.value)
 
 

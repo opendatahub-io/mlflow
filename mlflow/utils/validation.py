@@ -775,6 +775,7 @@ _MAX_BULK_REGISTER_SKILLS = 500
 _ASCII_SPACE_CODEPOINT = 32  # ASCII control characters fall below the space character.
 _ASCII_DELETE_CODEPOINT = 127  # DEL is a separate ASCII control character.
 _LATIN1_MAX_CODEPOINT = 255  # Largest character value representable in one Latin-1 byte.
+_MCP_CREDENTIAL_HEADER_DENYLIST = frozenset({"authorization", "proxy-authorization"})
 
 # Skill names: lowercase ASCII letters, digits, and single hyphens; alphanumeric first
 # and last characters; no consecutive hyphens.
@@ -912,6 +913,11 @@ def _validate_agent_plugin_mcp_headers(headers):
         if not _HTTP_HEADER_NAME_REGEX.fullmatch(name) or normalized_name in seen_names:
             raise MlflowException.invalid_parameter_value(
                 "client_config.headers must have valid, case-insensitively unique names"
+            )
+        if normalized_name in _MCP_CREDENTIAL_HEADER_DENYLIST:
+            raise MlflowException.invalid_parameter_value(
+                f"client_config.headers must not include {name!r}; "
+                "authentication must be managed by the client"
             )
         if value != value.strip(" \t") or any(
             (ord(char) < _ASCII_SPACE_CODEPOINT and char != "\t")
