@@ -44,6 +44,9 @@ class MCPAccessEndpoint:
         try:
             from mlflow.entities.mcp_server_version import MCPServerVersion
 
+            client_config = data.get("client_config")
+            if client_config is not None and not isinstance(client_config, dict):
+                raise TypeError("client_config must be a dictionary or null")
             transport_type = None
             if data.get("transport_type") is not None:
                 transport_type = MCPRemoteTransportType(data["transport_type"])
@@ -64,7 +67,7 @@ class MCPAccessEndpoint:
                 last_updated_by=data.get("last_updated_by"),
                 creation_timestamp=data.get("creation_timestamp"),
                 last_updated_timestamp=data.get("last_updated_timestamp"),
-                client_config=data.get("client_config"),
+                client_config=client_config,
             )
         except KeyError as e:
             raise MlflowException.invalid_parameter_value(
