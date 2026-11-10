@@ -18,6 +18,7 @@ from mlflow.store.model_registry.sqlalchemy_workspace_store import (
     WorkspaceAwareSqlAlchemyStore as WorkspaceAwareRegistryStore,
 )
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
     SqlAssessmentDailyRollup,
     SqlSpanCostDailyRollup,
     SqlTraceMetricDailyRollup,
@@ -873,12 +874,16 @@ def test_all_workspace_root_models_have_spec():
 
     # Gateway resources are intentionally excluded due to inter-table FK
     # dependencies that make moving them independently unsafe.
+    #
+    # Agent plugins can't move yet: a plugin version and the skill versions it pins
+    # must stay in one workspace, so they would have to move together.
     _INTENTIONALLY_OMITTED = {
         SqlGatewaySecret,
         SqlGatewayEndpoint,
         SqlGatewayModelDefinition,
         SqlGatewayBudgetPolicy,
         SqlGatewayGuardrail,
+        SqlAgentPlugin,
     }
 
     missing = {
