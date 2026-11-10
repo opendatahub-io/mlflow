@@ -6,6 +6,7 @@ from mlflow.entities import MCPAccessEndpoint
 from mlflow.exceptions import MlflowException
 from mlflow.utils.validation import (
     MAX_MCP_MEMBER_NAME_LENGTH,
+    MAX_MCP_SERVER_ALIAS_LENGTH,
     MAX_MODEL_REGISTRY_TAG_VALUE_LENGTH,
     _validate_agent_plugin_mcp_servers,
     _validate_agent_plugin_name,
@@ -214,6 +215,15 @@ def test_plugin_mcp_valid_remote_url(url):
     assert endpoint.client_config["url"] == url
 
 
+@pytest.mark.parametrize("alias", ["prod.v1", "x" * MAX_MCP_SERVER_ALIAS_LENGTH])
+def test_plugin_mcp_accepts_server_alias(alias):
+    endpoint = MCPAccessEndpoint(
+        server_name="test/server", server_alias=alias, url="https://example.com/mcp"
+    )
+    _validate_agent_plugin_mcp_servers({"search": endpoint})
+    assert endpoint.server_alias == alias
+
+
 @pytest.mark.parametrize(
     ("members", "field"),
     [
@@ -239,6 +249,18 @@ def test_plugin_mcp_invalid_members(members, field):
         ({}, "client_config.type"),
         ({"server_version": "1.0.0"}, "server_version requires server_name"),
         ({"server_alias": "latest"}, "server_alias requires server_name"),
+        (
+            {"server_name": "test/server", "server_alias": ""},
+            "server_alias must be a nonempty string",
+        ),
+        (
+            {"server_name": "test/server", "server_alias": 1},
+            "server_alias must be a nonempty string",
+        ),
+        (
+            {"server_name": "test/server", "server_alias": "x" * (MAX_MCP_SERVER_ALIAS_LENGTH + 1)},
+            rf"server_alias.*{MAX_MCP_SERVER_ALIAS_LENGTH}",
+        ),
         (
             {"server_name": "test/server", "server_version": "1", "server_alias": "latest"},
             "mutually exclusive",
