@@ -18,6 +18,7 @@ from mlflow.store.model_registry.dbmodels.models import (
     SqlWebhook,
 )
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPluginVersionMember,
     SqlEvaluationDataset,
     SqlExperiment,
     SqlExperimentTag,
@@ -313,6 +314,46 @@ def _find_conflicts(
     return [row[0] for row in conn.execute(stmt.order_by(name_col)).fetchall()]
 
 
+def _find_plugin_versions_pinning_skills(
+    conn,
+    workspace: str,
+    identities: list[tuple[str, str]] | None,
+) -> list[str]:
+    """Return the agent plugin versions in *workspace* that pin any of the given skills.
+
+    *identities* is a list of (organization, name) pairs, or ``None`` for every skill in
+    the workspace. Plugin versions are formatted as ``@organization/name/version``.
+    """
+    members = SqlAgentPluginVersionMember.__table__
+    skills = SqlSkill.__table__
+    stmt = (
+        sa
+        .select(members.c.plugin_organization, members.c.plugin_name, members.c.plugin_version)
+        .select_from(
+            members.join(
+                skills,
+                sa.and_(
+                    skills.c.workspace == members.c.plugin_workspace,
+                    skills.c.organization == members.c.member_organization,
+                    skills.c.name == members.c.member_name,
+                ),
+            )
+        )
+        .where(members.c.plugin_workspace == workspace)
+        .distinct()
+    )
+    if identities is None:
+        rows = conn.execute(stmt).fetchall()
+    else:
+        rows = []
+        for chunk in chunk_list(identities, _SKILL_ID_CHUNK_SIZE):
+            rows.extend(conn.execute(stmt.where(_skill_filter_condition(skills, chunk))))
+    return sorted({
+        f"{_format_skill_name(organization, name)}/{version}"
+        for organization, name, version in rows
+    })
+
+
 def _resolve_target_artifact_root(
     workspace_store: AbstractStore,
     target_workspace: str,
@@ -485,6 +526,18 @@ def move_resources(
                     "Move aborted: MLflow-backed skill versions would lose access to their "
                     f"artifact content in {target_label}. Remove or re-register those "
                     "versions before retrying."
+                )
+
+            if pinning := _find_plugin_versions_pinning_skills(conn, source_workspace, name_filter):
+                formatted = format_truncated_list(
+                    [repr(plugin_version) for plugin_version in pinning],
+                    max_rows=None if verbose else 10,
+                )
+                raise RuntimeError(
+                    "Move aborted: agent plugin versions pin these skills, and a plugin "
+                    "version must stay in the workspace of the skills it pins. Moving agent "
+                    "plugins is not yet supported, so delete those plugins first, then retry: "
+                    f"{formatted}"
                 )
 
         table = spec.table
