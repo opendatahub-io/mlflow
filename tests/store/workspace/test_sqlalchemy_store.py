@@ -9,12 +9,15 @@ from mlflow.entities.workspace import Workspace, WorkspaceDeletionMode
 from mlflow.exceptions import MlflowException
 from mlflow.store.artifact.artifact_repo import ArtifactRepository
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMember,
     SqlGatewayEndpoint,
     SqlSkill,
     SqlSkillVersion,
 )
 from mlflow.store.workspace.dbmodels.models import SqlWorkspace
-from mlflow.store.workspace.sqlalchemy_store import SqlAlchemyStore
+from mlflow.store.workspace.sqlalchemy_store import _WORKSPACE_ROOT_MODELS, SqlAlchemyStore
 from mlflow.utils.workspace_utils import DEFAULT_WORKSPACE_NAME
 
 
@@ -650,6 +653,14 @@ def test_delete_workspace_set_default_merges_unnamed_endpoints(workspace_store):
     }
 
 
+def test_workspace_root_models_order_agent_plugin_before_skill():
+    # CASCADE workspace-delete relies on this ordering: a plugin version's member
+    # rows (agent_plugin_version_members -> skill_versions, NO ACTION) must be deleted
+    # before the skill versions they reference. There is no ORM relationship for
+    # SQLAlchemy to derive the dependency, so only this list order enforces it.
+    assert _WORKSPACE_ROOT_MODELS.index(SqlAgentPlugin) < _WORKSPACE_ROOT_MODELS.index(SqlSkill)
+
+
 def _seed_skill_with_version(session, workspace, source_type="git"):
     session.add(SqlSkill(workspace=workspace, organization="acme", name="code-review"))
     session.add(
@@ -662,6 +673,37 @@ def _seed_skill_with_version(session, workspace, source_type="git"):
             source="mlflow-artifacts:/skills/@acme/code-review/content"
             if source_type == "mlflow"
             else "s.git",
+        )
+    )
+
+
+def _seed_plugin_with_member(session, workspace):
+    """A plugin version whose single member points at a skill version in the same workspace."""
+    _seed_skill_with_version(session, workspace)
+    session.add(SqlAgentPlugin(workspace=workspace, organization="acme", name="pr"))
+    session.add(
+        SqlAgentPluginVersion(
+            workspace=workspace,
+            organization="acme",
+            name="pr",
+            version="1.0.0",
+            plugin_json={"name": "pr", "version": "1.0.0"},
+            source_type="assembled",
+            source="assembled",
+        )
+    )
+    # Flush the parents first: the member has no ORM relationship to
+    # skill_versions (only a DB FK), so its insert must follow that row.
+    session.flush()
+    session.add(
+        SqlAgentPluginVersionMember(
+            plugin_workspace=workspace,
+            plugin_organization="acme",
+            plugin_name="pr",
+            plugin_version="1.0.0",
+            member_organization="acme",
+            member_name="code-review",
+            member_version=1,
         )
     )
 
@@ -690,10 +732,29 @@ def test_delete_workspace_set_default_allows_external_skill_sources(workspace_st
         assert session.query(SqlSkillVersion.workspace).one()[0] == DEFAULT_WORKSPACE_NAME
 
 
-def test_delete_workspace_cascade_removes_skill_graph(workspace_store):
+def test_delete_workspace_set_default_refuses_to_move_agent_plugins(workspace_store):
+    # Moving agent plugins between workspaces is not implemented yet, so SET_DEFAULT must
+    # refuse
     workspace_store.create_workspace(Workspace(name="team-a", description=None))
     with workspace_store.ManagedSessionMaker(read_only=False) as session:
-        _seed_skill_with_version(session, "team-a")
+        session.add(SqlAgentPlugin(workspace="team-a", organization="acme", name="pr"))
+
+    with pytest.raises(MlflowException, match="agent plugin") as exc:
+        workspace_store.delete_workspace("team-a", mode=WorkspaceDeletionMode.SET_DEFAULT)
+    assert exc.value.error_code == "INVALID_STATE"
+
+    # Refused before anything moved: the workspace and its rows are untouched.
+    assert workspace_store.get_workspace("team-a").name == "team-a"
+    with workspace_store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPlugin).one().workspace == "team-a"
+
+
+def test_delete_workspace_cascade_removes_skill_and_plugin_graph(workspace_store):
+    # End-to-end guard for the ordering above: a plugin whose member references a
+    # skill version, all in one workspace, must CASCADE-delete cleanly.
+    workspace_store.create_workspace(Workspace(name="team-a", description=None))
+    with workspace_store.ManagedSessionMaker(read_only=False) as session:
+        _seed_plugin_with_member(session, "team-a")
 
     workspace_store.delete_workspace("team-a", mode=WorkspaceDeletionMode.CASCADE)
 
@@ -701,6 +762,9 @@ def test_delete_workspace_cascade_removes_skill_graph(workspace_store):
         for model in (
             SqlSkill,
             SqlSkillVersion,
+            SqlAgentPlugin,
+            SqlAgentPluginVersion,
+            SqlAgentPluginVersionMember,
         ):
             assert session.query(model).count() == 0
 

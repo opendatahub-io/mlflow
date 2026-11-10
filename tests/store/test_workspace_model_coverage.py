@@ -69,7 +69,9 @@ def test_all_workspace_models_handled_in_get_query():
     for ws_path in WORKSPACE_STORE_PATHS:
         handled |= _models_handled_by_get_query(ws_path)
 
-    # Match columns named `workspace` or ending in `_workspace`.
+    # Match column named `workspace` or ending in `_workspace`. A table does not
+    # always own the column outright: `agent_plugin_version_members` calls it
+    # `plugin_workspace`
     models_with_column: set[str] = set()
     for mapper in Base.registry.mappers:
         if any(col.key == "workspace" or col.key.endswith("_workspace") for col in mapper.columns):
