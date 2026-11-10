@@ -768,6 +768,7 @@ def _validate_alias_name_reserved(alias):
 MAX_SKILL_NAME_LENGTH = 64
 MAX_AGENT_PLUGIN_NAME_LENGTH = 64
 MAX_MCP_MEMBER_NAME_LENGTH = 128
+MAX_MCP_SERVER_ALIAS_LENGTH = 256
 MAX_ORGANIZATION_NAME_LENGTH = 64
 MAX_SKILL_VERSION = 2_147_483_647
 _MAX_BULK_REGISTER_SKILLS = 500
@@ -866,8 +867,7 @@ def _validate_agent_plugin_mcp_member(endpoint: MCPAccessEndpoint) -> None:
             raise MlflowException.invalid_parameter_value(f"{field} requires server_name")
         if not isinstance(value, str) or not value:
             raise MlflowException.invalid_parameter_value(f"{field} must be a nonempty string")
-    if endpoint.server_alias is not None:
-        _validate_alias_name(endpoint.server_alias, resource_type="MCP server")
+    _validate_length_limit("server_alias", MAX_MCP_SERVER_ALIAS_LENGTH, endpoint.server_alias)
 
     config = endpoint.client_config
     if config is None:
