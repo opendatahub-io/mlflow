@@ -19,6 +19,8 @@ from mlflow.store.model_registry.sqlalchemy_workspace_store import (
 )
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMember,
     SqlAssessmentDailyRollup,
     SqlSpanCostDailyRollup,
     SqlTraceMetricDailyRollup,
@@ -576,6 +578,78 @@ def test_move_skills_blocks_mlflow_backed_skills(tracking_store, workspace_store
         if not dry_run:
             with pytest.raises(MlflowException, match="not found"):
                 tracking_store.get_skill("git-skill")
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_move_skills_blocks_skills_pinned_by_agent_plugins(
+    tracking_store, workspace_store, engine, dry_run
+):
+    # A plugin version and the skill versions it pins share one workspace column, so
+    # moving a pinned skill alone would leave the plugin version pointing across
+    # workspaces. Moving the plugin with it isn't supported yet.
+    _create_workspace(workspace_store, "team-a")
+    with WorkspaceContext(DEFAULT_WORKSPACE_NAME):
+        tracking_store.create_skill("code-review", organization="acme")
+        tracking_store.create_skill_version(
+            "code-review",
+            organization="acme",
+            source_type="git",
+            source="https://example.com/skills.git",
+        )
+        tracking_store.create_skill("lint")
+    with tracking_store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlAgentPlugin(organization="acme", name="pr-workflow"))
+        session.add(
+            SqlAgentPluginVersion(
+                organization="acme",
+                name="pr-workflow",
+                version="1.0.0",
+                plugin_json={"name": "pr-workflow", "version": "1.0.0"},
+                source_type="assembled",
+                source="assembled",
+            )
+        )
+        session.flush()
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_organization="acme",
+                plugin_name="pr-workflow",
+                plugin_version="1.0.0",
+                member_organization="acme",
+                member_name="code-review",
+                member_version=1,
+            )
+        )
+
+    for names in (["@acme/code-review"], None):
+        with pytest.raises(
+            RuntimeError,
+            match=r"(?s)agent plugin versions pin these skills.*'@acme/pr-workflow/1\.0\.0'",
+        ):
+            move_resources(
+                engine,
+                workspace_store,
+                source_workspace=DEFAULT_WORKSPACE_NAME,
+                target_workspace="team-a",
+                resource_type="skills",
+                names=names,
+                dry_run=dry_run,
+            )
+
+    # A skill that no plugin version pins still moves.
+    result = move_resources(
+        engine,
+        workspace_store,
+        source_workspace=DEFAULT_WORKSPACE_NAME,
+        target_workspace="team-a",
+        resource_type="skills",
+        names=["lint"],
+        dry_run=dry_run,
+    )
+    assert result.names == ["lint"]
+
+    with WorkspaceContext(DEFAULT_WORKSPACE_NAME):
+        assert tracking_store.get_skill("code-review", organization="acme") is not None
 
 
 @pytest.mark.parametrize(
