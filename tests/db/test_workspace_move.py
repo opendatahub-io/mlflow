@@ -20,8 +20,10 @@ from mlflow.store.model_registry.sqlalchemy_workspace_store import (
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlAssessmentDailyRollup,
+    SqlMCPAccessEndpoint,
     SqlSpanCostDailyRollup,
     SqlTraceMetricDailyRollup,
     SqlTraceRollupRebuild,
@@ -652,6 +654,87 @@ def test_move_skills_blocks_skills_pinned_by_agent_plugins(
         assert tracking_store.get_skill("code-review", organization="acme") is not None
 
 
+# ---------------------------------------------------------------------------
+# MCP servers
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_move_mcp_servers_blocks_servers_whose_endpoints_plugins_use(
+    tracking_store, workspace_store, engine, dry_run
+):
+    # An access endpoint moves with its server, but must stay in the workspace of the
+    # plugin versions that use it. Moving agent plugins isn't supported yet.
+    _create_workspace(workspace_store, "team-a")
+    with WorkspaceContext(DEFAULT_WORKSPACE_NAME):
+        for server_name in ("io.github.acme/search", "io.github.acme/unused"):
+            tracking_store.create_mcp_server_version({"name": server_name, "version": "1.0.0"})
+        used = tracking_store.create_mcp_access_endpoint(
+            "io.github.acme/search", "https://search.example.com/mcp", server_version="1.0.0"
+        )
+        tracking_store.create_mcp_access_endpoint(
+            "io.github.acme/unused", "https://unused.example.com/mcp", server_version="1.0.0"
+        )
+    with tracking_store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlAgentPlugin(organization="acme", name="search-tools"))
+        session.add(
+            SqlAgentPluginVersion(
+                organization="acme",
+                name="search-tools",
+                version="1.0.0",
+                plugin_json={"name": "search-tools", "version": "1.0.0"},
+                source_type="assembled",
+                source="assembled",
+            )
+        )
+        session.flush()
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_organization="acme",
+                plugin_name="search-tools",
+                plugin_version="1.0.0",
+                member_name="search",
+                access_endpoint_id=used.id,
+            )
+        )
+
+    for names in (["io.github.acme/search"], None):
+        with pytest.raises(
+            RuntimeError,
+            match=r"(?s)agent plugin versions use access endpoints.*'@acme/search-tools/1\.0\.0'",
+        ):
+            move_resources(
+                engine,
+                workspace_store,
+                source_workspace=DEFAULT_WORKSPACE_NAME,
+                target_workspace="team-a",
+                resource_type="mcp_servers",
+                names=names,
+                dry_run=dry_run,
+            )
+
+    # A server whose endpoints no plugin version uses still moves, endpoints included.
+    result = move_resources(
+        engine,
+        workspace_store,
+        source_workspace=DEFAULT_WORKSPACE_NAME,
+        target_workspace="team-a",
+        resource_type="mcp_servers",
+        names=["io.github.acme/unused"],
+        dry_run=dry_run,
+    )
+    assert result.names == ["io.github.acme/unused"]
+
+    with tracking_store.ManagedSessionMaker() as session:
+        assert {
+            (endpoint.server_name, endpoint.workspace)
+            for endpoint in session.query(SqlMCPAccessEndpoint)
+        } == {
+            ("io.github.acme/search", DEFAULT_WORKSPACE_NAME),
+            ("io.github.acme/unused", DEFAULT_WORKSPACE_NAME if dry_run else "team-a"),
+        }
+
+
 @pytest.mark.parametrize(
     ("bad_name", "match"),
     [
@@ -951,6 +1034,9 @@ def test_all_workspace_root_models_have_spec():
     #
     # Agent plugins can't move yet: a plugin version and the skill versions it pins
     # must stay in one workspace, so they would have to move together.
+    #
+    # Access endpoints move with their MCP server. An endpoint with no server has no
+    # name to select it by.
     _INTENTIONALLY_OMITTED = {
         SqlGatewaySecret,
         SqlGatewayEndpoint,
@@ -958,6 +1044,7 @@ def test_all_workspace_root_models_have_spec():
         SqlGatewayBudgetPolicy,
         SqlGatewayGuardrail,
         SqlAgentPlugin,
+        SqlMCPAccessEndpoint,
     }
 
     missing = {
