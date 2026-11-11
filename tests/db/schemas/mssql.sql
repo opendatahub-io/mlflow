@@ -250,6 +250,7 @@ CREATE TABLE agent_plugin_versions (
 	ref VARCHAR(2048) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	subpath VARCHAR(2048) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	status VARCHAR(20) COLLATE "SQL_Latin1_General_CP1_CI_AS" DEFAULT ('active') NOT NULL,
+	status_reason VARCHAR COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	created_by VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	last_updated_by VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	created_at BIGINT NOT NULL,
@@ -376,15 +377,16 @@ CREATE TABLE logged_models (
 CREATE TABLE mcp_access_endpoints (
 	id VARCHAR(36) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
 	workspace VARCHAR(63) COLLATE "SQL_Latin1_General_CP1_CI_AS" DEFAULT ('default') NOT NULL,
-	server_name VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
+	server_name VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	server_version VARCHAR(128) COLLATE "SQL_Latin1_General_CP1_CS_AS",
 	server_alias VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
-	url VARCHAR(2048) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
-	transport_type VARCHAR(32) COLLATE "SQL_Latin1_General_CP1_CI_AS" DEFAULT ('streamable-http') NOT NULL,
+	url VARCHAR(2048) COLLATE "SQL_Latin1_General_CP1_CI_AS",
+	transport_type VARCHAR(32) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	created_by VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	last_updated_by VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	created_at BIGINT NOT NULL,
 	last_updated_at BIGINT NOT NULL,
+	client_config NVARCHAR COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	CONSTRAINT mcp_access_endpoints_pk PRIMARY KEY (id),
 	CONSTRAINT mcp_access_endpoints_server_fkey FOREIGN KEY(workspace, server_name) REFERENCES mcp_servers (workspace, name) ON DELETE CASCADE ON UPDATE CASCADE
 )
@@ -625,6 +627,7 @@ CREATE TABLE skill_versions (
 	last_updated_by VARCHAR(256) COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	created_at BIGINT NOT NULL,
 	last_updated_at BIGINT NOT NULL,
+	status_reason VARCHAR COLLATE "SQL_Latin1_General_CP1_CI_AS",
 	CONSTRAINT skill_versions_pk PRIMARY KEY (workspace, organization, name, version),
 	CONSTRAINT skill_versions_skill_fkey FOREIGN KEY(workspace, organization, name) REFERENCES skills (workspace, organization, name) ON DELETE CASCADE ON UPDATE CASCADE
 )
@@ -662,6 +665,18 @@ CREATE TABLE webhook_events (
 	action VARCHAR(50) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
 	CONSTRAINT webhook_event_pk PRIMARY KEY (webhook_id, entity, action),
 	CONSTRAINT "FK__webhook_e__webho__2645B050" FOREIGN KEY(webhook_id) REFERENCES webhooks (webhook_id) ON DELETE CASCADE
+)
+
+
+CREATE TABLE agent_plugin_version_mcp_members (
+	plugin_workspace VARCHAR(63) COLLATE "SQL_Latin1_General_CP1_CI_AS" DEFAULT ('default') NOT NULL,
+	plugin_organization VARCHAR(64) COLLATE "SQL_Latin1_General_CP1_CI_AS" DEFAULT ('') NOT NULL,
+	plugin_name VARCHAR(128) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
+	plugin_version VARCHAR(128) COLLATE "SQL_Latin1_General_CP1_CS_AS" NOT NULL,
+	member_name VARCHAR(128) COLLATE "SQL_Latin1_General_CP1_CS_AS" NOT NULL,
+	access_endpoint_id VARCHAR(36) COLLATE "SQL_Latin1_General_CP1_CI_AS" NOT NULL,
+	CONSTRAINT agent_plugin_version_mcp_members_pk PRIMARY KEY (plugin_workspace, plugin_organization, plugin_name, plugin_version, member_name),
+	CONSTRAINT agent_plugin_version_mcp_members_plugin_fkey FOREIGN KEY(plugin_workspace, plugin_organization, plugin_name, plugin_version) REFERENCES agent_plugin_versions (workspace, organization, name, version) ON DELETE CASCADE ON UPDATE CASCADE
 )
 
 

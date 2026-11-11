@@ -59,6 +59,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPluginAlias,
     SqlAgentPluginTag,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlAgentPluginVersionTag,
     SqlAssessmentDailyRollup,
@@ -3550,6 +3551,16 @@ def _seed_skill_registry_graph(session, workspace):
             member_version=1,
         )
     )
+    session.add(
+        SqlAgentPluginVersionMCPMember(
+            plugin_workspace=workspace,
+            plugin_organization="acme",
+            plugin_name="pr",
+            plugin_version="1.0.0",
+            member_name="search",
+            access_endpoint_id=f"ae-{workspace}",
+        )
+    )
 
 
 @pytest.mark.parametrize(
@@ -3565,10 +3576,11 @@ def _seed_skill_registry_graph(session, workspace):
         (SqlAgentPluginTag, "workspace"),
         (SqlAgentPluginVersionTag, "workspace"),
         (SqlAgentPluginAlias, "workspace"),
-        # Members are the one table that does not call the column `workspace`, so they
-        # need their own branch in _get_query. The coverage test only reads the source;
+        # The member tables do not call the column `workspace`, so they need their
+        # own branch in _get_query. The coverage test only reads the source;
         # this runs the filter.
         (SqlAgentPluginVersionMember, "plugin_workspace"),
+        (SqlAgentPluginVersionMCPMember, "plugin_workspace"),
     ],
 )
 def test_get_query_scopes_skill_registry_models_to_active_workspace(

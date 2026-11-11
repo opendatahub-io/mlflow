@@ -17,6 +17,7 @@
 # test_db_backend_migration_downgrade_and_reupgrade drops and recreates these tables in
 # that same database mid-run.
 
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -27,11 +28,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from mlflow.environment_variables import MLFLOW_TRACKING_URI
+from mlflow.exceptions import MlflowException
 from mlflow.store.db.utils import _get_alembic_config
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
+    SqlMCPAccessEndpoint,
     SqlSkill,
     SqlSkillAlias,
     SqlSkillTag,
@@ -247,12 +251,7 @@ def test_db_backend_duplicate_member_name_rejected(store):
 # varies by engine.
 
 
-_SKILL_REGISTRY_TABLES = frozenset({
-    "skills",
-    "skill_versions",
-    "skill_tags",
-    "skill_version_tags",
-    "skill_aliases",
+_AGENT_PLUGIN_TABLES = frozenset({
     "agent_plugins",
     "agent_plugin_versions",
     "agent_plugin_tags",
@@ -260,6 +259,17 @@ _SKILL_REGISTRY_TABLES = frozenset({
     "agent_plugin_aliases",
     "agent_plugin_version_members",
 })
+
+_SKILL_REGISTRY_TABLES = (
+    frozenset({
+        "skills",
+        "skill_versions",
+        "skill_tags",
+        "skill_version_tags",
+        "skill_aliases",
+    })
+    | _AGENT_PLUGIN_TABLES
+)
 
 
 def test_db_backend_migration_downgrade_and_reupgrade(store):
@@ -277,6 +287,58 @@ def test_db_backend_migration_downgrade_and_reupgrade(store):
     finally:
         command.upgrade(config, "head")
     assert _SKILL_REGISTRY_TABLES <= set(sa.inspect(store.engine).get_table_names())
+
+
+def test_db_backend_agent_plugin_migration_keeps_skills_and_endpoints(store):
+    # Skills and MCP access endpoints shipped in a release before the agent plugin tables,
+    # which arrive in their own migration. Removing that migration and applying it again
+    # must leave existing skills and endpoints as they were.
+    url = MLFLOW_TRACKING_URI.get()
+    config = _get_alembic_config(url)
+    suffix = uuid.uuid4().hex[:8]
+    skill_name = f"migration-skill-{suffix}"
+    server_name = f"io.github.test/migration-{suffix}"
+    store.create_skill(skill_name, organization="acme", description="kept")
+    store.create_skill_version(
+        skill_name, organization="acme", source_type="git", source="https://example.com/s.git"
+    )
+    store.create_mcp_server_version({"name": server_name, "version": "1.0.0"})
+    endpoint = store.create_mcp_access_endpoint(
+        server_name, "https://mcp.example.com/mcp", server_version="1.0.0"
+    )
+
+    def stored_rows():
+        # Reflect each table at the current revision, so the same read works on both
+        # sides of the migration even though their columns differ.
+        rows = {}
+        with store.engine.connect() as conn:
+            for table_name, column, value in (
+                ("skills", "name", skill_name),
+                ("skill_versions", "name", skill_name),
+                ("mcp_access_endpoints", "id", endpoint.id),
+            ):
+                table = sa.Table(table_name, sa.MetaData(), autoload_with=conn)
+                row = conn.execute(sa.select(table).where(table.c[column] == value)).mappings()
+                rows[table_name] = dict(row.one())
+        return rows
+
+    before = stored_rows()
+    try:
+        command.downgrade(config, "f4a9b2c7d1e6")
+        assert _AGENT_PLUGIN_TABLES.isdisjoint(sa.inspect(store.engine).get_table_names())
+        # Every value in a column that the downgrade keeps is unchanged.
+        downgraded = stored_rows()
+        assert downgraded == {
+            table_name: {column: before[table_name][column] for column in row}
+            for table_name, row in downgraded.items()
+        }
+    finally:
+        command.upgrade(config, "head")
+    assert _AGENT_PLUGIN_TABLES <= set(sa.inspect(store.engine).get_table_names())
+    assert stored_rows() == before
+
+    store.delete_skill(skill_name, organization="acme")
+    store.delete_mcp_server(server_name)
 
 
 @pytest.mark.parametrize(
@@ -366,3 +428,115 @@ def test_db_backend_member_version_collation_matches_parent(store):
         assert [(m.plugin_version, m.member_name) for m in members] == [
             ("2.0.0-A", "members-case-skill")
         ]
+
+
+def test_db_backend_mcp_member_names_are_case_sensitive(store):
+    # An MCP member name is the exact `mcpServers` key, so `GitHub` and `github` are two
+    # members. MySQL and SQL Server default to case-insensitive collations, which would
+    # reject the second as a duplicate primary key; the column pins a case-sensitive one.
+    name = f"mcp-case-{uuid.uuid4().hex[:8]}"
+    with session_scope(store) as session:
+        _seed_assembled_plugin(session, organization="acme", name=name, version="1.0.0", members=[])
+        session.flush()
+        for member_name in ("GitHub", "github"):
+            session.add(
+                SqlAgentPluginVersionMCPMember(
+                    plugin_organization="acme",
+                    plugin_name=name,
+                    plugin_version="1.0.0",
+                    member_name=member_name,
+                    access_endpoint_id=f"ae-{member_name}",
+                )
+            )
+
+    with session_scope(store, commit=False) as session:
+        members = session.query(SqlAgentPluginVersionMCPMember).filter_by(plugin_name=name)
+        assert {(m.member_name, m.access_endpoint_id) for m in members} == {
+            ("GitHub", "ae-GitHub"),
+            ("github", "ae-github"),
+        }
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_organization="acme",
+                plugin_name=name,
+                plugin_version="1.0.0",
+                member_name="github",
+                access_endpoint_id="ae-again",
+            )
+        )
+        with pytest.raises(IntegrityError, match=r"(?i)(constraint|duplicate)"):
+            session.flush()
+
+
+def test_db_backend_endpoints_without_a_server_skip_the_server_foreign_key(store):
+    # The composite (workspace, server_name) foreign key is not checked when server_name
+    # is NULL, so an endpoint can exist without a registered server. A stdio endpoint
+    # also stores NULL url and transport_type: the old streamable-http column default
+    # is gone.
+    suffix = uuid.uuid4().hex[:8]
+    endpoint_id = f"ae-stdio-{suffix}"
+    try:
+        with session_scope(store) as session:
+            session.add(
+                SqlMCPAccessEndpoint(
+                    id=endpoint_id,
+                    workspace=f"no-servers-{suffix}",
+                    server_name=None,
+                    url=None,
+                    transport_type=None,
+                    client_config={"command": "./bin/fs"},
+                )
+            )
+        with session_scope(store, commit=False) as session:
+            stored = session.execute(
+                sa.select(SqlMCPAccessEndpoint.url, SqlMCPAccessEndpoint.transport_type).where(
+                    SqlMCPAccessEndpoint.id == endpoint_id
+                )
+            ).one()
+            assert tuple(stored) == (None, None)
+            assert session.get(SqlMCPAccessEndpoint, endpoint_id).client_config == {
+                "command": "./bin/fs"
+            }
+
+        # The foreign key still applies once a server is named.
+        with session_scope(store, commit=False) as session:
+            session.add(
+                SqlMCPAccessEndpoint(
+                    id=f"ae-missing-{suffix}",
+                    server_name=f"io.github.test/missing-{suffix}",
+                    url="https://mcp.example.com/mcp",
+                    transport_type="streamable-http",
+                )
+            )
+            with pytest.raises(IntegrityError, match=r"(?i)(constraint|foreign)"):
+                session.flush()
+    finally:
+        # Other tests here downgrade the shared database, which refuses endpoints the
+        # previous schema can't hold.
+        with session_scope(store) as session:
+            session.execute(
+                sa.delete(SqlMCPAccessEndpoint).where(SqlMCPAccessEndpoint.id == endpoint_id)
+            )
+
+
+def test_db_backend_downgrade_refuses_endpoints_the_previous_schema_cannot_hold(store):
+    url = MLFLOW_TRACKING_URI.get()
+    config = _get_alembic_config(url)
+    endpoint_id = f"ae-stdio-{uuid.uuid4().hex[:8]}"
+    try:
+        with session_scope(store) as session:
+            session.add(SqlMCPAccessEndpoint(id=endpoint_id, client_config={"command": "./x"}))
+        with pytest.raises(MlflowException, match=rf"endpoint '{endpoint_id}' has no server_name"):
+            command.downgrade(config, "f4a9b2c7d1e6")
+        # Nothing was changed: the plugin tables and the nullable columns are still here.
+        inspector = sa.inspect(store.engine)
+        assert _AGENT_PLUGIN_TABLES <= set(inspector.get_table_names())
+        columns = {c["name"]: c for c in inspector.get_columns("mcp_access_endpoints")}
+        assert columns["server_name"]["nullable"]
+        assert "client_config" in columns
+    finally:
+        with session_scope(store) as session:
+            session.execute(
+                sa.delete(SqlMCPAccessEndpoint).where(SqlMCPAccessEndpoint.id == endpoint_id)
+            )
+        command.upgrade(config, "head")

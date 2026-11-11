@@ -307,6 +307,7 @@ CREATE TABLE agent_plugin_versions (
 	ref VARCHAR(2048),
 	subpath VARCHAR(2048),
 	status VARCHAR(20) DEFAULT 'active' NOT NULL,
+	status_reason TEXT,
 	created_by VARCHAR(256),
 	last_updated_by VARCHAR(256),
 	created_at BIGINT NOT NULL,
@@ -434,15 +435,16 @@ CREATE TABLE logged_models (
 CREATE TABLE mcp_access_endpoints (
 	id VARCHAR(36) NOT NULL,
 	workspace VARCHAR(63) DEFAULT 'default' NOT NULL,
-	server_name VARCHAR(256) NOT NULL,
+	server_name VARCHAR(256),
 	server_version VARCHAR(128) COLLATE utf8mb4_bin,
 	server_alias VARCHAR(256),
-	url VARCHAR(2048) NOT NULL,
-	transport_type VARCHAR(32) DEFAULT 'streamable-http' NOT NULL,
+	url VARCHAR(2048),
+	transport_type VARCHAR(32),
 	created_by VARCHAR(256),
 	last_updated_by VARCHAR(256),
 	created_at BIGINT NOT NULL,
 	last_updated_at BIGINT NOT NULL,
+	client_config JSON,
 	PRIMARY KEY (id),
 	CONSTRAINT mcp_access_endpoints_server_fkey FOREIGN KEY(workspace, server_name) REFERENCES mcp_servers (workspace, name) ON DELETE CASCADE ON UPDATE CASCADE
 )
@@ -630,6 +632,7 @@ CREATE TABLE skill_versions (
 	last_updated_by VARCHAR(256),
 	created_at BIGINT NOT NULL,
 	last_updated_at BIGINT NOT NULL,
+	status_reason TEXT,
 	PRIMARY KEY (workspace, organization, name, version),
 	CONSTRAINT skill_versions_skill_fkey FOREIGN KEY(workspace, organization, name) REFERENCES skills (workspace, organization, name) ON DELETE CASCADE ON UPDATE CASCADE
 )
@@ -667,6 +670,18 @@ CREATE TABLE webhook_events (
 	action VARCHAR(50) NOT NULL,
 	PRIMARY KEY (webhook_id, entity, action),
 	CONSTRAINT webhook_events_ibfk_1 FOREIGN KEY(webhook_id) REFERENCES webhooks (webhook_id) ON DELETE CASCADE
+)
+
+
+CREATE TABLE agent_plugin_version_mcp_members (
+	plugin_workspace VARCHAR(63) DEFAULT 'default' NOT NULL,
+	plugin_organization VARCHAR(64) DEFAULT '' NOT NULL,
+	plugin_name VARCHAR(128) NOT NULL,
+	plugin_version VARCHAR(128) COLLATE "utf8mb4_bin" NOT NULL,
+	member_name VARCHAR(128) COLLATE "utf8mb4_bin" NOT NULL,
+	access_endpoint_id VARCHAR(36) NOT NULL,
+	PRIMARY KEY (plugin_workspace, plugin_organization, plugin_name, plugin_version, member_name),
+	CONSTRAINT agent_plugin_version_mcp_members_plugin_fkey FOREIGN KEY(plugin_workspace, plugin_organization, plugin_name, plugin_version) REFERENCES agent_plugin_versions (workspace, organization, name, version) ON DELETE CASCADE ON UPDATE CASCADE
 )
 
 
