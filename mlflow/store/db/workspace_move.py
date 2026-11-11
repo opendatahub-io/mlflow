@@ -18,11 +18,13 @@ from mlflow.store.model_registry.dbmodels.models import (
     SqlWebhook,
 )
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlEvaluationDataset,
     SqlExperiment,
     SqlExperimentTag,
     SqlJob,
+    SqlMCPAccessEndpoint,
     SqlMCPServer,
     SqlMCPServerTag,
     SqlSkill,
@@ -348,10 +350,44 @@ def _find_plugin_versions_pinning_skills(
         rows = []
         for chunk in chunk_list(identities, _SKILL_ID_CHUNK_SIZE):
             rows.extend(conn.execute(stmt.where(_skill_filter_condition(skills, chunk))))
-    return sorted({
-        f"{_format_skill_name(organization, name)}/{version}"
-        for organization, name, version in rows
-    })
+    return sorted({_format_plugin_version(*row) for row in rows})
+
+
+def _find_plugin_versions_using_server_endpoints(
+    conn,
+    workspace: str,
+    name_filter: list[str] | sa.Select | None,
+) -> list[str]:
+    """Return the agent plugin versions in *workspace* whose MCP members use an access
+    endpoint of the given MCP servers, which would move with the server.
+
+    *name_filter* holds server names (a list or a subquery), or is ``None`` for every
+    server in the workspace.
+    """
+    members = SqlAgentPluginVersionMCPMember.__table__
+    endpoints = SqlMCPAccessEndpoint.__table__
+    stmt = (
+        sa
+        .select(members.c.plugin_organization, members.c.plugin_name, members.c.plugin_version)
+        .select_from(
+            members.join(
+                endpoints,
+                sa.and_(
+                    endpoints.c.workspace == members.c.plugin_workspace,
+                    endpoints.c.id == members.c.access_endpoint_id,
+                ),
+            )
+        )
+        .where(members.c.plugin_workspace == workspace, endpoints.c.server_name.is_not(None))
+        .distinct()
+    )
+    if name_filter is not None:
+        stmt = stmt.where(endpoints.c.server_name.in_(name_filter))
+    return sorted({_format_plugin_version(*row) for row in conn.execute(stmt)})
+
+
+def _format_plugin_version(organization: str, name: str, version: str) -> str:
+    return f"{_format_skill_name(organization, name)}/{version}"
 
 
 def _resolve_target_artifact_root(
@@ -539,6 +575,22 @@ def move_resources(
                     "plugins is not yet supported, so delete those plugins first, then retry: "
                     f"{formatted}"
                 )
+
+        if spec.model is SqlMCPServer and (
+            using := _find_plugin_versions_using_server_endpoints(
+                conn, source_workspace, name_filter
+            )
+        ):
+            formatted = format_truncated_list(
+                [repr(plugin_version) for plugin_version in using],
+                max_rows=None if verbose else 10,
+            )
+            raise RuntimeError(
+                "Move aborted: agent plugin versions use access endpoints of these MCP "
+                "servers, and the endpoints would move with them. An endpoint must stay in "
+                "the workspace of the plugin versions that use it, and moving agent plugins "
+                f"is not yet supported, so delete those plugins first, then retry: {formatted}"
+            )
 
         table = spec.table
         name_col = table.c[spec.name_column]
