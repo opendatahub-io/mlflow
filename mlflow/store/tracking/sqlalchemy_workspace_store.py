@@ -23,6 +23,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPluginAlias,
     SqlAgentPluginTag,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlAgentPluginVersionTag,
     SqlAssessmentDailyRollup,
@@ -207,12 +208,13 @@ class WorkspaceAwareSqlAlchemyStore(WorkspaceAwareMixin, SqlAlchemyStore):
         ):
             return query.filter(model.workspace == workspace)
 
-        if model is SqlAgentPluginVersionMember:
-            # Members carry their workspace as ``plugin_workspace`` (shared with the
-            # skill_versions FK), not ``workspace``. Pre-wired so the store layer's
-            # future direct membership queries are workspace-scoped; not exercised yet
-            # (members are otherwise reached through their scoped parent version).
-            return query.filter(SqlAgentPluginVersionMember.plugin_workspace == workspace)
+        if model in (SqlAgentPluginVersionMember, SqlAgentPluginVersionMCPMember):
+            # Members carry their workspace as ``plugin_workspace``, not ``workspace``
+            # (the skill member table shares it with its skill_versions FK). Pre-wired so
+            # the store layer's future direct membership queries are workspace-scoped;
+            # not exercised yet (members are otherwise reached through their scoped
+            # parent version).
+            return query.filter(model.plugin_workspace == workspace)
 
         return query
 

@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 
 from mlflow.entities import (
     GitSource,
+    MCPAccessEndpoint,
+    MCPRemoteTransportType,
     MlflowSource,
     OCISource,
     SkillSourceType,
@@ -28,9 +30,14 @@ from mlflow.store.db.utils import _get_alembic_config
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginAlias,
+    SqlAgentPluginTag,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlAgentPluginVersionTag,
+    SqlMCPAccessEndpoint,
+    SqlMCPServer,
+    SqlMCPServerVersion,
     SqlSkill,
     SqlSkillAlias,
     SqlSkillTag,
@@ -902,3 +909,293 @@ def test_one_deleted_skill_withdraws_a_plugin_version_even_if_its_other_skills_a
         assert session.query(SqlAgentPluginVersion).count() == 2
         assert session.query(SqlAgentPluginVersionMember).count() == 4
         assert session.query(SqlSkillVersion).count() == 4
+
+
+# ---------------------------------------------------------------------------
+# MCP members and the access-endpoint extensions
+#
+# An MCP member maps a plugin-local name (a key of the plugin's `mcpServers`) to an
+# access endpoint, which holds the client configuration. A remote endpoint has a URL and
+# transport; a stdio endpoint keeps its launch command in `client_config`. Either may be
+# associated with a registered MCP server or not.
+# ---------------------------------------------------------------------------
+
+
+def _add_plugin_version(session, *, version="1.0.0", workspace="default", **kwargs):
+    if session.get(SqlAgentPlugin, (workspace, "acme", "pr")) is None:
+        session.add(SqlAgentPlugin(workspace=workspace, organization="acme", name="pr"))
+    session.add(
+        SqlAgentPluginVersion(
+            workspace=workspace,
+            organization="acme",
+            name="pr",
+            version=version,
+            plugin_json={"name": "pr", "version": version},
+            source_type="assembled",
+            source="assembled",
+            **kwargs,
+        )
+    )
+
+
+def _add_mcp_member(session, member_name, access_endpoint_id, *, version="1.0.0", **kwargs):
+    session.add(
+        SqlAgentPluginVersionMCPMember(
+            plugin_organization="acme",
+            plugin_name="pr",
+            plugin_version=version,
+            member_name=member_name,
+            access_endpoint_id=access_endpoint_id,
+            **kwargs,
+        )
+    )
+
+
+def _add_server_with_endpoint(session, server_name, endpoint_id):
+    session.add(SqlMCPServer(name=server_name))
+    session.flush()
+    session.add(
+        SqlMCPAccessEndpoint(
+            id=endpoint_id,
+            server_name=server_name,
+            url="https://mcp.example.com/mcp",
+            transport_type="streamable-http",
+        )
+    )
+
+
+@pytest.mark.parametrize("workspace", ["default", "team-a"])
+def test_plugin_version_entity_lists_endpoint_ids_and_status_reason(store, workspace):
+    with session_scope(store) as session:
+        _add_plugin_version(
+            session, workspace=workspace, status="deprecated", status_reason="Use 2.0.0"
+        )
+        session.flush()
+        _add_mcp_member(session, "search", "ae-search", plugin_workspace=workspace)
+        _add_mcp_member(session, "fs", "ae-fs", plugin_workspace=workspace)
+
+    with session_scope(store, commit=False) as session:
+        entity = session.query(SqlAgentPluginVersion).one().to_mlflow_entity()
+    assert entity.status == SkillStatus.DEPRECATED
+    assert entity.status_reason == "Use 2.0.0"
+    # A plugin response names each endpoint by ID only, in the plugin's workspace; the
+    # configuration is read from the endpoint itself.
+    assert entity.mcp_servers == {
+        "fs": MCPAccessEndpoint(id="ae-fs", workspace=workspace),
+        "search": MCPAccessEndpoint(id="ae-search", workspace=workspace),
+    }
+    assert entity.skills == []
+
+
+def test_skill_version_entity_carries_status_reason(store):
+    with session_scope(store) as session:
+        _add_skill_version(
+            session,
+            source_type="git",
+            source="s.git",
+            status="deprecated",
+            status_reason="Replaced by lint",
+        )
+    with session_scope(store, commit=False) as session:
+        entity = session.query(SqlSkillVersion).one().to_mlflow_entity()
+    assert (entity.status, entity.status_reason) == (SkillStatus.DEPRECATED, "Replaced by lint")
+
+
+def test_mcp_member_names_are_unique_within_a_plugin_version(store):
+    with session_scope(store) as session:
+        _add_skill_version(session, name="search", source_type="git", source="s.git")
+        _add_plugin_version(session, version="1.0.0")
+        _add_plugin_version(session, version="2.0.0")
+        session.flush()
+        # Names are exact `mcpServers` keys, so case makes a different member.
+        _add_mcp_member(session, "github", "ae-1")
+        _add_mcp_member(session, "GitHub", "ae-2")
+        # Another version may reuse a name.
+        _add_mcp_member(session, "github", "ae-3", version="2.0.0")
+        # Skills and MCP servers are separate namespaces within one version.
+        _add_mcp_member(session, "search", "ae-4")
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_organization="acme",
+                plugin_name="pr",
+                plugin_version="1.0.0",
+                member_organization="acme",
+                member_name="search",
+                member_version=1,
+            )
+        )
+
+    with session_scope(store, commit=False) as session:
+        _add_mcp_member(session, "github", "ae-5")
+        with pytest.raises(IntegrityError, match=r"(?i)(constraint|duplicate)"):
+            session.flush()
+
+
+def test_deleting_a_plugin_keeps_its_endpoints_servers_and_skills(store):
+    with session_scope(store) as session:
+        _add_skill_version(session, source_type="git", source="s.git")
+        _add_server_with_endpoint(session, "io.github.acme/search", "ae-search")
+        session.add(SqlMCPAccessEndpoint(id="ae-fs", client_config={"command": "./bin/fs"}))
+        _add_plugin_version(session)
+        session.flush()
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_organization="acme",
+                plugin_name="pr",
+                plugin_version="1.0.0",
+                member_organization="acme",
+                member_name="code-review",
+                member_version=1,
+            )
+        )
+        _add_mcp_member(session, "search", "ae-search")
+        _add_mcp_member(session, "fs", "ae-fs")
+
+    with session_scope(store) as session:
+        session.delete(session.get(SqlAgentPlugin, ("default", "acme", "pr")))
+
+    with session_scope(store, commit=False) as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 0
+        assert session.query(SqlAgentPluginVersionMCPMember).count() == 0
+        assert session.query(SqlSkillVersion).count() == 1
+        assert session.query(SqlMCPServer).count() == 1
+        assert {endpoint.id for endpoint in session.query(SqlMCPAccessEndpoint)} == {
+            "ae-search",
+            "ae-fs",
+        }
+
+
+def test_endpoint_and_server_version_changes_do_not_withdraw_a_plugin_version(store):
+    # A deleted skill member withdraws its plugin version; a deleted endpoint, or a
+    # deleted version of the MCP server it names, does not. The member keeps the ID.
+    server_name = "io.github.acme/search"
+    store.create_mcp_server_version({"name": server_name, "version": "1.0.0"})
+    endpoint = store.create_mcp_access_endpoint(
+        server_name, "https://mcp.example.com/mcp", server_version="1.0.0"
+    )
+    with session_scope(store) as session:
+        _add_plugin_version(session)
+        session.flush()
+        _add_mcp_member(session, "search", endpoint.id)
+
+    with session_scope(store) as session:
+        session.get(SqlMCPServerVersion, ("default", server_name, "1.0.0")).status = "deleted"
+        session.execute(
+            sa.delete(SqlMCPAccessEndpoint).where(SqlMCPAccessEndpoint.id == endpoint.id)
+        )
+
+    with session_scope(store, commit=False) as session:
+        plugin = SqlAgentPlugin.with_resolved_latest(session.query(SqlAgentPlugin)).one()
+        assert (plugin.resolved_latest_version, plugin.resolved_status) == ("1.0.0", "active")
+        entity = session.query(SqlAgentPluginVersion).one().to_mlflow_entity()
+        assert entity.mcp_servers == {"search": MCPAccessEndpoint(id=endpoint.id)}
+
+
+def test_plugin_tag_changes_leave_mcp_members_and_endpoints_unchanged(store):
+    client_config = {"command": "./bin/fs", "args": ["--root", "${PLUGIN_ROOT}"]}
+    with session_scope(store) as session:
+        session.add(SqlMCPAccessEndpoint(id="ae-fs", client_config=client_config))
+        _add_plugin_version(session)
+        session.flush()
+        _add_mcp_member(session, "fs", "ae-fs")
+        session.add(
+            SqlAgentPluginVersionTag(
+                organization="acme", name="pr", version="1.0.0", key="team", value="a"
+            )
+        )
+
+    with session_scope(store) as session:
+        session.get(
+            SqlAgentPluginVersionTag, ("default", "acme", "pr", "1.0.0", "team")
+        ).value = "b"
+        session.add(SqlAgentPluginTag(organization="acme", name="pr", key="owner", value="x"))
+
+    with session_scope(store, commit=False) as session:
+        member = session.query(SqlAgentPluginVersionMCPMember).one()
+        assert (member.member_name, member.access_endpoint_id) == ("fs", "ae-fs")
+        assert session.get(SqlMCPAccessEndpoint, "ae-fs").client_config == client_config
+
+
+def test_stdio_endpoint_round_trips_without_server_url_or_transport(store):
+    client_config = {"command": "./bin/fs", "args": ["--root", "${PLUGIN_ROOT}"], "env": {}}
+    with session_scope(store) as session:
+        # Passing None explicitly is what a store does for a stdio endpoint. A column
+        # default would silently replace it.
+        session.add(
+            SqlMCPAccessEndpoint(
+                id="ae-stdio",
+                server_name=None,
+                url=None,
+                transport_type=None,
+                client_config=client_config,
+            )
+        )
+
+    with session_scope(store, commit=False) as session:
+        stored = session.execute(
+            sa.select(SqlMCPAccessEndpoint.transport_type, SqlMCPAccessEndpoint.url)
+        ).one()
+        assert tuple(stored) == (None, None)
+        entity = session.get(SqlMCPAccessEndpoint, "ae-stdio").to_mlflow_entity()
+    assert entity.client_config == client_config
+    assert (entity.server_name, entity.url, entity.transport_type) == (None, None, None)
+
+
+def test_remote_endpoint_entity_is_unchanged(store):
+    # Endpoints stored before agent plugins have a server, a URL and a transport, and
+    # no client_config.
+    with session_scope(store) as session:
+        session.add(SqlMCPServer(name="io.github.acme/search"))
+        session.flush()
+        session.add(
+            SqlMCPAccessEndpoint(
+                id="ae-remote",
+                server_name="io.github.acme/search",
+                url="https://mcp.example.com/sse",
+                transport_type="sse",
+            )
+        )
+    with session_scope(store, commit=False) as session:
+        entity = session.get(SqlMCPAccessEndpoint, "ae-remote").to_mlflow_entity()
+    assert entity.server_name == "io.github.acme/search"
+    assert entity.url == "https://mcp.example.com/sse"
+    assert entity.transport_type == MCPRemoteTransportType.SSE
+    assert entity.client_config is None
+
+
+@pytest.mark.parametrize(
+    "clear",
+    [
+        pytest.param(lambda server, endpoint: setattr(endpoint, "server_name", None), id="column"),
+        pytest.param(lambda server, endpoint: setattr(endpoint, "server", None), id="relationship"),
+        pytest.param(
+            lambda server, endpoint: server.access_endpoints.remove(endpoint), id="collection"
+        ),
+    ],
+)
+def test_clearing_an_endpoints_server_association_keeps_the_endpoint(store, clear):
+    with session_scope(store) as session:
+        _add_server_with_endpoint(session, "io.github.acme/search", "ae-cleared")
+        session.add(
+            SqlMCPAccessEndpoint(
+                id="ae-associated",
+                server_name="io.github.acme/search",
+                url="https://mcp.example.com/mcp",
+                transport_type="streamable-http",
+            )
+        )
+
+    with session_scope(store) as session:
+        server = session.query(SqlMCPServer).one()
+        assert len(server.access_endpoints) == 2
+        clear(server, session.get(SqlMCPAccessEndpoint, "ae-cleared"))
+
+    with session_scope(store, commit=False) as session:
+        cleared = session.get(SqlMCPAccessEndpoint, "ae-cleared")
+        assert (cleared.server_name, cleared.workspace) == (None, "default")
+
+    # Deleting the server still deletes the endpoints associated with it.
+    with session_scope(store) as session:
+        session.delete(session.query(SqlMCPServer).one())
+    with session_scope(store, commit=False) as session:
+        assert [endpoint.id for endpoint in session.query(SqlMCPAccessEndpoint)] == ["ae-cleared"]
