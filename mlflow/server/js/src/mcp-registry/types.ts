@@ -124,6 +124,16 @@ export interface MCPAccessEndpoint {
   last_updated_timestamp?: number;
 }
 
+export type MCPAccessEndpointPayload =
+  | ({
+      endpoint_id: string;
+    } & {
+      [K in keyof CreateMCPAccessEndpointRequest]?: never;
+    })
+  | (CreateMCPAccessEndpointRequest & {
+      endpoint_id?: never;
+    });
+
 // ServerJSON payload types use camelCase field names to match the MCP server.json specification
 
 export interface ServerJSONInput {
@@ -228,8 +238,10 @@ export interface UpdateMCPServerVersionRequest {
 export interface CreateMCPAccessEndpointRequest {
   server_version?: string;
   server_alias?: string;
-  url: string;
+  url?: string;
   transport_type?: MCPRemoteTransportType;
+  client_config?: Record<string, unknown>;
+  server_name?: string;
 }
 
 export interface UpdateMCPAccessEndpointRequest {
