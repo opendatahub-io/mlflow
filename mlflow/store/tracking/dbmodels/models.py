@@ -31,6 +31,7 @@ from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import (
     backref,
+    foreign,
     query_expression,
     relationship,
     validates,
@@ -4680,29 +4681,31 @@ class SqlMCPAccessEndpoint(Base):
         default=DEFAULT_WORKSPACE_NAME,
         server_default=sa.text(f"'{DEFAULT_WORKSPACE_NAME}'"),
     )
-    server_name = Column(String(256), nullable=False)
+    # Null when the endpoint is not associated with a registered server.
+    server_name = Column(String(256), nullable=True)
     server_version = Column(MCP_SERVER_VERSION_STRING, nullable=True)
     server_alias = Column(String(256), nullable=True)
-    url = Column(String(2048), nullable=False)
-    transport_type = Column(
-        String(32),
-        nullable=False,
-        default=MCPRemoteTransportType.STREAMABLE_HTTP.value,
-        server_default=sa.text(f"'{MCPRemoteTransportType.STREAMABLE_HTTP.value}'"),
-    )
+    url = Column(String(2048), nullable=True)
+    transport_type = Column(String(32), nullable=True)
     created_by = Column(String(256), nullable=True)
     last_updated_by = Column(String(256), nullable=True)
     created_at = Column(BigInteger, default=get_current_time_millis, nullable=False)
     last_updated_at = Column(BigInteger, default=get_current_time_millis, nullable=False)
+    client_config = Column(JSON, nullable=True)
 
+    # Writes only server_name, so clearing the server keeps the endpoint and its workspace.
+    # Deleting the server still deletes its endpoints.
     server = relationship(
         "SqlMCPServer",
+        primaryjoin=lambda: sa.and_(
+            SqlMCPServer.workspace == SqlMCPAccessEndpoint.workspace,
+            SqlMCPServer.name == foreign(SqlMCPAccessEndpoint.server_name),
+        ),
         backref=backref(
             "access_endpoints",
-            cascade="all, delete-orphan",
+            cascade="all",
             order_by="SqlMCPAccessEndpoint.id",
         ),
-        foreign_keys=[workspace, server_name],
     )
 
     # Populated via contains_eager in _endpoint_query_with_version, which
@@ -4745,7 +4748,11 @@ class SqlMCPAccessEndpoint(Base):
             id=self.id,
             server_name=self.server_name,
             url=self.url,
-            transport_type=MCPRemoteTransportType(self.transport_type),
+            transport_type=(
+                MCPRemoteTransportType(self.transport_type)
+                if self.transport_type is not None
+                else None
+            ),
             server_version=self.server_version,
             server_alias=self.server_alias,
             resolved_version=resolved,
@@ -4754,6 +4761,7 @@ class SqlMCPAccessEndpoint(Base):
             last_updated_by=self.last_updated_by,
             creation_timestamp=self.created_at,
             last_updated_timestamp=self.last_updated_at,
+            client_config=self.client_config,
         )
 
 
@@ -4961,6 +4969,7 @@ class SqlSkillVersion(Base):
         default=SkillStatus.ACTIVE.value,
         server_default=sa.text(f"'{SkillStatus.ACTIVE.value}'"),
     )
+    status_reason = Column(Text, nullable=True)
     created_by = Column(String(256), nullable=True)
     last_updated_by = Column(String(256), nullable=True)
     created_at = Column(BigInteger, default=get_current_time_millis, nullable=False)
@@ -5016,6 +5025,7 @@ class SqlSkillVersion(Base):
             source_type=source_type,
             digest=self.digest,
             status=SkillStatus(self.status),
+            status_reason=self.status_reason,
             tags=tags,
             aliases=alias_names,
             workspace=self.workspace,
@@ -5341,6 +5351,7 @@ class SqlAgentPluginVersion(Base):
         default=SkillStatus.ACTIVE.value,
         server_default=sa.text(f"'{SkillStatus.ACTIVE.value}'"),
     )
+    status_reason = Column(Text, nullable=True)
     created_by = Column(String(256), nullable=True)
     last_updated_by = Column(String(256), nullable=True)
     created_at = Column(BigInteger, default=get_current_time_millis, nullable=False)
@@ -5416,8 +5427,13 @@ class SqlAgentPluginVersion(Base):
             source=build_source(source_type, self.source, self.ref, self.subpath),
             source_type=source_type,
             status=SkillStatus(self.status),
+            status_reason=self.status_reason,
             tags=tags,
             skills=skills,
+            mcp_servers={
+                m.member_name: MCPAccessEndpoint(id=m.access_endpoint_id, workspace=self.workspace)
+                for m in self.mcp_members
+            },
             aliases=alias_names,
             workspace=self.workspace,
             created_by=self.created_by,
@@ -5652,4 +5668,78 @@ class SqlAgentPluginVersionMember(Base):
         return (
             f"<SqlAgentPluginVersionMember ({self.plugin_name}, {self.plugin_version} -> "
             f"{self.member_name}, {self.member_version})>"
+        )
+
+
+# MCP member names ``GitHub`` and ``github`` need to be considered as different members.
+AGENT_PLUGIN_MCP_MEMBER_NAME_STRING = (
+    String(128)
+    .with_variant(MYSQL_VARCHAR(128, collation="utf8mb4_bin"), "mysql")
+    .with_variant(MSSQL_VARCHAR(128, collation="SQL_Latin1_General_CP1_CS_AS"), "mssql")
+)
+
+
+class SqlAgentPluginVersionMCPMember(Base):
+    """Maps a plugin-local MCP server name to the access endpoint that holds its configuration."""
+
+    __tablename__ = "agent_plugin_version_mcp_members"
+
+    plugin_workspace = Column(
+        String(63),
+        nullable=False,
+        default=DEFAULT_WORKSPACE_NAME,
+        server_default=sa.text(f"'{DEFAULT_WORKSPACE_NAME}'"),
+    )
+    plugin_organization = Column(
+        String(64), nullable=False, default="", server_default=sa.text("''")
+    )
+    plugin_name = Column(String(128), nullable=False)
+    plugin_version = Column(AGENT_PLUGIN_VERSION_STRING, nullable=False)
+    member_name = Column(AGENT_PLUGIN_MCP_MEMBER_NAME_STRING, nullable=False)
+    # No foreign key: an endpoint may be deleted while plugin versions still reference it.
+    access_endpoint_id = Column(String(36), nullable=False)
+
+    plugin_version_rel = relationship(
+        "SqlAgentPluginVersion",
+        backref=backref(
+            "mcp_members",
+            cascade="all, delete-orphan",
+            order_by="SqlAgentPluginVersionMCPMember.member_name",
+        ),
+        foreign_keys=[plugin_workspace, plugin_organization, plugin_name, plugin_version],
+    )
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "plugin_workspace",
+            "plugin_organization",
+            "plugin_name",
+            "plugin_version",
+            "member_name",
+            name="agent_plugin_version_mcp_members_pk",
+        ),
+        ForeignKeyConstraint(
+            ["plugin_workspace", "plugin_organization", "plugin_name", "plugin_version"],
+            [
+                "agent_plugin_versions.workspace",
+                "agent_plugin_versions.organization",
+                "agent_plugin_versions.name",
+                "agent_plugin_versions.version",
+            ],
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+            name="agent_plugin_version_mcp_members_plugin_fkey",
+        ),
+        # Backs "which plugin versions reference this endpoint".
+        Index(
+            "ix_agent_plugin_version_mcp_members_endpoint",
+            "plugin_workspace",
+            "access_endpoint_id",
+        ),
+    )
+
+    def __repr__(self):
+        return (
+            f"<SqlAgentPluginVersionMCPMember ({self.plugin_name}, {self.plugin_version} -> "
+            f"{self.member_name}, {self.access_endpoint_id})>"
         )

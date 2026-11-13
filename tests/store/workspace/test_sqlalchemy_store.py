@@ -11,8 +11,11 @@ from mlflow.store.artifact.artifact_repo import ArtifactRepository
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlGatewayEndpoint,
+    SqlMCPAccessEndpoint,
+    SqlMCPServer,
     SqlSkill,
     SqlSkillVersion,
 )
@@ -767,6 +770,117 @@ def test_delete_workspace_cascade_removes_skill_and_plugin_graph(workspace_store
             SqlAgentPluginVersionMember,
         ):
             assert session.query(model).count() == 0
+
+
+def _seed_mcp_only_plugin(session, workspace):
+    """An MCP-only plugin version whose two members use endpoints in the same workspace.
+
+    ``server-backed`` is associated with a registered MCP server; ``standalone`` names no
+    server, so only its own workspace column ties it to the workspace.
+    """
+    session.add(SqlMCPServer(workspace=workspace, name="io.github.acme/search"))
+    session.flush()
+    session.add_all([
+        SqlMCPAccessEndpoint(
+            id="ae-server-backed",
+            workspace=workspace,
+            server_name="io.github.acme/search",
+            url="https://search.example.com/mcp",
+            transport_type="streamable-http",
+        ),
+        SqlMCPAccessEndpoint(
+            id="ae-standalone",
+            workspace=workspace,
+            client_config={"command": "./bin/fs-server"},
+        ),
+        SqlAgentPlugin(workspace=workspace, organization="acme", name="search-tools"),
+    ])
+    session.flush()
+    session.add(
+        SqlAgentPluginVersion(
+            workspace=workspace,
+            organization="acme",
+            name="search-tools",
+            version="1.0.0",
+            plugin_json={"name": "search-tools", "version": "1.0.0"},
+            source_type="assembled",
+            source="assembled",
+        )
+    )
+    session.flush()
+    for member_name, endpoint_id in (("search", "ae-server-backed"), ("fs", "ae-standalone")):
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_workspace=workspace,
+                plugin_organization="acme",
+                plugin_name="search-tools",
+                plugin_version="1.0.0",
+                member_name=member_name,
+                access_endpoint_id=endpoint_id,
+            )
+        )
+
+
+def test_delete_workspace_cascade_removes_mcp_only_plugin_and_its_endpoints(workspace_store):
+    workspace_store.create_workspace(Workspace(name="team-a", description=None))
+    with workspace_store.ManagedSessionMaker(read_only=False) as session:
+        _seed_mcp_only_plugin(session, "team-a")
+
+    workspace_store.delete_workspace("team-a", mode=WorkspaceDeletionMode.CASCADE)
+
+    with workspace_store.ManagedSessionMaker() as session:
+        for model in (
+            SqlAgentPlugin,
+            SqlAgentPluginVersion,
+            SqlAgentPluginVersionMCPMember,
+            SqlMCPServer,
+            SqlMCPAccessEndpoint,
+        ):
+            assert session.query(model).count() == 0, model.__tablename__
+
+
+def test_delete_workspace_restrict_counts_endpoints_without_a_server(workspace_store):
+    workspace_store.create_workspace(Workspace(name="team-a", description=None))
+    with workspace_store.ManagedSessionMaker(read_only=False) as session:
+        session.add(
+            SqlMCPAccessEndpoint(
+                id="ae-standalone", workspace="team-a", client_config={"command": "./bin/fs"}
+            )
+        )
+
+    with pytest.raises(MlflowException, match="mcp_access_endpoints") as exc:
+        workspace_store.delete_workspace("team-a", mode=WorkspaceDeletionMode.RESTRICT)
+    assert exc.value.error_code == "INVALID_STATE"
+    assert workspace_store.get_workspace("team-a").name == "team-a"
+
+
+def test_delete_workspace_set_default_moves_endpoints_without_a_server(workspace_store):
+    workspace_store.create_workspace(Workspace(name="team-a", description=None))
+    with workspace_store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlMCPServer(workspace="team-a", name="io.github.acme/search"))
+        session.flush()
+        session.add_all([
+            SqlMCPAccessEndpoint(
+                id="ae-server-backed",
+                workspace="team-a",
+                server_name="io.github.acme/search",
+                url="https://search.example.com/mcp",
+                transport_type="streamable-http",
+            ),
+            SqlMCPAccessEndpoint(
+                id="ae-standalone", workspace="team-a", client_config={"command": "./bin/fs"}
+            ),
+        ])
+
+    workspace_store.delete_workspace("team-a", mode=WorkspaceDeletionMode.SET_DEFAULT)
+
+    with workspace_store.ManagedSessionMaker() as session:
+        assert {
+            (endpoint.id, endpoint.workspace) for endpoint in session.query(SqlMCPAccessEndpoint)
+        } == {
+            ("ae-server-backed", DEFAULT_WORKSPACE_NAME),
+            ("ae-standalone", DEFAULT_WORKSPACE_NAME),
+        }
 
 
 def test_delete_workspace_cascade_removes_resources(workspace_store):

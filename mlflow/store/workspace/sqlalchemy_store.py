@@ -32,6 +32,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlGatewayModelDefinition,
     SqlGatewaySecret,
     SqlJob,
+    SqlMCPAccessEndpoint,
     SqlMCPServer,
     SqlSkill,
     SqlSkillVersion,
@@ -69,6 +70,9 @@ _WORKSPACE_ROOT_MODELS = [
     SqlGatewayGuardrail,
     SqlJob,
     SqlMCPServer,
+    # Endpoints with no server have no parent to carry them. Keep after SqlMCPServer:
+    # changing an endpoint's workspace before its server's breaks their foreign key.
+    SqlMCPAccessEndpoint,
     # AgentPlugin is listed before Skill so that, on a cascade workspace delete,
     # a plugin version's member rows are removed before the skill versions they
     # reference, keeping the agent_plugin_version_members -> skill_versions
