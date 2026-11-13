@@ -85,12 +85,8 @@ def _alter_access_endpoints(*, upgrade):
     with op.batch_alter_table("mcp_access_endpoints") as batch_op:
         if upgrade:
             batch_op.add_column(sa.Column("client_config", _get_json_type(), nullable=True))
-        else:
-            batch_op.drop_column("client_config")
         for column_name, column_type in _ENDPOINT_REQUIRED_COLUMNS:
             if column_name == "transport_type":
-                # The column default would replace an explicit NULL from the ORM, which
-                # would store a stdio endpoint as streamable-http.
                 default_kwargs = (
                     {"server_default": None, "existing_server_default": _STREAMABLE_HTTP_DEFAULT}
                     if upgrade
@@ -105,6 +101,8 @@ def _alter_access_endpoints(*, upgrade):
                 nullable=upgrade,
                 **default_kwargs,
             )
+        if not upgrade:
+            batch_op.drop_column("client_config")
     if dialect == "mssql":
         op.create_foreign_key(
             "mcp_access_endpoints_server_fkey",
@@ -371,8 +369,7 @@ def upgrade():
         ),
     )
 
-    # Endpoint references are checked by the application, not by a foreign key: an
-    # endpoint may be deleted while plugin versions still reference it.
+    # No foreign key: an endpoint may be deleted while plugin versions still reference it.
     op.create_table(
         "agent_plugin_version_mcp_members",
         sa.Column(
@@ -455,10 +452,7 @@ def downgrade():
     _alter_access_endpoints(upgrade=False)
     op.drop_column("skill_versions", "status_reason")
 
-    # Drop the tables in FK-safe order (children before parents). DROP TABLE removes
-    # each table's indexes along with it, so they need no separate handling -- and an
-    # explicit drop of ix_agent_plugin_version_members_skill_fkey would fail on MySQL
-    # anyway, which forbids dropping an index that still backs a foreign key.
+    # Drop the tables in FK-safe order (children before parents).
     op.drop_table("agent_plugin_version_mcp_members")
     op.drop_table("agent_plugin_version_members")
     op.drop_table("agent_plugin_aliases")
