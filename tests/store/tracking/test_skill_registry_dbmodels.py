@@ -912,12 +912,7 @@ def test_one_deleted_skill_withdraws_a_plugin_version_even_if_its_other_skills_a
 
 
 # ---------------------------------------------------------------------------
-# MCP members and the access-endpoint extensions
-#
-# An MCP member maps a plugin-local name (a key of the plugin's `mcpServers`) to an
-# access endpoint, which holds the client configuration. A remote endpoint has a URL and
-# transport; a stdio endpoint keeps its launch command in `client_config`. Either may be
-# associated with a registered MCP server or not.
+# Agent Plugin extended with mcp-members
 # ---------------------------------------------------------------------------
 
 
@@ -978,8 +973,6 @@ def test_plugin_version_entity_lists_endpoint_ids_and_status_reason(store, works
         entity = session.query(SqlAgentPluginVersion).one().to_mlflow_entity()
     assert entity.status == SkillStatus.DEPRECATED
     assert entity.status_reason == "Use 2.0.0"
-    # A plugin response names each endpoint by ID only, in the plugin's workspace; the
-    # configuration is read from the endpoint itself.
     assert entity.mcp_servers == {
         "fs": MCPAccessEndpoint(id="ae-fs", workspace=workspace),
         "search": MCPAccessEndpoint(id="ae-search", workspace=workspace),
@@ -1007,7 +1000,7 @@ def test_mcp_member_names_are_unique_within_a_plugin_version(store):
         _add_plugin_version(session, version="1.0.0")
         _add_plugin_version(session, version="2.0.0")
         session.flush()
-        # Names are exact `mcpServers` keys, so case makes a different member.
+        # case should make a different member.
         _add_mcp_member(session, "github", "ae-1")
         _add_mcp_member(session, "GitHub", "ae-2")
         # Another version may reuse a name.
@@ -1119,8 +1112,6 @@ def test_plugin_tag_changes_leave_mcp_members_and_endpoints_unchanged(store):
 def test_stdio_endpoint_round_trips_without_server_url_or_transport(store):
     client_config = {"command": "./bin/fs", "args": ["--root", "${PLUGIN_ROOT}"], "env": {}}
     with session_scope(store) as session:
-        # Passing None explicitly is what a store does for a stdio endpoint. A column
-        # default would silently replace it.
         session.add(
             SqlMCPAccessEndpoint(
                 id="ae-stdio",
