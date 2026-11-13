@@ -290,9 +290,9 @@ def test_db_backend_migration_downgrade_and_reupgrade(store):
 
 
 def test_db_backend_agent_plugin_migration_keeps_skills_and_endpoints(store):
-    # Skills and MCP access endpoints shipped in a release before the agent plugin tables,
-    # which arrive in their own migration. Removing that migration and applying it again
-    # must leave existing skills and endpoints as they were.
+    # A user upgrading from a release without agent plugins already has skills and MCP
+    # access endpoints. Downgrading to the schema from before agent plugins, then upgrading
+    # back to the current schema, must leave those skill and endpoint rows unchanged.
     url = MLFLOW_TRACKING_URI.get()
     config = _get_alembic_config(url)
     suffix = uuid.uuid4().hex[:8]
@@ -431,9 +431,8 @@ def test_db_backend_member_version_collation_matches_parent(store):
 
 
 def test_db_backend_mcp_member_names_are_case_sensitive(store):
-    # An MCP member name is the exact `mcpServers` key, so `GitHub` and `github` are two
-    # members. MySQL and SQL Server default to case-insensitive collations, which would
-    # reject the second as a duplicate primary key; the column pins a case-sensitive one.
+    # `GitHub` and `github` are different members. MySQL and SQL Server compare
+    # case-insensitively by default, so this checks the column's collation.
     name = f"mcp-case-{uuid.uuid4().hex[:8]}"
     with session_scope(store) as session:
         _seed_assembled_plugin(session, organization="acme", name=name, version="1.0.0", members=[])

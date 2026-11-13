@@ -4685,10 +4685,6 @@ class SqlMCPAccessEndpoint(Base):
     server_name = Column(String(256), nullable=True)
     server_version = Column(MCP_SERVER_VERSION_STRING, nullable=True)
     server_alias = Column(String(256), nullable=True)
-    # A remote endpoint sets url and transport_type; a stdio endpoint keeps its launch
-    # configuration in client_config and leaves both null. transport_type has no column
-    # default: SQLAlchemy would apply it in place of an explicit None and store a stdio
-    # endpoint as streamable-http.
     url = Column(String(2048), nullable=True)
     transport_type = Column(String(32), nullable=True)
     created_by = Column(String(256), nullable=True)
@@ -4697,9 +4693,7 @@ class SqlMCPAccessEndpoint(Base):
     last_updated_at = Column(BigInteger, default=get_current_time_millis, nullable=False)
     client_config = Column(JSON, nullable=True)
 
-    # An endpoint outlives its server association, so the server's collection has no
-    # delete-orphan cascade, and the relationship writes only server_name: the
-    # workspace belongs to the endpoint, so clearing the association must leave it set.
+    # Writes only server_name, so clearing the server keeps the endpoint and its workspace.
     # Deleting the server still deletes its endpoints.
     server = relationship(
         "SqlMCPServer",
@@ -5436,8 +5430,6 @@ class SqlAgentPluginVersion(Base):
             status_reason=self.status_reason,
             tags=tags,
             skills=skills,
-            # Plugin responses carry only the endpoint ID; configuration is read from
-            # the endpoint itself, which can change after the plugin version is created.
             mcp_servers={
                 m.member_name: MCPAccessEndpoint(id=m.access_endpoint_id, workspace=self.workspace)
                 for m in self.mcp_members
@@ -5679,9 +5671,7 @@ class SqlAgentPluginVersionMember(Base):
         )
 
 
-# MCP member names are the exact keys of a plugin's ``mcpServers`` map, so ``GitHub`` and
-# ``github`` are different members. MySQL and SQL Server default to case-insensitive
-# collations, which would merge them and reject the second as a duplicate primary key.
+# MCP member names ``GitHub`` and ``github`` need to be considered as different members.
 AGENT_PLUGIN_MCP_MEMBER_NAME_STRING = (
     String(128)
     .with_variant(MYSQL_VARCHAR(128, collation="utf8mb4_bin"), "mysql")
@@ -5706,8 +5696,7 @@ class SqlAgentPluginVersionMCPMember(Base):
     plugin_name = Column(String(128), nullable=False)
     plugin_version = Column(AGENT_PLUGIN_VERSION_STRING, nullable=False)
     member_name = Column(AGENT_PLUGIN_MCP_MEMBER_NAME_STRING, nullable=False)
-    # No foreign key to mcp_access_endpoints: an endpoint may be deleted while plugin
-    # versions still reference it, and the reference then stays as it was.
+    # No foreign key: an endpoint may be deleted while plugin versions still reference it.
     access_endpoint_id = Column(String(36), nullable=False)
 
     plugin_version_rel = relationship(
