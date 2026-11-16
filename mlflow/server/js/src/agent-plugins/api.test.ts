@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { AgentPluginApi } from './api';
+import { createMockAgentPlugin, createMockAgentPluginVersion } from './test-utils';
 import {
   AgentPluginSourceType,
   AgentPluginStatus,
@@ -28,36 +29,15 @@ const versionRequest: CreateAgentPluginVersionRequest = {
     remote: { client_config: clientConfig },
   },
 };
-const auditFields = {
-  created_by: 'alice',
-  last_updated_by: 'alice',
-  creation_timestamp: 1,
-  last_updated_timestamp: 1,
-};
-const endpoint = {
-  endpoint_id: createdEndpointId,
-  server_name: null,
-  url: clientConfig.url,
-  transport_type: 'streamable-http',
-  client_config: clientConfig,
-};
-const pluginVersion = {
-  ...auditFields,
-  name: 'pr-workflow',
-  organization: 'acme',
+const pluginVersion = createMockAgentPluginVersion({
   version: VERSION,
   plugin_json: pluginJson,
-  source_type: 'assembled',
-  source: null,
-  ref: null,
-  subpath: null,
-  status: 'active',
-  status_reason: null,
-  skills: versionRequest.skills,
-  mcp_servers: { existing: { ...endpoint, endpoint_id: existingEndpointId }, remote: endpoint },
-  aliases: [],
-  tags: {},
-};
+  skills: versionRequest.skills ?? [],
+  mcp_servers: {
+    existing: { endpoint_id: existingEndpointId },
+    remote: { endpoint_id: createdEndpointId },
+  },
+});
 const searchParams = {
   filter_string: "status = 'active'",
   max_results: 25,
@@ -114,17 +94,12 @@ describe('Agent Plugin API', () => {
   describe.each([undefined, 'acme'])('organization: %s', (organization) => {
     const path = organization ? '/@acme/pr-workflow' : '/pr-workflow';
     const versionPath = `${path}/versions/${VERSION}`;
-    const plugin = {
-      ...auditFields,
-      name: 'pr-workflow',
+    const plugin = createMockAgentPlugin({
       organization: organization ?? '',
       description: 'PR tools',
-      icons: null,
-      status: 'active',
       latest_version: VERSION,
       aliases: [{ alias: 'production', version: VERSION }],
-      tags: {},
-    };
+    });
     const versionResponse = { ...pluginVersion, organization: organization ?? '' };
     const createRequest: CreateAgentPluginRequest = { name: 'pr-workflow', organization, description: 'PR tools' };
     const updateRequest = { description: null, icons: null };
@@ -132,17 +107,6 @@ describe('Agent Plugin API', () => {
     const tag = { key: 'owner/team', value: 'platform' };
     const alias = { alias: 'production', version: VERSION };
     const registerRequest = { ...versionRequest, organization };
-    const importRequest = {
-      plugin_json: pluginJson,
-      organization,
-      source_type: AgentPluginSourceType.Git,
-      source,
-      ref: 'main',
-      member_skills: [
-        { name: 'code-review', subpath: 'skills/code-review', description: 'Review code', digest: 'a'.repeat(64) },
-      ],
-      mcp_servers: versionRequest.mcp_servers,
-    };
 
     const endpoints: EndpointCase[] = [
       {
@@ -168,40 +132,6 @@ describe('Agent Plugin API', () => {
         method: 'POST',
         body: registerRequest,
         response: versionResponse,
-      },
-      {
-        name: 'import a package and return the plugin and newly created member versions',
-        invoke: () => AgentPluginApi.importPlugin(importRequest),
-        path: '/import',
-        method: 'POST',
-        body: importRequest,
-        response: {
-          plugin_version: {
-            ...versionResponse,
-            source_type: 'git',
-            source,
-            ref: 'main',
-            skills: [organization ? `skills:/@${organization}/code-review/1` : 'skills:/code-review/1'],
-          },
-          member_skill_versions: [
-            {
-              ...auditFields,
-              name: 'code-review',
-              organization: organization ?? '',
-              workspace: 'default',
-              version: 1,
-              source_type: 'git',
-              source,
-              ref: 'main',
-              subpath: 'skills/code-review',
-              digest: 'a'.repeat(64),
-              status: 'active',
-              status_reason: null,
-              aliases: [],
-              tags: {},
-            },
-          ],
-        },
       },
       {
         name: 'get a plugin',
@@ -283,7 +213,7 @@ describe('Agent Plugin API', () => {
       },
       {
         name: 'delete a version tag',
-        invoke: () => AgentPluginApi.deletePluginVersionTag('pr-workflow', VERSION, tag, organization),
+        invoke: () => AgentPluginApi.deletePluginVersionTag('pr-workflow', VERSION, tag.key, organization),
         path: `${versionPath}/tags/owner%2Fteam`,
         method: 'DELETE',
       },
@@ -365,15 +295,18 @@ describe('Agent Plugin API', () => {
       fields: { source },
       storedSource: { source_type: 'git', source, ref: null, subpath: null },
     },
-  ])('forwards a $name package pointer as JSON without fetching its content', async ({ fields, storedSource }) => {
-    const request = { plugin_json: pluginJson, ...fields };
-    const response = { ...pluginVersion, ...storedSource, skills: [], mcp_servers: {} };
-    fetchMock.mockImplementationOnce(() => jsonResponse(response));
+  ] as const)(
+    'forwards a $name package pointer as JSON without fetching its content',
+    async ({ fields, storedSource }) => {
+      const request = { plugin_json: pluginJson, ...fields };
+      const response = { ...pluginVersion, ...storedSource, skills: [], mcp_servers: {} };
+      fetchMock.mockImplementationOnce(() => jsonResponse(response));
 
-    expect(await AgentPluginApi.createPluginVersion('pr-workflow', request, 'acme')).toEqual(response);
+      expect(await AgentPluginApi.createPluginVersion('pr-workflow', request, 'acme')).toEqual(response);
 
-    expectRequest({ path: '/@acme/pr-workflow/versions', method: 'POST', body: request });
-  });
+      expectRequest({ path: '/@acme/pr-workflow/versions', method: 'POST', body: request });
+    },
+  );
 
   it.each([
     { name: 'omitted name', request: versionRequest, manifest: pluginJson },
