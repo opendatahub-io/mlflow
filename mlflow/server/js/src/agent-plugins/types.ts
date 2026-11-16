@@ -1,18 +1,22 @@
-import type { MCPAccessEndpoint, MCPAccessEndpointPayload } from '../mcp-registry/types';
-import type { RegistryIcon, SkillStatus, SkillVersion } from '../skill-registry/types';
+import type { MCPAccessEndpointPayload } from '../mcp-registry/types';
+import {
+  SkillStatus as AgentPluginStatus,
+  SkillAction as AgentPluginAction,
+  type RegistryIcon,
+  type SkillVersion,
+} from '../skill-registry/types';
 
-export enum AgentPluginStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  DEPRECATED = 'deprecated',
-  DELETED = 'deleted',
-}
+export { AgentPluginStatus, AgentPluginAction };
 
 export enum AgentPluginSourceType {
   Git = 'git',
   OCI = 'oci',
   Zip = 'zip',
+  MLflow = 'mlflow',
+  Assembled = 'assembled',
 }
+export type AgentPluginStoredSourceType = `${AgentPluginSourceType}`;
+export type AgentPluginRequestSourceType = Exclude<AgentPluginStoredSourceType, 'mlflow' | 'assembled'>;
 export type CreateAgentPluginVersionStatus = AgentPluginStatus.ACTIVE | AgentPluginStatus.DRAFT;
 
 export type AgentPluginAuditFields = {
@@ -25,29 +29,33 @@ export type AgentPluginAuditFields = {
 export type AgentPlugin = AgentPluginAuditFields & {
   name: string;
   organization: string;
-  description?: string | null;
-  icons: [RegistryIcon] | null;
-  workspace: string | null;
-  status: SkillStatus | null;
+  description: string | null;
+  icons: RegistryIcon[] | null;
+  workspace?: string | null;
+  status: AgentPluginStatus | null;
   tags: Record<string, string>;
-  aliases: Record<string, string>;
+  aliases: AgentPluginAlias[];
   latest_version: string | null;
+  allowed_actions?: AgentPluginAction[];
 };
 
 export type AgentPluginVersion = AgentPluginAuditFields & {
   name: string;
   organization: string;
-  plugin_json: Record<string, any>;
-  source: GitSource | OCISource | ZIPSource | MLflowSource | null;
-  source_type: AgentPluginSourceType | null;
+  version: string;
+  plugin_json: PluginJSONPayload & { version: string };
+  source: string | null;
+  source_type: AgentPluginStoredSourceType | null;
+  ref: string | null;
+  subpath: string | null;
 
-  status: SkillStatus;
+  status: AgentPluginStatus;
   status_reason: string | null;
   tags: Record<string, string>;
   skills: string[];
-  mcp_servers: Record<string, MCPAccessEndpoint>;
+  mcp_servers: Record<string, AgentPluginMCPReference>;
   aliases: string[];
-  workspace: string | null;
+  workspace?: string | null;
 };
 
 export type SearchAgentPluginsParams = {
@@ -89,17 +97,17 @@ export type CreateAgentPluginVersionRequest = {
   plugin_json?: PluginJSONPayload | null;
   skills?: string[] | null;
   mcp_servers?: Record<string, MCPAccessEndpointPayload>;
-  source_type?: AgentPluginSourceType | null;
+  source_type?: AgentPluginRequestSourceType | null;
   source?: string | null;
   ref?: string | null;
   subpath?: string | null;
-  status?: SkillStatus; // Defaults to active; lifecycle validation applies
+  status?: AgentPluginStatus; // Defaults to active; lifecycle validation applies
   status_reason?: string | null;
 };
 
 export type RegisterAgentPluginRequest = CreateAgentPluginVersionRequest & {
   name?: string | null;
-  organization?: string | null;
+  organization?: string;
 };
 
 export type UploadedAgentPluginVersionRequest = {
@@ -125,11 +133,11 @@ export type ImportRegisterRequest = {
   organization?: string;
   member_skills?: MemberSkillDefinition[];
   mcp_servers?: Record<string, MCPAccessEndpointPayload>;
-  source_type?: AgentPluginSourceType | null;
+  source_type?: AgentPluginRequestSourceType | null;
   source?: string | null;
   ref?: string | null;
   subpath?: string | null;
-  status?: SkillStatus;
+  status?: AgentPluginStatus;
   status_reason?: string | null;
 };
 
@@ -138,7 +146,7 @@ export type ImportRegisterResponse = {
   member_skill_versions: SkillVersion[];
 };
 
-type PluginJSONPayload = {
+export type PluginJSONPayload = {
   $schema: string;
   name: string;
   version?: string | null;
@@ -162,49 +170,6 @@ export type SearchAgentPluginVersionsResponse = {
   next_page_token: string | null;
 };
 
-type AgentPluginRequestBase = {
-  subpath?: string | null;
-  digest?: string | null;
-  status?: CreateAgentPluginVersionStatus;
-};
-
-// agent plugin version register requests
-
-// type RegisterAgentPluginIdentity = {
-//   name: string;
-//   organization?: string;
-// };
-//
-// type ExternalAgentPluginVersionRequestBase = AgentPluginRequestBase & {
-//   source: string;
-// };
-//
-// type InferredAgentPluginVersionRequest = ExternalAgentPluginVersionRequestBase & {
-//   source_type?: null;
-//   ref?: string | null;
-// };
-//
-// type GitAgentPluginVersionRequest = ExternalAgentPluginVersionRequestBase & {
-//   source_type: AgentPluginSourceType.Git;
-//   ref?: string | null;
-// };
-//
-// type OCIOrZipAgentPluginVersionRequest = ExternalAgentPluginVersionRequestBase & {
-//   source_type: AgentPluginSourceType.OCI | AgentPluginSourceType.Zip;
-//   ref?: never;
-// };
-//
-// export type ExternalAgentPluginVersionRequest =
-//   | InferredAgentPluginVersionRequest
-//   | GitAgentPluginVersionRequest
-//   | OCIOrZipAgentPluginVersionRequest;
-//
-// export type RegisterExternalAgentPluginRequest = ExternalAgentPluginVersionRequest & RegisterAgentPluginIdentity;
-// export type RegisterUploadedAgentPluginRequest = UploadedAgentPluginVersionRequest & RegisterAgentPluginIdentity;
-// export type RegisterAgentPluginRequest = RegisterExternalAgentPluginRequest | RegisterUploadedAgentPluginRequest;
-//
-// sources
-
 export type GitSource = {
   url: string;
   ref?: string | null;
@@ -226,6 +191,11 @@ export type MLflowSource = {
   subpath?: string | null;
 };
 
+export type AgentPluginAlias = {
+  alias: string;
+  version: string;
+};
+
 export type SetAgentPluginTagRequest = {
   key: string;
   value: string;
@@ -234,6 +204,10 @@ export type SetAgentPluginTagRequest = {
 export type SetAgentPluginAliasRequest = {
   alias: string;
   version: string;
+};
+
+export type AgentPluginMCPReference = {
+  endpoint_id: string;
 };
 
 export type AgentPluginMutationResponse = Record<string, never>;

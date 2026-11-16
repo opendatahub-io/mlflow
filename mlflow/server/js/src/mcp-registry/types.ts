@@ -130,8 +130,10 @@ export type MCPAccessEndpointPayload =
     } & {
       [K in keyof CreateMCPAccessEndpointRequest]?: never;
     })
-  | (CreateMCPAccessEndpointRequest & {
-      endpoint_id?: never;
+  | ({
+      endpoint_id?: null;
+    } & {
+      [K in keyof CreateMCPAccessEndpointRequest]?: CreateMCPAccessEndpointRequest[K] | null;
     });
 
 // ServerJSON payload types use camelCase field names to match the MCP server.json specification
