@@ -1,4 +1,3 @@
-import { DeleteAgentPluginParams } from '../agent-plugins/types';
 import { getArtifactChunkedText } from '../common/utils/ArtifactUtils';
 import { fetchAPI, fetchOrFail, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
 import { buildSearchParams } from '../common/utils/SearchUtils';

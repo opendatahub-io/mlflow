@@ -1,6 +1,5 @@
 import { fetchAPI, fetchOrFail, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
 import { buildSearchParams } from '../common/utils/SearchUtils';
-import type { SearchSkillsParams } from '../skill-registry/types';
 import type {
   AgentPlugin,
   AgentPluginMutationResponse,
@@ -9,8 +8,6 @@ import type {
   CreateAgentPluginVersionRequest,
   DeleteAgentPluginParams,
   DeleteAgentPluginVersionParams,
-  ImportRegisterRequest,
-  ImportRegisterResponse,
   RegisterAgentPluginRequest,
   SearchAgentPluginsParams,
   SearchAgentPluginsResponse,
@@ -20,7 +17,6 @@ import type {
   SetAgentPluginTagRequest,
   UpdateAgentPluginRequest,
   UpdateAgentPluginVersionRequest,
-  UploadedAgentPluginVersionRequest,
 } from './types';
 
 const BASE_URL = 'ajax-api/3.0/mlflow/agent-plugins';
@@ -29,27 +25,13 @@ type AgentPluginRegistyRequestError = Error & {
   errorCode?: string;
 };
 
-const buildAgentPluginSearchParams = (params: SearchSkillsParams = {}): string => {
+const buildAgentPluginSearchParams = (params: SearchAgentPluginsParams = {}): string => {
   return buildSearchParams({
     filter_string: params.filter_string,
     max_results: params.max_results,
     order_by: params.order_by,
     page_token: params.page_token,
   });
-};
-
-export const buildAgentPluginMultipartBody = (
-  // metadata: RegisterUploadedSkillRequest | UploadedSkillVersionRequest,
-  metadata: UploadedAgentPluginVersionRequest,
-  content: Blob,
-) => {
-  const body = new FormData();
-  body.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }), 'metadata.json');
-  const gzipContent =
-    content.type === 'application/gzip' ? content : content.slice(0, content.size, 'application/gzip');
-  const filename = typeof File !== 'undefined' && content instanceof File ? content.name : 'skill.tar.gz';
-  body.append('content', gzipContent, filename);
-  return body;
 };
 
 const agentPluginUrl = (name: string, organization = '') =>
@@ -106,13 +88,6 @@ export const AgentPluginApi = {
     return fetchAPI(getAjaxUrl(`${BASE_URL}${buildAgentPluginSearchParams(params)}`));
   },
   registerPlugin,
-  importPlugin: (request: ImportRegisterRequest): Promise<ImportRegisterResponse> => {
-    return fetchAgentPluginJson(getAjaxUrl(`${BASE_URL}/import`), {
-      method: HTTPMethods.POST,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-  },
 
   getPlugin: (name: string, organization = ''): Promise<AgentPlugin> => {
     return fetchAPI(getAjaxUrl(agentPluginUrl(name, organization)));
@@ -150,7 +125,12 @@ export const AgentPluginApi = {
   getPluginVersion: (name: string, version: string, organization = ''): Promise<AgentPluginVersion> => {
     return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}`));
   },
-  updatePluginVersion: (name: string, version: string, organization = '', request: UpdateAgentPluginVersionRequest) => {
+  updatePluginVersion: (
+    name: string,
+    version: string,
+    organization = '',
+    request: UpdateAgentPluginVersionRequest,
+  ): Promise<AgentPluginVersion> => {
     return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}`), {
       method: HTTPMethods.PATCH,
       body: request,
@@ -161,7 +141,7 @@ export const AgentPluginApi = {
     version: string,
     organization = '',
     params: DeleteAgentPluginVersionParams = {},
-  ) => {
+  ): Promise<AgentPluginMutationResponse> => {
     const query = buildSearchParams(params);
     return fetchAPI(
       getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}${query}`),
@@ -192,20 +172,25 @@ export const AgentPluginApi = {
     request: SetAgentPluginTagRequest,
     organization = '',
   ): Promise<AgentPluginMutationResponse> => {
-    return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${version}/tags`), {
-      method: HTTPMethods.PATCH,
+    return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}/tags`), {
+      method: HTTPMethods.POST,
       body: request,
     });
   },
   deletePluginVersionTag: (
     name: string,
     version: string,
-    request: SetAgentPluginTagRequest,
+    key: string,
     organization = '',
   ): Promise<AgentPluginMutationResponse> => {
-    return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${version}/tags/${request.key}`), {
-      method: HTTPMethods.DELETE,
-    });
+    return fetchAPI(
+      getAjaxUrl(
+        `${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}/tags/${encodeURIComponent(key)}`,
+      ),
+      {
+        method: HTTPMethods.DELETE,
+      },
+    );
   },
 
   setPluginAlias: (
