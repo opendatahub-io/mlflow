@@ -19,6 +19,7 @@ export type AgentPluginStoredSourceType = `${AgentPluginSourceType}`;
 export type AgentPluginRequestSourceType = Exclude<AgentPluginStoredSourceType, 'mlflow' | 'assembled'>;
 export type CreateAgentPluginVersionStatus = AgentPluginStatus.ACTIVE | AgentPluginStatus.DRAFT;
 
+// Plugin
 export type AgentPluginAuditFields = {
   created_by: string | null;
   last_updated_by: string | null;
@@ -39,6 +40,35 @@ export type AgentPlugin = AgentPluginAuditFields & {
   allowed_actions?: AgentPluginAction[];
 };
 
+export type CreateAgentPluginRequest = {
+  name: string;
+  organization?: string; // Defaults to ''
+  description?: string | null;
+  icons?: RegistryIcon[] | null;
+};
+
+export type UpdateAgentPluginRequest = {
+  description?: string | null;
+  icons?: RegistryIcon[] | null;
+};
+
+export type SearchAgentPluginsParams = {
+  filter_string?: string;
+  max_results?: number;
+  order_by?: string[];
+  page_token?: string;
+};
+
+export type DeleteAgentPluginParams = {
+  cascade?: boolean; // Defaults to false
+};
+
+export type SearchAgentPluginsResponse = {
+  agent_plugins: AgentPlugin[];
+  next_page_token: string | null;
+};
+
+// Plugin Version
 export type AgentPluginVersion = AgentPluginAuditFields & {
   name: string;
   organization: string;
@@ -58,33 +88,10 @@ export type AgentPluginVersion = AgentPluginAuditFields & {
   workspace?: string | null;
 };
 
-export type SearchAgentPluginsParams = {
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
-};
-
 export type SearchAgentPluginVersionsParams = SearchAgentPluginsParams;
-
-export type DeleteAgentPluginParams = {
-  cascade?: boolean; // Defaults to false
-};
 
 export type DeleteAgentPluginVersionParams = {
   status_reason?: string;
-};
-
-export type CreateAgentPluginRequest = {
-  name: string;
-  organization?: string; // Defaults to ''
-  description?: string | null;
-  icons?: RegistryIcon[] | null;
-};
-
-export type UpdateAgentPluginRequest = {
-  description?: string | null;
-  icons?: RegistryIcon[] | null;
 };
 
 export type UpdateAgentPluginVersionRequest = {
@@ -105,11 +112,6 @@ export type CreateAgentPluginVersionRequest = {
   status_reason?: string | null;
 };
 
-export type RegisterAgentPluginRequest = CreateAgentPluginVersionRequest & {
-  name?: string | null;
-  organization?: string;
-};
-
 export type UploadedAgentPluginVersionRequest = {
   source?: null;
   source_type?: never;
@@ -120,6 +122,55 @@ export type UploadedAgentPluginVersionRequest = {
   status?: AgentPluginStatus;
 };
 
+export type RegisterAgentPluginRequest = CreateAgentPluginVersionRequest & {
+  name?: string | null;
+  organization?: string;
+};
+
+export type SearchAgentPluginVersionsResponse = {
+  agent_plugin_versions: AgentPluginVersion[];
+  next_page_token: string | null;
+};
+
+// Aliases
+export type AgentPluginAlias = {
+  alias: string;
+  version: string;
+};
+
+export type SetAgentPluginTagRequest = {
+  key: string;
+  value: string;
+};
+
+export type SetAgentPluginAliasRequest = {
+  alias: string;
+  version: string;
+};
+
+// Sources
+export type GitSource = {
+  url: string;
+  ref?: string | null;
+  subpath?: string | null;
+};
+
+export type OCISource = {
+  image: string;
+  subpath?: string | null;
+};
+
+export type ZIPSource = {
+  url: string;
+  subpath?: string | null;
+};
+
+export type MLflowSource = {
+  artifact_path: string;
+  subpath?: string | null;
+};
+
+// Misc.
 type MemberSkillDefinition = {
   name: string;
   subpath: string;
@@ -160,54 +211,8 @@ export type PluginJSONPayload = {
   [key: string]: unknown;
 };
 
-export type SearchAgentPluginsResponse = {
-  agent_plugins: AgentPlugin[];
-  next_page_token: string | null;
-};
-
-export type SearchAgentPluginVersionsResponse = {
-  agent_plugin_versions: AgentPluginVersion[];
-  next_page_token: string | null;
-};
-
-export type GitSource = {
-  url: string;
-  ref?: string | null;
-  subpath?: string | null;
-};
-
-export type OCISource = {
-  image: string;
-  subpath?: string | null;
-};
-
-export type ZIPSource = {
-  url: string;
-  subpath?: string | null;
-};
-
-export type MLflowSource = {
-  artifact_path: string;
-  subpath?: string | null;
-};
-
-export type AgentPluginAlias = {
-  alias: string;
-  version: string;
-};
-
-export type SetAgentPluginTagRequest = {
-  key: string;
-  value: string;
-};
-
-export type SetAgentPluginAliasRequest = {
-  alias: string;
-  version: string;
-};
+export type AgentPluginMutationResponse = Record<string, never>;
 
 export type AgentPluginMCPReference = {
   endpoint_id: string;
 };
-
-export type AgentPluginMutationResponse = Record<string, never>;
