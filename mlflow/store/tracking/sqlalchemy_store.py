@@ -11,7 +11,7 @@ import time
 import uuid
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from functools import lru_cache, reduce
 from pathlib import PurePath
 from typing import Any, Iterable, Literal, TypedDict, TypeVar
@@ -130,6 +130,11 @@ from mlflow.store.analytics import trace_correlation
 from mlflow.store.artifact.artifact_repository_registry import get_artifact_repository
 from mlflow.store.db.db_types import MSSQL, MYSQL, SQLITE
 from mlflow.store.entities.paged_list import PagedList
+from mlflow.store.entities.span_skill_link import (
+    SkillLinkRole,
+    SpanSkillLink,
+    _validate_span_skill_links,
+)
 from mlflow.store.tracking import (
     MAX_RESULTS_QUERY_TRACE_METRICS,
     MAX_TRACE_LINKS_PER_REQUEST,
@@ -175,6 +180,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlScorerVersion,
     SqlSpan,
     SqlSpanCostDailyRollup,
+    SqlSpanSkillLink,
     SqlTag,
     SqlTraceInfo,
     SqlTraceMetadata,
@@ -5683,6 +5689,42 @@ class SqlAlchemyStore(
                 )
                 for prompt_id in prompt_ids_to_add
             )
+
+    def upsert_span_skill_links(self, trace_id: str, links: list[SpanSkillLink]) -> None:
+        _validate_span_skill_links(trace_id, links)
+        with self.ManagedSessionMaker(read_only=False) as session:
+            trace_query = self._trace_query(session, for_update_or_delete=True).filter(
+                SqlTraceInfo.request_id == trace_id
+            )
+            if self.db_type == SQLITE:
+                # SQLite ignores FOR UPDATE. Acquire its writer lock before reading links,
+                # using the same scoped no-op UPDATE pattern as trace rollup locking.
+                trace_query.update(
+                    {SqlTraceInfo.request_id: SqlTraceInfo.request_id}, synchronize_session=False
+                )
+            if trace_query.first() is None:
+                raise MlflowException(
+                    f"Trace with ID '{trace_id}' not found.", RESOURCE_DOES_NOT_EXIST
+                )
+
+            created_at = get_current_time_millis()
+            for link in links:
+                role = link.role
+                values = asdict(link)
+                values["role"] = role.value
+                identity = {key: value for key, value in values.items() if key != "role"}
+                query = session.query(SqlSpanSkillLink).filter_by(trace_id=trace_id, **identity)
+                if self.db_type == MYSQL:
+                    # Read the last committed value after waiting for the trace lock, even
+                    # when the connection uses MySQL's default REPEATABLE READ isolation.
+                    query = query.with_for_update()
+                existing = query.one_or_none()
+                if existing is None:
+                    session.add(
+                        SqlSpanSkillLink(trace_id=trace_id, created_at=created_at, **values)
+                    )
+                elif role == SkillLinkRole.ACTIVATION:
+                    existing.role = role.value
 
     def calculate_trace_filter_correlation(
         self,

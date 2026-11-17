@@ -9,6 +9,7 @@ import tracemalloc
 import uuid
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -58,9 +59,11 @@ from mlflow.protos.databricks_pb2 import (
 )
 from mlflow.store.artifact.artifact_repo import ArtifactRepository
 from mlflow.store.db.db_types import MSSQL, MYSQL, POSTGRES, SQLITE
+from mlflow.store.entities.span_skill_link import SkillLinkRole, SpanSkillLink
 from mlflow.store.tracking.dbmodels.models import (
     SqlSpan,
     SqlSpanMetrics,
+    SqlSpanSkillLink,
     SqlTraceInfo,
     SqlTraceMetadata,
     SqlTraceMetrics,
@@ -3797,6 +3800,326 @@ def test_search_traces_with_prompts_filter_multiple_prompts(store: SqlAlchemySto
     traces, _ = store.search_traces([exp_id], filter_string='prompt = "prompt-c/3"')
     assert len(traces) == 1
     assert traces[0].request_id == trace2_id
+
+
+def _span_skill_link(**kwargs):
+    return SpanSkillLink(**{
+        "span_id": "skill-span",
+        "skill_workspace": "shared",
+        "skill_name": "review",
+        "skill_version": 1,
+        **kwargs,
+    })
+
+
+def _stored_skill_links(store, trace_id):
+    with store.ManagedSessionMaker() as session:
+        return [
+            dict(row)
+            for row in session.execute(
+                sqlalchemy
+                .select(SqlSpanSkillLink.__table__)
+                .where(SqlSpanSkillLink.trace_id == trace_id)
+                .order_by(SqlSpanSkillLink.span_id)
+            ).mappings()
+        ]
+
+
+def test_upsert_span_skill_links_identity_and_trace_unchanged(store_and_trace_info):
+    store, trace = store_and_trace_info
+    before = store.get_trace_info(trace.trace_id).to_dict()
+    link = _span_skill_link()
+    links = [
+        link,
+        replace(link, span_id="other-span"),
+        replace(link, skill_workspace="other-workspace"),
+        replace(link, skill_organization="acme"),
+        replace(link, skill_name="other-skill"),
+        replace(link, skill_version=2),
+        replace(
+            link,
+            span_id="s" * 50,
+            skill_workspace="w" * 63,
+            skill_name="n" * 128,
+            skill_organization="o" * 64,
+        ),
+    ]
+    assert store.upsert_span_skill_links(trace.trace_id, links) is None
+    rows = _stored_skill_links(store, trace.trace_id)
+    assert len(rows) == len(links)
+    assert all(row["role"] == "activation" and row["created_at"] > 0 for row in rows)
+    assert store.get_trace_info(trace.trace_id).to_dict() == before
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlSpan).filter_by(trace_id=trace.trace_id).count() == 0
+
+    other = _create_trace(store, "other-skill-trace", trace.experiment_id)
+    store.upsert_span_skill_links(other.trace_id, [link])
+    assert len(_stored_skill_links(store, other.trace_id)) == 1
+
+
+@pytest.mark.parametrize("role", list(SkillLinkRole))
+def test_upsert_span_skill_links_role_inputs(store_and_trace_info, role):
+    store, trace = store_and_trace_info
+    link = _span_skill_link(role=role)
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    (row,) = _stored_skill_links(store, trace.trace_id)
+    assert type(row["role"]) is str
+    assert row["role"] == role.value
+    assert link.role is role
+
+
+@pytest.mark.parametrize(
+    "roles",
+    [
+        (SkillLinkRole.USAGE, SkillLinkRole.USAGE),
+        (SkillLinkRole.USAGE, SkillLinkRole.ACTIVATION),
+        (SkillLinkRole.ACTIVATION, SkillLinkRole.USAGE),
+        (SkillLinkRole.ACTIVATION, SkillLinkRole.ACTIVATION),
+    ],
+)
+@pytest.mark.parametrize("single_batch", [False, True])
+def test_upsert_span_skill_links_role_conflicts(store_and_trace_info, roles, single_batch):
+    store, trace = store_and_trace_info
+    links = [_span_skill_link(role=role) for role in roles]
+    with mock.patch.object(sqlalchemy_store_module, "get_current_time_millis", return_value=1000):
+        store.upsert_span_skill_links(trace.trace_id, links if single_batch else links[:1])
+    with mock.patch.object(sqlalchemy_store_module, "get_current_time_millis", return_value=2000):
+        store.upsert_span_skill_links(trace.trace_id, links)
+        store.upsert_span_skill_links(trace.trace_id, links[::-1])
+    (row,) = _stored_skill_links(store, trace.trace_id)
+    assert row["role"] == ("activation" if SkillLinkRole.ACTIVATION in roles else "usage")
+    assert row["created_at"] == 1000
+    assert row["skill_organization"] == ""
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("span_id", ""),
+        ("span_id", "s" * 51),
+        ("span_id", None),
+        ("skill_workspace", ""),
+        ("skill_workspace", "w" * 64),
+        ("skill_organization", None),
+        ("skill_organization", "o" * 65),
+        ("skill_name", ""),
+        ("skill_name", "n" * 129),
+        ("skill_name", 1),
+        ("skill_version", 0),
+        ("skill_version", -1),
+        ("skill_version", True),
+        ("skill_version", 1.0),
+        ("skill_version", "1"),
+        ("skill_version", 2**31),
+        ("role", "activation"),
+        ("role", "usage"),
+        ("role", "invalid"),
+        ("role", "ACTIVATION"),
+        ("role", ""),
+        ("role", None),
+        ("role", 1),
+        ("role", True),
+        ("role", []),
+        ("role", {}),
+    ],
+)
+def test_upsert_span_skill_links_invalid_batch(store_and_trace_info, field, value):
+    store, trace = store_and_trace_info
+    with pytest.raises(MlflowException, match="must be") as exc:
+        store.upsert_span_skill_links(
+            trace.trace_id, [_span_skill_link(), _span_skill_link(**{field: value})]
+        )
+    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
+    assert _stored_skill_links(store, trace.trace_id) == []
+
+
+@pytest.mark.parametrize("role", ["activation", "usage", "invalid"])
+def test_upsert_span_skill_links_invalid_role_preserves_existing_links(store_and_trace_info, role):
+    store, trace = store_and_trace_info
+    link = _span_skill_link(role=SkillLinkRole.USAGE)
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    before = _stored_skill_links(store, trace.trace_id)
+
+    with pytest.raises(MlflowException, match="role must be") as exc:
+        store.upsert_span_skill_links(
+            trace.trace_id,
+            [
+                replace(link, role=SkillLinkRole.ACTIVATION),
+                replace(link, span_id="invalid-role", role=role),
+            ],
+        )
+    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
+    assert all(repr(role.value) in str(exc.value) for role in SkillLinkRole)
+    assert _stored_skill_links(store, trace.trace_id) == before
+
+
+@pytest.mark.parametrize("trace_id", ["", None, "t" * 51])
+def test_upsert_span_skill_links_invalid_trace_id(store, trace_id):
+    with pytest.raises(MlflowException, match="trace_id must be") as exc:
+        store.upsert_span_skill_links(trace_id, [])
+    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
+
+
+@pytest.mark.parametrize("links", [None, {}, [{}]])
+def test_upsert_span_skill_links_invalid_payload(store_and_trace_info, links):
+    store, trace = store_and_trace_info
+    with pytest.raises(MlflowException, match="list of SpanSkillLink") as exc:
+        store.upsert_span_skill_links(trace.trace_id, links)
+    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
+
+
+@pytest.mark.parametrize("links", [[], [_span_skill_link()]])
+def test_upsert_span_skill_links_missing_trace(store, links):
+    with pytest.raises(MlflowException, match="Trace with ID .* not found") as exc:
+        store.upsert_span_skill_links("missing-trace", links)
+    assert exc.value.error_code == "RESOURCE_DOES_NOT_EXIST"
+
+
+def test_upsert_span_skill_links_empty_batch(store_and_trace_info):
+    store, trace = store_and_trace_info
+    assert store.upsert_span_skill_links(trace.trace_id, []) is None
+    assert _stored_skill_links(store, trace.trace_id) == []
+
+
+@pytest.mark.parametrize("workspaces_enabled", [True], indirect=True)
+@pytest.mark.parametrize("existing", [False, True])
+@pytest.mark.parametrize("empty_batch", [False, True])
+def test_upsert_span_skill_links_is_workspace_scoped(store, existing, empty_batch):
+    link = _span_skill_link(skill_workspace="team-skill-b", role=SkillLinkRole.USAGE)
+    with WorkspaceContext("team-skill-a"):
+        exp_id = store.create_experiment("skill-trace")
+        trace = _create_trace(store, f"tr-{uuid.uuid4().hex}", exp_id)
+        if existing:
+            store.upsert_span_skill_links(trace.trace_id, [link])
+        before_trace = store.get_trace_info(trace.trace_id).to_dict()
+        before_links = _stored_skill_links(store, trace.trace_id)
+
+    with WorkspaceContext("team-skill-b"):
+        store.create_experiment("other-skill-trace")
+        # Access to the skill's workspace does not grant access to the owning trace.
+        links = (
+            []
+            if empty_batch
+            else [
+                replace(link, role=SkillLinkRole.ACTIVATION),
+                replace(link, span_id="new-span"),
+            ]
+        )
+        with pytest.raises(MlflowException, match="Trace with ID .* not found") as exc:
+            store.upsert_span_skill_links(trace.trace_id, links)
+        assert exc.value.error_code == "RESOURCE_DOES_NOT_EXIST"
+
+    with WorkspaceContext("team-skill-a"):
+        assert store.get_trace_info(trace.trace_id).to_dict() == before_trace
+        assert _stored_skill_links(store, trace.trace_id) == before_links
+        # The owner can still write links referring to another workspace after the denial.
+        store.upsert_span_skill_links(
+            trace.trace_id, [replace(link, role=SkillLinkRole.ACTIVATION)]
+        )
+        (row,) = _stored_skill_links(store, trace.trace_id)
+        assert row["skill_workspace"] == "team-skill-b"
+        assert row["role"] == "activation"
+
+
+def test_upsert_span_skill_links_rolls_back_write_failure(store_and_trace_info):
+    store, trace = store_and_trace_info
+    link = _span_skill_link(role=SkillLinkRole.USAGE)
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    before = _stored_skill_links(store, trace.trace_id)
+    inserted = []
+
+    def fail_second_insert(mapper, connection, target):
+        inserted.append(target.span_id)
+        if target.span_id == "failure":
+            raise SQLAlchemyError("injected skill-link write failure")
+
+    sqlalchemy.event.listen(SqlSpanSkillLink, "before_insert", fail_second_insert)
+    try:
+        with pytest.raises(MlflowException, match="injected skill-link write failure"):
+            store.upsert_span_skill_links(
+                trace.trace_id,
+                [
+                    replace(link, role=SkillLinkRole.ACTIVATION),
+                    replace(link, span_id="inserted-before-failure"),
+                    replace(link, span_id="failure"),
+                ],
+            )
+    finally:
+        sqlalchemy.event.remove(SqlSpanSkillLink, "before_insert", fail_second_insert)
+    assert inserted == ["inserted-before-failure", "failure"]
+    assert _stored_skill_links(store, trace.trace_id) == before
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_upsert_span_skill_links_concurrent(store_and_trace_info, existing):
+    store, trace = store_and_trace_info
+    link = _span_skill_link(role=SkillLinkRole.USAGE)
+    if existing:
+        with mock.patch.object(
+            sqlalchemy_store_module, "get_current_time_millis", return_value=1000
+        ):
+            store.upsert_span_skill_links(trace.trace_id, [link])
+    barrier = threading.Barrier(4)
+
+    def write(index):
+        with WorkspaceContext(DEFAULT_WORKSPACE_NAME):
+            barrier.wait(timeout=10)
+            links = [
+                replace(link, role=SkillLinkRole.ACTIVATION if index % 2 else SkillLinkRole.USAGE),
+                replace(link, span_id="other-span"),
+            ]
+            store.upsert_span_skill_links(trace.trace_id, links if index % 2 else links[::-1])
+
+    with ThreadPoolExecutor(max_workers=4, thread_name_prefix="skill-link-writer") as executor:
+        futures = [executor.submit(write, index) for index in range(4)]
+        for future in futures:
+            future.result(timeout=30)
+    rows = _stored_skill_links(store, trace.trace_id)
+    assert len(rows) == 2
+    row = next(row for row in rows if row["span_id"] == link.span_id)
+    assert row["role"] == "activation"
+    if existing:
+        assert row["created_at"] == 1000
+
+
+def test_upsert_span_skill_links_survive_registry_deletion(store_and_trace_info):
+    store, trace = store_and_trace_info
+    store.create_skill("review")
+    store.create_skill_version("review")
+    link = _span_skill_link(skill_workspace=DEFAULT_WORKSPACE_NAME)
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    before = _stored_skill_links(store, trace.trace_id)
+    store.update_skill("review", description="updated")
+    store.delete_skill("review")
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    assert _stored_skill_links(store, trace.trace_id) == before
+    assert store.delete_traces(trace.experiment_id, trace_ids=[trace.trace_id]) == 1
+    assert _stored_skill_links(store, trace.trace_id) == []
+
+
+def test_upsert_span_skill_links_respects_database_identity(store_and_trace_info):
+    store, trace = store_and_trace_info
+    link = _span_skill_link(role=SkillLinkRole.USAGE)
+    store.upsert_span_skill_links(trace.trace_id, [link])
+    before = _stored_skill_links(store, trace.trace_id)
+    differently_cased = replace(link, span_id=link.span_id.upper(), role=SkillLinkRole.ACTIVATION)
+    with store.ManagedSessionMaker() as session:
+        same_identity = (
+            session
+            .query(SqlSpanSkillLink)
+            .filter_by(trace_id=trace.trace_id, span_id=differently_cased.span_id)
+            .count()
+            == 1
+        )
+
+    store.upsert_span_skill_links(trace.trace_id, [differently_cased])
+    rows = _stored_skill_links(store, trace.trace_id)
+    # Collated primary keys on MySQL/MSSQL must not bypass conflict handling.
+    if same_identity:
+        assert rows == [{**before[0], "role": "activation"}]
+    else:
+        assert len(rows) == 2
+        assert {row["role"] for row in rows} == {"activation", "usage"}
 
 
 def test_link_prompts_to_trace_nonexistent_trace_raises(store: SqlAlchemyStore):
