@@ -24,6 +24,8 @@ from mlflow.protos.databricks_pb2 import (
 from mlflow.store.entities.paged_list import PagedList
 from mlflow.store.tracking import NOT_SET, SEARCH_MAX_RESULTS_DEFAULT
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMember,
     SqlSkill,
     SqlSkillAlias,
     SqlSkillTag,
@@ -102,6 +104,7 @@ class SqlAlchemySkillRegistryMixin:
     """SQLAlchemy implementation of the Skill Registry store interface."""
 
     CREATE_SKILL_VERSION_RETRIES = 3
+    MAX_REPORTED_BLOCKING_REFERENCES = 10
     SKILL_SEARCH_TOKEN_SCOPE = "skills"
     SKILL_VERSION_SEARCH_TOKEN_SCOPE_PREFIX = "skill_versions"
 
@@ -300,6 +303,7 @@ class SqlAlchemySkillRegistryMixin:
             ).update(
                 {SqlSkill.last_updated_at: SqlSkill.last_updated_at}, synchronize_session=False
             )
+            self._purge_stale_skill_memberships(session, skill)
             owned_paths = [
                 path
                 for version in skill.skill_versions
@@ -314,10 +318,69 @@ class SqlAlchemySkillRegistryMixin:
                 )
             ]
             session.delete(skill)
-            session.flush()
+            try:
+                session.flush()
+            except IntegrityError as e:
+                # A plugin version that started referencing the skill after the check above
+                # is caught by the membership foreign key instead.
+                raise MlflowException(
+                    f"Skill '{name}' became referenced by an agent plugin version while it was "
+                    "being deleted; nothing was removed. Retry the delete.",
+                    error_code=RESOURCE_CONFLICT,
+                ) from e
             # The session commits when this block exits; the paths are only handed back
             # once the rows are gone, so a rolled-back delete never reclaims anything.
         return owned_paths
+
+    def _purge_stale_skill_memberships(self, session, skill: SqlSkill) -> None:
+        """
+        Fail if a live agent plugin version still contains one of the skill's versions, and
+        otherwise remove the membership rows held only by soft-deleted plugin versions.
+
+        Both steps run before anything else is removed. The stale rows have to go first
+        because the membership foreign key blocks deletion of a referenced skill version.
+        """
+        member = SqlAgentPluginVersionMember
+        plugin_version = SqlAgentPluginVersion
+        memberships = (
+            session
+            .query(member, plugin_version.status)
+            .join(
+                plugin_version,
+                (plugin_version.workspace == member.plugin_workspace)
+                & (plugin_version.organization == member.plugin_organization)
+                & (plugin_version.name == member.plugin_name)
+                & (plugin_version.version == member.plugin_version),
+            )
+            .filter(
+                member.plugin_workspace == skill.workspace,
+                member.member_organization == skill.organization,
+                member.member_name == skill.name,
+            )
+            .order_by(
+                member.plugin_organization,
+                member.plugin_name,
+                member.plugin_version,
+                member.member_version,
+            )
+            .all()
+        )
+        if live := [row for row, status in memberships if status != SkillStatus.DELETED.value]:
+            shown = ", ".join(
+                (f"@{row.plugin_organization}/" if row.plugin_organization else "")
+                + f"{row.plugin_name}/{row.plugin_version} (skill version {row.member_version})"
+                for row in live[: self.MAX_REPORTED_BLOCKING_REFERENCES]
+            )
+            remaining = len(live) - self.MAX_REPORTED_BLOCKING_REFERENCES
+            more = f", and {remaining} more" if remaining > 0 else ""
+            raise MlflowException(
+                f"Skill '{skill.name}' cannot be deleted while live agent plugin versions "
+                f"contain it: {shown}{more}. Delete or re-version those plugins first.",
+                error_code=RESOURCE_CONFLICT,
+            )
+        for row, _ in memberships:
+            session.delete(row)
+        session.flush()
 
     def search_skills(
         self,
