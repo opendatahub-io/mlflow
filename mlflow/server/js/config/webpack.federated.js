@@ -14,6 +14,7 @@ const webpack = require('webpack');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const { moduleFederationPlugins } = require('./moduleFederation');
+const { designSystemShimRule } = require('./designSystemShim');
 const { name } = require('../package.json');
 
 const IS_DEV = process.env.WEBPACK_WATCH === 'true';
@@ -63,6 +64,7 @@ module.exports = {
   }),
   module: {
     rules: [
+      designSystemShimRule,
       // TypeScript / JavaScript -- uses babel-loader with formatjs + emotion plugins
       {
         test: /\.(tsx?|jsx?)$/,

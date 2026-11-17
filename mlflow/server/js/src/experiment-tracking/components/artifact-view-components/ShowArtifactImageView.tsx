@@ -90,14 +90,14 @@ const classNames = {
   imageOuterContainer: {
     padding: '10px',
     overflow: 'scroll',
-    // Let's keep images (esp. transparent PNGs) on the white background regardless of the theme
-    background: 'white',
     minHeight: '100%',
   },
   imageWrapper: { display: 'inline-block' },
   image: {
     maxWidth: '100%',
     height: 'auto',
+    // Let's keep images (esp. transparent PNGs) on the white background regardless of the theme
+    background: 'white',
     cursor: 'pointer',
     '&:hover': {
       boxShadow: '0 0 4px gray',

@@ -2,6 +2,11 @@
 @use './action-groups' as action-groups;
 
 .pf-shell-root {
+  .du-bois-light-modal-mask,
+  .du-bois-dark-modal-mask {
+    background-color: var(--pf-t--global--background--color--backdrop--default) !important;
+  }
+
   /* Modals */
   .du-bois-light-modal,
   .du-bois-dark-modal {
@@ -87,10 +92,16 @@
       font-weight: var(--pf-t--global--font--weight--heading--default);
       font-size: var(--pf-t--global--font--size--heading--md);
       line-height: var(--pf-t--global--font--line-height--heading);
+      color: var(--pf-t--global--text--color--regular);
     }
 
     .du-bois-light-modal-close,
     .du-bois-dark-modal-close {
+      inset-block-start: var(--pf-t--global--spacer--lg);
+      inset-inline-end: var(--pf-t--global--spacer--lg);
+      width: auto;
+      height: auto;
+      margin: 0;
       padding: 0;
       border: none;
       background: transparent;
@@ -106,11 +117,20 @@
 
     .du-bois-light-modal-close-x,
     .du-bois-dark-modal-close-x {
-      inset-block-start: var(--pf-t--global--spacer--lg);
-      inset-inline-end: var(--pf-t--global--spacer--lg);
-      padding: var(--pf-t--global--spacer--sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: calc(
+        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+          var(--pf-t--global--spacer--sm) * 2
+      );
+      height: calc(
+        var(--pf-t--global--font--size--body--default) * var(--pf-t--global--font--line-height--body) +
+          var(--pf-t--global--spacer--sm) * 2
+      );
+      padding: 0;
       border: none;
-      border-radius: var(--pf-t--global--border--radius--small);
+      border-radius: var(--pf-t--global--border--radius--action--plain--default);
       color: var(--pf-t--global--icon--color--regular);
       background: transparent;
       box-shadow: none;
@@ -132,14 +152,50 @@
     }
   }
 
+  [role='dialog'][data-component-type='drawer_content'] {
+    --pf-t--global--background--color--primary--default: var(--pf-t--global--background--color--floating--default);
+
+    background-color: var(--pf-t--global--background--color--floating--default);
+  }
+
   /* Popovers */
   [role='dialog'][data-component-type='popover'],
   [data-radix-popper-content-wrapper] [role='dialog'] {
-    padding: var(--pf-t--global--spacer--lg);
-    border: none;
-    border-radius: var(--pf-t--global--border--radius--large);
+    padding: var(--pf-t--global--spacer--md);
+    border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+    border-radius: var(--pf-t--global--border--radius--medium);
     background-color: var(--pf-t--global--background--color--floating--default);
-    box-shadow: var(--pf-t--global--box-shadow--lg);
+    box-shadow: var(--pf-t--global--box-shadow--md);
+
+    &:not(:has(input, textarea, select, [role='listbox'], [role='combobox'])) {
+      font-size: var(--pf-t--global--font--size--body--sm);
+    }
+  }
+
+  [role='dialog'][data-component-id='mlflow.detect_issues.guidance'] {
+    box-shadow:
+      0 0 0 100vmax var(--pf-t--global--background--color--backdrop--default),
+      var(--pf-t--global--box-shadow--md);
+  }
+
+  [data-radix-popper-content-wrapper] > div:has(> [role='tooltip']) {
+    padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+    font-size: var(--pf-t--global--font--size--body--sm);
+    color: var(--pf-t--global--text--color--inverse);
+    background-color: var(--pf-t--global--background--color--inverse--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+
+    > span > svg[viewBox='0 0 30 10'] {
+      fill: var(--pf-t--global--background--color--inverse--default);
+    }
+  }
+
+  [data-radix-popper-content-wrapper] > [style*='--radix-hover-card-content'] {
+    background-color: var(--pf-t--global--background--color--floating--default);
+
+    > span > svg[viewBox='0 0 30 10'] {
+      fill: var(--pf-t--global--background--color--floating--default);
+    }
   }
 
   // Info popover icon

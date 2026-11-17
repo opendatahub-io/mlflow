@@ -5,6 +5,7 @@ const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const { designSystemShimRule } = require('./config/designSystemShim');
 
 const proxyTarget = process.env.MLFLOW_PROXY;
 const useProxyServer = !!proxyTarget && !process.env.MLFLOW_DEV_PROXY_MODE;
@@ -403,6 +404,7 @@ module.exports = function () {
         webpackConfig = enableOptionalTypescript(webpackConfig);
         webpackConfig = preservePdfjsBundles(webpackConfig);
         webpackConfig = suppressAutoprefixerWarnings(webpackConfig);
+        webpackConfig.module.rules.push(designSystemShimRule);
         webpackConfig.resolve = {
           ...webpackConfig.resolve,
           plugins: [new TsconfigPathsPlugin(), ...webpackConfig.resolve.plugins],
