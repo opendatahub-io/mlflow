@@ -1147,6 +1147,51 @@ class SqlTraceMetrics(Base):
     )
 
 
+class SqlSpanSkillLink(Base):
+    __tablename__ = "span_skill_links"
+
+    trace_id = Column(String(50), nullable=False)
+    span_id = Column(String(50), nullable=False)
+    skill_workspace = Column(String(63), nullable=False)
+    skill_organization = Column(String(64), nullable=False, default="", server_default="")
+    skill_name = Column(String(128), nullable=False)
+    skill_version = Column(Integer, nullable=False)
+    role = Column(String(20), nullable=False)
+    created_at = Column(BigInteger, nullable=False)
+
+    trace_info = relationship(
+        "SqlTraceInfo",
+        backref=backref("skill_links", cascade="all, delete-orphan", passive_deletes=True),
+    )
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "trace_id",
+            "span_id",
+            "skill_workspace",
+            "skill_organization",
+            "skill_name",
+            "skill_version",
+            name="span_skill_links_pk",
+        ),
+        # Span payloads may be archived, and registry changes must not erase historical links.
+        ForeignKeyConstraint(
+            ["trace_id"],
+            ["trace_info.request_id"],
+            name="fk_span_skill_links_trace_id",
+            ondelete="CASCADE",
+        ),
+        Index(
+            "ix_span_skill_links_skill",
+            "skill_workspace",
+            "skill_organization",
+            "skill_name",
+            "skill_version",
+            "trace_id",
+        ),
+    )
+
+
 class SqlSpanMetrics(Base):
     __tablename__ = "span_metrics"
 

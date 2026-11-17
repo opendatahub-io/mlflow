@@ -857,6 +857,20 @@ CREATE TABLE skill_version_tags (
 )
 
 
+CREATE TABLE span_skill_links (
+	trace_id VARCHAR(50) NOT NULL,
+	span_id VARCHAR(50) NOT NULL,
+	skill_workspace VARCHAR(63) NOT NULL,
+	skill_organization VARCHAR(64) DEFAULT '' NOT NULL,
+	skill_name VARCHAR(128) NOT NULL,
+	skill_version INTEGER NOT NULL,
+	role VARCHAR(20) NOT NULL,
+	created_at BIGINT NOT NULL,
+	PRIMARY KEY (trace_id, span_id, skill_workspace, skill_organization, skill_name, skill_version),
+	CONSTRAINT fk_span_skill_links_trace_id FOREIGN KEY(trace_id) REFERENCES trace_info (request_id) ON DELETE CASCADE
+)
+
+
 CREATE TABLE spans (
 	trace_id VARCHAR(50) NOT NULL,
 	experiment_id INTEGER NOT NULL,
