@@ -35,7 +35,11 @@ class SkillRegistryMixin:
         raise NotImplementedError(self.__class__.__name__)
 
     def delete_skill(self, name: str, organization: str = "") -> None:
-        """Hard-delete a skill with its versions, tags, and aliases."""
+        """Hard-delete a skill with its versions, tags, and aliases.
+
+        The delete fails without removing anything while one of the Skill's versions is a member
+        of a live, non-deleted Agent Plugin version.
+        """
         raise NotImplementedError(self.__class__.__name__)
 
     def delete_skill_and_collect_artifacts(self, name: str, organization: str = "") -> list[str]:

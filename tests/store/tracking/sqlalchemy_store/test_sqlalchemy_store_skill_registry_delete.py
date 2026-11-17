@@ -6,6 +6,9 @@ import pytest
 from mlflow.entities.skill import SkillStatus
 from mlflow.exceptions import MlflowException
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMember,
     SqlSkillVersion,
 )
 from mlflow.store.tracking.skill_registry.artifact_paths import (
@@ -32,6 +35,46 @@ def _upload(store, name="reviewer", organization="acme"):
 def _version_rows(store, name="reviewer"):
     with store.ManagedSessionMaker() as session:
         return session.query(SqlSkillVersion).filter(SqlSkillVersion.name == name).count()
+
+
+def _plugin_reference(
+    store,
+    *,
+    status=SkillStatus.ACTIVE.value,
+    plugin_name="reviewer-plugin",
+    plugin_version="1.0.0",
+    skill_version=1,
+):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        if session.get(SqlAgentPlugin, ("default", "acme", plugin_name)) is None:
+            session.add(
+                SqlAgentPlugin(
+                    workspace="default",
+                    organization="acme",
+                    name=plugin_name,
+                )
+            )
+        session.add(
+            SqlAgentPluginVersion(
+                workspace="default",
+                organization="acme",
+                name=plugin_name,
+                version=plugin_version,
+                plugin_json={},
+                status=status,
+            )
+        )
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_workspace="default",
+                plugin_organization="acme",
+                plugin_name=plugin_name,
+                plugin_version=plugin_version,
+                member_organization="acme",
+                member_name="reviewer",
+                member_version=skill_version,
+            )
+        )
 
 
 def test_delete_skill_removes_parent_versions_and_returns_owned_paths(store):
@@ -63,6 +106,89 @@ def test_delete_skill_never_returns_a_referenced_tree(store):
     owned = store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
 
     assert owned == [owned_path]
+
+
+def test_delete_skill_is_blocked_by_a_live_plugin_reference(store):
+    _upload(store)
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="reviewer-plugin/1.0.0") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_rolls_back_stale_cleanup_when_a_live_reference_exists(store):
+    _upload(store)
+    _plugin_reference(
+        store,
+        status=SkillStatus.DELETED.value,
+        plugin_name="old-reviewer-plugin",
+        plugin_version="0.9.0",
+    )
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="live agent plugin versions") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 2
+
+
+def test_delete_skill_treats_a_withdrawn_plugin_version_as_a_live_reference(store):
+    _upload(store)
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.query(SqlSkillVersion).filter(SqlSkillVersion.name == "reviewer").update({
+            "status": SkillStatus.DELETED.value
+        })
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="live agent plugin versions") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 1
+
+
+def test_delete_skill_reports_a_bounded_number_of_references(store):
+    _upload(store)
+    for minor in range(12):
+        _plugin_reference(store, plugin_version=f"1.{minor}.0")
+
+    with pytest.raises(MlflowException, match="and 2 more") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_racing_a_new_live_membership_is_a_conflict(store):
+    # A membership that appears after the preflight is stopped by the membership foreign key.
+    _upload(store)
+    _plugin_reference(store)
+
+    with mock.patch.object(store, "_purge_stale_skill_memberships") as precheck:
+        with pytest.raises(MlflowException, match="became referenced") as exc:
+            store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    precheck.assert_called_once()
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_purges_references_from_deleted_plugin_versions(store):
+    _, owned_path = _upload(store)
+    _plugin_reference(store, status=SkillStatus.DELETED.value)
+
+    assert store.delete_skill_and_collect_artifacts("reviewer", organization="acme") == [owned_path]
+
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 0
 
 
 def test_delete_skill_returns_none_and_matches_collecting_variant(store):
