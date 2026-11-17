@@ -4021,6 +4021,33 @@ def test_upsert_span_skill_links_is_workspace_scoped(store, existing, empty_batc
         assert row["role"] == "activation"
 
 
+def test_get_query_span_skill_links_uses_trace_workspace(store, workspaces_enabled):
+    trace_ids = {}
+    skill_workspaces = ("team-skill-a", "team-skill-b", "unregistered-workspace")
+    for workspace in ("team-skill-a", "team-skill-b"):
+        with WorkspaceContext(workspace):
+            exp_id = store.create_experiment(f"{workspace}-skill-trace")
+            trace = _create_trace(store, f"tr-{uuid.uuid4().hex}", exp_id)
+            trace_ids[workspace] = trace.trace_id
+            store.upsert_span_skill_links(
+                trace.trace_id,
+                [
+                    _span_skill_link(skill_workspace=skill_workspace)
+                    for skill_workspace in skill_workspaces
+                ],
+            )
+
+    for workspace in (*skill_workspaces, "unrelated-workspace"):
+        with WorkspaceContext(workspace), store.ManagedSessionMaker() as session:
+            rows = store._get_query(session, SqlSpanSkillLink).all()
+            assert {(row.trace_id, row.skill_workspace) for row in rows} == {
+                (trace_id, skill_workspace)
+                for trace_workspace, trace_id in trace_ids.items()
+                for skill_workspace in skill_workspaces
+                if not workspaces_enabled or trace_workspace == workspace
+            }
+
+
 def test_upsert_span_skill_links_rolls_back_write_failure(store_and_trace_info):
     store, trace = store_and_trace_info
     link = _span_skill_link(role=SkillLinkRole.USAGE)
