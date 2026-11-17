@@ -30,7 +30,7 @@ import { enableSessionExpiryHandling } from './common/utils/fetchWithSessionExpi
 // Note: In federated mode (Module Federation), app.tsx is NOT in the bundle --
 // the federated entry point (src/odh/extensions.ts) imports wrappers directly,
 // bypassing MLFlowRoot. So this CSS import only executes in standalone mode.
-import '@patternfly/patternfly/patternfly.css';
+import './odh/theme/standaloneTheme';
 
 enableSessionExpiryHandling();
 

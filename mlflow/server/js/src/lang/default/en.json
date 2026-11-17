@@ -10611,6 +10611,10 @@
     "defaultMessage": "Local providers",
     "description": "Provider picker section label for assistant providers that run through a local CLI or local server"
   },
+  "c5yJ2m": {
+    "defaultMessage": "Cancel",
+    "description": "Default cancel button in the footer of a dialog"
+  },
   "c6rG3e": {
     "defaultMessage": "Output is factually accurate and grounded in provided data",
     "description": "Issue category description for correctness"

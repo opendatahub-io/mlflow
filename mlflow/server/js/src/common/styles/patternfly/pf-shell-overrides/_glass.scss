@@ -1,0 +1,50 @@
+.pf-v6-theme-glass .pf-shell-container {
+  div:has(aside + main) {
+    background: transparent !important;
+  }
+
+  aside:has(+ main) {
+    margin: var(--pf-t--global--spacer--sm) 0 var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--sm);
+    background-color: var(--pf-t--global--background--color--glass--primary--default);
+    backdrop-filter: var(--pf-t--global--background--filter--glass--blur--primary);
+    border: var(--pf-t--global--border--width--glass--default) solid var(--pf-t--global--border--color--glass--default);
+    border-radius: var(--pf-t--global--border--radius--glass--default);
+    box-shadow: var(--pf-t--global--box-shadow--glass--default);
+  }
+
+  aside + main {
+    background-color: var(--pf-t--global--background--color--glass--primary--default) !important;
+    backdrop-filter: var(--pf-t--global--background--filter--glass--blur--primary);
+    border: var(--pf-t--global--border--width--glass--default) solid var(--pf-t--global--border--color--glass--default);
+    border-radius: var(--pf-t--global--border--radius--glass--default) !important;
+    box-shadow: var(--pf-t--global--box-shadow--glass--default) !important;
+  }
+}
+
+.pf-v6-theme-glass .mlflow-federated,
+.pf-v6-theme-glass .pf-shell-container {
+  [data-mlflow-ui='page-wrapper'] {
+    background-color: transparent !important;
+  }
+
+  .du-bois-light-collapse-content,
+  .du-bois-dark-collapse-content {
+    background-color: transparent !important;
+  }
+
+  div[role='table'] div[role='row'].table-isHeader,
+  div[role='table'] div[role='row'].table-isHeader > *,
+  div[role='table'] div[role='columnheader'] {
+    background-color: transparent !important;
+  }
+
+  .ag-theme-balham {
+    --ag-background-color: transparent;
+    --ag-odd-row-background-color: transparent;
+    --ag-header-background-color: transparent;
+  }
+
+  div:has(> button[data-component-id='mlflow.experiment_page.table_resizer.collapse']) {
+    background-color: var(--pf-t--global--background--color--floating--default) !important;
+  }
+}

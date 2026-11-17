@@ -85,6 +85,7 @@ export const ExperimentPageSideNavSection = ({
               pathname: Routes.getExperimentPageTabRoute(experimentId, item.tabName),
               search: preserveQueryParams ? search : getPreservedQueryString(search),
             }}
+            aria-current={isActive ? 'page' : undefined}
             onClick={() =>
               logTelemetryEvent({
                 componentId: item.componentId,
