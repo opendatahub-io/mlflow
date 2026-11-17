@@ -182,6 +182,21 @@ If rollups are enabled again later, maintenance rebuilds them from the authorita
 Disabling it requires the coordinated stop, deletion, and restart procedure above. Rolling upgrades
 that mix MLflow versions are not supported for this schema transition.
 
+### Upgrading a database for skill links
+
+The skill-link migration (`c5a8f2d9e731`) adds `span_skill_links` and its index without
+rewriting existing traces. Back up the database and stop MLflow writers before running
+`mlflow db upgrade <database-url>`, then restart them on the upgraded version.
+
+If the migration fails, keep writers stopped and inspect the Alembic revision and database
+schema before retrying. DDL rollback differs between database engines; a failed upgrade
+may leave the table or index behind. Restore the pre-upgrade backup if the schema is
+partially applied, rather than advancing the revision manually.
+
+Downgrading this revision drops the table and permanently removes its skill links while
+leaving traces intact. Upgrading again creates an empty table; it does not recover those
+links. Preserve a database backup before downgrading if historical skill links are needed.
+
 ### Upgrading a database with trace analytics data
 
 Take a database backup before beginning. Stop every MLflow writer before the final schema upgrade;
