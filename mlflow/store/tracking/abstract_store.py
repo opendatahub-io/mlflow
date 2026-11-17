@@ -44,6 +44,7 @@ from mlflow.entities.workspace import TraceArchivalConfig
 from mlflow.exceptions import MlflowException, MlflowNotImplementedException
 from mlflow.protos.databricks_pb2 import RESOURCE_DOES_NOT_EXIST, ErrorCode
 from mlflow.store.entities.paged_list import PagedList
+from mlflow.store.entities.span_skill_link import SpanSkillLink
 from mlflow.store.tracking import (
     MAX_RESULTS_QUERY_TRACE_METRICS,
     SEARCH_MAX_RESULTS_DEFAULT,
@@ -1661,6 +1662,29 @@ class AbstractStore(SkillRegistryMixin, MCPServerRegistryMixin, GatewayStoreMixi
         """
         raise NotImplementedError(
             f"Linking prompts to traces is not implemented for {self.__class__.__name__}."
+        )
+
+    def upsert_span_skill_links(self, trace_id: str, links: list[SpanSkillLink]) -> None:
+        """
+        Atomically persist skill observations for an existing, accessible trace.
+
+        This internal ingestion operation identifies observations by span ID and concrete skill
+        coordinates. Activation takes precedence over usage on conflicts. The store sets
+        ``created_at`` to epoch milliseconds on first insertion and preserves it on subsequent
+        calls. No relational span, registry entry, or skill access is required. Any failure rolls
+        back the batch.
+
+        Args:
+            trace_id: ID of the trace, which must exist and be accessible even for an empty batch.
+            links: Skill observations to persist. Each role must be a ``SkillLinkRole`` member.
+
+        Raises:
+            MlflowException: If input is invalid (``INVALID_PARAMETER_VALUE``), or the trace is
+                missing or inaccessible (``RESOURCE_DOES_NOT_EXIST``).
+            NotImplementedError: If the operation is not supported by this store.
+        """
+        raise NotImplementedError(
+            f"Persisting span skill links is not implemented for {self.__class__.__name__}."
         )
 
     def calculate_trace_filter_correlation(
