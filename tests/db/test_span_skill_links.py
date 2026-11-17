@@ -10,6 +10,7 @@ from mlflow.entities.trace_info import TraceInfo
 from mlflow.entities.trace_location import TraceLocation
 from mlflow.entities.trace_state import TraceState
 from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES, MLFLOW_TRACKING_URI
+from mlflow.store.db.db_types import SQLITE
 from mlflow.store.db.utils import _get_alembic_config
 from mlflow.store.tracking.dbmodels.models import SqlExperiment, SqlSpanSkillLink, SqlTraceInfo
 from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore
@@ -29,9 +30,17 @@ def store(request, tmp_path, monkeypatch):
     artifact_uri.mkdir()
     with WorkspaceContext("default"):
         store = store_cls(MLFLOW_TRACKING_URI.get(), artifact_uri.as_uri())
+        if store.db_type == SQLITE:
+            # Direct engine connections bypass ManagedSessionMaker's SQLite pragmas.
+            @sa.event.listens_for(store.engine, "connect")
+            def _enable_foreign_keys(dbapi_connection, _):
+                dbapi_connection.execute("PRAGMA foreign_keys = ON")
+
         try:
             yield store
         finally:
+            if store.db_type == SQLITE:
+                sa.event.remove(store.engine, "connect", _enable_foreign_keys)
             store._dispose_engine()
 
 
@@ -146,7 +155,8 @@ def test_span_skill_links_constraints(store, trace_info):
 
 def test_span_skill_link_organization_default_without_returning(store, trace_info, monkeypatch):
     # MySQL cannot return the server-generated organization in the composite primary key.
-    monkeypatch.setattr(store.engine.dialect, "insert_returning", False)
+    if hasattr(store.engine.dialect, "insert_returning"):
+        monkeypatch.setattr(store.engine.dialect, "insert_returning", False)
     with Session(store.engine) as session:
         link = SqlSpanSkillLink(**_link(trace_info.trace_id))
         session.add(link)
