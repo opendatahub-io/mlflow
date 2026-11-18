@@ -1083,6 +1083,62 @@ class LiveSpan(Span):
         """Set a single attribute to the span."""
         self._attributes.set(key, value)
 
+    def link_skill(
+        self,
+        *,
+        name: str,
+        version: int | None = None,
+        alias: str | None = None,
+        workspace: str | None = None,
+        organization: str = "",
+        cache_ttl_seconds: float | None = None,
+    ) -> None:
+        """Link a registered Skill to this span as an activation.
+
+        Exactly one of ``version`` or ``alias`` must be provided. Alias links are resolved to
+        a concrete version before the span is exported.
+
+        Example:
+
+            with mlflow.start_span("review") as span:
+                span.link_skill(name="code-review", version=1)
+
+        Alias lookup failures are propagated using the normal MLflow SDK exception conventions.
+        """
+        if (version is None) == (alias is None):
+            raise MlflowException.invalid_parameter_value(
+                "Exactly one of `version` and `alias` must be provided."
+            )
+
+        from mlflow.tracing.skill_link import resolve_skill_alias
+        from mlflow.utils.validation import _validate_organization_name, _validate_skill_name
+        from mlflow.utils.workspace_utils import resolve_entity_workspace_name
+
+        _validate_skill_name(name)
+        _validate_organization_name(organization)
+        if version is not None:
+            if not isinstance(version, int) or isinstance(version, bool) or version <= 0:
+                raise MlflowException.invalid_parameter_value(
+                    "Skill version must be a positive integer."
+                )
+            resolved_workspace = resolve_entity_workspace_name(workspace)
+        else:
+            version, resolved_workspace = resolve_skill_alias(
+                name=name,
+                alias=alias,
+                organization=organization,
+                workspace=workspace,
+                cache_ttl_seconds=cache_ttl_seconds,
+            )
+
+        self.set_attributes({
+            SpanAttributeKey.SKILL_NAME: name,
+            SpanAttributeKey.SKILL_VERSION: version,
+            SpanAttributeKey.SKILL_WORKSPACE: resolved_workspace,
+            SpanAttributeKey.SKILL_ORGANIZATION: organization,
+            SpanAttributeKey.SKILL_ROLE: "activation",
+        })
+
     def set_status(self, status: SpanStatusCode | str):
         """
         Set the status of the span.
@@ -1602,6 +1658,9 @@ class NoOpSpan(Span):
         pass
 
     def set_attribute(self, key: str, value: Any):
+        pass
+
+    def link_skill(self, **kwargs):
         pass
 
     def set_description(self, description: str):

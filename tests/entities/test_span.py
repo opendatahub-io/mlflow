@@ -16,7 +16,15 @@ from opentelemetry.trace import Status as OTelStatus
 from opentelemetry.trace import StatusCode as OTelStatusCode
 
 import mlflow
-from mlflow.entities import LiveSpan, Span, SpanEvent, SpanStatus, SpanStatusCode, SpanType
+from mlflow.entities import (
+    LiveSpan,
+    SkillVersion,
+    Span,
+    SpanEvent,
+    SpanStatus,
+    SpanStatusCode,
+    SpanType,
+)
 from mlflow.entities.span import (
     LazySpan,
     NoOpSpan,
@@ -24,7 +32,7 @@ from mlflow.entities.span import (
 )
 from mlflow.exceptions import MlflowException
 from mlflow.tracing.attachments import Attachment
-from mlflow.tracing.constant import TRACE_ID_V4_PREFIX
+from mlflow.tracing.constant import TRACE_ID_V4_PREFIX, SpanAttributeKey
 from mlflow.tracing.provider import _get_tracer, trace_disabled
 from mlflow.tracing.utils import build_otel_context, encode_span_id, encode_trace_id
 from mlflow.tracing.utils.otlp import (
@@ -167,6 +175,87 @@ def test_set_status_raise_for_invalid_value():
     with mlflow.start_span("test_span") as span:
         with pytest.raises(MlflowException, match=r"INVALID is not a valid SpanStatusCode value."):
             span.set_status("INVALID")
+
+
+def test_link_skill_records_explicit_identity():
+    with mock.patch("mlflow.MlflowClient") as client_cls:
+        with mlflow.start_span("test_span") as span:
+            span.link_skill(
+                name="code-review",
+                version=3,
+                workspace="team-a",
+                organization="acme",
+            )
+
+    client_cls.assert_not_called()
+
+    assert span.get_attribute(SpanAttributeKey.SKILL_NAME) == "code-review"
+    assert span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 3
+    assert span.get_attribute(SpanAttributeKey.SKILL_WORKSPACE) == "team-a"
+    assert span.get_attribute(SpanAttributeKey.SKILL_ORGANIZATION) == "acme"
+    assert span.get_attribute(SpanAttributeKey.SKILL_DIGEST) is None
+    assert span.get_attribute(SpanAttributeKey.SKILL_ROLE) == "activation"
+
+
+def test_link_skill_resolves_alias():
+    with mock.patch(
+        "mlflow.tracing.skill_link.resolve_skill_alias", return_value=(7, "team-a")
+    ) as mock_resolve_skill_alias:
+        with mlflow.start_span("test_span") as span:
+            span.link_skill(
+                name="code-review",
+                alias="production",
+                workspace="team-a",
+                organization="acme",
+                cache_ttl_seconds=30,
+            )
+
+    mock_resolve_skill_alias.assert_called_once_with(
+        name="code-review",
+        alias="production",
+        organization="acme",
+        workspace="team-a",
+        cache_ttl_seconds=30,
+    )
+    assert span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 7
+    assert span.get_attribute(SpanAttributeKey.SKILL_WORKSPACE) == "team-a"
+
+
+def test_link_skill_alias_reassignment_preserves_recorded_versions():
+    skill_versions = [
+        SkillVersion(name="code-review", version=1),
+        SkillVersion(name="code-review", version=2),
+    ]
+    with mock.patch("mlflow.MlflowClient") as client_cls:
+        client_cls.return_value.get_skill_version_by_alias.side_effect = skill_versions
+
+        with mlflow.start_span("first") as first_span:
+            first_span.link_skill(name="code-review", alias="production", cache_ttl_seconds=0)
+        with mlflow.start_span("second") as second_span:
+            second_span.link_skill(name="code-review", alias="production", cache_ttl_seconds=0)
+
+    assert first_span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 1
+    assert second_span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 2
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"name": "code-review"},
+        {"name": "code-review", "version": 3, "alias": "production"},
+    ],
+)
+def test_link_skill_requires_exactly_one_version_or_alias(kwargs):
+    with mlflow.start_span("test_span") as span:
+        with pytest.raises(MlflowException, match="Exactly one of `version` and `alias`"):
+            span.link_skill(**kwargs)
+
+
+@pytest.mark.parametrize("version", [0, -1, True, "3"])
+def test_link_skill_rejects_invalid_version(version):
+    with mlflow.start_span("test_span") as span:
+        with pytest.raises(MlflowException, match="positive integer"):
+            span.link_skill(name="code-review", version=version)
 
 
 def test_dict_conversion():

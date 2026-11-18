@@ -914,6 +914,11 @@ MLFLOW_ALIAS_PROMPT_CACHE_TTL_SECONDS = _EnvironmentVariable(
     "MLFLOW_ALIAS_PROMPT_CACHE_TTL_SECONDS", float, 60
 )
 
+#: Time-to-live in seconds for cached Skill aliases. Set to 0 to disable caching entirely.
+MLFLOW_ALIAS_SKILL_CACHE_TTL_SECONDS = _EnvironmentVariable(
+    "MLFLOW_ALIAS_SKILL_CACHE_TTL_SECONDS", float, 60
+)
+
 #: Time-to-live in seconds for cached version-based prompts, e.g., "prompts:/name/version", in the
 #: prompt cache. After this time, cached prompts will be considered stale and refreshed on next
 #: access. Set to 0 to disable caching entirely. (default: ``float("inf")``, infinite TTL)
