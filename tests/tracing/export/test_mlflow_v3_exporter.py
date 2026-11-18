@@ -22,7 +22,13 @@ from mlflow.protos.databricks_pb2 import (
     RESOURCE_DOES_NOT_EXIST,
     UNAUTHENTICATED,
 )
-from mlflow.tracing.constant import SpansLocation, TraceMetadataKey, TraceSizeStatsKey, TraceTagKey
+from mlflow.tracing.constant import (
+    SpanAttributeKey,
+    SpansLocation,
+    TraceMetadataKey,
+    TraceSizeStatsKey,
+    TraceTagKey,
+)
 from mlflow.tracing.export.mlflow_v3 import MlflowV3SpanExporter, _is_auth_failure
 from mlflow.tracing.provider import _get_trace_exporter
 from mlflow.tracing.trace_manager import InMemoryTraceManager
@@ -152,6 +158,48 @@ def test_export(is_async, monkeypatch):
 
     # Last active trace ID should be set
     assert mlflow.get_last_active_trace_id() is not None
+
+
+def test_export_preserves_skill_link_attributes(monkeypatch):
+    monkeypatch.setenv("MLFLOW_ENABLE_ASYNC_TRACE_LOGGING", "false")
+    mlflow.set_tracking_uri("http://localhost:5000")
+
+    now_ns = int(time.time() * 1e9)
+    otel_span = create_mock_otel_span(
+        name="root",
+        trace_id=54321,
+        span_id=1,
+        end_time=now_ns,
+    )
+    trace_id = generate_trace_id_v3(otel_span)
+    span = LiveSpan(otel_span, trace_id)
+    span.link_skill(
+        name="code-review",
+        version=3,
+        workspace="team-a",
+        organization="acme",
+    )
+
+    trace_manager = InMemoryTraceManager.get_instance()
+    trace_info = create_test_trace_info(trace_id, _EXPERIMENT_ID)
+    trace_manager.register_trace(otel_span.context.trace_id, trace_info)
+    trace_manager.register_span(span)
+
+    with (
+        mock.patch("mlflow.tracing.client.TracingClient.log_spans") as mock_log_spans,
+        mock.patch("mlflow.tracing.client.TracingClient.start_trace", return_value=trace_info),
+        mock.patch("mlflow.tracing.client.TracingClient._upload_trace_data"),
+    ):
+        exporter = MlflowV3SpanExporter()
+        exporter.export([otel_span])
+
+    mock_log_spans.assert_called_once()
+    exported_span = mock_log_spans.call_args.args[1][0]
+    assert exported_span.get_attribute(SpanAttributeKey.SKILL_NAME) == "code-review"
+    assert exported_span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 3
+    assert exported_span.get_attribute(SpanAttributeKey.SKILL_WORKSPACE) == "team-a"
+    assert exported_span.get_attribute(SpanAttributeKey.SKILL_ORGANIZATION) == "acme"
+    assert exported_span.get_attribute(SpanAttributeKey.SKILL_ROLE) == "activation"
 
 
 @pytest.mark.timeout(20)

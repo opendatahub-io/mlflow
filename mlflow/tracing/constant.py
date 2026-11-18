@@ -144,6 +144,12 @@ class SpanAttributeKey:
     # This attribute stores the trace ID of the linked gateway trace, used when a gateway
     # endpoint is called by a traced agent via distributed tracing (traceparent header).
     LINKED_GATEWAY_TRACE_ID = "mlflow.gateway.linkedTraceId"
+    SKILL_NAME = "mlflow.skill.name"
+    SKILL_VERSION = "mlflow.skill.version"
+    SKILL_WORKSPACE = "mlflow.skill.workspace"
+    SKILL_ORGANIZATION = "mlflow.skill.organization"
+    SKILL_DIGEST = "mlflow.skill.digest"
+    SKILL_ROLE = "mlflow.skill.role"
 
     # User and session IDs copied from trace metadata to root span attributes for OTLP export.
     # Following OTel semantic conventions:
