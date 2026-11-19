@@ -1,27 +1,17 @@
-export enum SkillStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  DEPRECATED = 'deprecated',
-  DELETED = 'deleted',
-}
+import {
+  RegistryStatus as SkillStatus,
+  RegistryAction as SkillAction,
+  type RegistryAuditFields,
+  type RegistryIcon,
+  type RegistrySearchParams,
+} from '../common/registryTypes';
 
-export enum SkillAction {
-  USE = 'USE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  MANAGE = 'MANAGE',
-}
+export { SkillStatus, SkillAction };
+export type { RegistryIcon };
 
 export type SkillRequestSourceType = 'git' | 'oci' | 'zip';
 export type SkillSourceType = SkillRequestSourceType | 'mlflow';
 export type CreateSkillVersionStatus = SkillStatus.ACTIVE | SkillStatus.DRAFT;
-
-export interface RegistryIcon {
-  src: string;
-  sizes?: string[];
-  mimeType?: string;
-  theme?: string;
-}
 
 export interface SkillAlias {
   alias: string;
@@ -30,12 +20,7 @@ export interface SkillAlias {
 
 export type SkillTags = Record<string, string>;
 
-export interface SkillAuditFields {
-  created_by: string | null;
-  last_updated_by: string | null;
-  creation_timestamp: number | null;
-  last_updated_timestamp: number | null;
-}
+export type SkillAuditFields = RegistryAuditFields;
 
 export interface Skill extends SkillAuditFields {
   name: string;
@@ -137,12 +122,7 @@ export interface SetSkillAliasRequest {
   version: number;
 }
 
-export interface SearchSkillsParams {
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
-}
+export type SearchSkillsParams = RegistrySearchParams;
 
 export type SearchSkillVersionsParams = SearchSkillsParams;
 
