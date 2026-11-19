@@ -1,9 +1,11 @@
-export enum MCPStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  DEPRECATED = 'deprecated',
-  DELETED = 'deleted',
-}
+import {
+  RegistryStatus as MCPStatus,
+  RegistryAction as MCPServerAction,
+  type RegistryIcon,
+  type RegistrySearchParams,
+} from '../common/registryTypes';
+
+export { MCPStatus, MCPServerAction };
 
 export enum TransportType {
   STDIO = 'stdio',
@@ -43,13 +45,6 @@ export enum ConnectionFormat {
   MCP_JSON = 'mcp-json',
 }
 
-export enum MCPServerAction {
-  USE = 'USE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  MANAGE = 'MANAGE',
-}
-
 // Entity types
 
 export interface MCPTool {
@@ -63,11 +58,7 @@ export interface MCPTool {
   execution?: Record<string, unknown>;
 }
 
-export interface MCPIcon {
-  src: string;
-  sizes?: string[];
-  mimeType?: string;
-  theme?: string;
+export interface MCPIcon extends RegistryIcon {
   source?: 'server' | 'version';
 }
 
@@ -265,27 +256,13 @@ export interface SetMCPServerAliasRequest {
 
 // Search parameters
 
-export interface SearchMCPServersParams {
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
-}
+export type SearchMCPServersParams = RegistrySearchParams;
 
-export interface SearchMCPServerVersionsParams {
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
-}
+export type SearchMCPServerVersionsParams = RegistrySearchParams;
 
-export interface SearchMCPAccessEndpointsParams {
+export interface SearchMCPAccessEndpointsParams extends RegistrySearchParams {
   server_version?: string;
   server_alias?: string;
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
 }
 
 // Response types

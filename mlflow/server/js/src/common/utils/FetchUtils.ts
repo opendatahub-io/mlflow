@@ -12,13 +12,13 @@ import { ErrorWrapper } from './ErrorWrapper';
 import { matchPredefinedError, matchPredefinedErrorFromResponse } from '@databricks/web-shared/errors';
 import { getActiveWorkspace } from '../../workspaces/utils/WorkspaceUtils';
 
-export const HTTPMethods = {
-  GET: 'GET',
-  POST: 'POST',
-  PUT: 'PUT',
-  PATCH: 'PATCH',
-  DELETE: 'DELETE',
-};
+export enum HTTPMethods {
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  PATCH = 'PATCH',
+  DELETE = 'DELETE',
+}
 
 // HTTP status codes that should be retried. Includes:
 // 429 (too many requests), 556 (RCP: workspace not served by shard)
@@ -474,4 +474,35 @@ export async function fetchOrFail(input: RequestInfo | URL, options?: RequestIni
     throw error;
   }
   return response;
+}
+
+export type FetchJSONError = Error & {
+  errorCode?: string;
+};
+
+/**
+ * Fetches JSON with default cookie/workspace headers without changing the request body or content type.
+ *
+ * @param url - Request URL.
+ * @param options - Fetch options, including an explicit HTTP method.
+ * @returns Parsed JSON response.
+ * @throws The original request error, enriched with the backend message and errorCode when available.
+ */
+export async function fetchJSON<T>(url: string, options: RequestInit & { method: HTTPMethods }): Promise<T> {
+  try {
+    const response = await fetchOrFail(url, options);
+    return response.json() as Promise<T>;
+  } catch (error) {
+    const response = (error as { response?: Response }).response;
+    if (response && !response.bodyUsed && error instanceof Error) {
+      try {
+        const { message, error_code: errorCode } = await response.json();
+        if (typeof message === 'string') error.message = message;
+        if (typeof errorCode === 'string') (error as FetchJSONError).errorCode = errorCode;
+      } catch {
+        // Keep the predefined fetchOrFail message when the body is not JSON.
+      }
+    }
+    throw error;
+  }
 }

@@ -1,9 +1,6 @@
-export interface RegistryIconImage {
-  src: string;
-  sizes?: string[];
-  mimeType?: string;
-  theme?: string;
-}
+import type { RegistryIcon as RegistryIconImage } from '../registryTypes';
+
+export type { RegistryIconImage };
 
 export const resolveIcon = <T extends RegistryIconImage>(icons?: T[] | null, isDarkMode?: boolean): T | undefined => {
   if (!icons?.length) return undefined;
