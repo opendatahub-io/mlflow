@@ -80,7 +80,7 @@ export const AgentPluginApi = {
   getPlugin: (name: string, organization = ''): Promise<AgentPlugin> => {
     return fetchAPI(getAjaxUrl(agentPluginUrl(name, organization)));
   },
-  updatePlugin: (name: string, organization = '', request: UpdateAgentPluginRequest): Promise<AgentPlugin> => {
+  updatePlugin: (name: string, request: UpdateAgentPluginRequest, organization = ''): Promise<AgentPlugin> => {
     return fetchAPI(getAjaxUrl(agentPluginUrl(name, organization)), {
       method: HTTPMethods.PATCH,
       body: request,
@@ -88,8 +88,8 @@ export const AgentPluginApi = {
   },
   deletePlugin: (
     name: string,
-    organization = '',
     params: DeleteAgentPluginParams = {},
+    organization = '',
   ): Promise<AgentPluginMutationResponse> => {
     const query = buildSearchParams({
       cascade: params.cascade ? String(params.cascade) : undefined,
@@ -116,8 +116,8 @@ export const AgentPluginApi = {
   updatePluginVersion: (
     name: string,
     version: string,
-    organization = '',
     request: UpdateAgentPluginVersionRequest,
+    organization = '',
   ): Promise<AgentPluginVersion> => {
     return fetchAPI(getAjaxUrl(`${agentPluginUrl(name, organization)}/versions/${encodeURIComponent(version)}`), {
       method: HTTPMethods.PATCH,
@@ -127,8 +127,8 @@ export const AgentPluginApi = {
   deletePluginVersion: (
     name: string,
     version: string,
-    organization = '',
     params: DeleteAgentPluginVersionParams = {},
+    organization = '',
   ): Promise<AgentPluginMutationResponse> => {
     const query = buildSearchParams(params);
     return fetchAPI(

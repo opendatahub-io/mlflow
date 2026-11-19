@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { createMockSkillVersion } from '../skill-registry/test-utils';
 import { AgentPluginApi } from './api';
 import { createMockAgentPlugin, createMockAgentPluginVersion } from './test-utils';
 import {
@@ -6,6 +7,7 @@ import {
   AgentPluginStatus,
   type CreateAgentPluginRequest,
   type CreateAgentPluginVersionRequest,
+  type ImportRegisterRequest,
 } from './types';
 
 const BASE_URL = 'ajax-api/3.0/mlflow/agent-plugins';
@@ -107,6 +109,13 @@ describe('Agent Plugin API', () => {
     const tag = { key: 'owner/team', value: 'platform' };
     const alias = { alias: 'production', version: VERSION };
     const registerRequest = { ...versionRequest, organization };
+    const importRequest: ImportRegisterRequest = {
+      plugin_json: pluginJson,
+      organization,
+      member_skills: [{ name: 'code-review', subpath: 'skills/code-review' }],
+      mcp_servers: versionRequest.mcp_servers,
+      source,
+    };
 
     const endpoints: EndpointCase[] = [
       {
@@ -134,6 +143,17 @@ describe('Agent Plugin API', () => {
         response: versionResponse,
       },
       {
+        name: 'import a plugin and return its registered member skill versions',
+        invoke: () => AgentPluginApi.importPlugin(importRequest),
+        path: '/import',
+        method: 'POST',
+        body: importRequest,
+        response: {
+          plugin_version: versionResponse,
+          member_skill_versions: [createMockSkillVersion({ organization: organization ?? '', version: 3 })],
+        },
+      },
+      {
         name: 'get a plugin',
         invoke: () => AgentPluginApi.getPlugin('pr-workflow', organization),
         path,
@@ -142,7 +162,7 @@ describe('Agent Plugin API', () => {
       },
       {
         name: 'update a plugin, preserving explicit nulls',
-        invoke: () => AgentPluginApi.updatePlugin('pr-workflow', organization, updateRequest),
+        invoke: () => AgentPluginApi.updatePlugin('pr-workflow', updateRequest, organization),
         path,
         method: 'PATCH',
         body: updateRequest,
@@ -150,7 +170,7 @@ describe('Agent Plugin API', () => {
       },
       {
         name: 'request plugin deletion',
-        invoke: () => AgentPluginApi.deletePlugin('pr-workflow', organization),
+        invoke: () => AgentPluginApi.deletePlugin('pr-workflow', {}, organization),
         path,
         method: 'DELETE',
       },
@@ -179,7 +199,7 @@ describe('Agent Plugin API', () => {
       },
       {
         name: 'update version status and reason',
-        invoke: () => AgentPluginApi.updatePluginVersion('pr-workflow', VERSION, organization, statusRequest),
+        invoke: () => AgentPluginApi.updatePluginVersion('pr-workflow', VERSION, statusRequest, organization),
         path: versionPath,
         method: 'PATCH',
         body: statusRequest,
@@ -187,7 +207,7 @@ describe('Agent Plugin API', () => {
       },
       {
         name: 'request version deletion',
-        invoke: () => AgentPluginApi.deletePluginVersion('pr-workflow', VERSION, organization),
+        invoke: () => AgentPluginApi.deletePluginVersion('pr-workflow', VERSION, {}, organization),
         path: versionPath,
         method: 'DELETE',
       },
@@ -338,7 +358,7 @@ describe('Agent Plugin API', () => {
   it('preserves an explicit null status reason without adding a status transition', async () => {
     const request = { status_reason: null };
 
-    await AgentPluginApi.updatePluginVersion('pr-workflow', VERSION, 'acme', request);
+    await AgentPluginApi.updatePluginVersion('pr-workflow', VERSION, request, 'acme');
 
     expectRequest({ path: `/@acme/pr-workflow/versions/${VERSION}`, method: 'PATCH', body: request });
   });
@@ -347,7 +367,7 @@ describe('Agent Plugin API', () => {
   it('passes an optional version deletion reason as a query parameter', async () => {
     const params = { status_reason: 'Security issue / revoked' };
 
-    await AgentPluginApi.deletePluginVersion('pr-workflow', VERSION, 'acme', params);
+    await AgentPluginApi.deletePluginVersion('pr-workflow', VERSION, params, 'acme');
 
     expectRequest({ path: `/@acme/pr-workflow/versions/${VERSION}`, method: 'DELETE', query: params });
   });

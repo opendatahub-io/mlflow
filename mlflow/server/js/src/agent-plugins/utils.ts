@@ -30,18 +30,24 @@ export const formatAgentPluginIdentity = (name: string, organization = ''): stri
   return organization ? `@${organization}/${name}` : name;
 };
 
+const safeDecode = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
 export const parseAgentPluginIdentityKey = (identity: string): AgentPluginIdentity => {
-  const parts = identity.split('/');
-  if (parts.length === 1) {
-    return { name: validateIdentitySegment(parts[0]), organization: '' };
+  const decoded = safeDecode(identity);
+  if (!decoded.startsWith('@')) {
+    return { name: decoded, organization: '' };
   }
-  if (parts.length === 2 && parts[0].startsWith('@')) {
-    return {
-      name: validateIdentitySegment(parts[1]),
-      organization: validateIdentitySegment(parts[0].slice(1)),
-    };
+  const slash = decoded.indexOf('/');
+  if (slash === -1) {
+    return { name: '', organization: decoded.slice(1) };
   }
-  throw new Error(`Invalid agent plugin identity: ${identity}`);
+  return { name: decoded.slice(slash + 1), organization: decoded.slice(1, slash) };
 };
 
 export const parseAgentPluginRouteParams = (params: {
@@ -49,14 +55,13 @@ export const parseAgentPluginRouteParams = (params: {
   organization?: string;
   agentPluginName?: string;
 }): AgentPluginIdentity => {
-  if (params.agentPluginKey !== undefined) {
-    return parseAgentPluginIdentityKey(decodeURIComponent(params.agentPluginKey));
+  if (params.agentPluginKey) {
+    return parseAgentPluginIdentityKey(params.agentPluginKey);
   }
-  const organization = decodeURIComponent(params.organization ?? '');
-  if (!organization.startsWith('@')) {
-    throw new Error('Organization route segment must begin with @');
-  }
-  return parseAgentPluginIdentityKey(`${organization}/${decodeURIComponent(params.agentPluginName ?? '')}`);
+  return {
+    name: safeDecode(params.agentPluginName ?? ''),
+    organization: safeDecode(params.organization ?? '').replace(/^@/, ''),
+  };
 };
 
 const SEMVER =
