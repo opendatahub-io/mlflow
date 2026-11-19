@@ -18,6 +18,7 @@ import {
   retry,
   fetchEndpointRaw,
   fetchEndpoint,
+  fetchJSON,
   getJson,
   getYaml,
   putJson,
@@ -429,6 +430,50 @@ describe('FetchUtils', () => {
           retries: 2,
         }),
       ).rejects.toEqual(new ErrorWrapper(new Error('something went wrong...'), 500));
+    });
+  });
+  describe('fetchJSON', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('parses JSON without adding a content type to multipart requests', async () => {
+      const body = new FormData();
+      body.append('metadata', '{}');
+      const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('{"version":1}'));
+
+      await expect(fetchJSON('/endpoint', { method: HTTPMethods.POST, body })).resolves.toEqual({ version: 1 });
+      expect(fetchMock).toHaveBeenLastCalledWith('/endpoint', {
+        method: HTTPMethods.POST,
+        body,
+        headers: expect.not.objectContaining({ 'Content-Type': expect.any(String) }),
+      });
+    });
+
+    it('preserves HTTP error details and adds the backend message and error code', async () => {
+      const payload = { message: 'Invalid input', error_code: 'INVALID_PARAMETER_VALUE' };
+      const response = new Response(JSON.stringify(payload), { status: 400 });
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce(response);
+
+      await expect(fetchJSON('/endpoint', { method: HTTPMethods.POST })).rejects.toMatchObject({
+        message: 'Invalid input',
+        errorCode: 'INVALID_PARAMETER_VALUE',
+        status: 400,
+        response,
+      });
+    });
+
+    it('keeps the default error message when the response is not JSON', async () => {
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('Bad request', { status: 400 }));
+
+      await expect(fetchJSON('/endpoint', { method: HTTPMethods.POST })).rejects.toThrow('The request was invalid.');
+    });
+
+    it('rethrows the original network error', async () => {
+      const error = new TypeError('Failed to fetch');
+      jest.spyOn(global, 'fetch').mockRejectedValueOnce(error);
+
+      await expect(fetchJSON('/endpoint', { method: HTTPMethods.POST })).rejects.toBe(error);
     });
   });
   describe('fetchEndpoint syntactic sugars', () => {

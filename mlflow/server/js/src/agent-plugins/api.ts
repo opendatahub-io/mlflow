@@ -1,4 +1,4 @@
-import { fetchAPI, fetchOrFail, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
+import { fetchAPI, fetchJSON, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
 import { buildSearchParams } from '../common/utils/SearchUtils';
 import type {
   AgentPlugin,
@@ -8,6 +8,8 @@ import type {
   CreateAgentPluginVersionRequest,
   DeleteAgentPluginParams,
   DeleteAgentPluginVersionParams,
+  ImportRegisterRequest,
+  ImportRegisterResponse,
   RegisterAgentPluginRequest,
   SearchAgentPluginsParams,
   SearchAgentPluginsResponse,
@@ -20,10 +22,6 @@ import type {
 } from './types';
 
 const BASE_URL = 'ajax-api/3.0/mlflow/agent-plugins';
-
-type AgentPluginRegistyRequestError = Error & {
-  errorCode?: string;
-};
 
 const buildAgentPluginSearchParams = (params: SearchAgentPluginsParams = {}): string => {
   return buildSearchParams({
@@ -39,25 +37,6 @@ const agentPluginUrl = (name: string, organization = '') =>
     ? `${BASE_URL}/@${encodeURIComponent(organization)}/${encodeURIComponent(name)}`
     : `${BASE_URL}/${encodeURIComponent(name)}`;
 
-async function fetchAgentPluginJson<T>(url: string, init: RequestInit): Promise<T> {
-  try {
-    const response = await fetchOrFail(url, { method: HTTPMethods.POST, ...init });
-    return response.json() as Promise<T>;
-  } catch (error) {
-    const response = (error as { response?: Response }).response;
-    if (response && !response.bodyUsed && error instanceof Error) {
-      try {
-        const { message, error_code: errorCode } = await response.json();
-        if (typeof message === 'string') error.message = message;
-        if (typeof errorCode === 'string') (error as AgentPluginRegistyRequestError).errorCode = errorCode;
-      } catch {
-        // Keep the predefined fetchOrFail message when the body is not JSON.
-      }
-    }
-    throw error;
-  }
-}
-
 function createPluginVersion(
   name: string,
   request: CreateAgentPluginVersionRequest,
@@ -71,7 +50,8 @@ function createPluginVersion(
 
 function registerPlugin(request: RegisterAgentPluginRequest): Promise<AgentPluginVersion> {
   const url = getAjaxUrl(`${BASE_URL}/register`);
-  return fetchAgentPluginJson<AgentPluginVersion>(url, {
+  return fetchJSON<AgentPluginVersion>(url, {
+    method: HTTPMethods.POST,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
@@ -79,7 +59,8 @@ function registerPlugin(request: RegisterAgentPluginRequest): Promise<AgentPlugi
 
 export const AgentPluginApi = {
   createPlugin: (request: CreateAgentPluginRequest): Promise<AgentPlugin> => {
-    return fetchAgentPluginJson<AgentPlugin>(getAjaxUrl(BASE_URL), {
+    return fetchJSON<AgentPlugin>(getAjaxUrl(BASE_URL), {
+      method: HTTPMethods.POST,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     });
@@ -88,6 +69,13 @@ export const AgentPluginApi = {
     return fetchAPI(getAjaxUrl(`${BASE_URL}${buildAgentPluginSearchParams(params)}`));
   },
   registerPlugin,
+  importPlugin: (request: ImportRegisterRequest): Promise<ImportRegisterResponse> => {
+    return fetchJSON<ImportRegisterResponse>(getAjaxUrl(`${BASE_URL}/import`), {
+      method: HTTPMethods.POST,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  },
 
   getPlugin: (name: string, organization = ''): Promise<AgentPlugin> => {
     return fetchAPI(getAjaxUrl(agentPluginUrl(name, organization)));

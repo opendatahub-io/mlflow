@@ -1,10 +1,12 @@
-import type { MCPAccessEndpointPayload } from '../mcp-registry/types';
 import {
-  SkillStatus as AgentPluginStatus,
-  SkillAction as AgentPluginAction,
+  RegistryStatus as AgentPluginStatus,
+  RegistryAction as AgentPluginAction,
+  type RegistryAuditFields,
   type RegistryIcon,
-  type SkillVersion,
-} from '../skill-registry/types';
+  type RegistrySearchParams,
+} from '../common/registryTypes';
+import type { MCPAccessEndpointPayload } from '../mcp-registry/types';
+import type { SkillVersion } from '../skill-registry/types';
 
 export { AgentPluginStatus, AgentPluginAction };
 
@@ -20,12 +22,7 @@ export type AgentPluginRequestSourceType = Exclude<AgentPluginStoredSourceType, 
 export type CreateAgentPluginVersionStatus = AgentPluginStatus.ACTIVE | AgentPluginStatus.DRAFT;
 
 // Plugin
-export type AgentPluginAuditFields = {
-  created_by: string | null;
-  last_updated_by: string | null;
-  creation_timestamp: number | null;
-  last_updated_timestamp: number | null;
-};
+export type AgentPluginAuditFields = RegistryAuditFields;
 
 export type AgentPlugin = AgentPluginAuditFields & {
   name: string;
@@ -52,12 +49,7 @@ export type UpdateAgentPluginRequest = {
   icons?: RegistryIcon[] | null;
 };
 
-export type SearchAgentPluginsParams = {
-  filter_string?: string;
-  max_results?: number;
-  order_by?: string[];
-  page_token?: string;
-};
+export type SearchAgentPluginsParams = RegistrySearchParams;
 
 export type DeleteAgentPluginParams = {
   cascade?: boolean; // Defaults to false

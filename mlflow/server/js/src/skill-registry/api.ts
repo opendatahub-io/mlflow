@@ -1,5 +1,5 @@
 import { getArtifactChunkedText } from '../common/utils/ArtifactUtils';
-import { fetchAPI, fetchOrFail, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
+import { fetchAPI, fetchJSON, getAjaxUrl, HTTPMethods } from '../common/utils/FetchUtils';
 import { buildSearchParams } from '../common/utils/SearchUtils';
 import type {
   CreateSkillVersionRequest,
@@ -70,43 +70,18 @@ export const buildSkillMultipartBody = (
 
 const skillUrl = (name: string, organization = '') => `${BASE_URL}/${buildSkillIdentityPath(name, organization)}`;
 
-/** A request the server refused, carrying the error code from its JSON body when it had one. */
-export interface SkillRegistryRequestError extends Error {
-  errorCode?: string;
-}
-
-// fetchAPI always sets Content-Type: application/json, which would break the
-// multipart boundary. fetchOrFail is used instead and leaves .response unread,
-// so parse the backend message and error code here rather than changing shared error text.
-async function fetchSkillJson<T>(url: string, init: RequestInit): Promise<T> {
-  try {
-    const response = await fetchOrFail(url, { method: HTTPMethods.POST, ...init });
-    return response.json() as Promise<T>;
-  } catch (error) {
-    const response = (error as { response?: Response }).response;
-    if (response && !response.bodyUsed && error instanceof Error) {
-      try {
-        const { message, error_code: errorCode } = await response.json();
-        if (typeof message === 'string') error.message = message;
-        if (typeof errorCode === 'string') (error as SkillRegistryRequestError).errorCode = errorCode;
-      } catch {
-        // Keep the predefined fetchOrFail message when the body is not JSON.
-      }
-    }
-    throw error;
-  }
-}
-
 function registerSkill(request: RegisterExternalSkillRequest): Promise<RegisterSkillResponse>;
 function registerSkill(request: RegisterUploadedSkillRequest, content: Blob): Promise<RegisterSkillResponse>;
 function registerSkill(request: RegisterSkillRequest, content?: Blob): Promise<RegisterSkillResponse> {
   const url = getAjaxUrl(`${skillUrl(request.name, request.organization)}/versions`);
   if (content) {
-    return fetchSkillJson<RegisterSkillResponse>(url, {
+    return fetchJSON<RegisterSkillResponse>(url, {
+      method: HTTPMethods.POST,
       body: buildSkillMultipartBody(request as RegisterUploadedSkillRequest, content),
     });
   }
-  return fetchSkillJson<RegisterSkillResponse>(url, {
+  return fetchJSON<RegisterSkillResponse>(url, {
+    method: HTTPMethods.POST,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
@@ -130,7 +105,8 @@ function createSkillVersion(
   content?: Blob,
 ): Promise<GetSkillVersionResponse> {
   if (content) {
-    return fetchSkillJson<GetSkillVersionResponse>(getAjaxUrl(`${skillUrl(name, organization)}/versions`), {
+    return fetchJSON<GetSkillVersionResponse>(getAjaxUrl(`${skillUrl(name, organization)}/versions`), {
+      method: HTTPMethods.POST,
       body: buildSkillMultipartBody(request as UploadedSkillVersionRequest, content),
     });
   }
@@ -153,7 +129,8 @@ export const SkillRegistryApi = {
 
   /** Creates a skill without versions; fails with errorCode RESOURCE_ALREADY_EXISTS when the name is taken. */
   createSkill: (request: CreateSkillRequest): Promise<Skill> =>
-    fetchSkillJson<Skill>(getAjaxUrl(BASE_URL), {
+    fetchJSON<Skill>(getAjaxUrl(BASE_URL), {
+      method: HTTPMethods.POST,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     }),
