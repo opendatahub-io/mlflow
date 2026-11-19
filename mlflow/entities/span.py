@@ -1111,16 +1111,17 @@ class LiveSpan(Span):
             )
 
         from mlflow.tracing.skill_link import resolve_skill_alias
-        from mlflow.utils.validation import _validate_organization_name, _validate_skill_name
+        from mlflow.utils.validation import (
+            _validate_organization_name,
+            _validate_skill_name,
+            _validate_skill_version,
+        )
         from mlflow.utils.workspace_utils import resolve_entity_workspace_name
 
         _validate_skill_name(name)
         _validate_organization_name(organization)
         if version is not None:
-            if not isinstance(version, int) or isinstance(version, bool) or version <= 0:
-                raise MlflowException.invalid_parameter_value(
-                    "Skill version must be a positive integer."
-                )
+            _validate_skill_version(version)
             resolved_workspace = resolve_entity_workspace_name(workspace)
         else:
             version, resolved_workspace = resolve_skill_alias(

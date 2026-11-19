@@ -40,6 +40,7 @@ from mlflow.tracing.utils.otlp import (
     _set_otel_proto_anyvalue,
     resource_to_otel_proto,
 )
+from mlflow.utils.validation import MAX_SKILL_VERSION
 
 
 def test_create_live_span():
@@ -256,6 +257,39 @@ def test_link_skill_rejects_invalid_version(version):
     with mlflow.start_span("test_span") as span:
         with pytest.raises(MlflowException, match="positive integer"):
             span.link_skill(name="code-review", version=version)
+
+
+def test_link_skill_accepts_maximum_version():
+    with mock.patch("mlflow.MlflowClient") as client_cls:
+        with mlflow.start_span("test_span") as span:
+            span.link_skill(name="code-review", version=MAX_SKILL_VERSION)
+
+    client_cls.assert_not_called()
+    assert span.get_attribute(SpanAttributeKey.SKILL_VERSION) == MAX_SKILL_VERSION
+
+
+def test_link_skill_rejects_version_above_maximum_without_mutating_span():
+    with mock.patch("mlflow.MlflowClient") as client_cls:
+        with mlflow.start_span("test_span") as span:
+            span.link_skill(
+                name="code-review",
+                version=1,
+                workspace="team-a",
+                organization="acme",
+            )
+            with pytest.raises(MlflowException, match="positive integer"):
+                span.link_skill(
+                    name="different-skill",
+                    version=MAX_SKILL_VERSION + 1,
+                    workspace="team-b",
+                    organization="other",
+                )
+
+    client_cls.assert_not_called()
+    assert span.get_attribute(SpanAttributeKey.SKILL_NAME) == "code-review"
+    assert span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 1
+    assert span.get_attribute(SpanAttributeKey.SKILL_WORKSPACE) == "team-a"
+    assert span.get_attribute(SpanAttributeKey.SKILL_ORGANIZATION) == "acme"
 
 
 def test_dict_conversion():

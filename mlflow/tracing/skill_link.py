@@ -11,7 +11,7 @@ from mlflow.environment_variables import MLFLOW_ALIAS_SKILL_CACHE_TTL_SECONDS
 from mlflow.exceptions import MlflowException
 from mlflow.protos.databricks_pb2 import INVALID_PARAMETER_VALUE
 from mlflow.utils.validation import _validate_organization_name, _validate_skill_name
-from mlflow.utils.workspace_context import WorkspaceContext
+from mlflow.utils.workspace_context import ServerWorkspaceContext
 from mlflow.utils.workspace_utils import resolve_entity_workspace_name
 
 _SKILL_ALIAS_CACHE_MAX_SIZE = 1024
@@ -49,16 +49,19 @@ class SkillAliasCache:
             cls._instance = None
 
     def __init__(self):
-        self._cache: OrderedDict[SkillAliasCacheKey, tuple[SkillVersion, float]] = OrderedDict()
+        self._cache: OrderedDict[SkillAliasCacheKey, tuple[SkillVersion, float, float]] = (
+            OrderedDict()
+        )
         self._lock = threading.RLock()
 
-    def get(self, key: SkillAliasCacheKey) -> SkillVersion | None:
+    def get(self, key: SkillAliasCacheKey, ttl_seconds: float) -> SkillVersion | None:
         with self._lock:
             item = self._cache.get(key)
             if item is None:
                 return None
-            value, expiry = item
-            if time.time() >= expiry:
+            value, created_at, expiry = item
+            now = time.time()
+            if now >= expiry or now >= created_at + ttl_seconds:
                 self._cache.pop(key, None)
                 return None
             self._cache.move_to_end(key)
@@ -68,12 +71,12 @@ class SkillAliasCache:
         with self._lock:
             now = time.time()
             expired_keys = [
-                cache_key for cache_key, (_, expiry) in self._cache.items() if now >= expiry
+                cache_key for cache_key, (_, _, expiry) in self._cache.items() if now >= expiry
             ]
             for expired_key in expired_keys:
                 self._cache.pop(expired_key, None)
 
-            self._cache[key] = (value, now + ttl_seconds)
+            self._cache[key] = (value, now, now + ttl_seconds)
             self._cache.move_to_end(key)
             while len(self._cache) > _SKILL_ALIAS_CACHE_MAX_SIZE:
                 self._cache.popitem(last=False)
@@ -112,11 +115,11 @@ def resolve_skill_alias(
     )
     cache = SkillAliasCache.get_instance()
     if cache_ttl_seconds > 0:
-        if cached := cache.get(cache_key):
+        if cached := cache.get(cache_key, cache_ttl_seconds):
             return cached.version, resolved_workspace
 
     workspace_context = (
-        WorkspaceContext(resolved_workspace) if workspace is not None else nullcontext()
+        ServerWorkspaceContext(resolved_workspace) if workspace is not None else nullcontext()
     )
     with workspace_context:
         skill_version = mlflow.MlflowClient().get_skill_version_by_alias(
