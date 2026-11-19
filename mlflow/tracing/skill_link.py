@@ -1,6 +1,7 @@
 import hashlib
 import threading
 import time
+from collections import OrderedDict
 from contextlib import nullcontext
 from typing import NamedTuple
 
@@ -12,6 +13,8 @@ from mlflow.protos.databricks_pb2 import INVALID_PARAMETER_VALUE
 from mlflow.utils.validation import _validate_organization_name, _validate_skill_name
 from mlflow.utils.workspace_context import WorkspaceContext
 from mlflow.utils.workspace_utils import resolve_entity_workspace_name
+
+_SKILL_ALIAS_CACHE_MAX_SIZE = 1024
 
 
 def _get_skill_cache_namespace(tracking_uri: str) -> str:
@@ -46,7 +49,7 @@ class SkillAliasCache:
             cls._instance = None
 
     def __init__(self):
-        self._cache: dict[SkillAliasCacheKey, tuple[SkillVersion, float]] = {}
+        self._cache: OrderedDict[SkillAliasCacheKey, tuple[SkillVersion, float]] = OrderedDict()
         self._lock = threading.RLock()
 
     def get(self, key: SkillAliasCacheKey) -> SkillVersion | None:
@@ -55,14 +58,25 @@ class SkillAliasCache:
             if item is None:
                 return None
             value, expiry = item
-            if time.time() > expiry:
+            if time.time() >= expiry:
                 self._cache.pop(key, None)
                 return None
+            self._cache.move_to_end(key)
             return value
 
     def set(self, key: SkillAliasCacheKey, value: SkillVersion, ttl_seconds: float) -> None:
         with self._lock:
-            self._cache[key] = (value, time.time() + ttl_seconds)
+            now = time.time()
+            expired_keys = [
+                cache_key for cache_key, (_, expiry) in self._cache.items() if now >= expiry
+            ]
+            for expired_key in expired_keys:
+                self._cache.pop(expired_key, None)
+
+            self._cache[key] = (value, now + ttl_seconds)
+            self._cache.move_to_end(key)
+            while len(self._cache) > _SKILL_ALIAS_CACHE_MAX_SIZE:
+                self._cache.popitem(last=False)
 
 
 def resolve_skill_alias(
