@@ -7,6 +7,7 @@ import {
   formatAgentPluginUri,
   orderAgentPluginVersions,
   parseAgentPluginIdentityKey,
+  parseAgentPluginRouteParams,
   parseAgentPluginUri,
   type AgentPluginCatalogFilters,
 } from './utils';
@@ -53,6 +54,21 @@ describe('agent plugin identities and URIs', () => {
 
   it('rejects simultaneous version and alias selectors', () => {
     expect(() => formatAgentPluginUri('name', '', { version: '1.0.0', alias: 'production' })).toThrow();
+  });
+});
+
+describe('parseAgentPluginRouteParams', () => {
+  it.each<[Parameters<typeof parseAgentPluginRouteParams>[0], string, string]>([
+    [{}, '', ''],
+    [{ agentPluginName: 'pr-workflow' }, 'pr-workflow', ''],
+    [{ organization: 'acme', agentPluginName: 'pr-workflow' }, 'pr-workflow', 'acme'],
+    [{ organization: '%40acme', agentPluginName: 'pr%2Dworkflow' }, 'pr-workflow', 'acme'],
+    [{ organization: '@acme' }, '', 'acme'],
+    [{ agentPluginKey: '@acme' }, '', 'acme'],
+    [{ agentPluginKey: 'bad%' }, 'bad%', ''],
+    [{ organization: 'bad%', agentPluginName: 'bad%' }, 'bad%', 'bad%'],
+  ])('parses %j correctly', (params, name, organization) => {
+    expect(parseAgentPluginRouteParams(params)).toEqual({ name, organization });
   });
 });
 
