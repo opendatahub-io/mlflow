@@ -243,6 +243,20 @@ def test_invalid_metadata_is_rejected_without_a_version(
     assert stored_files(artifact_root) == []
 
 
+def test_standalone_registration_rejects_assembled_source_type(store, artifact_root):
+    registration = SkillVersionRegistration(
+        name="reviewer",
+        source="https://example.com/reviewer",
+        source_type=SkillSourceType.ASSEMBLED.value,
+    )
+
+    with pytest.raises(MlflowException, match="set by the server"):
+        register_skill_version(registration)
+
+    assert version_rows(store) == 0
+    assert stored_files(artifact_root) == []
+
+
 # --- malformed content ------------------------------------------------------------------------
 
 

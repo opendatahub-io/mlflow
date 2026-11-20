@@ -15,6 +15,7 @@ from mlflow.server.skill_registry import deletion as deletion_module
 from mlflow.server.skill_registry import registration as registration_module
 from mlflow.store.tracking.skill_registry.artifact_paths import (
     owned_skill_upload_path,
+    validate_referenced_mlflow_source,
 )
 
 from tests.server.skill_registry.conftest import (
@@ -26,7 +27,7 @@ from tests.server.skill_registry.conftest import (
 
 pytestmark = pytest.mark.notrackingurimock
 
-_EXTERNAL_PATH = "external-content/@acme/toolkit/0123456789abcdef0123456789abcdef"
+_PACKAGE_PATH = "agent-plugins/@acme/toolkit/0123456789abcdef0123456789abcdef"
 
 
 def _upload(name="reviewer", organization="acme"):
@@ -39,15 +40,22 @@ def _upload(name="reviewer", organization="acme"):
 
 
 def _reference_content(store, artifact_root, name="reviewer"):
-    tree = artifact_root / _EXTERNAL_PATH
+    tree = artifact_root / _PACKAGE_PATH
     (tree / "skills" / name).mkdir(parents=True, exist_ok=True)
     (tree / "skills" / name / "SKILL.md").write_bytes(SKILL_FILES["SKILL.md"])
+    (tree / "plugin.json").write_bytes(b"{}")
+    (tree / "mcp.json").write_bytes(b'{"servers": []}')
+    (tree / "bin").mkdir()
+    (tree / "bin" / "stdio-server").write_bytes(b"#!/bin/sh\n")
+    source, subpath = validate_referenced_mlflow_source(
+        f"mlflow-artifacts:/{_PACKAGE_PATH}", f"skills/{name}"
+    )
     return store.create_skill_version(
         name,
         organization="acme",
         source_type="mlflow",
-        source=f"mlflow-artifacts:/{_EXTERNAL_PATH}",
-        subpath=f"skills/{name}",
+        source=source,
+        subpath=subpath,
     )
 
 
@@ -111,7 +119,8 @@ def test_delete_skill_never_deletes_a_referenced_tree(store, artifact_root):
     # Deleting the last reference to an external tree leaves its content intact.
     _reference_content(store, artifact_root)
     _, owned = _upload()
-    referenced_files = stored_files(artifact_root / _EXTERNAL_PATH)
+    referenced_files = stored_files(artifact_root / _PACKAGE_PATH)
+    assert {"mcp.json", "bin/stdio-server"} <= set(referenced_files)
 
     with mock.patch.object(
         deletion_module,
@@ -121,7 +130,7 @@ def test_delete_skill_never_deletes_a_referenced_tree(store, artifact_root):
         delete_skill("reviewer", organization="acme")
     cleanup.assert_called_once_with(owned)
     assert version_rows(store) == 0
-    assert stored_files(artifact_root / _EXTERNAL_PATH) == referenced_files
+    assert stored_files(artifact_root / _PACKAGE_PATH) == referenced_files
     assert not (artifact_root / owned).exists()
 
 

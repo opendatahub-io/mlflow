@@ -35,7 +35,11 @@ class SkillRegistryMixin:
         raise NotImplementedError(self.__class__.__name__)
 
     def delete_skill(self, name: str, organization: str = "") -> None:
-        """Hard-delete a skill with its versions, tags, and aliases."""
+        """Hard-delete a skill with its versions, tags, and aliases.
+
+        The delete fails without removing anything while one of the Skill's versions is a member
+        of a live, non-deleted Agent Plugin version.
+        """
         raise NotImplementedError(self.__class__.__name__)
 
     def delete_skill_and_collect_artifacts(self, name: str, organization: str = "") -> list[str]:
@@ -45,7 +49,7 @@ class SkillRegistryMixin:
         Artifact storage is not transactional with the registry database, so the paths are
         captured and the row deletion committed in one transaction, and the caller reclaims the
         returned paths afterwards, best-effort. Only paths written by the standalone upload flow
-        are returned; a version that references an existing tree owns nothing.
+        are returned; a version that references a package tree owns nothing.
         """
         raise NotImplementedError(self.__class__.__name__)
 
@@ -128,7 +132,8 @@ class SkillRegistryMixin:
             Reused or created versions in input order, potentially with different statuses.
 
         Raises:
-            MlflowException: If metadata, requested status, or batch constraints are invalid.
+            MlflowException: If metadata, requested status, or batch constraints are invalid,
+                or a Skill name conflicts with a packaged member.
         """
         raise NotImplementedError(self.__class__.__name__)
 

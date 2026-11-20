@@ -4,8 +4,13 @@ from unittest import mock
 import pytest
 
 from mlflow.entities.skill import SkillStatus
+from mlflow.entities.skill_source import SkillSourceType
 from mlflow.exceptions import MlflowException
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
+    SqlAgentPluginVersionMember,
     SqlSkillVersion,
 )
 from mlflow.store.tracking.skill_registry.artifact_paths import (
@@ -32,6 +37,54 @@ def _upload(store, name="reviewer", organization="acme"):
 def _version_rows(store, name="reviewer"):
     with store.ManagedSessionMaker() as session:
         return session.query(SqlSkillVersion).filter(SqlSkillVersion.name == name).count()
+
+
+def _plugin_reference(
+    store,
+    *,
+    status=SkillStatus.ACTIVE.value,
+    source_type="oci",
+    workspace="default",
+    plugin_name="reviewer-plugin",
+    plugin_version="1.0.0",
+    skill_version=1,
+):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        if session.get(SqlAgentPlugin, (workspace, "acme", plugin_name)) is None:
+            session.add(
+                SqlAgentPlugin(
+                    workspace=workspace,
+                    organization="acme",
+                    name=plugin_name,
+                )
+            )
+        session.add(
+            SqlAgentPluginVersion(
+                workspace=workspace,
+                organization="acme",
+                name=plugin_name,
+                version=plugin_version,
+                plugin_json={},
+                source_type=source_type,
+                source=(
+                    "assembled"
+                    if source_type == SkillSourceType.ASSEMBLED.value
+                    else "oci://ghcr.io/acme/plugin:v1"
+                ),
+                status=status,
+            )
+        )
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_workspace=workspace,
+                plugin_organization="acme",
+                plugin_name=plugin_name,
+                plugin_version=plugin_version,
+                member_organization="acme",
+                member_name="reviewer",
+                member_version=skill_version,
+            )
+        )
 
 
 def test_delete_skill_removes_parent_versions_and_returns_owned_paths(store):
@@ -63,6 +116,212 @@ def test_delete_skill_never_returns_a_referenced_tree(store):
     owned = store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
 
     assert owned == [owned_path]
+
+
+def test_delete_skill_is_blocked_by_a_live_plugin_reference(store):
+    _upload(store)
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="reviewer-plugin/1.0.0") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_rolls_back_stale_cleanup_when_a_live_reference_exists(store):
+    _upload(store)
+    _plugin_reference(
+        store,
+        status=SkillStatus.DELETED.value,
+        plugin_name="old-reviewer-plugin",
+        plugin_version="0.9.0",
+    )
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="live agent plugin versions") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 2
+
+
+def test_packaged_plugin_member_names_cannot_receive_standalone_versions(store):
+    _upload(store)
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="member of the packaged agent plugin") as exc:
+        store.create_skill_version(
+            "reviewer", organization="acme", source_type="git", source="https://h/r.git"
+        )
+
+    assert exc.value.error_code == "RESOURCE_ALREADY_EXISTS"
+    assert "@acme/reviewer-plugin" in str(exc.value)
+    assert _version_rows(store) == 1
+
+
+def test_packaged_plugin_member_names_cannot_create_standalone_parents(store):
+    _upload(store)
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="member of the packaged agent plugin"):
+        store.create_skill("reviewer", organization="acme")
+
+
+def test_packaged_member_check_is_workspace_scoped(store, workspaces_enabled):
+    if not workspaces_enabled:
+        pytest.skip("workspace isolation only applies when workspaces are enabled")
+
+    with WorkspaceContext("team-a"):
+        _upload(store)
+        _plugin_reference(store, workspace="team-a")
+    with WorkspaceContext("team-b"):
+        assert (
+            store.create_skill_version(
+                "reviewer", organization="acme", source_type="git", source="https://h/r.git"
+            ).version
+            == 1
+        )
+
+
+def test_assembled_plugin_members_stay_standalone(store):
+    _upload(store)
+    _plugin_reference(store, source_type=SkillSourceType.ASSEMBLED.value)
+
+    version = store.create_skill_version(
+        "reviewer", organization="acme", source_type="git", source="https://h/r.git"
+    )
+
+    assert version.version == 2
+
+
+def test_mcp_only_plugin_member_names_do_not_reserve_skill_names(store):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlAgentPlugin(workspace="default", organization="acme", name="mcp-plugin"))
+        session.add(
+            SqlAgentPluginVersion(
+                workspace="default",
+                organization="acme",
+                name="mcp-plugin",
+                version="1.0.0",
+                plugin_json={},
+                source_type="oci",
+                source="oci://ghcr.io/acme/mcp-plugin:v1",
+            )
+        )
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_workspace="default",
+                plugin_organization="acme",
+                plugin_name="mcp-plugin",
+                plugin_version="1.0.0",
+                member_name="reviewer",
+                access_endpoint_id="missing-endpoint",
+            )
+        )
+
+    assert store.create_skill("reviewer", organization="acme").name == "reviewer"
+
+
+def test_bulk_packaged_member_conflict_rolls_back_without_retry(store):
+    _upload(store)
+    _plugin_reference(store)
+    definition = {
+        "source_type": "git",
+        "source": "https://example.com/skills.git",
+        "digest": "a" * 64,
+    }
+
+    with mock.patch.object(
+        store, "_bulk_register_skills_once", wraps=store._bulk_register_skills_once
+    ) as attempt:
+        with pytest.raises(MlflowException, match="member of the packaged agent plugin"):
+            store.bulk_register_skills(
+                [{**definition, "name": "another-skill"}, {**definition, "name": "reviewer"}],
+                organization="acme",
+            )
+
+    attempt.assert_called_once()
+    with pytest.raises(MlflowException, match="not found"):
+        store.get_skill("another-skill", organization="acme")
+    assert _version_rows(store) == 1
+
+
+def test_bulk_packaged_member_conflict_precedes_exact_match_reuse(store):
+    definition = {
+        "source_type": "git",
+        "source": "https://example.com/skills.git",
+        "digest": "a" * 64,
+    }
+    store.create_skill_version("reviewer", organization="acme", **definition)
+    _plugin_reference(store)
+
+    with mock.patch.object(
+        store, "_bulk_register_skills_once", wraps=store._bulk_register_skills_once
+    ) as attempt:
+        with pytest.raises(MlflowException, match="member of the packaged agent plugin"):
+            store.bulk_register_skills(
+                [{**definition, "name": "reviewer"}],
+                organization="acme",
+            )
+
+    attempt.assert_called_once()
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_treats_a_withdrawn_plugin_version_as_a_live_reference(store):
+    _upload(store)
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.query(SqlSkillVersion).filter(SqlSkillVersion.name == "reviewer").update({
+            "status": SkillStatus.DELETED.value
+        })
+    _plugin_reference(store)
+
+    with pytest.raises(MlflowException, match="live agent plugin versions") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 1
+
+
+def test_delete_skill_reports_a_bounded_number_of_references(store):
+    _upload(store)
+    for minor in range(12):
+        _plugin_reference(store, plugin_version=f"1.{minor}.0")
+
+    with pytest.raises(MlflowException, match="and 2 more") as exc:
+        store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_racing_a_new_live_membership_is_a_conflict(store):
+    # A membership that appears after the preflight is stopped by the membership foreign key.
+    _upload(store)
+    _plugin_reference(store)
+
+    with mock.patch.object(store, "_purge_stale_skill_memberships") as precheck:
+        with pytest.raises(MlflowException, match="became referenced") as exc:
+            store.delete_skill_and_collect_artifacts("reviewer", organization="acme")
+
+    precheck.assert_called_once()
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    assert _version_rows(store) == 1
+
+
+def test_delete_skill_purges_references_from_deleted_plugin_versions(store):
+    _, owned_path = _upload(store)
+    _plugin_reference(store, status=SkillStatus.DELETED.value)
+
+    assert store.delete_skill_and_collect_artifacts("reviewer", organization="acme") == [owned_path]
+
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersionMember).count() == 0
 
 
 def test_delete_skill_returns_none_and_matches_collecting_variant(store):
