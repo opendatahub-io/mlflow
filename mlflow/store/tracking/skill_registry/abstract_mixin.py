@@ -132,7 +132,8 @@ class SkillRegistryMixin:
             Reused or created versions in input order, potentially with different statuses.
 
         Raises:
-            MlflowException: If metadata, requested status, or batch constraints are invalid.
+            MlflowException: If metadata, requested status, or batch constraints are invalid,
+                or a Skill name conflicts with a packaged member.
         """
         raise NotImplementedError(self.__class__.__name__)
 
