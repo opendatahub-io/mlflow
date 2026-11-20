@@ -49,7 +49,7 @@ class SkillRegistryMixin:
         Artifact storage is not transactional with the registry database, so the paths are
         captured and the row deletion committed in one transaction, and the caller reclaims the
         returned paths afterwards, best-effort. Only paths written by the standalone upload flow
-        are returned; a version that references an existing tree owns nothing.
+        are returned; a version that references a package tree owns nothing.
         """
         raise NotImplementedError(self.__class__.__name__)
 
