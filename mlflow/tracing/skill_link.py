@@ -126,6 +126,12 @@ def resolve_skill_alias(
             name=name, alias=alias, organization=organization
         )
 
+    if skill_version.workspace != resolved_workspace:
+        raise MlflowException.invalid_parameter_value(
+            f"Skill alias '{alias}' resolved to workspace '{skill_version.workspace}', "
+            f"but workspace '{resolved_workspace}' was requested."
+        )
+
     if cache_ttl_seconds > 0:
         cache.set(cache_key, skill_version, cache_ttl_seconds)
     return skill_version.version, resolved_workspace

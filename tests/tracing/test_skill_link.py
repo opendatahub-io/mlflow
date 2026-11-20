@@ -1,12 +1,15 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from unittest import mock
 
 import pytest
 
+import mlflow
 from mlflow.entities import SkillVersion
 from mlflow.exceptions import MlflowException
 from mlflow.protos.databricks_pb2 import RESOURCE_DOES_NOT_EXIST
+from mlflow.tracing.constant import SpanAttributeKey
 from mlflow.tracing.skill_link import SkillAliasCache, SkillAliasCacheKey, resolve_skill_alias
 from mlflow.utils.workspace_context import WorkspaceContext, get_request_workspace
 
@@ -302,6 +305,63 @@ def test_alias_lookup_does_not_override_default_workspace_for_concurrent_calls()
         assert explicit_future.result(timeout=5) == (2, "team-b")
 
     assert observed_workspaces == ["team-b", "team-a"]
+
+
+@skip_when_testing_trace_sdk
+@pytest.mark.parametrize("workspaces_enabled", [False, True], ids=["disabled", "enabled"])
+def test_alias_lookup_validates_registry_workspace(tmp_path, monkeypatch, workspaces_enabled):
+    from mlflow.environment_variables import MLFLOW_ENABLE_WORKSPACES
+    from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore
+    from mlflow.store.tracking.sqlalchemy_workspace_store import WorkspaceAwareSqlAlchemyStore
+
+    monkeypatch.setenv(MLFLOW_ENABLE_WORKSPACES.name, str(workspaces_enabled).lower())
+    db_uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    artifact_uri = (tmp_path / "artifacts").as_uri()
+    store_cls = WorkspaceAwareSqlAlchemyStore if workspaces_enabled else SqlAlchemyStore
+    store = store_cls(db_uri, artifact_uri)
+    previous_tracking_uri = mlflow.get_tracking_uri()
+
+    try:
+        workspace = "team-b" if workspaces_enabled else "default"
+        workspace_context = WorkspaceContext(workspace) if workspaces_enabled else nullcontext()
+        with workspace_context:
+            store.create_skill("code-review")
+            store.create_skill_version(
+                "code-review",
+                source_type="git",
+                source="https://example.com/skills.git",
+            )
+            store.set_skill_alias("code-review", "production", 1)
+
+        mlflow.set_tracking_uri(db_uri)
+        assert resolve_skill_alias(
+            name="code-review",
+            alias="production",
+            organization="",
+            workspace=workspace,
+            cache_ttl_seconds=0,
+        ) == (1, workspace)
+
+        if not workspaces_enabled:
+            with mlflow.start_span("test_span") as span:
+                span.link_skill(name="existing-skill", version=1, workspace="default")
+                with pytest.raises(MlflowException, match="workspace"):
+                    span.link_skill(
+                        name="code-review",
+                        alias="production",
+                        workspace="team-b",
+                        cache_ttl_seconds=60,
+                    )
+
+                assert not SkillAliasCache.get_instance()._cache
+                assert span.get_attribute(SpanAttributeKey.SKILL_NAME) == "existing-skill"
+                assert span.get_attribute(SpanAttributeKey.SKILL_VERSION) == 1
+                assert span.get_attribute(SpanAttributeKey.SKILL_WORKSPACE) == "default"
+                assert span.get_attribute(SpanAttributeKey.SKILL_ORGANIZATION) == ""
+                assert span.get_attribute(SpanAttributeKey.SKILL_ROLE) == "activation"
+    finally:
+        mlflow.set_tracking_uri(previous_tracking_uri)
+        store._dispose_engine()
 
 
 def test_negative_alias_cache_ttl_is_rejected():
