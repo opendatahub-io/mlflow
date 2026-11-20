@@ -1,8 +1,9 @@
 """Shared filter application, ordering, and pagination helpers for the skill registry.
 
 Translates parsed filter dicts (from ``SearchUtils.parse_search_filter``) into
-SQLAlchemy WHERE clauses and provides a reusable order-by parser. A
-``column_map`` maps filter keys to the appropriate SQLAlchemy column or expression.
+SQLAlchemy WHERE clauses and provides a reusable order-by parser.  Both Skill
+and Agent Plugin stores consume these helpers through a ``column_map`` that
+maps filter keys to the appropriate SQLAlchemy column or expression.
 """
 
 from __future__ import annotations
@@ -11,8 +12,17 @@ from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 
+from mlflow.entities import SkillStatus
 from mlflow.exceptions import MlflowException
 from mlflow.store.entities.paged_list import PagedList
+from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
+    SqlAgentPluginVersionMember,
+    SqlMCPAccessEndpoint,
+    _agent_plugin_version_has_deleted_member,
+)
 from mlflow.store.tracking.skill_registry_pagination import (
     SkillRegistryPaginationToken,
 )
@@ -23,6 +33,7 @@ from mlflow.utils.search_utils import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy import Select
     from sqlalchemy.orm import Query
     from sqlalchemy.sql.elements import ClauseElement, ColumnElement
 
@@ -69,7 +80,10 @@ def apply_skill_registry_filters(
     ``tag_join_keys`` lists the column names on the tag model that form the
     join to the parent (e.g. ``["workspace", "organization", "name"]``).
 
-    Any attribute key not present in ``column_map`` is rejected.
+    Filters that require cross-table joins (e.g. ``member_name`` for agent
+    plugins) must be extracted from ``parsed_filters`` by the caller and
+    handled separately via ``apply_member_name_filter``.  Any attribute key
+    not present in ``column_map`` is rejected.
     """
     attribute_filters: list[ClauseElement] = []
     tag_filters: dict[str, list[ClauseElement]] = {}
@@ -130,6 +144,134 @@ def apply_skill_registry_filters(
     return query
 
 
+def apply_member_name_filter(
+    query: Query,
+    member_name_value: str,
+    dialect: str,
+) -> Query:
+    """Filter agent plugins to those with an eligible version referencing the given skill.
+
+    A version is eligible when it is not deleted and not withdrawn, using the
+    same withdrawal rule as latest-version resolution: a version that bundles
+    any deleted skill version is withdrawn (per RFC-0008), while deprecated
+    members do not withdraw it. Older eligible versions still contribute
+    matches.
+    """
+    # Correlate only the plugin version, so the check covers every member of
+    # that version rather than just the member row matched by name.
+    is_withdrawn = _agent_plugin_version_has_deleted_member().correlate(SqlAgentPluginVersion)
+
+    member_subquery = (
+        sa
+        .select(
+            SqlAgentPluginVersionMember.plugin_workspace,
+            SqlAgentPluginVersionMember.plugin_organization,
+            SqlAgentPluginVersionMember.plugin_name,
+        )
+        .join(
+            SqlAgentPluginVersion,
+            sa.and_(
+                SqlAgentPluginVersionMember.plugin_workspace == SqlAgentPluginVersion.workspace,
+                SqlAgentPluginVersionMember.plugin_organization
+                == SqlAgentPluginVersion.organization,
+                SqlAgentPluginVersionMember.plugin_name == SqlAgentPluginVersion.name,
+                SqlAgentPluginVersionMember.plugin_version == SqlAgentPluginVersion.version,
+            ),
+        )
+        .where(
+            SearchUtils.get_sql_comparison_func("=", dialect)(
+                SqlAgentPluginVersionMember.member_name, member_name_value
+            ),
+            SqlAgentPluginVersion.status != SkillStatus.DELETED.value,
+            ~is_withdrawn,
+        )
+        .distinct()
+        .subquery()
+    )
+    return query.join(
+        member_subquery,
+        sa.and_(
+            SqlAgentPlugin.workspace == member_subquery.c.plugin_workspace,
+            SqlAgentPlugin.organization == member_subquery.c.plugin_organization,
+            SqlAgentPlugin.name == member_subquery.c.plugin_name,
+        ),
+    )
+
+
+def build_agent_plugin_mcp_member_query(
+    parsed_filters: list[dict[str, Any]],
+    *,
+    workspace: str,
+    dialect: str,
+    readable_endpoint_ids: Select | None = None,
+) -> Select:
+    """Select eligible plugin-version identities matching MCP membership predicates.
+
+    Pass only ``mcp_member_name`` and ``mcp_server_name`` attribute filters. All
+    predicates must match one member of one version. Local-name discovery uses
+    stored membership even if its endpoint has gone away. Server-name discovery
+    joins the endpoint's *current* association and requires a SELECT of endpoint
+    IDs that the caller may read; an omitted READ scope is rejected.
+
+    Returns ``workspace, organization, name, version`` without duplicate versions.
+    Parent search must apply READ authorization to these actual candidate versions
+    before projecting distinct parents and paginating. Version search joins all
+    four identity columns. The latest version used for other parent filters must
+    not replace the historical version returned here. Permission policy and those
+    concrete search joins are responsibilities of the caller.
+    """
+    if not parsed_filters:
+        raise MlflowException.invalid_parameter_value("At least one MCP member filter is required.")
+
+    member = SqlAgentPluginVersionMCPMember
+    version = SqlAgentPluginVersion
+    endpoint = SqlMCPAccessEndpoint
+    columns = {"mcp_member_name": member.member_name, "mcp_server_name": endpoint.server_name}
+    comparisons = []
+    needs_endpoint = False
+    for f in parsed_filters:
+        if f["type"] != "attribute" or f["key"] not in columns or f["comparator"] != "=":
+            raise MlflowException.invalid_parameter_value(
+                "MCP member filters only support equality on mcp_member_name and mcp_server_name."
+            )
+        col = columns[f["key"]]
+        comparisons.append(SearchUtils.get_sql_comparison_func("=", dialect)(col, f["value"]))
+        needs_endpoint |= f["key"] == "mcp_server_name"
+
+    matching_member = sa.select(sa.literal(1)).select_from(member)
+    if needs_endpoint:
+        if readable_endpoint_ids is None:
+            raise MlflowException.invalid_parameter_value(
+                "mcp_server_name requires a query selecting readable access endpoint IDs."
+            )
+        matching_member = matching_member.join(
+            endpoint,
+            sa.and_(
+                endpoint.id == member.access_endpoint_id,
+                endpoint.workspace == member.plugin_workspace,
+            ),
+        ).where(endpoint.id.in_(readable_endpoint_ids))
+
+    matching_member = (
+        matching_member
+        .where(
+            member.plugin_workspace == version.workspace,
+            member.plugin_organization == version.organization,
+            member.plugin_name == version.name,
+            member.plugin_version == version.version,
+            *comparisons,
+        )
+        .correlate(version)
+        .exists()
+    )
+    return sa.select(version.workspace, version.organization, version.name, version.version).where(
+        version.workspace == workspace,
+        version.status != SkillStatus.DELETED.value,
+        ~_agent_plugin_version_has_deleted_member().correlate(version),
+        matching_member,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Order-by parsing
 # ---------------------------------------------------------------------------
@@ -138,10 +280,15 @@ def apply_skill_registry_filters(
 def parse_skill_registry_order_by(
     order_by_list: list[str] | None,
     valid_keys: set[str],
-    column_map: dict[str, ColumnElement],
+    column_map: dict[str, ColumnElement | tuple[ColumnElement, ...]],
     default_tiebreakers: list[ClauseElement],
 ) -> list[ClauseElement]:
     """Parse an ``order_by`` list into SQLAlchemy clauses.
+
+    A key may map to a tuple of expressions ordered in sequence, each taking
+    the requested direction. Agent plugin ``version`` needs this: mapped to
+    its materialized SemVer columns it sorts by precedence, whereas the raw
+    version string would sort ``10.0.0`` before ``9.1.0``.
 
     ``default_tiebreakers`` are appended when their expression has not been
     explicitly requested, ensuring deterministic pagination order.
@@ -167,9 +314,12 @@ def parse_skill_registry_order_by(
             if key in observed:
                 raise MlflowException.invalid_parameter_value(f"Duplicate order_by field: '{key}'")
             observed.add(key)
-            col = column_map[key]
-            ordered_expressions.append(_as_expression(col))
-            clauses.append(col.asc() if is_ascending else col.desc())
+            columns = column_map[key]
+            if not isinstance(columns, tuple):
+                columns = (columns,)
+            for col in columns:
+                ordered_expressions.append(_as_expression(col))
+                clauses.append(col.asc() if is_ascending else col.desc())
 
     for clause in default_tiebreakers:
         tiebreaker = _as_expression(getattr(clause, "element", clause))
