@@ -10,6 +10,7 @@ from mlflow.store.tracking.skill_registry.artifact_paths import (
     owned_skill_upload_path,
     parse_skill_upload_path,
     to_artifact_uri,
+    validate_referenced_mlflow_source,
 )
 
 _TOKEN = "0123456789abcdef0123456789abcdef"
@@ -94,6 +95,57 @@ def test_owned_skill_upload_path_rejects_everything_else(overrides):
         "subpath": None,
     } | overrides
     assert owned_skill_upload_path(**fields) is None
+
+
+@pytest.mark.parametrize(
+    ("source", "subpath", "expected"),
+    [
+        (
+            f"mlflow-artifacts:/agent-plugins/@acme/toolkit/{_TOKEN}",
+            "skills/reviewer/",
+            (f"mlflow-artifacts:/agent-plugins/@acme/toolkit/{_TOKEN}", "skills/reviewer"),
+        ),
+        (
+            f"mlflow-artifacts:/agent-plugins/tool.kit/{_TOKEN}/",
+            "reviewer",
+            (f"mlflow-artifacts:/agent-plugins/tool.kit/{_TOKEN}", "reviewer"),
+        ),
+    ],
+)
+def test_validate_referenced_mlflow_source(source, subpath, expected):
+    canonical = validate_referenced_mlflow_source(source, subpath)
+    assert canonical == expected
+    assert (
+        owned_skill_upload_path(
+            name="reviewer",
+            organization="acme",
+            source_type="mlflow",
+            source=canonical[0],
+            subpath=canonical[1],
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "subpath", "message"),
+    [
+        ("https://example.com/plugin", "a", "must be an 'mlflow-artifacts:/' URI"),
+        (None, "a", "must be an 'mlflow-artifacts:/' URI"),
+        (f"mlflow-artifacts:/skills/reviewer/{_TOKEN}", "a", "must point into 'agent-plugins/'"),
+        (f"mlflow-artifacts:/agent-plugins/{_TOKEN}", "a", "must have the form"),
+        (f"mlflow-artifacts:/agent-plugins/a/b/c/{_TOKEN}", "a", "must have the form"),
+        (f"mlflow-artifacts:/agent-plugins/@/toolkit/{_TOKEN}", "a", "Invalid|empty organization"),
+        (f"mlflow-artifacts:/agent-plugins/Tool_Kit/{_TOKEN}", "a", "Invalid agent plugin name"),
+        ("mlflow-artifacts:/agent-plugins/toolkit/not-a-token", "a", "valid upload token"),
+        (f"mlflow-artifacts:/agent-plugins/../toolkit/{_TOKEN}", "a", "Invalid"),
+        (f"mlflow-artifacts:/agent-plugins/toolkit/{_TOKEN}", None, "requires a 'subpath'"),
+        (f"mlflow-artifacts:/agent-plugins/toolkit/{_TOKEN}", "../escape", "subpath|Subpath"),
+    ],
+)
+def test_validate_referenced_mlflow_source_rejects(source, subpath, message):
+    with pytest.raises(MlflowException, match=message):
+        validate_referenced_mlflow_source(source, subpath)
 
 
 @pytest.mark.parametrize(
