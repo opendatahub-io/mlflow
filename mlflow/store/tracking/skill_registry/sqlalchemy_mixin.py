@@ -67,6 +67,10 @@ from mlflow.utils.validation import (
 _logger = logging.getLogger(__name__)
 
 
+class _PackagedSkillOwnershipConflict(MlflowException):
+    """A permanent ownership conflict that must not be treated as a version collision."""
+
+
 def _skill_identity_predicate(identities: list[tuple[str, str]], dialect: str):
     if dialect == "mssql" and len(identities) > 300:
         # SQL Server limits a statement to 2,100 parameters. Pass large ACL sets
@@ -196,6 +200,54 @@ class SqlAlchemySkillRegistryMixin:
             )
         return parsed_status.value
 
+    def _assert_name_not_a_packaged_member(self, session, name: str, organization: str) -> None:
+        """
+        Refuse standalone creation for a name held by a packaged agent plugin member.
+
+        Members of assembled plugins are ordinary standalone skills pinned by reference, so they
+        do not reserve the name. Packaged members remain owned by the plugin and must be updated
+        by re-importing the plugin instead.
+
+        This is the shared ownership protocol for standalone and packaged registration paths:
+        perform the check in the same write transaction as parent/version persistence, before
+        parent creation or exact-match reuse. A caller may retry the transaction for version
+        allocation collisions or deadlocks, but must propagate this permanent ownership conflict
+        instead of treating it as an allocation collision.
+        """
+        workspace = self._with_workspace_field(SqlSkill(name=name, organization=organization))
+        member = SqlAgentPluginVersionMember
+        plugin_version = SqlAgentPluginVersion
+        held_by = (
+            session
+            .query(plugin_version.organization, plugin_version.name, plugin_version.version)
+            .join(
+                member,
+                (plugin_version.workspace == member.plugin_workspace)
+                & (plugin_version.organization == member.plugin_organization)
+                & (plugin_version.name == member.plugin_name)
+                & (plugin_version.version == member.plugin_version),
+            )
+            .filter(
+                member.plugin_workspace == workspace.workspace,
+                member.member_organization == organization,
+                member.member_name == name,
+                plugin_version.source_type.isnot(None),
+                plugin_version.source_type != SkillSourceType.ASSEMBLED.value,
+            )
+            .order_by(plugin_version.organization, plugin_version.name, plugin_version.version)
+            .first()
+        )
+        if held_by is not None:
+            plugin_organization, plugin_name, version = held_by
+            plugin = (f"@{plugin_organization}/" if plugin_organization else "") + plugin_name
+            raise _PackagedSkillOwnershipConflict(
+                f"Skill '{name}' in organization '{organization}' is a member of the packaged "
+                f"agent plugin '{plugin}' (version {version}) and cannot receive standalone "
+                "versions; re-import the plugin to update it, or register under a different "
+                "name or organization.",
+                error_code=RESOURCE_ALREADY_EXISTS,
+            )
+
     def _get_skill_or_raise(self, session, name: str, organization: str) -> SqlSkill:
         query, _ = self._skill_query(session)
         skill = query.filter(
@@ -220,6 +272,7 @@ class SqlAlchemySkillRegistryMixin:
         _validate_icon_payloads(icons, "icons")
         now = get_current_time_millis()
         with self.ManagedSessionMaker(read_only=False) as session:
+            self._assert_name_not_a_packaged_member(session, name, organization)
             skill = self._with_workspace_field(
                 SqlSkill(
                     name=name,
@@ -509,6 +562,7 @@ class SqlAlchemySkillRegistryMixin:
         self._validate_skill_version_source(source_type, source, ref, subpath, digest)
         _validate_skill_version(version)
         status = self._validate_skill_version_status(status)
+        self._assert_name_not_a_packaged_member(session, name, organization)
 
         skill = self._get_or_create_skill_for_version(
             session,
@@ -577,7 +631,9 @@ class SqlAlchemySkillRegistryMixin:
                     expected_parent_exists=expected_parent_exists,
                 )
             except MlflowException as e:
-                if e.error_code != ErrorCode.Name(RESOURCE_ALREADY_EXISTS):
+                if e.error_code != ErrorCode.Name(RESOURCE_ALREADY_EXISTS) or isinstance(
+                    e, _PackagedSkillOwnershipConflict
+                ):
                     raise
                 more_retries = self.CREATE_SKILL_VERSION_RETRIES - attempt - 1
                 _logger.info(
@@ -702,6 +758,7 @@ class SqlAlchemySkillRegistryMixin:
                     {SqlSkill.last_updated_at: SqlSkill.last_updated_at}, synchronize_session=False
                 )
             for name in names:
+                self._assert_name_not_a_packaged_member(session, name, organization)
                 parent = (
                     self
                     ._get_query(session, SqlSkill)
@@ -729,6 +786,7 @@ class SqlAlchemySkillRegistryMixin:
 
             for name in names:
                 fields = definitions[name]
+                self._assert_name_not_a_packaged_member(session, name, organization)
                 versions = self._get_query(session, SqlSkillVersion).filter(
                     SqlSkillVersion.name == name, SqlSkillVersion.organization == organization
                 )
