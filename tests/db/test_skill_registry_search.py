@@ -1,7 +1,7 @@
 # Cross-dialect (Docker matrix) tests for the RFC-0008 skill registry search helpers.
 # They run against every backend in the MLflow DB test matrix (SQLite, PostgreSQL,
 # MySQL, MSSQL) and cover the behavior that depends on the engine: string comparison
-# case sensitivity, GROUP BY/HAVING subqueries,
+# case sensitivity, correlated EXISTS and GROUP BY/HAVING subqueries, SemVer ordering,
 # and ordering of rows that tie on the requested key.
 #
 # Each test mirrors a SQLite-only test in tests/store/tracking/test_skill_registry_filter.py
@@ -15,22 +15,35 @@ import uuid
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 from mlflow.environment_variables import MLFLOW_TRACKING_URI
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
+    SqlAgentPluginVersionMember,
+    SqlMCPAccessEndpoint,
+    SqlMCPServer,
     SqlSkill,
     SqlSkillTag,
     SqlSkillVersion,
     SqlSkillVersionTag,
 )
 from mlflow.store.tracking.skill_registry_filter import (
+    apply_member_name_filter,
     apply_skill_registry_filters,
+    build_agent_plugin_mcp_member_query,
     paginate_results,
     parse_skill_registry_order_by,
 )
 from mlflow.store.tracking.skill_registry_pagination import SkillRegistryPaginationToken
 from mlflow.store.tracking.sqlalchemy_store import SqlAlchemyStore
-from mlflow.utils.search_utils import SearchSkillUtils, SearchSkillVersionUtils
+from mlflow.utils.search_utils import (
+    SearchAgentPluginUtils,
+    SearchSkillUtils,
+    SearchSkillVersionUtils,
+)
 
 pytestmark = pytest.mark.notrackingurimock
 
@@ -70,6 +83,31 @@ def _add_skill(session, org, name, *, description=None, search_text=None, status
     for key, value in (tags or {}).items():
         session.add(
             SqlSkillTag(workspace="default", organization=org, name=name, key=key, value=value)
+        )
+
+
+def _add_plugin_version(session, org, plugin, version, members, status="active"):
+    session.add(
+        SqlAgentPluginVersion(
+            workspace="default",
+            organization=org,
+            name=plugin,
+            version=version,
+            status=status,
+            plugin_json={"name": plugin, "version": version},
+        )
+    )
+    for member in members:
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_workspace="default",
+                plugin_organization=org,
+                plugin_name=plugin,
+                plugin_version=version,
+                member_organization=org,
+                member_name=member,
+                member_version=1,
+            )
         )
 
 
@@ -256,6 +294,69 @@ def test_db_backend_skill_version_number_filters(store, org, filter_string, expe
         assert sorted(row.version for row in query) == expected
 
 
+# Counterparts: test_member_name_excludes_version_with_deleted_sibling,
+# test_member_name_keeps_version_with_deprecated_sibling,
+# test_member_name_matches_older_eligible_version_when_newer_is_withdrawn, and
+# test_member_name_excludes_deleted_plugin_version.
+def test_db_backend_member_search_excludes_withdrawn_versions(store, org):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        _add_skill(session, org, "code-review", status="active")
+        _add_skill(session, org, "unsafe-helper", status="deleted")
+        _add_skill(session, org, "old-helper", status="deprecated")
+        for plugin in ["withdrawn", "deprecated-sibling", "mixed", "deleted-version"]:
+            session.add(SqlAgentPlugin(workspace="default", organization=org, name=plugin))
+        _add_plugin_version(session, org, "withdrawn", "1.0.0", ["code-review", "unsafe-helper"])
+        _add_plugin_version(
+            session, org, "deprecated-sibling", "1.0.0", ["code-review", "old-helper"]
+        )
+        _add_plugin_version(session, org, "mixed", "1.0.0", ["code-review"])
+        _add_plugin_version(session, org, "mixed", "2.0.0", ["code-review", "unsafe-helper"])
+        _add_plugin_version(
+            session, org, "deleted-version", "1.0.0", ["code-review"], status="deleted"
+        )
+
+    with store.ManagedSessionMaker() as session:
+        query = apply_member_name_filter(
+            session.query(SqlAgentPlugin).filter(SqlAgentPlugin.organization == org),
+            "code-review",
+            dialect=store.engine.dialect.name,
+        )
+        assert sorted(plugin.name for plugin in query) == ["deprecated-sibling", "mixed"]
+
+
+# Counterpart: test_order_by_multi_column_key_sorts_semver_by_precedence.
+@pytest.mark.parametrize("direction", ["DESC", "ASC"])
+def test_db_backend_semver_order_by_precedence(store, org, direction):
+    by_precedence = ["1.0.0-alpha", "1.0.0-beta", "1.0.0", "2.0.0", "9.1.0", "10.0.0"]
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlAgentPlugin(workspace="default", organization=org, name="p"))
+        for version in ["2.0.0", "1.0.0", "10.0.0", "1.0.0-beta", "9.1.0", "1.0.0-alpha"]:
+            _add_plugin_version(session, org, "p", version, [])
+
+    clauses = parse_skill_registry_order_by(
+        [f"version {direction}"],
+        valid_keys={"version"},
+        column_map={
+            "version": (
+                SqlAgentPluginVersion.version_major,
+                SqlAgentPluginVersion.version_minor,
+                SqlAgentPluginVersion.version_patch,
+                SqlAgentPluginVersion.version_prerelease_sort_key,
+            )
+        },
+        default_tiebreakers=[],
+    )
+    with store.ManagedSessionMaker() as session:
+        ordered = [
+            version.version
+            for version in session
+            .query(SqlAgentPluginVersion)
+            .filter(SqlAgentPluginVersion.organization == org)
+            .order_by(*clauses)
+        ]
+    assert ordered == (by_precedence[::-1] if direction == "DESC" else by_precedence)
+
+
 # Counterpart: test_pagination_through_helpers_returns_every_row_once. Engines such as
 # PostgreSQL return tied rows in no guaranteed order, so this is where the tiebreaker
 # is what keeps rows from being repeated or skipped across pages.
@@ -297,3 +398,59 @@ def test_db_backend_pagination_with_tied_sort_key(store, org):
             offset = SkillRegistryPaginationToken.decode(page.token).offset
 
     assert collected == sorted(names, reverse=True)
+
+
+def test_mcp_member_discovery_case_and_current_endpoint_association(store, org):
+    # Backend-sensitive counterpart of the MCP discovery helper tests: both
+    # local member names and associated server names use exact comparisons.
+    endpoint_id = str(uuid.uuid4())
+    server_name = f"GitHub-{org}"
+    new_server_name = f"GitLab-{org}"
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.add_all([
+            SqlMCPServer(workspace="default", name=server_name),
+            SqlMCPServer(workspace="default", name=new_server_name),
+            SqlAgentPlugin(workspace="default", organization=org, name="plugin"),
+        ])
+        session.flush()
+        session.add(
+            SqlMCPAccessEndpoint(id=endpoint_id, workspace="default", server_name=server_name)
+        )
+        _add_plugin_version(session, org, "plugin", "1.0.0", [])
+        session.flush()
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_workspace="default",
+                plugin_organization=org,
+                plugin_name="plugin",
+                plugin_version="1.0.0",
+                member_name="Local",
+                access_endpoint_id=endpoint_id,
+            )
+        )
+
+    def query(local_name, associated_server):
+        return build_agent_plugin_mcp_member_query(
+            SearchAgentPluginUtils.parse_search_filter(
+                f"mcp_member_name = '{local_name}' AND mcp_server_name = '{associated_server}'"
+            ),
+            workspace="default",
+            dialect=store.engine.dialect.name,
+            readable_endpoint_ids=sa.select(SqlMCPAccessEndpoint.id).where(
+                SqlMCPAccessEndpoint.id == endpoint_id
+            ),
+        ).where(SqlAgentPluginVersion.organization == org)
+
+    expected = [("default", org, "plugin", "1.0.0")]
+    with store.ManagedSessionMaker() as session:
+        assert session.execute(query("Local", server_name)).all() == expected
+        assert session.execute(query("local", server_name)).all() == []
+        assert session.execute(query("Local", server_name.lower())).all() == []
+        assert session.execute(query("Local", new_server_name)).all() == []
+
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.get(SqlMCPAccessEndpoint, endpoint_id).server_name = new_server_name
+
+    with store.ManagedSessionMaker() as session:
+        assert session.execute(query("Local", server_name)).all() == []
+        assert session.execute(query("Local", new_server_name)).all() == expected

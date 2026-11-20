@@ -31,6 +31,8 @@ class SkillRegistryPaginationToken:
         "skills"
 
         "skill_versions:acme/code-review"
+        "agent_plugins"
+        "agent_plugin_versions:acme/my-plugin"
     """
 
     filter_string: str | None
