@@ -91,6 +91,16 @@ RUN set -eux; \
     cp -r /tmp/mlflow-ui-build/* "$py_site/mlflow/server/js/build/"; \
     rm -rf /tmp/mlflow-ui-build
 
+# OpenSSL 3.5 can negotiate ML-KEM, but the UBI DEFAULT policy does not list
+# those groups. The tracking server follows this policy through
+# UVICORN_SSL_CIPHERS=PROFILE=SYSTEM.
+RUN set -eux; \
+    policy=/etc/crypto-policies/back-ends/opensslcnf.config; \
+    grep -q '^Groups = ' "$policy"; \
+    grep -q 'X25519MLKEM768' "$policy" || sed -i 's/^Groups = \(.*\)$/Groups = \1:X25519MLKEM768:MLKEM768/' "$policy"; \
+    grep -q 'X25519MLKEM768' "$policy"; \
+    grep -q ':MLKEM768' "$policy"
+
 EXPOSE 5000
 
 # Default command. Override in Kubernetes as needed.
