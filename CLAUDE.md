@@ -2,6 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ODH Midstream Fork
+
+This is `opendatahub-io/mlflow`, the Open Data Hub fork of `mlflow/mlflow`, rebased onto each upstream release.
+
+- Every change to an upstream-owned file is carried and conflict-resolved on every rebase. Keep the upstream
+  diff minimal: gate ODH behavior behind flags or put it in ODH-owned files instead of rewriting upstream code.
+  Fix bugs that also exist upstream in `mlflow/mlflow`.
+- Commit subject prefixes tell the next rebase what to do: `keep:` (permanent ODH change), `drop:` (temporary
+  workaround or upstream cherry-pick, removed once the base includes it), `backport:` (upstream commit not yet
+  in the base). Include the Jira key when there is one, e.g. `keep: RHOAIENG-12345: ...`.
+- `FORK_HISTORY.md` records each rebase and recurring post-rebase breakages; use the `rebase-mlflow` skill to
+  rebase.
+- The product server (`Dockerfile.konflux`) runs with the `kubernetes-auth` app, Kubernetes-backed workspaces,
+  and `MLFLOW_ENABLE_AI_GATEWAY` / `MLFLOW_ENABLE_ASSISTANT` off. Backend gateway and job endpoints are disabled
+  when the gateway flag is off (`tests/server/test_gateway_disable.py`).
+- `mlflow/store/db/migration_gap.py` applies Alembic migrations that RHOAI 3.3 → 3.4 upgrades would otherwise
+  skip. A rebase that inserts migrations below an already-shipped head needs the same treatment.
+- Frontend: the UI is also a Module Federation remote embedded in odh-dashboard and restyled to PatternFly.
+  See `mlflow/server/js/src/odh/MIDSTREAM.md` before touching `mlflow/server/js`.
+
 ## Knowledge Cutoff Note
 
 Claude's training data may lag behind current releases. When reviewing docs or code, don't flag unfamiliar names as speculative or non-existent. Assume the authors are referencing newer, valid resources (e.g., model names like GPT-5, GitHub runner types like ubuntu-slim, library versions, etc.).
