@@ -16,6 +16,7 @@ contentOrigin:
     - ubi.repo
 
 packages:
+  - crypto-policies-scripts
   - openblas-threads
   - postgresql-libs
   - python3.12
