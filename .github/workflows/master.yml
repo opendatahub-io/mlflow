@@ -63,18 +63,35 @@ jobs:
       - uses: ./.github/actions/untracked
       - uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-python
+        id: setup-python
         with:
+          python-version: "3.12"
           pin-micro-version: true
       - uses: ./.github/actions/setup-pyenv
       - uses: ./.github/actions/setup-java
       - name: Install dependencies
+        env:
+          UV_PYTHON: ${{ steps.setup-python.outputs.python-version }}
         run: |
+          echo "UV_PYTHON=$UV_PYTHON" >> "$GITHUB_ENV"
           uv sync --extra extras --extra gateway --extra mcp --extra genai
           uv pip install \
             -r requirements/test-requirements.txt \
             -r requirements/extra-ml-requirements.txt
+          # Reinstall the shipped artifacts, including packages already at the same version.
+          # Ignore development-only uv constraints during these hash-verified installs.
+          uv pip install --no-config --python .venv/bin/python \
+            --require-hashes --no-deps --reinstall \
+            -r requirements/konflux-aipcc-requirements.txt
+          uv pip install --no-config --python .venv/bin/python \
+            --require-hashes --no-deps --reinstall \
+            -r requirements/konflux-pypi-requirements.txt
       - uses: ./.github/actions/show-versions
       - uses: ./.github/actions/cache-hf
+      - name: Check Konflux dependencies
+        run: |
+          uv pip check --python .venv/bin/python
+          uv run --no-sync python -c 'import pyarrow.parquet; from PIL import Image'
       - name: Import check
         run: |
           # `-I` is used to avoid importing modules from user-specific site-packages
