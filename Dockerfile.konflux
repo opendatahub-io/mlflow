@@ -49,7 +49,7 @@ USER 0
 COPY --from=python-builder /tmp/dist/ /tmp/dist/
 COPY requirements/konflux-aipcc-requirements.txt /tmp/konflux-aipcc-requirements.txt
 RUN set -eux; \
-    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads sqlite && \
+    microdnf install -y --setopt=tsflags=nodocs python3.12 python3.12-pip postgresql-libs openblas-threads sqlite crypto-policies-scripts && \
     ln -s "$(command -v python3.12)" /usr/local/bin/python && \
     if [ -f /cachi2/cachi2.env ]; then . /cachi2/cachi2.env; fi && \
     python3.12 -m pip install --no-cache-dir --require-hashes --no-deps \
@@ -90,6 +90,11 @@ RUN set -eux; \
     rm -rf "$py_site/mlflow/server/js/build"/* || true; \
     cp -r /tmp/mlflow-ui-build/* "$py_site/mlflow/server/js/build/"; \
     rm -rf /tmp/mlflow-ui-build
+
+# OpenSSL 3.5 can negotiate ML-KEM, but the UBI DEFAULT policy does not list
+# those groups. The tracking server follows this policy through
+# UVICORN_SSL_CIPHERS=PROFILE=SYSTEM.
+RUN update-crypto-policies --set DEFAULT:PQ --no-reload
 
 EXPOSE 5000
 
