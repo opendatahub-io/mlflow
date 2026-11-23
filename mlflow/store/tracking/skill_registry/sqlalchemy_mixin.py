@@ -24,6 +24,7 @@ from mlflow.protos.databricks_pb2 import (
 from mlflow.store.entities.paged_list import PagedList
 from mlflow.store.tracking import NOT_SET, SEARCH_MAX_RESULTS_DEFAULT
 from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
     SqlAgentPluginVersion,
     SqlAgentPluginVersionMember,
     SqlSkill,
@@ -31,6 +32,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlSkillTag,
     SqlSkillVersion,
     SqlSkillVersionTag,
+    _agent_plugin_version_has_deleted_member,
 )
 from mlflow.store.tracking.skill_registry.artifact_paths import owned_skill_upload_path
 from mlflow.store.tracking.skill_registry.constants import (
@@ -55,6 +57,7 @@ from mlflow.telemetry.track import record_usage_event
 from mlflow.utils.search_utils import SearchSkillUtils, SearchSkillVersionUtils
 from mlflow.utils.time import get_current_time_millis
 from mlflow.utils.validation import (
+    _validate_agent_plugin_name,
     _validate_alias_name,
     _validate_alias_name_reserved,
     _validate_icon_payloads,
@@ -123,6 +126,99 @@ class SqlAlchemySkillRegistryMixin:
             subqueryload(SqlSkill.skill_aliases),
         )
         return SqlSkill.with_resolved_latest_columns(query)
+
+    def _agent_plugin_query(self, session):
+        query = self._get_query(session, SqlAgentPlugin).options(
+            subqueryload(SqlAgentPlugin.tags),
+            subqueryload(SqlAgentPlugin.plugin_aliases),
+        )
+        return SqlAgentPlugin.with_resolved_latest(query)
+
+    def _agent_plugin_version_query(self, session, *, include_withdrawn=False):
+        query = self._get_query(session, SqlAgentPluginVersion).options(
+            subqueryload(SqlAgentPluginVersion.plugin).subqueryload(SqlAgentPlugin.plugin_aliases),
+            subqueryload(SqlAgentPluginVersion.version_tags),
+            subqueryload(SqlAgentPluginVersion.members),
+            subqueryload(SqlAgentPluginVersion.mcp_members),
+        )
+        query = query.filter(SqlAgentPluginVersion.status != SkillStatus.DELETED.value)
+        if not include_withdrawn:
+            query = query.filter(~_agent_plugin_version_has_deleted_member())
+        return query
+
+    def _get_agent_plugin_or_raise(self, session, name: str, organization: str):
+        plugin = (
+            self
+            ._agent_plugin_query(session)
+            .filter(
+                SqlAgentPlugin.name == name,
+                SqlAgentPlugin.organization == organization,
+            )
+            .one_or_none()
+        )
+        if plugin is None:
+            raise MlflowException(
+                f"Agent plugin '{name}' not found in organization '{organization}'",
+                error_code=RESOURCE_DOES_NOT_EXIST,
+            )
+        return plugin
+
+    def _get_agent_plugin_version_or_raise(
+        self, session, name: str, version: str, organization: str
+    ):
+        plugin_version = (
+            self
+            ._agent_plugin_version_query(session)
+            .filter(
+                SqlAgentPluginVersion.name == name,
+                SqlAgentPluginVersion.organization == organization,
+                SqlAgentPluginVersion.version == version,
+            )
+            .one_or_none()
+        )
+        if plugin_version is None:
+            raise MlflowException(
+                f"Agent plugin version '{name}' version '{version}' not found",
+                error_code=RESOURCE_DOES_NOT_EXIST,
+            )
+        return plugin_version
+
+    def get_agent_plugin(self, name: str, organization: str = ""):
+        _validate_agent_plugin_name(name)
+        with self.ManagedSessionMaker() as session:
+            return self._get_agent_plugin_or_raise(session, name, organization).to_mlflow_entity()
+
+    def get_agent_plugin_version(self, name: str, version: str, organization: str = ""):
+        _validate_agent_plugin_name(name)
+        with self.ManagedSessionMaker() as session:
+            return self._get_agent_plugin_version_or_raise(
+                session, name, version, organization
+            ).to_mlflow_entity()
+
+    def get_latest_agent_plugin_version(self, name: str, organization: str = ""):
+        _validate_agent_plugin_name(name)
+        with self.ManagedSessionMaker() as session:
+            self._get_agent_plugin_or_raise(session, name, organization)
+            status_priority = sa.case(
+                (SqlAgentPluginVersion.status == SkillStatus.ACTIVE.value, 0),
+                else_=1,
+            )
+            plugin_version = (
+                self
+                ._agent_plugin_version_query(session)
+                .filter(
+                    SqlAgentPluginVersion.name == name,
+                    SqlAgentPluginVersion.organization == organization,
+                )
+                .order_by(status_priority.asc(), *SqlAgentPlugin._version_order_by())
+                .first()
+            )
+            if plugin_version is None:
+                raise MlflowException(
+                    f"No resolved latest version found for agent plugin '{name}'",
+                    error_code=RESOURCE_DOES_NOT_EXIST,
+                )
+            return plugin_version.to_mlflow_entity()
 
     @staticmethod
     def _page_token_offset(

@@ -61,7 +61,11 @@ from mlflow.utils.async_logging.run_operations import RunOperations
 
 
 @developer_stable
-class AbstractStore(SkillRegistryMixin, MCPServerRegistryMixin, GatewayStoreMixin):
+class AbstractStore(
+    SkillRegistryMixin,
+    MCPServerRegistryMixin,
+    GatewayStoreMixin,
+):
     """
     Abstract class for Backend Storage.
     This class defines the API interface for front ends to connect with various types of backends.
