@@ -30,6 +30,11 @@
     border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
     padding-inline: var(--pf-t--global--spacer--action--horizontal--plain--default) !important;
 
+    .anticon,
+    [role='img'] {
+      color: inherit !important;
+    }
+
     &:hover:not(:disabled) {
       background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
       color: var(--pf-t--global--text--color--brand--hover) !important;

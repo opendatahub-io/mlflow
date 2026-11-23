@@ -1,0 +1,128 @@
+$du-bois-components-with-base-font-size: (
+  alert,
+  alert-description,
+  breadcrumb,
+  btn,
+  btn-round,
+  btn-sm,
+  checkbox,
+  checkbox-group,
+  checkbox-wrapper,
+  collapse,
+  dropdown,
+  dropdown-menu-item,
+  dropdown-menu-submenu-title,
+  empty,
+  form,
+  form-item,
+  form-item-explain,
+  form-item-extra,
+  input,
+  input-affix-wrapper,
+  input-group,
+  input-group-addon,
+  layout-footer,
+  menu,
+  menu-item-group-title,
+  modal,
+  modal-body,
+  notification,
+  notification-notice-description,
+  pagination,
+  picker,
+  picker-dropdown,
+  popover,
+  popover-message,
+  progress,
+  progress-line,
+  radio,
+  radio-button-wrapper,
+  radio-group,
+  radio-wrapper,
+  select,
+  select-auto-complete,
+  select-dropdown,
+  select-item,
+  select-item-empty,
+  spin,
+  steps,
+  steps-item-description,
+  steps-item-subtitle,
+  switch,
+  table,
+  table-filter-dropdown,
+  tabs,
+  tabs-dropdown,
+  tabs-dropdown-menu-item,
+  tabs-tab,
+  tag,
+  tooltip,
+  tree,
+  tree-checkbox,
+  tree-checkbox-group,
+  tree-checkbox-wrapper
+);
+
+.pf-shell-root {
+  @each $theme in (light, dark) {
+    @each $component in $du-bois-components-with-base-font-size {
+      .du-bois-#{$theme}-#{$component} {
+        font-size: var(--pf-t--global--font--size--body--default);
+      }
+    }
+
+    .du-bois-#{$theme}-form label,
+    .du-bois-#{$theme}-form output,
+    .du-bois-#{$theme}-form-item-label > label,
+    .du-bois-#{$theme}-modal-confirm-body .du-bois-#{$theme}-modal-confirm-content,
+    .du-bois-#{$theme}-notification-notice .du-bois-#{$theme}-notification-notice-message,
+    .du-bois-#{$theme}-notification-notice .du-bois-#{$theme}-notification-notice-description,
+    .du-bois-#{$theme}-steps-small .du-bois-#{$theme}-steps-item-title,
+    .du-bois-#{$theme}-steps-small .du-bois-#{$theme}-steps-item-description,
+    .du-bois-#{$theme}-table.du-bois-#{$theme}-table-middle,
+    .du-bois-#{$theme}-table.du-bois-#{$theme}-table-small,
+    .du-bois-#{$theme}-tabs-small > .du-bois-#{$theme}-tabs-nav .du-bois-#{$theme}-tabs-tab {
+      font-size: var(--pf-t--global--font--size--body--default);
+    }
+
+    .du-bois-#{$theme}-modal-title {
+      font-family: var(--pf-t--global--font--family--heading);
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  [role='heading'] {
+    font-family: var(--pf-t--global--font--family--heading);
+
+    :is(button, [role='button'], [data-component-type]) {
+      font-family: var(--pf-t--global--font--family--body);
+    }
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--pf-t--global--font--family--mono) !important;
+  }
+
+  b,
+  strong {
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+  }
+
+  .ag-theme-balham {
+    font-family: var(--pf-t--global--font--family--body);
+    font-size: var(--pf-t--global--font--size--body--default);
+  }
+
+  .ag-theme-balham .ag-header-cell {
+    font-size: var(--pf-t--global--font--size--body--sm);
+    font-weight: var(--pf-t--global--font--weight--body--bold);
+  }
+}

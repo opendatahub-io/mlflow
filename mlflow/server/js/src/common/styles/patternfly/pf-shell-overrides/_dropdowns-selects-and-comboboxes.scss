@@ -5,9 +5,10 @@
 // state behavior stays easy to reason about.
 
 @mixin floating-surface {
+  border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default) !important;
   border-radius: var(--pf-t--global--border--radius--small) !important;
   background-color: var(--pf-t--global--background--color--floating--default) !important;
-  box-shadow: var(--pf-t--global--box-shadow--lg) !important;
+  box-shadow: var(--pf-t--global--box-shadow--md) !important;
 }
 
 @mixin flat-floating-surface {
@@ -738,11 +739,19 @@
      listbox fills the dropdown without its own shadow. */
   .du-bois-light-select-dropdown,
   .du-bois-dark-select-dropdown {
-    div[role='listbox'] {
+    border-radius: calc(var(--pf-t--global--border--radius--small) + var(--pf-t--global--spacer--xs)) !important;
+
+    div[role='listbox'],
+    .rc-virtual-list {
       width: 100% !important;
       background-color: transparent !important;
+      border: none !important;
       box-shadow: none !important;
-      border-radius: 0 !important;
+      border-radius: inherit !important;
+    }
+
+    div[role='listbox'][style*='height: 0'] {
+      padding: 0 !important;
     }
   }
 
@@ -776,6 +785,25 @@
   .du-bois-light-dropdown .du-bois-light-dropdown-menu,
   .du-bois-dark-dropdown .du-bois-dark-dropdown-menu {
     box-shadow: none !important;
+  }
+
+  .du-bois-light-dropdown > [role='menu'],
+  .du-bois-dark-dropdown > [role='menu'] {
+    border: none !important;
+    border-radius: inherit !important;
+  }
+
+  .du-bois-light-dropdown:has(> [role='menu']),
+  .du-bois-dark-dropdown:has(> [role='menu']) {
+    border-radius: calc(var(--pf-t--global--border--radius--small) + var(--pf-t--global--spacer--xs)) !important;
+  }
+
+  [data-radix-popper-content-wrapper] {
+    overflow: visible !important;
+  }
+
+  [role='menu']:empty {
+    display: none !important;
   }
 
   .du-bois-light-dropdown-menu-item,
@@ -853,10 +881,11 @@
   [role='menu'][data-radix-menu-content],
   [role='menu'] {
     overflow: auto !important;
-    padding: var(--pf-t--global--spacer--sm) 0 !important;
+    padding: var(--pf-t--global--spacer--xs) !important;
     border: none !important;
     font-family: var(--pf-t--global--font--family--body) !important;
     @include floating-surface;
+    border-radius: calc(var(--pf-t--global--border--radius--small) + var(--pf-t--global--spacer--xs)) !important;
 
     > div:not([role]):not(:has(.du-bois-light-input, .du-bois-dark-input)):has(
         + [role='group'],
@@ -893,6 +922,7 @@
       line-height: var(--pf-t--global--font--line-height--body) !important;
       color: var(--pf-t--global--text--color--regular) !important;
       background-color: transparent !important;
+      border-radius: var(--pf-t--global--border--radius--small) !important;
       @include background-color-transition;
 
       &:hover,
@@ -936,6 +966,7 @@
   div[role='listbox'] > div > [role='option'] {
     @include interactive-row-base;
     @include background-color-transition-important;
+    border-radius: var(--pf-t--global--border--radius--small) !important;
 
     &:hover,
     &:focus,
@@ -984,6 +1015,8 @@
    DOM: [data-radix-popper-content-wrapper] > div[role='listbox']
         > div > div[data-combobox-option-list] > div[role='option'] */
 [data-radix-popper-content-wrapper] div[role='listbox'] [role='option'] {
+  border-radius: var(--pf-t--global--border--radius--small) !important;
+
   &:hover,
   &[data-highlighted='true'] {
     background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
@@ -1002,6 +1035,18 @@
 
     &:hover {
       background-color: transparent !important;
+    }
+  }
+}
+
+.pf-shell-root {
+  [data-radix-popper-content-wrapper] > [role='listbox'] {
+    max-width: min(32rem, var(--radix-popover-content-available-width, 100vw)) !important;
+
+    [role='option'] label > span:not(:first-child) > div {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
   }
 }

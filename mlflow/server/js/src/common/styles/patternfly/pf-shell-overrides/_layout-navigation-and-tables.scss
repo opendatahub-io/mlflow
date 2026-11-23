@@ -219,35 +219,57 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     height: auto !important;
   }
 
+  [data-radix-scroll-area-viewport]:has(> div > [role='tablist'][data-component-type='tabs']) {
+    background: none !important;
+  }
+
   [role='tablist'][data-component-type='tabs'] {
     gap: var(--pf-t--global--spacer--xs) !important;
 
     button[role='tab'] {
+      --_tab-border-width: var(--pf-t--global--border--width--action--plain--hover);
+      --_tab-underline-width: var(--pf-t--global--border--width--extra-strong);
+      --_tab-underline-gap: var(--pf-t--global--spacer--xs);
+
+      position: relative;
       font-weight: var(--pf-t--global--font--weight--body--default) !important;
       color: var(--pf-t--global--text--color--subtle) !important;
       background-color: var(--pf-t--global--background--color--action--plain--default) !important;
       padding-block: var(--pf-t--global--spacer--xs) !important;
       padding-inline: var(--pf-t--global--spacer--sm) !important;
       margin: 0 !important;
+      margin-block-end: calc(var(--_tab-underline-gap) + var(--_tab-underline-width)) !important;
       align-self: stretch !important;
-      border: var(--pf-t--global--border--width--action--plain--hover) solid transparent !important;
-      border-bottom: none !important;
-      border-radius: var(--pf-t--global--border--radius--small) var(--pf-t--global--border--radius--small) 0 0 !important;
-      transition:
-        background-color var(--pf-t--global--motion--duration--fade--default)
-          var(--pf-t--global--motion--timing-function--default),
-        box-shadow var(--pf-t--global--motion--duration--fade--default)
-          var(--pf-t--global--motion--timing-function--default) !important;
+      border: var(--_tab-border-width) solid transparent !important;
+      border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+      box-shadow: none !important;
+      transition: background-color var(--pf-t--global--motion--duration--fade--default)
+        var(--pf-t--global--motion--timing-function--default) !important;
 
       &:hover,
       &:focus {
         background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
         border-color: var(--pf-t--global--border--color--high-contrast) !important;
-        border-bottom-color: transparent !important;
       }
 
       &[data-state='active'] {
         color: var(--pf-t--global--text--color--regular) !important;
+
+        &::after {
+          position: absolute;
+          inset-inline: calc(-1 * var(--_tab-border-width));
+          inset-block-end: calc(
+            -1 * (var(--_tab-border-width) + var(--_tab-underline-gap) + var(--_tab-underline-width))
+          );
+          height: var(--_tab-underline-width);
+          content: '';
+          background-color: var(
+            --pf-t--global--color--brand--accent--default,
+            var(--pf-t--global--color--brand--default)
+          );
+          border-radius: var(--pf-t--global--border--radius--pill);
+          pointer-events: none;
+        }
       }
     }
   }
@@ -410,7 +432,6 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
         /* No inline-start padding here: MlflowSidebarLink already uses spacer sm, and sub-nav items
            (AI Registry, experiment sections) add their own indent that this rule would flatten. */
         padding-inline-end: var(--pf-t--global--spacer--sm);
-        color: var(--pf-t--global--text--color--regular) !important;
         /* PF nav links inherit the body size; Du Bois sets 13px */
         font-size: var(--pf-t--global--font--size--body--default);
         line-height: var(--pf-t--global--font--line-height--body);
@@ -422,13 +443,9 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
           line-height: inherit;
         }
       }
-      a:hover {
-        font-weight: normal !important;
-        background-color: var(--pf-t--global--background--color--primary--default) !important;
-      }
+      a:hover,
       a[aria-current='page'] {
         font-weight: normal !important;
-        background-color: var(--pf-t--global--background--color--primary--default) !important;
       }
     }
   }
@@ -437,6 +454,44 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
   aside > nav > div > li > a {
     font-size: var(--pf-t--global--font--size--body--default);
     line-height: var(--pf-t--global--font--line-height--body);
+  }
+
+  aside > nav {
+    padding-inline-start: var(--pf-t--global--spacer--sm);
+    margin-inline-start: calc(-1 * var(--pf-t--global--spacer--sm));
+  }
+
+  aside > nav > ul li a,
+  aside > nav > div > li > a {
+    position: relative;
+    color: var(--pf-t--global--text--color--subtle) !important;
+    border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+    transition: background-color var(--pf-t--global--motion--duration--fade--default)
+      var(--pf-t--global--motion--timing-function--default);
+
+    &:hover {
+      color: var(--pf-t--global--text--color--regular) !important;
+      background-color: var(--pf-t--global--background--color--action--plain--alt--hover) !important;
+    }
+
+    &[aria-current='page'] {
+      color: var(--pf-t--global--text--color--regular) !important;
+      background-color: var(--pf-t--global--background--color--action--plain--alt--clicked) !important;
+
+      &::before {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: calc(-1 * var(--pf-t--global--spacer--sm));
+        width: var(--pf-t--global--border--width--extra-strong);
+        content: '';
+        background-color: var(
+          --pf-t--global--color--brand--accent--default,
+          var(--pf-t--global--color--brand--default)
+        );
+        border-radius: var(--pf-t--global--border--radius--small);
+        pointer-events: none;
+      }
+    }
   }
 
   div:has(> .mlflow-experiment-page-side-nav-collapsed) {
@@ -484,12 +539,87 @@ $mlflow-table-header-sort-icon-baseline-offset: 0.05em;
     padding-top: var(--pf-t--global--spacer--sm) !important;
   }
 
+  div[data-component-id='mlflow.experiment-page.side-nav'] {
+    $item-indent: calc(var(--pf-t--global--spacer--md) - var(--pf-t--global--border--width--extra-strong));
+
+    a[href] {
+      position: relative;
+      display: block;
+      text-decoration: none;
+
+      + a[href] {
+        margin-block-start: var(--pf-t--global--spacer--sm);
+      }
+
+      > div {
+        margin-inline-start: $item-indent;
+        border-radius: var(--pf-t--global--border--radius--action--plain--default) !important;
+        background-color: transparent !important;
+        color: var(--pf-t--global--text--color--subtle);
+        transition: background-color var(--pf-t--global--motion--duration--fade--default)
+          var(--pf-t--global--motion--timing-function--default);
+
+        > :is(.du-bois-light-typography, .du-bois-dark-typography) {
+          color: inherit !important;
+          font-weight: var(--pf-t--global--font--weight--body--default) !important;
+        }
+      }
+
+      &:hover > div,
+      &:focus-visible > div {
+        color: var(--pf-t--global--text--color--regular);
+        background-color: var(--pf-t--global--background--color--action--plain--hover) !important;
+      }
+
+      &[aria-current='page'] {
+        > div {
+          color: var(--pf-t--global--text--color--regular);
+        }
+
+        &::before {
+          position: absolute;
+          inset-block: var(--pf-t--global--spacer--xs);
+          inset-inline-start: 0;
+          width: var(--pf-t--global--border--width--extra-strong);
+          content: '';
+          background-color: var(--pf-t--global--color--brand--accent--default);
+          border-radius: var(--pf-t--global--border--radius--pill);
+          pointer-events: none;
+        }
+      }
+    }
+
+    div:has(> a[href]) > div:first-child {
+      padding-inline-start: calc(#{$item-indent} + var(--pf-t--global--spacer--sm));
+
+      > :is(.du-bois-light-typography, .du-bois-dark-typography) {
+        font-size: var(--pf-t--global--font--size--body--default) !important;
+        font-weight: var(--pf-t--global--font--weight--body--bold) !important;
+        line-height: var(--pf-t--global--font--line-height--body) !important;
+        color: var(--pf-t--global--text--color--regular) !important;
+      }
+    }
+  }
+
   /* Prompt details traces pane - restore the missing left gutter in the split right panel. */
   div:has(> div > [data-component-id='mlflow.prompts.details.mode'])
     + div
     > div:has([data-component-id='mlflow.experiment-evaluation-monitoring.date-selector']) {
     padding-inline-start: var(--pf-t--global--spacer--md);
     box-sizing: border-box;
+  }
+
+  div:has(
+    > :is(
+        .du-bois-light-dialogcombobox,
+        .du-bois-dark-dialogcombobox
+      )[data-component-id$='evaluationartifactcompareview.tsx_358']
+  ),
+  div:has(
+    > :is(.du-bois-light-input-affix-wrapper, .du-bois-dark-input-affix-wrapper)
+      > input[data-component-id$='evaluationartifactcompareview.tsx_414']
+  ) {
+    height: auto;
   }
 
   /* Workflow type switch — PF-styled segmented toggle. */

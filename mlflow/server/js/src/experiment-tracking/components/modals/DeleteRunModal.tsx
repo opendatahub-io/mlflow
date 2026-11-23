@@ -121,6 +121,7 @@ export class DeleteRunModalImpl extends Component<Props, State> {
         disabled={isDeletingWithChildren}
         loading={isDeletingSelected}
         type="primary"
+        danger
       >
         Delete selected
       </Button>
@@ -131,6 +132,7 @@ export class DeleteRunModalImpl extends Component<Props, State> {
         componentId="delete-selected-children"
         key="delete-selected-children"
         type="primary"
+        danger
         onClick={this.handleDeleteWithChildren}
         disabled={isDeletingSelected}
         loading={isDeletingWithChildren}
