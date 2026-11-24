@@ -51,6 +51,61 @@ def _seed_plugin_version(
         session.add(version)
 
 
+def test_create_agent_plugin_persists_parent_metadata(store):
+    plugin = store.create_agent_plugin(
+        "developer-tools",
+        organization="acme",
+        description="Developer tools",
+        created_by="alice",
+    )
+
+    assert plugin.name == "developer-tools"
+    assert plugin.organization == "acme"
+    assert plugin.description == "Developer tools"
+    assert plugin.status is None
+    assert plugin.latest_version is None
+    assert plugin.created_by == "alice"
+    assert plugin.last_updated_by == "alice"
+    assert plugin.creation_timestamp is not None
+
+    assert store.get_agent_plugin("developer-tools", organization="acme") == plugin
+
+
+def test_create_agent_plugin_duplicate_is_scoped_by_organization(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+    example = store.create_agent_plugin("developer-tools", organization="example")
+
+    assert example.organization == "example"
+    with pytest.raises(MlflowException, match="already exists") as exc:
+        store.create_agent_plugin("developer-tools", organization="acme")
+
+    assert exc.value.error_code == "RESOURCE_ALREADY_EXISTS"
+
+
+def test_update_agent_plugin_preserves_omitted_fields_and_allows_clearing(store):
+    created = store.create_agent_plugin(
+        "developer-tools",
+        description="Developer tools",
+        icons=[{"src": "https://example.com/icon.svg"}],
+        created_by="alice",
+    )
+
+    updated = store.update_agent_plugin("developer-tools", last_updated_by="bob")
+
+    assert updated.description == created.description
+    assert updated.icons == created.icons
+    assert updated.last_updated_by == "bob"
+    assert updated.last_updated_timestamp >= created.last_updated_timestamp
+
+    cleared = store.update_agent_plugin(
+        "developer-tools", description=None, icons=None, last_updated_by="carol"
+    )
+
+    assert cleared.description is None
+    assert cleared.icons is None
+    assert cleared.last_updated_by == "carol"
+
+
 def test_get_agent_plugin_returns_resolved_parent_metadata(store):
     _seed_plugin_version(store)
 

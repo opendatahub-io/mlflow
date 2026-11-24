@@ -183,20 +183,90 @@ class SqlAlchemySkillRegistryMixin:
             )
         return plugin_version
 
-    def get_agent_plugin(self, name: str, organization: str = ""):
+    @staticmethod
+    def _validate_agent_plugin_identity(name: str, organization: str) -> None:
         _validate_agent_plugin_name(name)
+        _validate_organization_name(organization)
+
+    def create_agent_plugin(
+        self,
+        name: str,
+        organization: str = "",
+        description: str | None = None,
+        icons: list[RegistryIcon] | None = None,
+        created_by: str | None = None,
+    ):
+        self._validate_agent_plugin_identity(name, organization)
+        _validate_icon_payloads(icons, "icons")
+        now = get_current_time_millis()
+        with self.ManagedSessionMaker(read_only=False) as session:
+            plugin = self._with_workspace_field(
+                SqlAgentPlugin(
+                    name=name,
+                    organization=organization,
+                    description=description,
+                    icons=icons,
+                    created_by=created_by,
+                    last_updated_by=created_by,
+                    created_at=now,
+                    last_updated_at=now,
+                )
+            )
+            session.add(plugin)
+            try:
+                session.flush()
+            except IntegrityError as e:
+                raise MlflowException(
+                    f"Agent plugin '{name}' already exists in organization '{organization}'",
+                    error_code=RESOURCE_ALREADY_EXISTS,
+                ) from e
+            return plugin.to_mlflow_entity()
+
+    def get_agent_plugin(self, name: str, organization: str = ""):
+        self._validate_agent_plugin_identity(name, organization)
         with self.ManagedSessionMaker() as session:
             return self._get_agent_plugin_or_raise(session, name, organization).to_mlflow_entity()
 
+    def update_agent_plugin(
+        self,
+        name: str,
+        organization: str = "",
+        description: str | None = NOT_SET,
+        icons: list[RegistryIcon] | None = NOT_SET,
+        last_updated_by: str | None = None,
+    ):
+        self._validate_agent_plugin_identity(name, organization)
+        if icons is not NOT_SET:
+            _validate_icon_payloads(icons, "icons")
+        with self.ManagedSessionMaker(read_only=False) as session:
+            plugin = self._get_agent_plugin_or_raise(session, name, organization)
+            if description is not NOT_SET:
+                plugin.description = description
+            if icons is not NOT_SET:
+                plugin.icons = icons
+            plugin.last_updated_by = last_updated_by
+            plugin.last_updated_at = get_current_time_millis()
+            session.flush()
+            return (
+                self
+                ._agent_plugin_query(session)
+                .filter(
+                    SqlAgentPlugin.name == name,
+                    SqlAgentPlugin.organization == organization,
+                )
+                .one()
+                .to_mlflow_entity()
+            )
+
     def get_agent_plugin_version(self, name: str, version: str, organization: str = ""):
-        _validate_agent_plugin_name(name)
+        self._validate_agent_plugin_identity(name, organization)
         with self.ManagedSessionMaker() as session:
             return self._get_agent_plugin_version_or_raise(
                 session, name, version, organization
             ).to_mlflow_entity()
 
     def get_latest_agent_plugin_version(self, name: str, organization: str = ""):
-        _validate_agent_plugin_name(name)
+        self._validate_agent_plugin_identity(name, organization)
         with self.ManagedSessionMaker() as session:
             self._get_agent_plugin_or_raise(session, name, organization)
             status_priority = sa.case(
