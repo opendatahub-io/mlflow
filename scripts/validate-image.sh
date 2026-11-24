@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
 fail() {
     printf 'FAIL: %s\n' "$*" >&2
@@ -86,10 +86,7 @@ print(
 print(f"verified entry points and UI assets under {build}")
 PY
 
-if ! python3.12 -m pip check >/tmp/mlflow-pip-check.log 2>&1; then
-    cat /tmp/mlflow-pip-check.log
-    fail "pip check reported dependency conflicts"
-fi
+python3.12 -m pip check || fail "pip check reported dependency conflicts"
 
 python3.12 -m mlflow server --help >/dev/null || fail "python3.12 -m mlflow server --help failed"
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Validate the Konflux artifact contract for mlflow pull requests.
 
 The PR PipelineRun, Dockerfile.konflux, Hermeto prefetch inputs and package
@@ -16,7 +15,6 @@ import re
 import shlex
 import sys
 from pathlib import Path
-
 
 EXPECTED_IMAGE = "quay.io/opendatahub/mlflow:odh-pr"
 EXPECTED_DOCKERFILE = "Dockerfile.konflux"
@@ -53,6 +51,10 @@ EXPECTED_CMD = [
 ]
 
 
+def _emit(message: str) -> None:
+    sys.stdout.write(message + "\n")
+
+
 class ContractChecker:
     def __init__(self, root: Path) -> None:
         self.root = root.resolve()
@@ -74,7 +76,11 @@ class ContractChecker:
         if not path.is_file():
             self.require(False, f"{relative} is missing")
             return ""
-        return path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
+        if not content.strip():
+            self.require(False, f"{relative} is empty")
+            return ""
+        return content
 
     def resolve(self, relative: str) -> Path:
         return (self.root / relative).resolve()
@@ -86,6 +92,12 @@ class ContractChecker:
         except ValueError:
             return False
 
+    def require_inside_root(self, path: Path, label: str) -> bool:
+        resolved = path.resolve()
+        inside = self.inside_root(resolved)
+        self.require(inside, f"{label} resolves outside the repository: {path}")
+        return inside
+
     def run(self) -> int:
         try:
             self.check_pipeline()
@@ -93,24 +105,23 @@ class ContractChecker:
             self.check_rpm_lock()
             self.check_yarn_inputs()
             self.check_workflow()
-        except Exception as exc:  # noqa: BLE001 - a checker crash must be a failure
+        except Exception as exc:  # a checker crash must be a failure
             self.require(False, f"contract checker crashed: {type(exc).__name__}: {exc}")
 
         for warning in self.warnings:
-            print(f"WARN: {warning}")
+            _emit(f"WARN: {warning}")
         for failure in self.failures:
-            print(f"FAIL: {failure}")
+            _emit(f"FAIL: {failure}")
 
         if self.failures:
-            print(
+            _emit(
                 f"FAILED: {len(self.failures)} contract check(s) failed, "
                 f"{self.passed} passed, {len(self.warnings)} warning(s)"
             )
             return 1
 
-        print(
-            f"PASS: {self.passed} Konflux contract checks passed "
-            f"({len(self.warnings)} warning(s))"
+        _emit(
+            f"PASS: {self.passed} Konflux contract checks passed ({len(self.warnings)} warning(s))"
         )
         return 0
 
@@ -176,9 +187,10 @@ class ContractChecker:
         if tuple(platforms) != EXPECTED_PLATFORMS:
             self.warn(
                 "PipelineRun runner labels changed from the reviewed contract "
-                f"{list(EXPECTED_PLATFORMS)} to {platforms}; all four architecture legs are still present"
+                f"{list(EXPECTED_PLATFORMS)} to {platforms}; "
+                "all four architecture legs are still present"
             )
-        print(
+        _emit(
             "INFO: GitHub Actions builds linux/amd64 only. The four Tekton "
             "build-platforms above are the multi-arch contract; an amd64 image is not "
             "evidence for arm64, ppc64le or s390x."
@@ -207,8 +219,12 @@ class ContractChecker:
         pip_entries = [entry for entry in prefetch if entry.get("type") == "pip"]
         yarn_entries = [entry for entry in prefetch if entry.get("type") == "yarn"]
         rpm_entries = [entry for entry in prefetch if entry.get("type") == "rpm"]
-        self.require(len(pip_entries) == 2, f"expected two pip prefetches, found {len(pip_entries)}")
-        self.require(len(yarn_entries) == 1, f"expected one yarn prefetch, found {len(yarn_entries)}")
+        self.require(
+            len(pip_entries) == 2, f"expected two pip prefetches, found {len(pip_entries)}"
+        )
+        self.require(
+            len(yarn_entries) == 1, f"expected one yarn prefetch, found {len(yarn_entries)}"
+        )
         self.require(len(rpm_entries) == 1, f"expected one rpm prefetch, found {len(rpm_entries)}")
 
         covered: set[str] = set()
@@ -243,7 +259,13 @@ class ContractChecker:
                 )
                 covered.add(relative)
 
-        for requirement in PIP_REQUIREMENTS:
+        dockerfile = self.read(EXPECTED_DOCKERFILE)
+        dockerfile_requirements = _dockerfile_requirements_paths(dockerfile)
+        self.require(
+            bool(dockerfile_requirements),
+            "Dockerfile.konflux must install from at least one requirements file",
+        )
+        for requirement in sorted(set(PIP_REQUIREMENTS) | dockerfile_requirements):
             self.require(
                 requirement in covered,
                 f"Dockerfile requirements file {requirement!r} is not covered by any pip prefetch",
@@ -290,7 +312,7 @@ class ContractChecker:
         for entry in rpm_entries:
             self.check_prefetch_path(entry, "requirements", "rpm")
 
-    def check_prefetch_path(self, entry: dict, expected: str, kind: str) -> None:
+    def check_prefetch_path(self, entry: dict[str, object], expected: str, kind: str) -> None:
         path = entry.get("path")
         self.require(path == expected, f"{kind} prefetch path must be {expected!r}, found {path!r}")
         if isinstance(path, str):
@@ -326,7 +348,10 @@ class ContractChecker:
 
         text = dockerfile_path.read_text(encoding="utf-8")
         stage_starts = list(re.finditer(r"(?m)^FROM\s+.+$", text))
-        self.require(len(stage_starts) == 3, f"expected three Dockerfile stages, found {len(stage_starts)}")
+        self.require(
+            len(stage_starts) == 3,
+            f"expected three Dockerfile stages, found {len(stage_starts)}",
+        )
         final_stage = text[stage_starts[-1].end() :] if stage_starts else ""
 
         self.require(
@@ -338,9 +363,7 @@ class ContractChecker:
             "final stage must not copy the python-builder source tree into /app",
         )
 
-        requirement_refs = set(
-            re.findall(r"requirements/([A-Za-z0-9_.-]+\.txt)", text)
-        )
+        requirement_refs = set(re.findall(r"requirements/([A-Za-z0-9_.-]+\.txt)", text))
         for requirement in PIP_REQUIREMENTS:
             self.require(
                 requirement.rsplit("/", 1)[-1] in requirement_refs,
@@ -348,13 +371,11 @@ class ContractChecker:
             )
 
         self.require(
-            "pip wheel" in text
-            and "requirements/konflux-pypi-requirements.txt" in text,
+            "pip wheel" in text and "requirements/konflux-pypi-requirements.txt" in text,
             "Dockerfile must build the PyPI wheel set from konflux-pypi-requirements.txt",
         )
         self.require(
-            "pip install" in text
-            and "requirements/konflux-build-aipcc-requirements.txt" in text,
+            "pip install" in text and "requirements/konflux-build-aipcc-requirements.txt" in text,
             "Dockerfile must install the build AIPCC requirements",
         )
         self.require(
@@ -550,8 +571,10 @@ class ContractChecker:
         yarn_path = _yarnrc_value(yarnrc_text, "yarnPath")
         self.require(bool(yarn_path), ".yarnrc.yml must pin yarnPath")
         if yarn_path:
+            release_path = js_dir / yarn_path
+            self.require_inside_root(release_path, "checked-in Yarn release")
             self.require(
-                (js_dir / yarn_path).is_file(),
+                release_path.is_file(),
                 f"checked-in Yarn release {yarn_path!r} is missing",
             )
 
@@ -582,6 +605,7 @@ class ContractChecker:
 
         for workspace in package.get("workspaces", []) or []:
             workspace_path = js_dir / workspace
+            self.require_inside_root(workspace_path, f"Yarn workspace {workspace!r}")
             self.require(
                 (workspace_path / "package.json").is_file(),
                 f"Yarn workspace {workspace!r} has no package.json",
@@ -593,27 +617,33 @@ class ContractChecker:
                     continue
                 relative = spec[len("file:") :]
                 target = (js_dir / relative).resolve()
+                self.require_inside_root(target, f"local Yarn dependency {dependency!r}")
                 self.require(
                     target.exists(),
                     f"local Yarn dependency {dependency!r} points at missing {relative!r}",
                 )
 
-        patch_text = package_json.read_text(encoding="utf-8") + "\n" + yarn_lock.read_text(
-            encoding="utf-8"
+        patch_text = (
+            package_json.read_text(encoding="utf-8") + "\n" + yarn_lock.read_text(encoding="utf-8")
         )
         patch_refs = set(re.findall(r"#([A-Za-z0-9_./@!-]+\.(?:patch|diff))", patch_text))
         self.require(bool(patch_refs), "no checked-in Yarn patch references were found")
         for patch_ref in sorted(patch_refs):
             if "builtin" in patch_ref:
                 continue
+            patch_path = js_dir / patch_ref
+            self.require_inside_root(patch_path, f"Yarn patch reference {patch_ref!r}")
             self.require(
-                (js_dir / patch_ref).is_file(),
+                patch_path.is_file(),
                 f"Yarn patch reference {patch_ref!r} does not resolve to a checked-in file",
             )
 
         vendor = js_dir / "vendor/design-system"
         vendor_package_path = vendor / "package.json"
-        self.require(vendor_package_path.is_file(), "vendored design-system package.json is missing")
+        self.require(
+            vendor_package_path.is_file(),
+            "vendored design-system package.json is missing",
+        )
         if vendor_package_path.is_file():
             try:
                 vendor_package = json.loads(vendor_package_path.read_text(encoding="utf-8"))
@@ -701,6 +731,10 @@ class ContractChecker:
             not re.search(r"(?m)^\s+[a-z-]+:\s*write\s*$", workflow),
             "workflow must not request write permissions",
         )
+        self.require(
+            not re.search(r"(?m)^\s*permissions:\s*(?:write-all|write)\s*$", workflow),
+            "workflow must not request scalar write permissions",
+        )
         self.require("if: always()" in workflow, "summary job must run with if: always()")
         self.require(
             "needs.check-skip.outputs.should-skip" in workflow,
@@ -718,6 +752,27 @@ class ContractChecker:
             workflow.count(validation_guard) == 4,
             "all four validation jobs must require a successful explicit false skip decision",
         )
+
+
+def _dockerfile_requirements_paths(text: str) -> set[str]:
+    """Return every requirements/ file installed with ``-r`` in the Dockerfile.
+
+    A file copied to /tmp is resolved back to its COPY source, so adding a new
+    ``-r /tmp/...`` install cannot bypass the prefetch coverage check.
+    """
+    copied: dict[str, str] = {}
+    for line in text.splitlines():
+        match = re.match(r"^\s*COPY\s+(\S+)\s+(\S+)\s*$", line)
+        if match and match.group(1).startswith("requirements/"):
+            copied[match.group(2)] = match.group(1)
+
+    paths: set[str] = set()
+    for match in re.finditer(r"(?:^|\s)-r\s+(\S+)", text):
+        operand = match.group(1)
+        source = copied.get(operand, operand)
+        if source.startswith("requirements/"):
+            paths.add(posixpath.normpath(source))
+    return paths
 
 
 def _param_scalar(text: str, name: str) -> str | None:
@@ -775,8 +830,7 @@ def _parse_rpm_lock(text: str) -> dict[str, list[dict[str, str]]]:
     current_arch: str | None = None
     current_package: dict[str, str] | None = None
     for line in text.splitlines():
-        arch_match = re.match(r"^- arch:\s*(\S+)\s*$", line)
-        if arch_match:
+        if arch_match := re.match(r"^- arch:\s*(\S+)\s*$", line):
             current_arch = arch_match.group(1)
             arches[current_arch] = []
             current_package = None
@@ -802,16 +856,36 @@ def _yarnrc_value(text: str, key: str) -> str | None:
 
 
 def _yarn_supported_cpus(text: str) -> set[str]:
-    block = re.search(
-        r"(?m)^supportedArchitectures:\s*\n(?P<body>(?:[ \t]+[^\n]*\n?)+)", text
-    )
-    if not block:
-        return set()
-    return {
-        re.sub(r"^\s*-\s*", "", line).strip()
-        for line in block.group("body").splitlines()
-        if re.match(r"^\s*-\s*\S", line)
-    }
+    """Read only supportedArchitectures.cpu, not other architecture lists."""
+    cpus: set[str] = set()
+    in_supported = False
+    in_cpu = False
+    for line in text.splitlines():
+        if line.startswith("supportedArchitectures:"):
+            in_supported = True
+            continue
+        if not in_supported:
+            continue
+        if line and not line[0].isspace():
+            break
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("cpu:"):
+            in_cpu = True
+            inline = stripped[len("cpu:") :].strip()
+            if inline.startswith("[") and inline.endswith("]"):
+                cpus.update(
+                    part.strip().strip("'\"") for part in inline[1:-1].split(",") if part.strip()
+                )
+            continue
+        if stripped.endswith(":") and not stripped.startswith("-"):
+            in_cpu = False
+            continue
+        if in_cpu:
+            if match := re.match(r"^-\s*(\S+)", stripped):
+                cpus.add(match.group(1))
+    return cpus
 
 
 def main() -> int:

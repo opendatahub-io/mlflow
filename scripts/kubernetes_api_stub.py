@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Small Kubernetes API stub for the MLflow kubernetes-auth runtime smoke.
 
 The production CMD initializes the Kubernetes workspace provider synchronously.
@@ -10,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import sys
 import threading
@@ -17,7 +17,6 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
-
 
 NAMESPACE_LIST = {
     "apiVersion": "v1",
@@ -38,7 +37,7 @@ NOT_FOUND = {
 class Handler(BaseHTTPRequestHandler):
     server_version = "mlflow-konflux-stub/1.0"
 
-    def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
+    def do_GET(self) -> None:
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
 
@@ -71,13 +70,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._send_json(404, NOT_FOUND)
 
-    def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
+    def do_POST(self) -> None:
         self._send_json(404, NOT_FOUND)
 
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A002
+    def log_message(self, format: str, *args: object) -> None:
         sys.stderr.write(f"stub {self.address_string()} {format % args}\n")
 
-    def _send_json(self, status: int, payload: dict) -> None:
+    def _send_json(self, status: int, payload: dict[str, object]) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -111,8 +110,12 @@ users:
 - name: mlflow-konflux-stub
   user: {{}}
 """
-    path.write_text(kubeconfig, encoding="utf-8")
-    path.chmod(0o644)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except FileExistsError as exc:
+        raise SystemExit(f"refusing to overwrite an existing kubeconfig: {path}") from exc
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(kubeconfig)
 
 
 def main() -> int:
@@ -133,11 +136,10 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop_server)
     signal.signal(signal.SIGINT, stop_server)
 
-    print(
-        f"READY stub listening on {args.bind}:{args.port}; "
-        f"kubeconfig={args.kubeconfig}",
-        flush=True,
+    sys.stdout.write(
+        f"READY stub listening on {args.bind}:{args.port}; kubeconfig={args.kubeconfig}\n"
     )
+    sys.stdout.flush()
     try:
         server.serve_forever(poll_interval=0.2)
     finally:

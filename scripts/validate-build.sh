@@ -187,8 +187,8 @@ PY
 pip_wheelhouse() {
     local workdir=$1
     local requirements="$ROOT_DIR/requirements/konflux-pypi-requirements.txt"
-    local wheelhouse="$workdir/wheelhouse"
-    local offline_wheelhouse="$workdir/offline-wheelhouse"
+    local downloads="$workdir/downloads"
+    local wheelhouse="$workdir/offline-wheelhouse"
     local build_python="$workdir/venv-build-offline/bin/python"
 
     if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -202,14 +202,16 @@ pip_wheelhouse() {
     command -v pg_config >/dev/null 2>&1 || fail "pg_config is required to build psycopg2; install libpq-dev"
     [[ -x "$build_python" ]] || fail "the offline build environment is missing: $build_python"
 
-    log "::group::pip wheel warm cache"
-    rm -rf "$wheelhouse" "$offline_wheelhouse"
-    PIP_CACHE_DIR="$workdir/pip-cache" "$build_python" -m pip wheel \
+    log "::group::pip download the pinned sources"
+    rm -rf "$downloads" "$wheelhouse"
+    mkdir -p "$downloads"
+    PIP_CACHE_DIR="$workdir/pip-cache" "$build_python" -m pip download \
         --disable-pip-version-check \
         --require-hashes \
         --no-deps \
-        --wheel-dir "$wheelhouse" \
+        --dest "$downloads" \
         -r "$requirements"
+    find "$downloads" -maxdepth 1 -type f -printf '%f\n' | sort
     log "::endgroup::"
 
     log "::group::pip wheel offline rebuild"
@@ -218,10 +220,42 @@ pip_wheelhouse() {
         --require-hashes \
         --no-deps \
         --no-build-isolation \
-        --find-links "$wheelhouse" \
-        --wheel-dir "$offline_wheelhouse" \
+        --find-links "$downloads" \
+        --wheel-dir "$wheelhouse" \
         -r "$requirements"
-    verify_wheelhouse "$offline_wheelhouse" "$requirements"
+    verify_wheelhouse "$wheelhouse" "$requirements"
+    log "::endgroup::"
+}
+
+check_runtime_closure() {
+    local workdir=$1
+    local venv="$workdir/venv-runtime-combined"
+    local dist="$workdir/dist"
+    local wheelhouse="$workdir/offline-wheelhouse"
+
+    log "::group::runtime dependency closure"
+    rm -rf "$venv"
+    "$PYTHON_BIN" -m venv "$venv"
+    # The AIPCC file sets --index-url, so resolve it on its own exactly as the
+    # Dockerfile does. Handing it to the same resolver as the PyPI pins would
+    # point both files at the Red Hat index and hide the PyPI packages.
+    uv --no-config pip install \
+        --python "$venv/bin/python" \
+        --python-version "$PYTHON_VERSION" \
+        --python-platform "$PYTHON_PLATFORM" \
+        --require-hashes \
+        --no-deps \
+        --offline \
+        -r "$ROOT_DIR/requirements/konflux-aipcc-requirements.txt"
+    # The image installs the rebuilt wheels from disk, so install the same
+    # artifacts here rather than resolving the names again.
+    uv --no-config pip install \
+        --python "$venv/bin/python" \
+        --no-deps \
+        --offline \
+        "$wheelhouse"/*.whl \
+        "$dist"/mlflow*.whl
+    uv --no-config pip check --python "$venv/bin/python"
     log "::endgroup::"
 }
 
@@ -270,23 +304,32 @@ PY
 
     build_source_wheels "$workdir"
     pip_wheelhouse "$workdir"
+    if [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]]; then
+        check_runtime_closure "$workdir"
+    else
+        warn "skipping the combined runtime closure check on $(uname -s)/$(uname -m)"
+    fi
     log "PASS: Python hermetic preflight"
 }
 
 yarn_hermetic() {
     require_command node
     local js_dir="$ROOT_DIR/mlflow/server/js"
-    local yarn_cjs="$js_dir/yarn/releases/yarn-4.12.0.cjs"
-    [[ -f "$yarn_cjs" ]] || fail "checked-in Yarn release is missing: $yarn_cjs"
+    local yarn_rel="yarn/releases/yarn-4.12.0.cjs"
+    [[ -f "$js_dir/$yarn_rel" ]] || fail "checked-in Yarn release is missing: $js_dir/$yarn_rel"
 
     local workdir
     workdir=$(make_workdir yarn)
-    cleanup_paths+=(
-        "$js_dir/node_modules"
-        "$js_dir/.yarn/install-state.gz"
-        "$js_dir/.yarn/unplugged"
-        "$workdir"
-    )
+    cleanup_paths+=("$workdir")
+
+    local js_copy="$workdir/js"
+    mkdir -p "$js_copy"
+    tar -C "$js_dir" \
+        --exclude=node_modules \
+        --exclude=.yarn/install-state.gz \
+        --exclude=.yarn/unplugged \
+        -cf - . | tar -C "$js_copy" -xf -
+    local yarn_cjs="$js_copy/$yarn_rel"
 
     export YARN_GLOBAL_FOLDER="$workdir/global"
     export YARN_ENABLE_GLOBAL_CACHE=true
@@ -294,11 +337,13 @@ yarn_hermetic() {
     export YARN_ENABLE_PROGRESS_BARS=0
     export YARN_HTTP_TIMEOUT=120000
 
+    local lock_before="$workdir/yarn.lock.before"
+    cp "$js_copy/yarn.lock" "$lock_before"
+
     log "::group::Yarn warm cache"
-    rm -rf "$js_dir/node_modules" "$js_dir/.yarn/install-state.gz" "$js_dir/.yarn/unplugged"
     (
-        cd "$js_dir"
-        node "$yarn_cjs" install --immutable --mode=skip-build
+        cd "$js_copy"
+        YARN_ENABLE_HARDENED_MODE=0 node "$yarn_cjs" install --immutable --mode=skip-build
     )
     cache_files=$(find "$YARN_GLOBAL_FOLDER" -type f | wc -l | tr -d ' ')
     [[ "$cache_files" -gt 0 ]] || fail "Yarn warm install populated no global cache files"
@@ -306,17 +351,15 @@ yarn_hermetic() {
     log "::endgroup::"
 
     log "::group::Yarn offline immutable install"
-    rm -rf "$js_dir/node_modules" "$js_dir/.yarn/install-state.gz" "$js_dir/.yarn/unplugged"
+    rm -rf "$js_copy/node_modules" "$js_copy/.yarn/install-state.gz" "$js_copy/.yarn/unplugged"
     (
-        cd "$js_dir"
-        YARN_ENABLE_OFFLINE_MODE=true YARN_ENABLE_NETWORK=false \
+        cd "$js_copy"
+        YARN_ENABLE_HARDENED_MODE=0 \
+            YARN_ENABLE_OFFLINE_MODE=true YARN_ENABLE_NETWORK=false \
             node "$yarn_cjs" install --immutable --mode=skip-build
     )
-    [[ -d "$js_dir/node_modules" ]] || fail "Yarn offline install produced no node_modules"
-    (
-        cd "$ROOT_DIR"
-        git diff --exit-code -- mlflow/server/js/yarn.lock
-    )
+    [[ -d "$js_copy/node_modules" ]] || fail "Yarn offline install produced no node_modules"
+    cmp -s "$lock_before" "$js_copy/yarn.lock" || fail "Yarn install changed yarn.lock"
     log "::endgroup::"
     log "PASS: Yarn hermetic preflight"
 }
@@ -360,15 +403,18 @@ runtime_smoke() (
     }
     trap cleanup_runtime EXIT
 
-    python3 "$ROOT_DIR/scripts/kubernetes_api_stub.py" \
+    PYTHONUNBUFFERED=1 python3 "$ROOT_DIR/scripts/kubernetes_api_stub.py" \
         --port "$stub_port" \
         --kubeconfig "$kubeconfig" \
         --server-host host.docker.internal >"$stub_log" 2>&1 &
     stub_pid=$!
 
+    local stub_ready_line="READY stub listening on 0.0.0.0:${stub_port};"
     local ready=false
     for _ in $(seq 1 30); do
-        if curl -fsS "http://127.0.0.1:${stub_port}/readyz" >/dev/null 2>&1; then
+        if grep -Fq "$stub_ready_line" "$stub_log" &&
+            curl --connect-timeout 1 --max-time 2 -fsS \
+                "http://127.0.0.1:${stub_port}/readyz" >/dev/null 2>&1; then
             ready=true
             break
         fi
@@ -388,7 +434,8 @@ runtime_smoke() (
 
     ready=false
     for _ in $(seq 1 90); do
-        if curl -fsS "http://127.0.0.1:${server_port}/health" >/dev/null 2>&1; then
+        if curl --connect-timeout 1 --max-time 3 -fsS \
+            "http://127.0.0.1:${server_port}/health" >/dev/null 2>&1; then
             ready=true
             break
         fi
@@ -404,11 +451,13 @@ runtime_smoke() (
     fi
 
     local version
-    version=$(curl -fsS "http://127.0.0.1:${server_port}/version")
+    version=$(curl --connect-timeout 2 --max-time 10 -fsS \
+        "http://127.0.0.1:${server_port}/version")
     [[ -n "$version" ]] || { dump_runtime "$container" "$stub_log"; fail "/version returned an empty body"; }
     log "MLflow server version: $version"
 
-    curl -fsS "http://127.0.0.1:${server_port}/" >"$workdir/root.html"
+    curl --connect-timeout 2 --max-time 30 -fsS \
+        "http://127.0.0.1:${server_port}/" >"$workdir/root.html"
     grep -qi '<div id="root"' "$workdir/root.html" || {
         dump_runtime "$container" "$stub_log"
         fail "the server did not serve the built UI index.html"
@@ -420,7 +469,13 @@ runtime_smoke() (
     [[ "$running" == "true" ]] || { dump_runtime "$container" "$stub_log"; fail "MLflow server stopped after startup"; }
     [[ "$restarts" == "0" ]] || { dump_runtime "$container" "$stub_log"; fail "MLflow server restarted $restarts time(s)"; }
 
-    if docker logs "$container" 2>&1 | grep -Eq 'Traceback \(most recent call last\)|ModuleNotFoundError|Address already in use'; then
+    local container_logs
+    if ! container_logs=$(docker logs "$container" 2>&1); then
+        dump_runtime "$container" "$stub_log"
+        fail "could not read container logs"
+    fi
+    if grep -Eq 'Traceback \(most recent call last\)|ModuleNotFoundError|Address already in use' \
+        <<<"$container_logs"; then
         dump_runtime "$container" "$stub_log"
         fail "container logs contain a crash signature"
     fi
@@ -432,6 +487,7 @@ runtime_smoke() (
 image_validation() {
     require_command docker
     require_command curl
+    require_command python3
     docker info >/dev/null 2>&1 || fail "Docker daemon is not available"
 
     local image=${KONFLUX_IMAGE_TAG:-mlflow-konflux-pr:local}
@@ -460,7 +516,7 @@ image_validation() {
 
     log "::group::in-image contract assertions"
     docker run --rm --platform linux/amd64 \
-        --entrypoint /bin/sh \
+        --entrypoint /bin/bash \
         -v "$ROOT_DIR/scripts/validate-image.sh:/tmp/validate-image.sh:ro" \
         "$image" /tmp/validate-image.sh
     log "::endgroup::"

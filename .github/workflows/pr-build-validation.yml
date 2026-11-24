@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: ${{ github.event.action == 'synchronize' }}
 
 permissions: {}
+cache-mode: none
 
 defaults:
   run:
@@ -63,10 +64,11 @@ jobs:
           if [[ "$EVENT_NAME" != "workflow_dispatch" && "$should_skip" != "true" ]]; then
             merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
             [[ -n "$merge_base" ]] || { echo "::error::cannot determine the PR merge base"; exit 1; }
-            git diff --no-renames --name-only "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
+            git diff --no-renames --name-only -z "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
 
             patterns=(
               '^Dockerfile(\.konflux)?$'
+              '^Dockerfile\.konflux\.dockerignore$'
               '^\.dockerignore$'
               '^\.tekton/'
               '^requirements/'
@@ -79,7 +81,7 @@ jobs:
               '^\.github/workflows/pr-build-validation\.yml$'
             )
             relevant=false
-            while IFS= read -r changed_file; do
+            while IFS= read -r -d '' changed_file; do
               [[ -n "$changed_file" ]] || continue
               for pattern in "${patterns[@]}"; do
                 if [[ "$changed_file" =~ $pattern ]]; then
@@ -181,10 +183,16 @@ jobs:
 
   summary:
     if: always()
-    needs: [check-skip, static-contract, python-hermetic-preflight, yarn-hermetic-preflight, image-validation]
+    needs:
+      [
+        check-skip,
+        static-contract,
+        python-hermetic-preflight,
+        yarn-hermetic-preflight,
+        image-validation,
+      ]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    permissions: {}
     steps:
       - name: Summarize and enforce job outcomes
         env:
@@ -211,9 +219,28 @@ jobs:
           if gate_result != "success":
               problems.append(f"check-skip did not succeed (result={gate_result})")
 
+          dependencies = {
+              "static-contract": ("check-skip",),
+              "python-hermetic-preflight": ("check-skip",),
+              "yarn-hermetic-preflight": ("check-skip",),
+              "image-validation": (
+                  "check-skip",
+                  "static-contract",
+                  "python-hermetic-preflight",
+                  "yarn-hermetic-preflight",
+              ),
+          }
           for job in validation_jobs:
               result = needs.get(job, {}).get("result", "missing")
-              expected = "skipped" if should_skip == "true" else "success"
+              if should_skip == "true":
+                  expected = "skipped"
+              elif all(
+                  needs.get(dependency, {}).get("result") == "success"
+                  for dependency in dependencies[job]
+              ):
+                  expected = "success"
+              else:
+                  expected = "skipped"
               if result != expected:
                   problems.append(f"{job}: expected {expected}, got {result}")
 
