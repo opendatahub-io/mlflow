@@ -61,8 +61,9 @@ jobs:
           fi
 
           if [[ "$EVENT_NAME" != "workflow_dispatch" && "$should_skip" != "true" ]]; then
-            git fetch --no-tags origin "$BASE_SHA"
-            git diff --name-only "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
+            merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            [[ -n "$merge_base" ]] || { echo "::error::cannot determine the PR merge base"; exit 1; }
+            git diff --no-renames --name-only "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
 
             patterns=(
               '^Dockerfile(\.konflux)?$'
