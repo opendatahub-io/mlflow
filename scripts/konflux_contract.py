@@ -93,10 +93,13 @@ class ContractChecker:
             return False
 
     def require_inside_root(self, path: Path, label: str) -> bool:
+        return self.resolve_inside_root(path, label) is not None
+
+    def resolve_inside_root(self, path: Path, label: str) -> Path | None:
         resolved = path.resolve()
         inside = self.inside_root(resolved)
         self.require(inside, f"{label} resolves outside the repository: {path}")
-        return inside
+        return resolved if inside else None
 
     def run(self) -> int:
         try:
@@ -571,12 +574,14 @@ class ContractChecker:
         yarn_path = _yarnrc_value(yarnrc_text, "yarnPath")
         self.require(bool(yarn_path), ".yarnrc.yml must pin yarnPath")
         if yarn_path:
-            release_path = js_dir / yarn_path
-            self.require_inside_root(release_path, "checked-in Yarn release")
-            self.require(
-                release_path.is_file(),
-                f"checked-in Yarn release {yarn_path!r} is missing",
+            release_path = self.resolve_inside_root(
+                js_dir / yarn_path, "checked-in Yarn release"
             )
+            if release_path is not None:
+                self.require(
+                    release_path.is_file(),
+                    f"checked-in Yarn release {yarn_path!r} is missing",
+                )
 
         try:
             package = json.loads(package_json.read_text(encoding="utf-8"))
@@ -604,24 +609,28 @@ class ContractChecker:
             )
 
         for workspace in package.get("workspaces", []) or []:
-            workspace_path = js_dir / workspace
-            self.require_inside_root(workspace_path, f"Yarn workspace {workspace!r}")
-            self.require(
-                (workspace_path / "package.json").is_file(),
-                f"Yarn workspace {workspace!r} has no package.json",
+            workspace_path = self.resolve_inside_root(
+                js_dir / workspace, f"Yarn workspace {workspace!r}"
             )
+            if workspace_path is not None:
+                self.require(
+                    (workspace_path / "package.json").is_file(),
+                    f"Yarn workspace {workspace!r} has no package.json",
+                )
 
         for section in ("dependencies", "devDependencies", "optionalDependencies"):
             for dependency, spec in (package.get(section) or {}).items():
                 if not isinstance(spec, str) or not spec.startswith("file:"):
                     continue
                 relative = spec[len("file:") :]
-                target = (js_dir / relative).resolve()
-                self.require_inside_root(target, f"local Yarn dependency {dependency!r}")
-                self.require(
-                    target.exists(),
-                    f"local Yarn dependency {dependency!r} points at missing {relative!r}",
+                target = self.resolve_inside_root(
+                    js_dir / relative, f"local Yarn dependency {dependency!r}"
                 )
+                if target is not None:
+                    self.require(
+                        target.exists(),
+                        f"local Yarn dependency {dependency!r} points at missing {relative!r}",
+                    )
 
         patch_text = (
             package_json.read_text(encoding="utf-8") + "\n" + yarn_lock.read_text(encoding="utf-8")
@@ -631,12 +640,14 @@ class ContractChecker:
         for patch_ref in sorted(patch_refs):
             if "builtin" in patch_ref:
                 continue
-            patch_path = js_dir / patch_ref
-            self.require_inside_root(patch_path, f"Yarn patch reference {patch_ref!r}")
-            self.require(
-                patch_path.is_file(),
-                f"Yarn patch reference {patch_ref!r} does not resolve to a checked-in file",
+            patch_path = self.resolve_inside_root(
+                js_dir / patch_ref, f"Yarn patch reference {patch_ref!r}"
             )
+            if patch_path is not None:
+                self.require(
+                    patch_path.is_file(),
+                    f"Yarn patch reference {patch_ref!r} does not resolve to a checked-in file",
+                )
 
         vendor = js_dir / "vendor/design-system"
         vendor_package_path = vendor / "package.json"
@@ -665,7 +676,8 @@ class ContractChecker:
     def check_workflow(self) -> None:
         workflow = self.read(".github/workflows/pr-build-validation.yml")
         script = self.read("scripts/validate-build.sh")
-        if not workflow or not script:
+        image_script = self.read("scripts/validate-image.sh")
+        if not workflow or not script or not image_script:
             return
 
         self.require("workflow_dispatch:" in workflow, "workflow must support workflow_dispatch")
@@ -680,6 +692,14 @@ class ContractChecker:
         self.require(
             "scripts/validate-build.sh image" in workflow,
             "workflow must invoke scripts/validate-build.sh image",
+        )
+        self.require(
+            image_script.startswith("#!/usr/bin/env bash\nset -euo pipefail\n"),
+            "scripts/validate-image.sh must use the Bash shebang and set -euo pipefail",
+        )
+        self.require(
+            "--entrypoint /bin/bash" in script and "/tmp/validate-image.sh" in script,
+            "image validation must invoke scripts/validate-image.sh under Bash",
         )
         self.require(
             not re.search(r"(?m)^\s*matrix:", workflow),
