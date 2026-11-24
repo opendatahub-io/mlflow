@@ -574,9 +574,7 @@ class ContractChecker:
         yarn_path = _yarnrc_value(yarnrc_text, "yarnPath")
         self.require(bool(yarn_path), ".yarnrc.yml must pin yarnPath")
         if yarn_path:
-            release_path = self.resolve_inside_root(
-                js_dir / yarn_path, "checked-in Yarn release"
-            )
+            release_path = self.resolve_inside_root(js_dir / yarn_path, "checked-in Yarn release")
             if release_path is not None:
                 self.require(
                     release_path.is_file(),
