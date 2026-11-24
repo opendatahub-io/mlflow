@@ -1,0 +1,238 @@
+name: PR build validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-skip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      should-skip: ${{ steps.gate.outputs.should-skip }}
+      reason: ${{ steps.gate.outputs.reason }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Evaluate the single skip gate
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          should_skip=false
+          reason="pull request changes build-relevant files"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            reason="manual dispatch"
+          else
+            case "$PR_TITLE" in
+              *"[skip konflux-sim]"*)
+                should_skip=true
+                reason="PR title contains [skip konflux-sim]"
+                ;;
+            esac
+            if [[ "$PR_LABELS_JSON" == *'"skip-konflux-sim"'* ]]; then
+              should_skip=true
+              reason="PR has the skip-konflux-sim label"
+            fi
+          fi
+
+          if [[ "$EVENT_NAME" != "workflow_dispatch" && "$should_skip" != "true" ]]; then
+            git fetch --no-tags origin "$BASE_SHA"
+            git diff --name-only "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/changed-files.txt"
+
+            patterns=(
+              '^Dockerfile(\.konflux)?$'
+              '^\.dockerignore$'
+              '^\.tekton/'
+              '^requirements/'
+              '^mlflow/'
+              '^libs/'
+              '^(pyproject\.toml|pyproject\.release\.toml|uv\.lock|\.python-version)$'
+              '(^|/)(package\.json|package-lock\.json|yarn\.lock|\.yarnrc\.yml|\.npmrc|pnpm-lock\.yaml|pnpm-workspace\.yaml)$'
+              '^scripts/(validate-build\.sh|konflux_contract\.py|kubernetes_api_stub\.py|validate-image\.sh)$'
+              '^\.github/actions/(setup-python|setup-node|free-disk-space)/'
+              '^\.github/workflows/pr-build-validation\.yml$'
+            )
+            relevant=false
+            while IFS= read -r changed_file; do
+              [[ -n "$changed_file" ]] || continue
+              for pattern in "${patterns[@]}"; do
+                if [[ "$changed_file" =~ $pattern ]]; then
+                  relevant=true
+                  break 2
+                fi
+              done
+            done < "$RUNNER_TEMP/changed-files.txt"
+
+            if [[ "$relevant" != "true" ]]; then
+              should_skip=true
+              reason="no Konflux build-relevant files changed"
+            fi
+          fi
+
+          echo "should-skip=$should_skip" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Konflux build validation"
+            echo "- Skip: \`$should_skip\`"
+            echo "- Reason: $reason"
+          } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+
+  static-contract:
+    needs: check-skip
+    if: needs.check-skip.result == 'success' && needs.check-skip.outputs.should-skip == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the Konflux input contract
+        run: bash scripts/validate-build.sh static
+
+  python-hermetic-preflight:
+    needs: check-skip
+    if: needs.check-skip.result == 'success' && needs.check-skip.outputs.should-skip == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Set up Python and uv
+        uses: ./.github/actions/setup-python
+        with:
+          python-version: "3.12"
+      - name: Install libpq headers for the psycopg2 sdist
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpq-dev
+      - name: Prove the Python prefetch closure works offline
+        env:
+          REQUIRE_NATIVE_WHEEL_PROOF: "1"
+        run: bash scripts/validate-build.sh python-hermetic
+
+  yarn-hermetic-preflight:
+    needs: check-skip
+    if: needs.check-skip.result == 'success' && needs.check-skip.outputs.should-skip == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: "24"
+      - name: Prove the checked-in Yarn release installs offline
+        run: bash scripts/validate-build.sh yarn-hermetic
+
+  image-validation:
+    needs: [check-skip, static-contract, python-hermetic-preflight, yarn-hermetic-preflight]
+    if: needs.check-skip.result == 'success' && needs.check-skip.outputs.should-skip == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Free disk space
+        uses: ./.github/actions/free-disk-space
+      - name: Build the Konflux image and smoke the server
+        run: bash scripts/validate-build.sh image
+
+  summary:
+    if: always()
+    needs: [check-skip, static-contract, python-hermetic-preflight, yarn-hermetic-preflight, image-validation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Summarize and enforce job outcomes
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          SHOULD_SKIP: ${{ needs.check-skip.outputs.should-skip }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          should_skip = os.environ.get("SHOULD_SKIP", "")
+          validation_jobs = (
+              "static-contract",
+              "python-hermetic-preflight",
+              "yarn-hermetic-preflight",
+              "image-validation",
+          )
+          problems = []
+
+          gate_result = needs.get("check-skip", {}).get("result", "missing")
+          if gate_result != "success":
+              problems.append(f"check-skip did not succeed (result={gate_result})")
+
+          for job in validation_jobs:
+              result = needs.get(job, {}).get("result", "missing")
+              expected = "skipped" if should_skip == "true" else "success"
+              if result != expected:
+                  problems.append(f"{job}: expected {expected}, got {result}")
+
+          print("### Konflux build validation summary")
+          print()
+          print("| Job | Result |")
+          print("| --- | --- |")
+          print(f"| check-skip | {gate_result} |")
+          for job in validation_jobs:
+              print(f"| {job} | {needs.get(job, {}).get('result', 'missing')} |")
+          print()
+          if should_skip == "true":
+              print("Validation was skipped by the single skip gate.")
+          else:
+              print("Validation was required for this run.")
+          print()
+
+          if problems:
+              for problem in problems:
+                  print(f"::error::{problem}")
+              raise SystemExit(1)
+          print("All required Konflux build validation jobs completed as expected.")
+          PY
