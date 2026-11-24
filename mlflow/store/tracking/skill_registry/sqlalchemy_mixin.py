@@ -134,14 +134,17 @@ class SqlAlchemySkillRegistryMixin:
         )
         return SqlAgentPlugin.with_resolved_latest(query)
 
-    def _agent_plugin_version_query(self, session, *, include_withdrawn=False):
+    def _agent_plugin_version_query(
+        self, session, *, include_deleted=False, include_withdrawn=False
+    ):
         query = self._get_query(session, SqlAgentPluginVersion).options(
             subqueryload(SqlAgentPluginVersion.plugin).subqueryload(SqlAgentPlugin.plugin_aliases),
             subqueryload(SqlAgentPluginVersion.version_tags),
             subqueryload(SqlAgentPluginVersion.members),
             subqueryload(SqlAgentPluginVersion.mcp_members),
         )
-        query = query.filter(SqlAgentPluginVersion.status != SkillStatus.DELETED.value)
+        if not include_deleted:
+            query = query.filter(SqlAgentPluginVersion.status != SkillStatus.DELETED.value)
         if not include_withdrawn:
             query = query.filter(~_agent_plugin_version_has_deleted_member())
         return query
@@ -164,11 +167,22 @@ class SqlAlchemySkillRegistryMixin:
         return plugin
 
     def _get_agent_plugin_version_or_raise(
-        self, session, name: str, version: str, organization: str
+        self,
+        session,
+        name: str,
+        version: str,
+        organization: str,
+        *,
+        include_deleted: bool = False,
+        include_withdrawn: bool = False,
     ):
         plugin_version = (
             self
-            ._agent_plugin_version_query(session)
+            ._agent_plugin_version_query(
+                session,
+                include_deleted=include_deleted,
+                include_withdrawn=include_withdrawn,
+            )
             .filter(
                 SqlAgentPluginVersion.name == name,
                 SqlAgentPluginVersion.organization == organization,
@@ -289,6 +303,160 @@ class SqlAlchemySkillRegistryMixin:
                     error_code=RESOURCE_DOES_NOT_EXIST,
                 )
             return plugin_version.to_mlflow_entity()
+
+    @staticmethod
+    def _validate_agent_plugin_status_reason(status_reason) -> None:
+        if (
+            status_reason is not NOT_SET
+            and status_reason is not None
+            and not isinstance(status_reason, str)
+        ):
+            raise MlflowException.invalid_parameter_value(
+                "Agent Plugin status_reason must be a string or null"
+            )
+
+    def update_agent_plugin_version(
+        self,
+        name: str,
+        version: str,
+        organization: str = "",
+        status: SkillStatus | str | None = NOT_SET,
+        status_reason: str | None = NOT_SET,
+        last_updated_by: str | None = None,
+    ):
+        self._validate_agent_plugin_identity(name, organization)
+        self._validate_agent_plugin_status_reason(status_reason)
+        if status is None:
+            raise MlflowException.invalid_parameter_value(
+                "status cannot be null; omit the field to leave it unchanged"
+            )
+
+        with self.ManagedSessionMaker(read_only=False) as session:
+            plugin_version = self._get_agent_plugin_version_or_raise(
+                session,
+                name,
+                version,
+                organization,
+                include_withdrawn=True,
+            )
+            current_status = SkillStatus(plugin_version.status)
+            if status is NOT_SET and status_reason is NOT_SET:
+                return plugin_version.to_mlflow_entity()
+
+            if status is NOT_SET:
+                if current_status in (SkillStatus.DRAFT, SkillStatus.DEPRECATED):
+                    new_status = current_status
+                    new_status_reason = status_reason
+                elif status_reason not in (NOT_SET, None):
+                    raise MlflowException.invalid_parameter_value(
+                        "Active Agent Plugin versions cannot have a status_reason"
+                    )
+                else:
+                    new_status = current_status
+                    new_status_reason = None
+            else:
+                try:
+                    new_status = SkillStatus(status)
+                except (TypeError, ValueError) as e:
+                    raise MlflowException.invalid_parameter_value(
+                        f"Invalid Agent Plugin status: {status!r}"
+                    ) from e
+                self._validate_skill_status_transition(current_status, new_status)
+                new_status_reason = (
+                    None
+                    if new_status is SkillStatus.ACTIVE or status_reason is NOT_SET
+                    else status_reason
+                )
+
+            now = get_current_time_millis()
+            updated = (
+                self
+                ._get_query(session, SqlAgentPluginVersion)
+                .filter(
+                    SqlAgentPluginVersion.name == name,
+                    SqlAgentPluginVersion.organization == organization,
+                    SqlAgentPluginVersion.version == version,
+                    SqlAgentPluginVersion.status == current_status.value,
+                )
+                .update(
+                    {
+                        SqlAgentPluginVersion.status: new_status.value,
+                        SqlAgentPluginVersion.status_reason: new_status_reason,
+                        SqlAgentPluginVersion.last_updated_by: last_updated_by,
+                        SqlAgentPluginVersion.last_updated_at: now,
+                    },
+                    synchronize_session=False,
+                )
+            )
+            if updated != 1:
+                raise MlflowException(
+                    "Agent Plugin version changed while being updated; retry the operation",
+                    error_code=RESOURCE_CONFLICT,
+                )
+
+            session.expire(
+                plugin_version,
+                attribute_names=[
+                    "status",
+                    "status_reason",
+                    "last_updated_by",
+                    "last_updated_at",
+                ],
+            )
+            return plugin_version.to_mlflow_entity()
+
+    def delete_agent_plugin_version(
+        self,
+        name: str,
+        version: str,
+        organization: str = "",
+        status_reason: str | None = None,
+        last_updated_by: str | None = None,
+    ) -> None:
+        self._validate_agent_plugin_identity(name, organization)
+        self._validate_agent_plugin_status_reason(status_reason)
+        with self.ManagedSessionMaker(read_only=False) as session:
+            plugin_version = self._get_agent_plugin_version_or_raise(
+                session,
+                name,
+                version,
+                organization,
+                include_deleted=True,
+                include_withdrawn=True,
+            )
+            current_status = SkillStatus(plugin_version.status)
+            if current_status is SkillStatus.DELETED:
+                raise MlflowException(
+                    f"Agent Plugin version '{name}' version '{version}' not found",
+                    error_code=RESOURCE_DOES_NOT_EXIST,
+                )
+            self._validate_skill_status_transition(current_status, SkillStatus.DELETED)
+
+            now = get_current_time_millis()
+            updated = (
+                self
+                ._get_query(session, SqlAgentPluginVersion)
+                .filter(
+                    SqlAgentPluginVersion.name == name,
+                    SqlAgentPluginVersion.organization == organization,
+                    SqlAgentPluginVersion.version == version,
+                    SqlAgentPluginVersion.status == current_status.value,
+                )
+                .update(
+                    {
+                        SqlAgentPluginVersion.status: SkillStatus.DELETED.value,
+                        SqlAgentPluginVersion.status_reason: status_reason,
+                        SqlAgentPluginVersion.last_updated_by: last_updated_by,
+                        SqlAgentPluginVersion.last_updated_at: now,
+                    },
+                    synchronize_session=False,
+                )
+            )
+            if updated != 1:
+                raise MlflowException(
+                    "Agent Plugin version changed while being deleted; retry the operation",
+                    error_code=RESOURCE_CONFLICT,
+                )
 
     @staticmethod
     def _page_token_offset(

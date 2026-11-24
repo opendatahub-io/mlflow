@@ -12,6 +12,7 @@ def _seed_plugin_version(
     *,
     version="1.0.0",
     status=SkillStatus.ACTIVE.value,
+    status_reason=None,
     created_at=None,
 ):
     workspace = store._get_active_workspace()
@@ -43,6 +44,7 @@ def _seed_plugin_version(
             version=version,
             plugin_json={"name": "developer-tools", "version": version},
             status=status,
+            status_reason=status_reason,
             created_by="alice",
             last_updated_by="alice",
             created_at=created_at,
@@ -104,6 +106,105 @@ def test_update_agent_plugin_preserves_omitted_fields_and_allows_clearing(store)
     assert cleared.description is None
     assert cleared.icons is None
     assert cleared.last_updated_by == "carol"
+
+
+@pytest.mark.parametrize("status", [SkillStatus.DRAFT, SkillStatus.DEPRECATED])
+def test_update_agent_plugin_version_can_update_status_reason_without_transition(store, status):
+    _seed_plugin_version(store, status=status.value, status_reason="initial")
+
+    unchanged = store.update_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+    assert unchanged.status is status
+    assert unchanged.status_reason == "initial"
+
+    updated = store.update_agent_plugin_version(
+        "developer-tools", "1.0.0", organization="acme", status_reason="revised"
+    )
+    assert updated.status is status
+    assert updated.status_reason == "revised"
+
+    cleared = store.update_agent_plugin_version(
+        "developer-tools", "1.0.0", organization="acme", status_reason=None
+    )
+    assert cleared.status is status
+    assert cleared.status_reason is None
+
+
+def test_update_agent_plugin_version_status_change_replaces_reason_and_active_clears_it(store):
+    _seed_plugin_version(store, status=SkillStatus.DRAFT.value, status_reason="initial")
+
+    active = store.update_agent_plugin_version(
+        "developer-tools",
+        "1.0.0",
+        organization="acme",
+        status=SkillStatus.ACTIVE,
+        status_reason="ignored while active",
+    )
+    assert active.status is SkillStatus.ACTIVE
+    assert active.status_reason is None
+
+    deprecated = store.update_agent_plugin_version(
+        "developer-tools",
+        "1.0.0",
+        organization="acme",
+        status=SkillStatus.DEPRECATED,
+        status_reason="Use the replacement",
+    )
+    assert deprecated.status is SkillStatus.DEPRECATED
+    assert deprecated.status_reason == "Use the replacement"
+
+    active = store.update_agent_plugin_version(
+        "developer-tools", "1.0.0", organization="acme", status=SkillStatus.ACTIVE
+    )
+    assert active.status is SkillStatus.ACTIVE
+    assert active.status_reason is None
+
+
+def test_update_agent_plugin_version_rejects_reason_on_active_version(store):
+    _seed_plugin_version(store, status=SkillStatus.ACTIVE.value)
+
+    with pytest.raises(MlflowException, match="cannot have a status_reason"):
+        store.update_agent_plugin_version(
+            "developer-tools",
+            "1.0.0",
+            organization="acme",
+            status_reason="Unexpected reason",
+        )
+
+
+def test_delete_agent_plugin_version_is_terminal_and_preserves_reason(store):
+    _seed_plugin_version(store, status=SkillStatus.DEPRECATED.value)
+
+    store.delete_agent_plugin_version(
+        "developer-tools",
+        "1.0.0",
+        organization="acme",
+        status_reason="Revoked",
+        last_updated_by="alice",
+    )
+
+    with pytest.raises(MlflowException, match="not found"):
+        store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+
+    with pytest.raises(MlflowException, match="not found"):
+        store.delete_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+
+    with store.ManagedSessionMaker() as session:
+        row = session.get(
+            SqlAgentPluginVersion,
+            (store._get_active_workspace(), "acme", "developer-tools", "1.0.0"),
+        )
+        assert row.status == SkillStatus.DELETED.value
+        assert row.status_reason == "Revoked"
+        assert row.last_updated_by == "alice"
+
+
+def test_agent_plugin_version_lifecycle_enforces_valid_transitions(store):
+    _seed_plugin_version(store, status=SkillStatus.ACTIVE.value)
+
+    with pytest.raises(MlflowException, match="Invalid status transition") as exc:
+        store.delete_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+
+    assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
 
 
 def test_get_agent_plugin_returns_resolved_parent_metadata(store):

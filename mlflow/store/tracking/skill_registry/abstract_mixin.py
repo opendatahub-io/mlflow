@@ -342,6 +342,7 @@ class SkillRegistryMixin:
         name: str,
         version: str,
         organization: str = "",
+        status_reason: str | None = None,
         last_updated_by: str | None = None,
     ) -> None:
         raise NotImplementedError(self.__class__.__name__)
