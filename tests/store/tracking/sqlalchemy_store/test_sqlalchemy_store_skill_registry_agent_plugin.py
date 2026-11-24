@@ -2,7 +2,16 @@ import pytest
 
 from mlflow.entities.skill import SkillStatus
 from mlflow.exceptions import MlflowException
-from mlflow.store.tracking.dbmodels.models import SqlAgentPlugin, SqlAgentPluginVersion
+from mlflow.store.tracking.dbmodels.models import (
+    SqlAgentPlugin,
+    SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
+    SqlAgentPluginVersionMember,
+    SqlMCPAccessEndpoint,
+    SqlMCPServer,
+    SqlSkill,
+    SqlSkillVersion,
+)
 
 pytestmark = pytest.mark.notrackingurimock
 
@@ -51,6 +60,43 @@ def _seed_plugin_version(
             plugin=plugin,
         )
         session.add(version)
+
+
+def _seed_skill_member(store, *, status):
+    workspace = store._get_active_workspace()
+    with store.ManagedSessionMaker(read_only=False) as session:
+        skill = SqlSkill(
+            workspace=workspace,
+            organization="acme",
+            name="linting",
+            created_by="alice",
+            last_updated_by="alice",
+        )
+        session.add(skill)
+        session.flush()
+        skill_version = SqlSkillVersion(
+            workspace=workspace,
+            organization="acme",
+            name="linting",
+            version=1,
+            status=status.value,
+            created_by="alice",
+            last_updated_by="alice",
+            skill=skill,
+        )
+        session.add(skill_version)
+        session.flush()
+        session.add(
+            SqlAgentPluginVersionMember(
+                plugin_workspace=workspace,
+                plugin_organization="acme",
+                plugin_name="developer-tools",
+                plugin_version="1.0.0",
+                member_name="linting",
+                member_organization="acme",
+                member_version=1,
+            )
+        )
 
 
 def test_create_agent_plugin_persists_parent_metadata(store):
@@ -229,6 +275,94 @@ def test_get_agent_plugin_version_returns_immutable_snapshot(store):
     assert version.plugin_json == {"name": "developer-tools", "version": "1.0.0"}
     assert version.skills == []
     assert version.mcp_servers == {}
+
+
+def test_search_agent_plugin_versions_excludes_deleted_and_paginates(store):
+    _seed_plugin_version(store, version="1.0.0", status=SkillStatus.ACTIVE.value)
+    _seed_plugin_version(store, version="2.0.0", status=SkillStatus.DEPRECATED.value)
+    _seed_plugin_version(store, version="3.0.0", status=SkillStatus.DELETED.value)
+
+    first_page = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", max_results=1
+    )
+    assert [version.version for version in first_page] == ["1.0.0"]
+    assert first_page.token is not None
+
+    second_page = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", max_results=1, page_token=first_page.token
+    )
+    assert [version.version for version in second_page] == ["2.0.0"]
+    assert second_page.token is None
+
+
+def test_search_agent_plugin_versions_applies_status_filter(store):
+    _seed_plugin_version(store, version="1.0.0", status=SkillStatus.ACTIVE.value)
+    _seed_plugin_version(store, version="2.0.0", status=SkillStatus.DEPRECATED.value)
+
+    versions = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", filter_string="status = 'deprecated'"
+    )
+
+    assert [version.version for version in versions] == ["2.0.0"]
+
+
+def test_search_agent_plugin_versions_filters_mcp_members(store):
+    _seed_plugin_version(store)
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.add(SqlMCPServer(workspace="default", name="github"))
+        session.add(
+            SqlMCPAccessEndpoint(workspace="default", id="github-endpoint", server_name="github")
+        )
+        session.add(
+            SqlAgentPluginVersionMCPMember(
+                plugin_workspace="default",
+                plugin_organization="acme",
+                plugin_name="developer-tools",
+                plugin_version="1.0.0",
+                member_name="github",
+                access_endpoint_id="github-endpoint",
+            )
+        )
+
+    by_local_name = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", filter_string="mcp_member_name = 'github'"
+    )
+    by_server_name = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", filter_string="mcp_server_name = 'github'"
+    )
+
+    assert [version.version for version in by_local_name] == ["1.0.0"]
+    assert [version.version for version in by_server_name] == ["1.0.0"]
+
+
+def test_deleted_skill_member_withdraws_plugin_version_from_normal_reads(store):
+    _seed_plugin_version(store)
+    _seed_skill_member(store, status=SkillStatus.DELETED)
+
+    with pytest.raises(MlflowException, match="not found"):
+        store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+    with pytest.raises(MlflowException, match="No resolved latest version"):
+        store.get_latest_agent_plugin_version("developer-tools", organization="acme")
+
+    plugin = store.get_agent_plugin("developer-tools", organization="acme")
+    versions = store.search_agent_plugin_versions("developer-tools", organization="acme")
+    assert plugin.latest_version is None
+    assert plugin.status is None
+    assert versions == []
+
+
+def test_deprecated_skill_member_does_not_withdraw_plugin_version(store):
+    _seed_plugin_version(store)
+    _seed_skill_member(store, status=SkillStatus.DEPRECATED)
+
+    version = store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+    latest = store.get_latest_agent_plugin_version("developer-tools", organization="acme")
+    plugin = store.get_agent_plugin("developer-tools", organization="acme")
+
+    assert version.status is SkillStatus.ACTIVE
+    assert latest.version == "1.0.0"
+    assert plugin.latest_version == "1.0.0"
+    assert plugin.status is SkillStatus.ACTIVE
 
 
 def test_get_latest_agent_plugin_version_prefers_active_status(store):

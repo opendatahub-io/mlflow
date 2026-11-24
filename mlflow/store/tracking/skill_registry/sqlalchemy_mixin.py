@@ -27,6 +27,8 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
     SqlAgentPluginVersionMember,
+    SqlAgentPluginVersionTag,
+    SqlMCPAccessEndpoint,
     SqlSkill,
     SqlSkillAlias,
     SqlSkillTag,
@@ -41,6 +43,7 @@ from mlflow.store.tracking.skill_registry.constants import (
 )
 from mlflow.store.tracking.skill_registry_filter import (
     apply_skill_registry_filters,
+    build_agent_plugin_mcp_member_query,
     paginate_results,
     parse_skill_registry_order_by,
 )
@@ -54,7 +57,11 @@ from mlflow.telemetry.events import (
     SkillRegistryCreateSkillVersionEvent,
 )
 from mlflow.telemetry.track import record_usage_event
-from mlflow.utils.search_utils import SearchSkillUtils, SearchSkillVersionUtils
+from mlflow.utils.search_utils import (
+    SearchAgentPluginVersionUtils,
+    SearchSkillUtils,
+    SearchSkillVersionUtils,
+)
 from mlflow.utils.time import get_current_time_millis
 from mlflow.utils.validation import (
     _validate_agent_plugin_name,
@@ -119,6 +126,7 @@ class SqlAlchemySkillRegistryMixin:
     MAX_REPORTED_BLOCKING_REFERENCES = 10
     SKILL_SEARCH_TOKEN_SCOPE = "skills"
     SKILL_VERSION_SEARCH_TOKEN_SCOPE_PREFIX = "skill_versions"
+    AGENT_PLUGIN_VERSION_SEARCH_TOKEN_SCOPE_PREFIX = "agent_plugin_versions"
 
     def _skill_query(self, session):
         query = self._get_query(session, SqlSkill).options(
@@ -303,6 +311,100 @@ class SqlAlchemySkillRegistryMixin:
                     error_code=RESOURCE_DOES_NOT_EXIST,
                 )
             return plugin_version.to_mlflow_entity()
+
+    def search_agent_plugin_versions(
+        self,
+        name: str,
+        organization: str = "",
+        filter_string: str | None = None,
+        max_results: int = SEARCH_MAX_RESULTS_DEFAULT,
+        order_by: list[str] | None = None,
+        page_token: str | None = None,
+    ):
+        self._validate_agent_plugin_identity(name, organization)
+        validate_max_results(max_results)
+        token_scope = (
+            f"workspace:{self._get_active_workspace()}:"
+            f"{self.AGENT_PLUGIN_VERSION_SEARCH_TOKEN_SCOPE_PREFIX}:{organization}/{name}"
+        )
+        offset = self._page_token_offset(page_token, filter_string, order_by, token_scope)
+        parsed_filters = SearchAgentPluginVersionUtils.parse_search_filter(filter_string)
+        mcp_filters = [
+            f
+            for f in parsed_filters
+            if f["type"] == "attribute" and f["key"] in {"mcp_member_name", "mcp_server_name"}
+        ]
+        special_filter_keys = {"mcp_member_name", "mcp_server_name"}
+        attribute_filters = [
+            f
+            for f in parsed_filters
+            if not (f["type"] == "attribute" and f["key"] in special_filter_keys)
+        ]
+        version_order_columns = (
+            SqlAgentPluginVersion.version_major,
+            SqlAgentPluginVersion.version_minor,
+            SqlAgentPluginVersion.version_patch,
+            SqlAgentPluginVersion.version_prerelease_sort_key,
+            SqlAgentPluginVersion.created_at,
+            SqlAgentPluginVersion.version,
+        )
+        column_map = {
+            "organization": SqlAgentPluginVersion.organization,
+            "source_type": SqlAgentPluginVersion.source_type,
+            "status": SqlAgentPluginVersion.status,
+            "version": version_order_columns,
+            "created_at": SqlAgentPluginVersion.created_at,
+            "last_updated_at": SqlAgentPluginVersion.last_updated_at,
+        }
+        order_clauses = parse_skill_registry_order_by(
+            order_by,
+            valid_keys=set(SearchAgentPluginVersionUtils.VALID_SEARCH_ATTRIBUTE_KEYS),
+            column_map=column_map,
+            default_tiebreakers=[column.asc() for column in version_order_columns],
+        )
+        with self.ManagedSessionMaker() as session:
+            query = self._agent_plugin_version_query(session).filter(
+                SqlAgentPluginVersion.name == name,
+                SqlAgentPluginVersion.organization == organization,
+            )
+            query = apply_skill_registry_filters(
+                query,
+                attribute_filters,
+                column_map,
+                SqlAgentPluginVersion,
+                SqlAgentPluginVersionTag,
+                tag_join_keys=["workspace", "organization", "name", "version"],
+                dialect=self._get_dialect(),
+            )
+            if mcp_filters:
+                readable_endpoint_ids = self._get_query(
+                    session, SqlMCPAccessEndpoint
+                ).with_entities(SqlMCPAccessEndpoint.id)
+                mcp_matches = build_agent_plugin_mcp_member_query(
+                    mcp_filters,
+                    workspace=self._get_active_workspace(),
+                    dialect=self._get_dialect(),
+                    readable_endpoint_ids=readable_endpoint_ids,
+                ).subquery()
+                query = query.join(
+                    mcp_matches,
+                    sa.and_(
+                        SqlAgentPluginVersion.workspace == mcp_matches.c.workspace,
+                        SqlAgentPluginVersion.organization == mcp_matches.c.organization,
+                        SqlAgentPluginVersion.name == mcp_matches.c.name,
+                        SqlAgentPluginVersion.version == mcp_matches.c.version,
+                    ),
+                )
+            rows = query.order_by(*order_clauses).offset(offset).limit(max_results + 1).all()
+            versions = [version.to_mlflow_entity() for version in rows]
+            return paginate_results(
+                versions,
+                max_results=max_results,
+                offset=offset,
+                filter_string=filter_string,
+                order_by=order_by,
+                query_scope=token_scope,
+            )
 
     @staticmethod
     def _validate_agent_plugin_status_reason(status_reason) -> None:
