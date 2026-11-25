@@ -200,6 +200,39 @@ def test_create_agent_plugin_version_validates_before_persisting(store):
         )
 
 
+def test_create_agent_plugin_version_reports_dependency_conflict(store, monkeypatch):
+    store.create_agent_plugin("developer-tools", organization="acme")
+
+    monkeypatch.setattr(
+        "mlflow.store.tracking.skill_registry.sqlalchemy_mixin.prepare_agent_plugin_version",
+        lambda *args, **kwargs: SimpleNamespace(
+            version="1.0.0",
+            plugin_json={"name": "developer-tools", "version": "1.0.0"},
+            source=None,
+            skills=(),
+            mcp_servers={
+                "search": MCPAccessEndpoint(
+                    server_name="missing",
+                    url="https://example.com/mcp",
+                )
+            },
+        ),
+    )
+
+    with pytest.raises(MlflowException, match="dependency changed during registration") as exc:
+        store.create_agent_plugin_version(
+            "developer-tools",
+            organization="acme",
+            version="1.0.0",
+            plugin_json={"name": "developer-tools", "version": "1.0.0"},
+            skills=[],
+        )
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersion).count() == 0
+
+
 def test_create_agent_plugin_version_persists_inline_mcp_endpoint(store):
     store.create_agent_plugin("developer-tools", organization="acme")
 
@@ -448,6 +481,7 @@ def test_update_agent_plugin_version_reports_stale_status_conflict(store, monkey
                 include_withdrawn=True,
             )
             stale_status = version.status
+            stale_last_updated_at = version.last_updated_at
         with store.ManagedSessionMaker(read_only=False) as session:
             (
                 session
@@ -457,9 +491,14 @@ def test_update_agent_plugin_version_reports_stale_status_conflict(store, monkey
                     SqlAgentPluginVersion.name == "developer-tools",
                     SqlAgentPluginVersion.version == "1.0.0",
                 )
-                .update({SqlAgentPluginVersion.status: SkillStatus.DEPRECATED.value})
+                .update({
+                    SqlAgentPluginVersion.status: SkillStatus.DEPRECATED.value,
+                    SqlAgentPluginVersion.last_updated_at: (
+                        SqlAgentPluginVersion.last_updated_at + 1
+                    ),
+                })
             )
-        return SimpleNamespace(status=stale_status)
+        return SimpleNamespace(status=stale_status, last_updated_at=stale_last_updated_at)
 
     monkeypatch.setattr(store, "_get_agent_plugin_version_or_raise", load_stale_version)
 
@@ -479,6 +518,59 @@ def test_update_agent_plugin_version_reports_stale_status_conflict(store, monkey
     )
 
 
+def test_update_agent_plugin_version_reports_stale_reason_conflict(store, monkeypatch):
+    _seed_plugin_version(store, status=SkillStatus.DRAFT.value, status_reason="initial")
+    lookup = store._get_agent_plugin_version_or_raise
+
+    def load_stale_version(*args, **kwargs):
+        with store.ManagedSessionMaker() as session:
+            version = lookup(
+                session,
+                "developer-tools",
+                "1.0.0",
+                "acme",
+                include_withdrawn=True,
+            )
+            stale_status = version.status
+            stale_last_updated_at = version.last_updated_at
+        with store.ManagedSessionMaker(read_only=False) as session:
+            (
+                session
+                .query(SqlAgentPluginVersion)
+                .filter(
+                    SqlAgentPluginVersion.organization == "acme",
+                    SqlAgentPluginVersion.name == "developer-tools",
+                    SqlAgentPluginVersion.version == "1.0.0",
+                )
+                .update({
+                    SqlAgentPluginVersion.status_reason: "concurrent edit",
+                    SqlAgentPluginVersion.last_updated_at: (
+                        SqlAgentPluginVersion.last_updated_at + 1
+                    ),
+                })
+            )
+        return SimpleNamespace(
+            status=stale_status,
+            last_updated_at=stale_last_updated_at,
+        )
+
+    monkeypatch.setattr(store, "_get_agent_plugin_version_or_raise", load_stale_version)
+
+    with pytest.raises(MlflowException, match="changed while being updated") as exc:
+        store.update_agent_plugin_version(
+            "developer-tools",
+            "1.0.0",
+            organization="acme",
+            status=SkillStatus.ACTIVE,
+        )
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    monkeypatch.undo()
+    current = store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+    assert current.status is SkillStatus.DRAFT
+    assert current.status_reason == "concurrent edit"
+
+
 def test_delete_agent_plugin_version_reports_stale_status_conflict(store, monkeypatch):
     _seed_plugin_version(store, status=SkillStatus.DRAFT.value)
     lookup = store._get_agent_plugin_version_or_raise
@@ -494,6 +586,7 @@ def test_delete_agent_plugin_version_reports_stale_status_conflict(store, monkey
                 include_withdrawn=True,
             )
             stale_status = version.status
+            stale_last_updated_at = version.last_updated_at
         with store.ManagedSessionMaker(read_only=False) as session:
             (
                 session
@@ -503,9 +596,14 @@ def test_delete_agent_plugin_version_reports_stale_status_conflict(store, monkey
                     SqlAgentPluginVersion.name == "developer-tools",
                     SqlAgentPluginVersion.version == "1.0.0",
                 )
-                .update({SqlAgentPluginVersion.status: SkillStatus.DEPRECATED.value})
+                .update({
+                    SqlAgentPluginVersion.status: SkillStatus.DEPRECATED.value,
+                    SqlAgentPluginVersion.last_updated_at: (
+                        SqlAgentPluginVersion.last_updated_at + 1
+                    ),
+                })
             )
-        return SimpleNamespace(status=stale_status)
+        return SimpleNamespace(status=stale_status, last_updated_at=stale_last_updated_at)
 
     monkeypatch.setattr(store, "_get_agent_plugin_version_or_raise", load_stale_version)
 
@@ -518,6 +616,60 @@ def test_delete_agent_plugin_version_reports_stale_status_conflict(store, monkey
         store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme").status
         is SkillStatus.DEPRECATED
     )
+
+
+def test_delete_agent_plugin_version_reports_stale_reason_conflict(store, monkeypatch):
+    _seed_plugin_version(store, status=SkillStatus.DEPRECATED.value, status_reason="initial")
+    lookup = store._get_agent_plugin_version_or_raise
+
+    def load_stale_version(*args, **kwargs):
+        with store.ManagedSessionMaker() as session:
+            version = lookup(
+                session,
+                "developer-tools",
+                "1.0.0",
+                "acme",
+                include_deleted=True,
+                include_withdrawn=True,
+            )
+            stale_status = version.status
+            stale_last_updated_at = version.last_updated_at
+        with store.ManagedSessionMaker(read_only=False) as session:
+            (
+                session
+                .query(SqlAgentPluginVersion)
+                .filter(
+                    SqlAgentPluginVersion.organization == "acme",
+                    SqlAgentPluginVersion.name == "developer-tools",
+                    SqlAgentPluginVersion.version == "1.0.0",
+                )
+                .update({
+                    SqlAgentPluginVersion.status_reason: "concurrent edit",
+                    SqlAgentPluginVersion.last_updated_at: (
+                        SqlAgentPluginVersion.last_updated_at + 1
+                    ),
+                })
+            )
+        return SimpleNamespace(
+            status=stale_status,
+            last_updated_at=stale_last_updated_at,
+        )
+
+    monkeypatch.setattr(store, "_get_agent_plugin_version_or_raise", load_stale_version)
+
+    with pytest.raises(MlflowException, match="changed while being deleted") as exc:
+        store.delete_agent_plugin_version(
+            "developer-tools",
+            "1.0.0",
+            organization="acme",
+            status_reason="delete",
+        )
+
+    assert exc.value.error_code == "RESOURCE_CONFLICT"
+    monkeypatch.undo()
+    current = store.get_agent_plugin_version("developer-tools", "1.0.0", organization="acme")
+    assert current.status is SkillStatus.DEPRECATED
+    assert current.status_reason == "concurrent edit"
 
 
 def test_get_agent_plugin_returns_resolved_parent_metadata(store):
@@ -600,6 +752,26 @@ def test_search_agent_plugin_versions_filters_mcp_members(store):
 
     assert [version.version for version in by_local_name] == ["1.0.0"]
     assert [version.version for version in by_server_name] == ["1.0.0"]
+
+
+def test_search_agent_plugin_versions_orders_by_semver(store):
+    _seed_plugin_version(store, version="1.0.0")
+    _seed_plugin_version(store, version="10.0.0")
+    _seed_plugin_version(store, version="2.0.0")
+
+    versions = store.search_agent_plugin_versions(
+        "developer-tools", organization="acme", order_by=["version ASC"]
+    )
+
+    assert [version.version for version in versions] == ["1.0.0", "2.0.0", "10.0.0"]
+
+
+@pytest.mark.parametrize("field", ["mcp_member_name", "mcp_server_name"])
+def test_search_agent_plugin_versions_rejects_mcp_ordering(store, field):
+    with pytest.raises(MlflowException, match=rf"Invalid order_by key '{field}'"):
+        store.search_agent_plugin_versions(
+            "developer-tools", organization="acme", order_by=[f"{field} ASC"]
+        )
 
 
 def test_deleted_skill_member_withdraws_plugin_version_from_normal_reads(store):

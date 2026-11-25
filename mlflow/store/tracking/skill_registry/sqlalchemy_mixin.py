@@ -8,7 +8,7 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import subqueryload
+from sqlalchemy.orm import joinedload, subqueryload
 
 from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import VALID_SKILL_STATUS_TRANSITIONS, RegistryIcon, Skill, SkillStatus
@@ -153,8 +153,11 @@ class SqlAlchemySkillRegistryMixin:
         query = self._get_query(session, SqlAgentPluginVersion).options(
             subqueryload(SqlAgentPluginVersion.plugin).subqueryload(SqlAgentPlugin.plugin_aliases),
             subqueryload(SqlAgentPluginVersion.version_tags),
-            subqueryload(SqlAgentPluginVersion.members),
-            subqueryload(SqlAgentPluginVersion.mcp_members),
+            # Load memberships in the same statement as the eligibility check. A
+            # subqueryload would re-evaluate that check and could return a selected
+            # version with empty memberships after a concurrent Skill withdrawal.
+            joinedload(SqlAgentPluginVersion.members),
+            joinedload(SqlAgentPluginVersion.mcp_members),
         )
         if not include_deleted:
             query = query.filter(SqlAgentPluginVersion.status != SkillStatus.DELETED.value)
@@ -417,9 +420,33 @@ class SqlAlchemySkillRegistryMixin:
             try:
                 session.flush()
             except IntegrityError as e:
+                # Flush can fail after the plugin version row is inserted, for
+                # example when a concurrently deleted Skill or MCP server makes
+                # a member foreign key invalid. Roll back before checking whether
+                # the requested plugin-version identity actually exists.
+                session.rollback()
+                version_exists = (
+                    self
+                    ._get_query(session, SqlAgentPluginVersion)
+                    .filter(
+                        SqlAgentPluginVersion.organization == organization,
+                        SqlAgentPluginVersion.name == name,
+                        SqlAgentPluginVersion.version == prepared.version,
+                    )
+                    .one_or_none()
+                    is not None
+                )
+                if version_exists:
+                    raise MlflowException(
+                        f"Agent plugin version '{name}' version '{prepared.version}' "
+                        "already exists",
+                        error_code=RESOURCE_ALREADY_EXISTS,
+                    ) from e
                 raise MlflowException(
-                    f"Agent plugin version '{name}' version '{prepared.version}' already exists",
-                    error_code=RESOURCE_ALREADY_EXISTS,
+                    f"Agent plugin version '{name}' version '{prepared.version}' could not be "
+                    "created because a dependency changed during registration; retry the "
+                    "same version after resolving the dependency.",
+                    error_code=RESOURCE_CONFLICT,
                 ) from e
             return plugin_version.to_mlflow_entity()
 
@@ -501,7 +528,7 @@ class SqlAlchemySkillRegistryMixin:
         }
         order_clauses = parse_skill_registry_order_by(
             order_by,
-            valid_keys=set(SearchAgentPluginVersionUtils.VALID_SEARCH_ATTRIBUTE_KEYS),
+            valid_keys=set(column_map),
             column_map=column_map,
             default_tiebreakers=[column.asc() for column in version_order_columns],
         )
@@ -613,7 +640,7 @@ class SqlAlchemySkillRegistryMixin:
                     else status_reason
                 )
 
-            now = get_current_time_millis()
+            now = max(get_current_time_millis(), plugin_version.last_updated_at + 1)
             updated = (
                 self
                 ._get_query(session, SqlAgentPluginVersion)
@@ -622,6 +649,7 @@ class SqlAlchemySkillRegistryMixin:
                     SqlAgentPluginVersion.organization == organization,
                     SqlAgentPluginVersion.version == version,
                     SqlAgentPluginVersion.status == current_status.value,
+                    SqlAgentPluginVersion.last_updated_at == plugin_version.last_updated_at,
                 )
                 .update(
                     {
@@ -677,7 +705,7 @@ class SqlAlchemySkillRegistryMixin:
                 )
             self._validate_skill_status_transition(current_status, SkillStatus.DELETED)
 
-            now = get_current_time_millis()
+            now = max(get_current_time_millis(), plugin_version.last_updated_at + 1)
             updated = (
                 self
                 ._get_query(session, SqlAgentPluginVersion)
@@ -686,6 +714,7 @@ class SqlAlchemySkillRegistryMixin:
                     SqlAgentPluginVersion.organization == organization,
                     SqlAgentPluginVersion.version == version,
                     SqlAgentPluginVersion.status == current_status.value,
+                    SqlAgentPluginVersion.last_updated_at == plugin_version.last_updated_at,
                 )
                 .update(
                     {
