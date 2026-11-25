@@ -1,10 +1,14 @@
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, local
 from types import SimpleNamespace
 
 import pytest
+import sqlalchemy
 
 from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import SkillStatus
 from mlflow.exceptions import MlflowException
+from mlflow.store.db.db_types import POSTGRES
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
@@ -15,6 +19,7 @@ from mlflow.store.tracking.dbmodels.models import (
     SqlSkill,
     SqlSkillVersion,
 )
+from mlflow.utils.workspace_context import WorkspaceContext
 
 pytestmark = pytest.mark.notrackingurimock
 
@@ -187,6 +192,73 @@ def test_create_agent_plugin_version_rejects_missing_skill_parent(store):
             skills=["skills:/missing/1"],
         )
 
+    with store.ManagedSessionMaker() as session:
+        assert (
+            session
+            .query(SqlAgentPluginVersion)
+            .filter(
+                SqlAgentPluginVersion.organization == "acme",
+                SqlAgentPluginVersion.name == "developer-tools",
+            )
+            .count()
+            == 0
+        )
+
+
+def test_create_agent_plugin_version_rejects_skill_created_after_missing_parent(store):
+    if store._get_dialect() != POSTGRES:
+        pytest.skip("PostgreSQL READ COMMITTED concurrency coverage")
+
+    store.create_agent_plugin("developer-tools", organization="acme")
+    parent_read = Event()
+    release = Event()
+    thread_state = local()
+
+    def pause_after_parent_read(conn, cursor, statement, parameters, context, executemany):
+        if (
+            getattr(thread_state, "plugin_import", False)
+            and statement.lstrip().upper().startswith("SELECT")
+            and "FROM SKILLS" in statement.upper()
+        ):
+            parent_read.set()
+            assert release.wait(timeout=30)
+
+    sqlalchemy.event.listen(store.engine, "after_cursor_execute", pause_after_parent_read)
+    try:
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix="plugin-import") as executor:
+
+            def register():
+                thread_state.plugin_import = True
+                with WorkspaceContext("default"):
+                    try:
+                        store.create_agent_plugin_version(
+                            "developer-tools",
+                            organization="acme",
+                            version="1.0.0",
+                            plugin_json={
+                                "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+                                "name": "developer-tools",
+                                "version": "1.0.0",
+                            },
+                            skills=["skills:/@acme/late-skill/1"],
+                        )
+                    except MlflowException as exc:
+                        return exc
+                return None
+
+            future = executor.submit(register)
+            try:
+                assert parent_read.wait(timeout=30)
+                _seed_skill_version(store, name="late-skill")
+            finally:
+                release.set()
+            error = future.result(timeout=30)
+    finally:
+        release.set()
+        sqlalchemy.event.remove(store.engine, "after_cursor_execute", pause_after_parent_read)
+
+    assert isinstance(error, MlflowException)
+    assert error.error_code == "RESOURCE_DOES_NOT_EXIST"
     with store.ManagedSessionMaker() as session:
         assert (
             session
