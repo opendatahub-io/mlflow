@@ -280,7 +280,7 @@ def _resolve_skills(store, session, workspace, skills, source):
         # Match Skill deletion's parent-first lock order. The no-op update is
         # needed on SQL Server, where ``with_for_update`` does not render a
         # locking clause, and also serializes writers on SQLite.
-        (
+        skill = (
             _query(store, session, SqlSkill, workspace)
             .filter(
                 SqlSkill.name == parsed.name,
@@ -289,10 +289,18 @@ def _resolve_skills(store, session, workspace, skills, source):
             .with_for_update()
             .one_or_none()
         )
-        _query(store, session, SqlSkill, workspace).filter(
-            SqlSkill.name == parsed.name,
-            SqlSkill.organization == parsed.organization,
-        ).update({SqlSkill.last_updated_at: SqlSkill.last_updated_at}, synchronize_session=False)
+        if skill is None:
+            raise _missing(f"Skill member {parsed.name!r} was not found.")
+        locked = (
+            _query(store, session, SqlSkill, workspace)
+            .filter(
+                SqlSkill.name == parsed.name,
+                SqlSkill.organization == parsed.organization,
+            )
+            .update({SqlSkill.last_updated_at: SqlSkill.last_updated_at}, synchronize_session=False)
+        )
+        if locked != 1:
+            raise _missing(f"Skill member {parsed.name!r} was not found.")
         query = _query(store, session, SqlSkillVersion, workspace).filter(
             SqlSkillVersion.name == parsed.name,
             SqlSkillVersion.organization == parsed.organization,

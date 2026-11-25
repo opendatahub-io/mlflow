@@ -171,10 +171,10 @@ def test_create_agent_plugin_version_persists_canonical_skill_members(store):
     assert version.created_by == "alice"
 
 
-def test_create_agent_plugin_version_validates_before_persisting(store):
+def test_create_agent_plugin_version_rejects_missing_skill_parent(store):
     store.create_agent_plugin("developer-tools", organization="acme")
 
-    with pytest.raises(MlflowException, match="No eligible version for Skill member"):
+    with pytest.raises(MlflowException, match="Skill member 'missing' was not found"):
         store.create_agent_plugin_version(
             "developer-tools",
             organization="acme",
