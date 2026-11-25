@@ -1,5 +1,6 @@
 import pytest
 
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import SkillStatus
 from mlflow.exceptions import MlflowException
 from mlflow.store.tracking.dbmodels.models import (
@@ -99,6 +100,32 @@ def _seed_skill_member(store, *, status):
         )
 
 
+def _seed_skill_version(store, *, organization="acme", name="linting", version=1):
+    workspace = store._get_active_workspace()
+    with store.ManagedSessionMaker(read_only=False) as session:
+        skill = SqlSkill(
+            workspace=workspace,
+            organization=organization,
+            name=name,
+            created_by="alice",
+            last_updated_by="alice",
+        )
+        session.add(skill)
+        session.flush()
+        session.add(
+            SqlSkillVersion(
+                workspace=workspace,
+                organization=organization,
+                name=name,
+                version=version,
+                status=SkillStatus.ACTIVE.value,
+                created_by="alice",
+                last_updated_by="alice",
+                skill=skill,
+            )
+        )
+
+
 def test_create_agent_plugin_persists_parent_metadata(store):
     plugin = store.create_agent_plugin(
         "developer-tools",
@@ -117,6 +144,158 @@ def test_create_agent_plugin_persists_parent_metadata(store):
     assert plugin.creation_timestamp is not None
 
     assert store.get_agent_plugin("developer-tools", organization="acme") == plugin
+
+
+def test_create_agent_plugin_version_persists_canonical_skill_members(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+    _seed_skill_version(store)
+
+    version = store.create_agent_plugin_version(
+        "developer-tools",
+        organization="acme",
+        version="1.0.0",
+        plugin_json={
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            "name": "developer-tools",
+            "version": "1.0.0",
+        },
+        skills=["skills:/@acme/linting/1"],
+        created_by="alice",
+    )
+
+    assert version.version == "1.0.0"
+    assert version.source_type.value == "assembled"
+    assert version.skills == ["skills:/@acme/linting/1"]
+    assert version.created_by == "alice"
+
+
+def test_create_agent_plugin_version_validates_before_persisting(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+
+    with pytest.raises(MlflowException, match="No eligible version for Skill member"):
+        store.create_agent_plugin_version(
+            "developer-tools",
+            organization="acme",
+            version="1.0.0",
+            plugin_json={
+                "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+                "name": "developer-tools",
+                "version": "1.0.0",
+            },
+            skills=["skills:/missing/1"],
+        )
+
+    with store.ManagedSessionMaker() as session:
+        assert (
+            session
+            .query(SqlAgentPluginVersion)
+            .filter(
+                SqlAgentPluginVersion.organization == "acme",
+                SqlAgentPluginVersion.name == "developer-tools",
+            )
+            .count()
+            == 0
+        )
+
+
+def test_create_agent_plugin_version_persists_inline_mcp_endpoint(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+
+    version = store.create_agent_plugin_version(
+        "developer-tools",
+        organization="acme",
+        version="1.0.0",
+        plugin_json={
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            "name": "developer-tools",
+            "version": "1.0.0",
+        },
+        mcp_servers={"search": MCPAccessEndpoint(url="https://example.com/mcp")},
+    )
+
+    endpoint = version.mcp_servers["search"]
+    assert endpoint.id is not None
+
+    with store.ManagedSessionMaker() as session:
+        member = (
+            session
+            .query(SqlAgentPluginVersionMCPMember)
+            .filter(
+                SqlAgentPluginVersionMCPMember.plugin_organization == "acme",
+                SqlAgentPluginVersionMCPMember.plugin_name == "developer-tools",
+                SqlAgentPluginVersionMCPMember.plugin_version == "1.0.0",
+                SqlAgentPluginVersionMCPMember.member_name == "search",
+            )
+            .one()
+        )
+        persisted_endpoint = session.get(SqlMCPAccessEndpoint, endpoint.id)
+        assert member.access_endpoint_id == endpoint.id
+        assert persisted_endpoint.url == "https://example.com/mcp"
+
+
+def test_create_agent_plugin_version_reuses_existing_mcp_endpoint(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+    with store.ManagedSessionMaker(read_only=False) as session:
+        session.add(
+            SqlMCPAccessEndpoint(
+                id="existing-endpoint",
+                workspace="default",
+                url="https://stored.example/mcp",
+                transport_type="streamable-http",
+            )
+        )
+
+    version = store.create_agent_plugin_version(
+        "developer-tools",
+        organization="acme",
+        version="1.0.0",
+        plugin_json={
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            "name": "developer-tools",
+            "version": "1.0.0",
+        },
+        mcp_servers={"search": MCPAccessEndpoint(id="existing-endpoint")},
+    )
+
+    assert version.mcp_servers["search"].id == "existing-endpoint"
+    with store.ManagedSessionMaker() as session:
+        endpoint = session.get(SqlMCPAccessEndpoint, "existing-endpoint")
+        assert endpoint.url == "https://stored.example/mcp"
+
+
+def test_create_agent_plugin_version_rolls_back_inline_endpoint_on_duplicate(store):
+    store.create_agent_plugin("developer-tools", organization="acme")
+    store.create_agent_plugin_version(
+        "developer-tools",
+        organization="acme",
+        version="1.0.0",
+        plugin_json={
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            "name": "developer-tools",
+            "version": "1.0.0",
+        },
+    )
+
+    with pytest.raises(MlflowException, match="already exists") as exc:
+        store.create_agent_plugin_version(
+            "developer-tools",
+            organization="acme",
+            version="1.0.0",
+            plugin_json={
+                "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+                "name": "developer-tools",
+                "version": "1.0.0",
+            },
+            mcp_servers={
+                "search": MCPAccessEndpoint(url="https://orphan.example/mcp"),
+            },
+        )
+
+    assert exc.value.error_code == "RESOURCE_ALREADY_EXISTS"
+    with store.ManagedSessionMaker() as session:
+        assert session.query(SqlAgentPluginVersion).count() == 1
+        assert session.query(SqlAgentPluginVersionMCPMember).count() == 0
+        assert session.query(SqlMCPAccessEndpoint).count() == 0
 
 
 def test_create_agent_plugin_duplicate_is_scoped_by_organization(store):

@@ -291,11 +291,11 @@ class SkillRegistryMixin:
         status_reason: str | None = None,
         created_by: str | None = None,
     ) -> AgentPluginVersion:
-        """Create a version from canonical, already-resolved member inputs.
+        """Create a version after validating and resolving its member inputs.
 
-        Skill URIs are expected to identify concrete versions. Validation and
-        name/alias resolution belong to the registry layer before this method
-        is called. MCP endpoint objects may represent either a new inline
+        Implementations must validate the manifest and resolve Skill aliases to
+        concrete versions in the same transaction as version and membership
+        persistence. MCP endpoint objects may represent either a new inline
         endpoint or an existing endpoint ID.
         """
         raise NotImplementedError(self.__class__.__name__)

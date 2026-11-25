@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from typing import Any
 
 import sqlalchemy as sa
@@ -9,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import subqueryload
 
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import VALID_SKILL_STATUS_TRANSITIONS, RegistryIcon, Skill, SkillStatus
 from mlflow.entities.skill_source import SkillSourceType
 from mlflow.entities.skill_version import SkillVersion
@@ -23,9 +25,11 @@ from mlflow.protos.databricks_pb2 import (
 )
 from mlflow.store.entities.paged_list import PagedList
 from mlflow.store.tracking import NOT_SET, SEARCH_MAX_RESULTS_DEFAULT
+from mlflow.store.tracking.agent_plugin_validation import prepare_agent_plugin_version
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlAgentPluginVersionTag,
     SqlMCPAccessEndpoint,
@@ -62,6 +66,7 @@ from mlflow.utils.search_utils import (
     SearchSkillUtils,
     SearchSkillVersionUtils,
 )
+from mlflow.utils.skill_uris import parse_skill_uri
 from mlflow.utils.time import get_current_time_millis
 from mlflow.utils.validation import (
     _validate_agent_plugin_name,
@@ -279,6 +284,144 @@ class SqlAlchemySkillRegistryMixin:
                 .one()
                 .to_mlflow_entity()
             )
+
+    def create_agent_plugin_version(
+        self,
+        name: str,
+        organization: str = "",
+        version: str | None = None,
+        plugin_json: dict[str, Any] | None = None,
+        skills: list[str] | None = None,
+        mcp_servers: dict[str, MCPAccessEndpoint] | None = None,
+        source_type: str | None = None,
+        source: str | None = None,
+        ref: str | None = None,
+        subpath: str | None = None,
+        status: SkillStatus | str = SkillStatus.ACTIVE,
+        status_reason: str | None = None,
+        created_by: str | None = None,
+    ):
+        self._validate_agent_plugin_identity(name, organization)
+        self._validate_agent_plugin_status_reason(status_reason)
+        try:
+            parsed_status = SkillStatus(status)
+        except (TypeError, ValueError) as e:
+            raise MlflowException.invalid_parameter_value(
+                f"Invalid Agent Plugin status: {status!r}"
+            ) from e
+        if parsed_status not in (SkillStatus.ACTIVE, SkillStatus.DRAFT):
+            raise MlflowException.invalid_parameter_value(
+                "A newly created Agent Plugin version must have status 'active' or 'draft'."
+            )
+        if parsed_status is SkillStatus.ACTIVE and status_reason is not None:
+            raise MlflowException.invalid_parameter_value(
+                "Active Agent Plugin versions cannot have a status_reason"
+            )
+
+        workspace = self._get_active_workspace()
+        now = get_current_time_millis()
+        with self.ManagedSessionMaker(read_only=False) as session:
+            plugin = self._get_agent_plugin_or_raise(session, name, organization)
+            prepared = prepare_agent_plugin_version(
+                self,
+                session,
+                workspace=workspace,
+                name=name,
+                organization=organization,
+                version=version,
+                plugin_json=plugin_json,
+                source=source,
+                source_type=source_type,
+                ref=ref,
+                subpath=subpath,
+                skills=skills,
+                mcp_servers=mcp_servers,
+            )
+            source_fields = (
+                {
+                    "source_type": prepared.source.source_type.value,
+                    "source": prepared.source.source,
+                    "ref": prepared.source.ref,
+                    "subpath": prepared.source.subpath,
+                }
+                if prepared.source is not None
+                else {"source_type": SkillSourceType.ASSEMBLED.value}
+            )
+            plugin_version = self._with_workspace_field(
+                SqlAgentPluginVersion(
+                    workspace=workspace,
+                    organization=organization,
+                    name=name,
+                    version=prepared.version,
+                    plugin_json=prepared.plugin_json,
+                    search_text=build_skill_search_text(name=name),
+                    status=parsed_status.value,
+                    status_reason=status_reason,
+                    created_by=created_by,
+                    last_updated_by=created_by,
+                    created_at=now,
+                    last_updated_at=now,
+                    plugin=plugin,
+                    **source_fields,
+                )
+            )
+            session.add(plugin_version)
+            for skill_uri in prepared.skills:
+                parsed_skill = parse_skill_uri(skill_uri)
+                session.add(
+                    SqlAgentPluginVersionMember(
+                        plugin_workspace=workspace,
+                        plugin_organization=organization,
+                        plugin_name=name,
+                        plugin_version=prepared.version,
+                        member_name=parsed_skill.name,
+                        member_organization=parsed_skill.organization,
+                        member_version=parsed_skill.version,
+                        plugin_version_rel=plugin_version,
+                    )
+                )
+            for member_name, endpoint in prepared.mcp_servers.items():
+                endpoint_id = endpoint.id or f"ae-{uuid.uuid4().hex}"
+                if endpoint.id is None:
+                    session.add(
+                        SqlMCPAccessEndpoint(
+                            id=endpoint_id,
+                            workspace=workspace,
+                            server_name=endpoint.server_name,
+                            server_version=endpoint.server_version,
+                            server_alias=endpoint.server_alias,
+                            url=endpoint.url,
+                            transport_type=(
+                                endpoint.transport_type.value
+                                if endpoint.transport_type is not None
+                                else None
+                            ),
+                            created_by=created_by,
+                            last_updated_by=created_by,
+                            created_at=now,
+                            last_updated_at=now,
+                            client_config=endpoint.client_config,
+                        )
+                    )
+                session.add(
+                    SqlAgentPluginVersionMCPMember(
+                        plugin_workspace=workspace,
+                        plugin_organization=organization,
+                        plugin_name=name,
+                        plugin_version=prepared.version,
+                        member_name=member_name,
+                        access_endpoint_id=endpoint_id,
+                        plugin_version_rel=plugin_version,
+                    )
+                )
+            try:
+                session.flush()
+            except IntegrityError as e:
+                raise MlflowException(
+                    f"Agent plugin version '{name}' version '{prepared.version}' already exists",
+                    error_code=RESOURCE_ALREADY_EXISTS,
+                ) from e
+            return plugin_version.to_mlflow_entity()
 
     def get_agent_plugin_version(self, name: str, version: str, organization: str = ""):
         self._validate_agent_plugin_identity(name, organization)
