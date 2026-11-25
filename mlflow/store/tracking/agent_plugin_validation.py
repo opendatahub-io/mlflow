@@ -28,7 +28,7 @@ from mlflow.entities.skill_source import (
 )
 from mlflow.exceptions import MlflowException
 from mlflow.genai.skill_content.fetchers.oci import parse_image_reference
-from mlflow.genai.skill_content.paths import normalize_subpath
+from mlflow.genai.skill_content.paths import canonical_relative_path, normalize_subpath
 from mlflow.genai.skill_content.sources import (
     MAX_SOURCE_FIELD_LENGTH,
     ResolvedSource,
@@ -90,6 +90,8 @@ def _missing(message):
 
 
 def _validate_manifest(name, plugin_json, version, *, packaged, path_name, path_version):
+    if not isinstance(name, str):
+        raise _invalid("Plugin name must be a string.")
     _validate_agent_plugin_name(name)
     if path_name is not None and path_name != name:
         raise _invalid("Path and request plugin names must match.")
@@ -118,7 +120,9 @@ def _validate_manifest(name, plugin_json, version, *, packaged, path_name, path_
             raise _invalid("plugin_json must contain JSON values, including lists for arrays.")
     if not isinstance(manifest.get("$schema"), str) or not manifest["$schema"].strip():
         raise _invalid("plugin_json requires a non-empty '$schema' string.")
-    _validate_agent_plugin_name(manifest.get("name"))
+    if not isinstance(manifest.get("name"), str):
+        raise _invalid("plugin_json.name must be a string.")
+    _validate_agent_plugin_name(manifest["name"])
     if manifest["name"] != name:
         raise _invalid("Request and manifest plugin names must match.")
     for key in ("description", "homepage", "repository", "license"):
@@ -186,7 +190,9 @@ def _validate_artifact_uri(source):
             _validate_run_id(run_id)
         elif parts.scheme == "models":
             model_uri, _ = ModelsArtifactRepository.split_models_uri(source)
-            _parse_model_uri(model_uri)
+            parsed = _parse_model_uri(model_uri)
+            if parsed.alias is not None and not parsed.name.strip():
+                raise _invalid("Model alias package sources require a model name.")
     except MlflowException:
         raise _invalid("Invalid MLflow artifact package source.") from None
 
@@ -254,7 +260,8 @@ def _resolve_package_source(source, source_type, ref, subpath):
 
 
 def _query(store, session, model, workspace):
-    return store._get_query(session, model).filter(model.workspace == workspace)
+    # Autoflush preserves caller edits before refreshing cached rows from this transaction.
+    return store._get_query(session, model).filter(model.workspace == workspace).populate_existing()
 
 
 def _resolve_skills(store, session, workspace, skills, source):
@@ -361,12 +368,24 @@ def _resolve_server(store, session, workspace, endpoint):
 
 def _validate_stdio_context(config, server_version, *, packaged):
     command = config["command"]
+    if any(placeholder in command for placeholder in ("${PLUGIN_ROOT}", "${PLUGIN_DATA}")):
+        raise _invalid("Stdio command must be a bare executable or ./ plugin-relative path.")
     cwd = config.get("cwd", "")
     for value in (command, cwd):
         for prefix in ("./", "${PLUGIN_ROOT}/", "${PLUGIN_DATA}/"):
             if value.startswith(prefix):
                 try:
-                    normalize_subpath(value.removeprefix(prefix))
+                    parts = value.removeprefix(prefix).split("/")
+                    # Keep portable path spelling checks, but permit contained dot segments.
+                    canonical_relative_path("/".join(p for p in parts if p not in {".", ".."}))
+                    depth = 0
+                    for part in parts:
+                        if part == "..":
+                            depth -= 1
+                        elif part not in {"", "."}:
+                            depth += 1
+                        if depth < 0:
+                            raise _invalid("Path escapes its declared root.")
                 except MlflowException:
                     raise _invalid(
                         "Stdio command/cwd must stay within its declared root."
@@ -460,6 +479,8 @@ def prepare_agent_plugin_version(
     For an existing endpoint ID, all accompanying submitted fields are ignored; validation
     uses the current stored endpoint. MCP's reserved ``latest`` alias is case-sensitive,
     matching the existing MCP store. Skill's reserved ``latest`` alias is case-insensitive.
+    Resolution refreshes cached rows using the transaction's database visibility. Queries
+    autoflush pending changes; callers disabling autoflush must flush before preparation.
 
     ``workspace`` must match the active context when using a workspace-aware store, even
     for a version with no members. The helper never switches the caller's workspace.
