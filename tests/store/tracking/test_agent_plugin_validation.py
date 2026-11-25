@@ -171,6 +171,19 @@ def test_invalid_manifests(store, kwargs):
         assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
 
 
+@pytest.mark.parametrize("name", [123, True, ["plugin"], {"name": "plugin"}, None])
+@pytest.mark.parametrize("location", ["request", "manifest"])
+def test_plugin_names_must_be_strings(store, name, location):
+    kwargs = {"name": name} if location == "request" else {"plugin_json": _manifest(name=name)}
+    message = "Plugin name" if location == "request" else "plugin_json.name"
+    with store.ManagedSessionMaker() as session:
+        with pytest.raises(
+            MlflowException, match=rf"^{re.escape(message)} must be a string\.$"
+        ) as exc:
+            _prepare(store, session, **kwargs)
+        assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
+
+
 @pytest.mark.parametrize(
     ("source", "source_type", "expected"),
     [
@@ -191,6 +204,8 @@ def test_invalid_manifests(store, kwargs):
         ("models:/model/1/plugin", None, "mlflow"),
         ("models:/model@prod", None, "mlflow"),
         ("models:/model@prod/plugin", None, "mlflow"),
+        ("models:/m-0123456789abcdef0123456789abcdef", None, "mlflow"),
+        ("models:/m-0123456789abcdef0123456789abcdef/plugin", None, "mlflow"),
     ],
 )
 def test_package_sources_and_empty_members(store, source, source_type, expected):
@@ -287,6 +302,8 @@ def test_package_sources_and_empty_members(store, source, source_type, expected)
         ),
         ({"source": "mlflow-artifacts:/"}, "Invalid MLflow artifact package source."),
         ({"source": "runs:/bad!run/plugin"}, "Invalid MLflow artifact package source."),
+        ({"source": "models:/@prod"}, "Invalid MLflow artifact package source."),
+        ({"source": "models:/@prod/plugin"}, "Invalid MLflow artifact package source."),
         ({"source_type": "git"}, "Source type, ref, and subpath require a package source."),
         ({"ref": "main"}, "Source type, ref, and subpath require a package source."),
     ],
@@ -414,6 +431,61 @@ def test_existing_endpoint_configuration_is_revalidated(store):
         with pytest.raises(MlflowException, match="headers") as exc:
             _prepare(store, session, mcp_servers={"mcp": MCPAccessEndpoint(id="endpoint")})
         assert "secret" not in str(exc.value)
+
+
+@pytest.mark.parametrize("pending_changes", [False, True], ids=["other-session", "caller-edits"])
+def test_resolution_refreshes_cached_rows_and_preserves_caller_changes(store, pending_changes):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        _skill(session, version=1)
+        _skill(session, version=2)
+        _server(session, version="1.0.0")
+        _server(session, version="2.0.0")
+        session.add(
+            SqlSkillAlias(
+                workspace="default", organization="", name="review", alias="prod", version=1
+            )
+        )
+        session.add(
+            SqlMCPServerAlias(workspace="default", name=SERVER, alias="prod", version="1.0.0")
+        )
+        _endpoint(session, server_name=SERVER, server_alias="prod")
+
+    updated_config = {**REMOTE, "url": "https://updated.example.com/mcp"}
+
+    def update_rows(session):
+        session.get(SqlSkillAlias, ("default", "", "review", "prod")).version = 2
+        session.get(SqlMCPServerAlias, ("default", SERVER, "prod")).version = "2.0.0"
+        session.query(SqlMCPAccessEndpoint).filter_by(
+            id="endpoint"
+        ).one().client_config = updated_config
+
+    with store.ManagedSessionMaker(read_only=False) as session:
+        # Strong references keep the old rows in SQLAlchemy's identity map during preparation.
+        skill_alias = session.get(SqlSkillAlias, ("default", "", "review", "prod"))
+        server_alias = session.get(SqlMCPServerAlias, ("default", SERVER, "prod"))
+        endpoint = session.query(SqlMCPAccessEndpoint).filter_by(id="endpoint").one()
+        if pending_changes:
+            update_rows(session)
+            assert session.dirty
+        else:
+            with store.ManagedSessionMaker(read_only=False) as writer:
+                update_rows(writer)
+            assert skill_alias.version == 1
+            assert server_alias.version == "1.0.0"
+            assert endpoint.client_config == REMOTE
+
+        result = _prepare(
+            store,
+            session,
+            skills=["skills:/review@prod"],
+            mcp_servers={"mcp": MCPAccessEndpoint(id="endpoint")},
+        )
+        assert result.skills == ("skills:/review/2",)
+        assert result.mcp_servers["mcp"].resolved_version.version == "2.0.0"
+        assert result.mcp_servers["mcp"].client_config == updated_config
+        assert skill_alias.version == 2
+        assert server_alias.version == "2.0.0"
+        assert endpoint.client_config == updated_config
 
 
 @pytest.mark.parametrize("present", [False, True])
@@ -711,6 +783,10 @@ def test_aliases_require_a_live_target_in_plugin_workspace(store, resource, alia
         {"command": "node", "cwd": "./../"},
         {"command": "node", "cwd": "${PLUGIN_ROOT}/../../etc"},
         {"command": "node", "cwd": "${PLUGIN_DATA}/../../etc"},
+        {"command": "./bin/../../server"},
+        {"command": "node", "cwd": "${PLUGIN_ROOT}/cache/../../etc"},
+        {"command": "node", "cwd": "${PLUGIN_DATA}/../state/../cache"},
+        {"command": "./bin/..\\../server"},
     ],
 )
 def test_stdio_paths_cannot_escape_declared_root_even_with_package(store, config):
@@ -723,6 +799,52 @@ def test_stdio_paths_cannot_escape_declared_root_even_with_package(store, config
                 plugin_json=_manifest(),
                 mcp_servers={"mcp": MCPAccessEndpoint(client_config={"type": "stdio", **config})},
             )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"command": "./bin/../server"},
+        {"command": "./bin/./server"},
+        {"command": "node", "cwd": "./."},
+        {"command": "node", "cwd": "./cache/.."},
+        {"command": "node", "cwd": "${PLUGIN_ROOT}/cache/../state"},
+        {"command": "node", "cwd": "${PLUGIN_DATA}/cache/../state"},
+    ],
+)
+def test_stdio_paths_allow_contained_dot_segments(store, config):
+    config = {"type": "stdio", **config}
+    with store.ManagedSessionMaker() as session:
+        result = _prepare(
+            store,
+            session,
+            source=GIT,
+            plugin_json=_manifest(),
+            mcp_servers={"mcp": MCPAccessEndpoint(client_config=config)},
+        )
+        assert result.mcp_servers["mcp"].client_config == config
+
+
+@pytest.mark.parametrize("command", ["${PLUGIN_ROOT}", "${PLUGIN_DATA}", "${PLUGIN_ROOT}server"])
+@pytest.mark.parametrize("packaged", [False, True])
+def test_stdio_command_cannot_be_a_root_placeholder(store, command, packaged):
+    with store.ManagedSessionMaker(read_only=False) as session:
+        _server(session, packages=[PACKAGE])
+        with pytest.raises(MlflowException, match="command must be a bare executable") as exc:
+            _prepare(
+                store,
+                session,
+                source=GIT if packaged else None,
+                plugin_json=_manifest(),
+                mcp_servers={
+                    "mcp": MCPAccessEndpoint(
+                        server_name=SERVER,
+                        server_version="1.0.0",
+                        client_config={"type": "stdio", "command": command},
+                    )
+                },
+            )
+        assert exc.value.error_code == "INVALID_PARAMETER_VALUE"
 
 
 @pytest.mark.parametrize("with_members", [False, True])
