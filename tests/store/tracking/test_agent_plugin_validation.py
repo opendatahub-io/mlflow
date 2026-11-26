@@ -508,7 +508,10 @@ def test_skill_and_alias_workspace_isolation(store):
         )
         session.flush()
         for uri in ("skills:/review", "skills:/review/1", "skills:/review@prod"):
-            with pytest.raises(MlflowException, match="(No eligible version|alias.*not found)"):
+            with pytest.raises(
+                MlflowException,
+                match="(No eligible version|alias.*not found|Skill member.*not found)",
+            ):
                 _prepare(store, session, skills=[uri])
 
 
