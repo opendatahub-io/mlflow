@@ -21,6 +21,7 @@ from mlflow.store.tracking import SEARCH_MAX_RESULTS_DEFAULT
 from mlflow.store.tracking.dbmodels.models import (
     SqlAgentPlugin,
     SqlAgentPluginVersion,
+    SqlAgentPluginVersionMCPMember,
     SqlAgentPluginVersionMember,
     SqlDataset,
     SqlEntityAssociation,
@@ -176,6 +177,7 @@ def _cleanup_database(store: SqlAlchemyStore):
             SqlMCPServerTag,
             SqlMCPServerVersion,
             SqlMCPServer,
+            SqlAgentPluginVersionMCPMember,
             SqlAgentPluginVersionMember,
             SqlAgentPluginVersion,
             SqlAgentPlugin,

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from mlflow.entities.agent_plugin import AgentPlugin
+from mlflow.entities.agent_plugin_version import AgentPluginVersion
+from mlflow.entities.mcp_access_endpoint import MCPAccessEndpoint
 from mlflow.entities.skill import RegistryIcon, Skill, SkillStatus
 from mlflow.entities.skill_version import SkillVersion
 from mlflow.store.entities.paged_list import PagedList
@@ -242,5 +245,104 @@ class SkillRegistryMixin:
         name: str,
         alias: str,
         organization: str = "",
+    ) -> None:
+        raise NotImplementedError(self.__class__.__name__)
+
+    # --- AgentPlugin operations ---
+
+    def create_agent_plugin(
+        self,
+        name: str,
+        organization: str = "",
+        description: str | None = None,
+        icons: list[RegistryIcon] | None = None,
+        created_by: str | None = None,
+    ) -> AgentPlugin:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def get_agent_plugin(self, name: str, organization: str = "") -> AgentPlugin:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def update_agent_plugin(
+        self,
+        name: str,
+        organization: str = "",
+        description: str | None = NOT_SET,
+        icons: list[RegistryIcon] | None = NOT_SET,
+        last_updated_by: str | None = None,
+    ) -> AgentPlugin:
+        raise NotImplementedError(self.__class__.__name__)
+
+    # --- AgentPluginVersion operations ---
+
+    def create_agent_plugin_version(
+        self,
+        name: str,
+        organization: str = "",
+        version: str | None = None,
+        plugin_json: dict[str, Any] | None = None,
+        skills: list[str] | None = None,
+        mcp_servers: dict[str, MCPAccessEndpoint] | None = None,
+        source_type: str | None = None,
+        source: str | None = None,
+        ref: str | None = None,
+        subpath: str | None = None,
+        status: SkillStatus | str = SkillStatus.ACTIVE,
+        status_reason: str | None = None,
+        created_by: str | None = None,
+    ) -> AgentPluginVersion:
+        """Create a version after validating and resolving its member inputs.
+
+        Implementations must validate the manifest and resolve Skill aliases to
+        concrete versions in the same transaction as version and membership
+        persistence. MCP endpoint objects may represent either a new inline
+        endpoint or an existing endpoint ID.
+        """
+        raise NotImplementedError(self.__class__.__name__)
+
+    def get_agent_plugin_version(
+        self,
+        name: str,
+        version: str,
+        organization: str = "",
+    ) -> AgentPluginVersion:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def get_latest_agent_plugin_version(
+        self,
+        name: str,
+        organization: str = "",
+    ) -> AgentPluginVersion:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def search_agent_plugin_versions(
+        self,
+        name: str,
+        organization: str = "",
+        filter_string: str | None = None,
+        max_results: int = SEARCH_MAX_RESULTS_DEFAULT,
+        order_by: list[str] | None = None,
+        page_token: str | None = None,
+    ) -> PagedList[AgentPluginVersion]:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def update_agent_plugin_version(
+        self,
+        name: str,
+        version: str,
+        organization: str = "",
+        status: SkillStatus | str | None = NOT_SET,
+        status_reason: str | None = NOT_SET,
+        last_updated_by: str | None = None,
+    ) -> AgentPluginVersion:
+        raise NotImplementedError(self.__class__.__name__)
+
+    def delete_agent_plugin_version(
+        self,
+        name: str,
+        version: str,
+        organization: str = "",
+        status_reason: str | None = None,
+        last_updated_by: str | None = None,
     ) -> None:
         raise NotImplementedError(self.__class__.__name__)
